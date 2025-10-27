@@ -114,11 +114,11 @@ epics:
         name: "Workflow Orchestration"
         file: "docs/features/sandbox-system/stories/epic-4/story-4.4.md"
       - number: 5
-        status: ready
+        status: done
         name: "Progress Tracking"
         file: "docs/features/sandbox-system/stories/epic-4/story-4.5.md"
       - number: 6
-        status: ready
+        status: done
         name: "Timeout Management"
         file: "docs/features/sandbox-system/stories/epic-4/story-4.6.md"
       - number: 7
