@@ -12,7 +12,7 @@ from .exceptions import (
     InvalidGitUrlError,
     GitNotInstalledError,
 )
-from .benchmark import BenchmarkConfig, BenchmarkError, load_benchmark, validate_benchmark_file
+from .benchmark import BenchmarkConfig, SuccessCriteria, WorkflowPhaseConfig
 from .git_cloner import GitCloner
 from .template_scanner import TemplateScanner, TemplateVariable
 from .template_substitutor import TemplateSubstitutor, SubstitutionResult, SubstitutionError
@@ -33,9 +33,8 @@ __all__ = [
     "InvalidGitUrlError",
     "GitNotInstalledError",
     "BenchmarkConfig",
-    "BenchmarkError",
-    "load_benchmark",
-    "validate_benchmark_file",
+    "SuccessCriteria",
+    "WorkflowPhaseConfig",
     "GitCloner",
     "TemplateScanner",
     "TemplateVariable",

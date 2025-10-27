@@ -1,0 +1,194 @@
+# Benchmark Configuration Schema
+#
+# This schema defines the structure and validation rules for benchmark
+# configuration files. Use this as a reference when creating new benchmarks.
+
+$schema: http://json-schema.org/draft-07/schema#
+$id: https://gao-dev.org/schemas/benchmark-config.schema.yaml
+title: Benchmark Configuration
+description: Configuration schema for GAO-Dev benchmark runs
+type: object
+
+required:
+  - name
+  - description
+
+properties:
+  # Basic Information
+  name:
+    type: string
+    description: Unique name for this benchmark
+    minLength: 1
+    maxLength: 100
+    pattern: "^[a-zA-Z0-9-_]+$"
+    examples:
+      - "todo-app"
+      - "ecommerce-site"
+      - "api-service"
+
+  description:
+    type: string
+    description: Human-readable description of what this benchmark tests
+    minLength: 1
+    maxLength: 500
+    examples:
+      - "Build a complete todo application with authentication"
+      - "Create a RESTful API with database integration"
+
+  version:
+    type: string
+    description: Benchmark configuration version
+    pattern: "^\\d+\\.\\d+\\.\\d+$"
+    default: "1.0.0"
+    examples:
+      - "1.0.0"
+      - "2.1.0"
+
+  # Project Configuration
+  project_name:
+    type: string
+    description: Name of the project to create (defaults to benchmark name)
+    maxLength: 100
+    examples:
+      - "todo-app-001"
+      - "my-project"
+
+  boilerplate_url:
+    type: string
+    description: Git repository URL for boilerplate template
+    format: uri
+    examples:
+      - "https://github.com/user/nextjs-starter"
+      - "git@github.com:user/template.git"
+
+  boilerplate_path:
+    type: string
+    description: Local path to boilerplate template (alternative to boilerplate_url)
+    examples:
+      - "./templates/nextjs"
+      - "/path/to/template"
+
+  # Timeout Configuration
+  timeout_seconds:
+    type: integer
+    description: Overall timeout for benchmark in seconds
+    minimum: 60
+    maximum: 86400  # 24 hours
+    default: 7200  # 2 hours
+    examples:
+      - 3600  # 1 hour
+      - 7200  # 2 hours
+      - 14400  # 4 hours
+
+  # Success Criteria
+  success_criteria:
+    type: object
+    description: Criteria that must be met for benchmark to be considered successful
+    properties:
+      min_test_coverage:
+        type: number
+        description: Minimum test coverage percentage required
+        minimum: 0
+        maximum: 100
+        default: 80.0
+        examples:
+          - 80.0
+          - 90.0
+
+      max_manual_interventions:
+        type: integer
+        description: Maximum number of manual interventions allowed
+        minimum: 0
+        default: 0
+        examples:
+          - 0
+          - 3
+          - 5
+
+      max_errors:
+        type: integer
+        description: Maximum number of errors allowed (linting, type errors, etc.)
+        minimum: 0
+        default: 0
+        examples:
+          - 0
+          - 10
+
+      required_features:
+        type: array
+        description: List of features that must be implemented
+        items:
+          type: string
+        examples:
+          - ["authentication", "crud-operations", "database"]
+          - ["user-registration", "login", "logout"]
+
+      quality_gates:
+        type: object
+        description: Custom quality gates with thresholds
+        additionalProperties: true
+        examples:
+          - linting_score: 100
+            security_score: 95
+            performance_score: 80
+
+  # Workflow Phases
+  workflow_phases:
+    type: array
+    description: Workflow phases to execute
+    items:
+      type: object
+      required:
+        - phase_name
+      properties:
+        phase_name:
+          type: string
+          description: Name of the workflow phase
+          examples:
+            - "planning"
+            - "architecture"
+            - "implementation"
+            - "testing"
+
+        timeout_seconds:
+          type: integer
+          description: Timeout for this phase in seconds
+          minimum: 60
+          default: 3600
+          examples:
+            - 1800  # 30 minutes
+            - 3600  # 1 hour
+
+        expected_artifacts:
+          type: array
+          description: Artifacts expected to be created in this phase
+          items:
+            type: string
+          examples:
+            - ["docs/PRD.md", "docs/architecture.md"]
+            - ["src/main.py", "tests/test_main.py"]
+
+        quality_gates:
+          type: object
+          description: Quality gates specific to this phase
+          additionalProperties: true
+
+        skip_if_failed:
+          type: boolean
+          description: Skip this phase if previous phases failed
+          default: false
+
+  # Metadata
+  metadata:
+    type: object
+    description: Additional metadata for the benchmark
+    additionalProperties: true
+    examples:
+      - category: "web-apps"
+        difficulty: "intermediate"
+        tags: ["nextjs", "react", "tailwind"]
+
+# Additional Constraints
+oneOf:
+  - required: [boilerplate_url]
+  - required: [boilerplate_path]
