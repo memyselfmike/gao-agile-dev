@@ -7,6 +7,7 @@ from .exceptions import (
     ProjectExistsError,
     ProjectNotFoundError,
     InvalidProjectNameError,
+    ProjectStateError,
 )
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "ProjectExistsError",
     "ProjectNotFoundError",
     "InvalidProjectNameError",
+    "ProjectStateError",
 ]

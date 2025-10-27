@@ -13,6 +13,7 @@ from .exceptions import (
     ProjectExistsError,
     ProjectNotFoundError,
     InvalidProjectNameError,
+    ProjectStateError,
 )
 
 # Constants
@@ -338,7 +339,9 @@ class SandboxManager:
         reason: Optional[str] = None,
     ) -> None:
         """
-        Update project status.
+        Update project status with validation.
+
+        Validates state transitions before applying changes.
 
         Args:
             project_name: Name of project to update
@@ -347,8 +350,16 @@ class SandboxManager:
 
         Raises:
             ProjectNotFoundError: If project doesn't exist
+            ProjectStateError: If transition is invalid
         """
         metadata = self.get_project(project_name)
+
+        # Validate state transition
+        if not self._is_valid_transition(metadata.status, new_status):
+            raise ProjectStateError(
+                project_name, metadata.status.value, new_status.value
+            )
+
         metadata.status = new_status
         metadata.last_modified = datetime.now()
         self.update_project(project_name, metadata)
@@ -402,3 +413,96 @@ class SandboxManager:
         metadata = self.get_project(project_name)
         runs = sorted(metadata.runs, key=lambda r: r.started_at, reverse=True)
         return runs
+
+    def is_clean(self, project_name: str) -> bool:
+        """
+        Check if project is in clean state.
+
+        A project is considered clean if:
+        - Status is ACTIVE
+        - No failed runs
+        - Latest run (if any) is completed
+
+        Args:
+            project_name: Name of project
+
+        Returns:
+            True if project is clean, False otherwise
+
+        Raises:
+            ProjectNotFoundError: If project doesn't exist
+        """
+        metadata = self.get_project(project_name)
+
+        # Must be ACTIVE status
+        if metadata.status != ProjectStatus.ACTIVE:
+            return False
+
+        # Check latest run
+        latest_run = metadata.get_latest_run()
+        if latest_run:
+            # Latest run must be completed (not active or failed)
+            if latest_run.status in (ProjectStatus.ACTIVE, ProjectStatus.FAILED):
+                return False
+
+        return True
+
+    def mark_clean(self, project_name: str) -> None:
+        """
+        Mark project as clean and ready for new run.
+
+        Resets project to ACTIVE status (if not already).
+        Does not delete files or runs, just updates status.
+
+        Args:
+            project_name: Name of project
+
+        Raises:
+            ProjectNotFoundError: If project doesn't exist
+        """
+        metadata = self.get_project(project_name)
+
+        # Set to ACTIVE status
+        if metadata.status != ProjectStatus.ACTIVE:
+            metadata.status = ProjectStatus.ACTIVE
+
+        metadata.last_modified = datetime.now()
+        self.update_project(project_name, metadata)
+
+    def _is_valid_transition(
+        self, current_status: ProjectStatus, new_status: ProjectStatus
+    ) -> bool:
+        """
+        Check if status transition is valid.
+
+        Valid transitions:
+        - ACTIVE -> COMPLETED, FAILED, ARCHIVED
+        - COMPLETED -> ACTIVE, ARCHIVED
+        - FAILED -> ACTIVE, ARCHIVED
+        - ARCHIVED -> ACTIVE
+        - Any status -> Same status (no-op)
+
+        Args:
+            current_status: Current project status
+            new_status: Desired new status
+
+        Returns:
+            True if transition is valid, False otherwise
+        """
+        # Same status is always valid (no-op)
+        if current_status == new_status:
+            return True
+
+        # Define valid transitions
+        valid_transitions = {
+            ProjectStatus.ACTIVE: {
+                ProjectStatus.COMPLETED,
+                ProjectStatus.FAILED,
+                ProjectStatus.ARCHIVED,
+            },
+            ProjectStatus.COMPLETED: {ProjectStatus.ACTIVE, ProjectStatus.ARCHIVED},
+            ProjectStatus.FAILED: {ProjectStatus.ACTIVE, ProjectStatus.ARCHIVED},
+            ProjectStatus.ARCHIVED: {ProjectStatus.ACTIVE},
+        }
+
+        return new_status in valid_transitions.get(current_status, set())
