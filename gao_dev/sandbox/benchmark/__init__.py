@@ -15,6 +15,11 @@ from .runner import (
     BenchmarkResult,
     BenchmarkStatus,
 )
+from .orchestrator import (
+    WorkflowOrchestrator,
+    PhaseResult,
+    WorkflowExecutionResult,
+)
 
 __all__ = [
     "BenchmarkConfig",
@@ -26,4 +31,7 @@ __all__ = [
     "BenchmarkRunner",
     "BenchmarkResult",
     "BenchmarkStatus",
+    "WorkflowOrchestrator",
+    "PhaseResult",
+    "WorkflowExecutionResult",
 ]
