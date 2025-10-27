@@ -10,6 +10,11 @@ from .validator import (
     ValidationResult,
     ValidationMessage,
 )
+from .runner import (
+    BenchmarkRunner,
+    BenchmarkResult,
+    BenchmarkStatus,
+)
 
 __all__ = [
     "BenchmarkConfig",
@@ -18,4 +23,7 @@ __all__ = [
     "ConfigValidator",
     "ValidationResult",
     "ValidationMessage",
+    "BenchmarkRunner",
+    "BenchmarkResult",
+    "BenchmarkStatus",
 ]
