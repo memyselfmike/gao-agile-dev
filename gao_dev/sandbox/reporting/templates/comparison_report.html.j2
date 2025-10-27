@@ -1,0 +1,241 @@
+{% extends "base_report.html.j2" %}
+
+{% block title %}Comparison Report - {{ run1.run_id[:8] }} vs {{ run2.run_id[:8] }}{% endblock %}
+
+{% block header_title %}Benchmark Comparison Report{% endblock %}
+
+{% block header_subtitle %}
+Comparing: {{ run1.benchmark_name }} vs {{ run2.benchmark_name }}
+{% endblock %}
+
+{% block navigation %}
+<nav>
+    <a href="#summary" class="active">Summary</a>
+    <a href="#performance">Performance</a>
+    <a href="#quality">Quality</a>
+    <a href="#workflow">Workflow</a>
+    {% if charts %}
+    <a href="#charts">Charts</a>
+    {% endif %}
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Section -->
+<section id="summary">
+    <h2>Comparison Summary</h2>
+
+    <div class="metric-grid">
+        <div class="metric">
+            <span class="label">Metrics Improved</span>
+            <span class="value" style="color: var(--success-color);">{{ summary.improved }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Metrics Regressed</span>
+            <span class="value" style="color: var(--error-color);">{{ summary.regressed }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Metrics Unchanged</span>
+            <span class="value" style="color: var(--gray-600);">{{ summary.unchanged }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Overall Score</span>
+            <span class="value">{{ summary.overall_score|format_percent }}</span>
+        </div>
+    </div>
+
+    <h3>Run Details</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Property</th>
+                <th>Run 1 (Baseline)</th>
+                <th>Run 2 (Comparison)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Run ID</strong></td>
+                <td class="font-mono">{{ run1.run_id[:12] }}</td>
+                <td class="font-mono">{{ run2.run_id[:12] }}</td>
+            </tr>
+            <tr>
+                <td><strong>Benchmark Name</strong></td>
+                <td>{{ run1.benchmark_name }}</td>
+                <td>{{ run2.benchmark_name }}</td>
+            </tr>
+            <tr>
+                <td><strong>Start Time</strong></td>
+                <td>{{ run1.start_time|format_timestamp }}</td>
+                <td>{{ run2.start_time|format_timestamp }}</td>
+            </tr>
+            <tr>
+                <td><strong>Status</strong></td>
+                <td>{% with status=run1.status %}{% include "partials/status_badge.html.j2" %}{% endwith %}</td>
+                <td>{% with status=run2.status %}{% include "partials/status_badge.html.j2" %}{% endwith %}</td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Performance Comparison -->
+{% if performance %}
+<section id="performance">
+    <h2>Performance Comparison</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>Run 1</th>
+                <th>Run 2</th>
+                <th>Change</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for metric in performance %}
+            <tr>
+                <td><strong>{{ metric.name }}</strong></td>
+                <td class="font-mono">{{ metric.run1_value|format_number }}</td>
+                <td class="font-mono">{{ metric.run2_value|format_number }}</td>
+                <td class="font-mono">
+                    <span class="delta {% if metric.direction.value == 'improved' %}delta-positive{% elif metric.direction.value == 'regressed' %}delta-negative{% else %}delta-neutral{% endif %}">
+                        {{ metric.percent_delta|format_percent }}
+                    </span>
+                </td>
+                <td>
+                    {% if metric.is_significant %}
+                        {% if metric.direction.value == 'improved' %}
+                        <span class="status-badge status-success">Improved</span>
+                        {% elif metric.direction.value == 'regressed' %}
+                        <span class="status-badge status-error">Regressed</span>
+                        {% else %}
+                        <span class="status-badge status-default">Unchanged</span>
+                        {% endif %}
+                    {% else %}
+                    <span class="status-badge status-default">Insignificant</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if charts and charts.performance_comparison %}
+    <h3>Performance Comparison Chart</h3>
+    {% with image_data=charts.performance_comparison, title="Performance Metrics Comparison" %}
+        {% include "partials/chart_container.html.j2" %}
+    {% endwith %}
+    {% endif %}
+</section>
+{% endif %}
+
+<!-- Quality Comparison -->
+{% if quality %}
+<section id="quality">
+    <h2>Quality Comparison</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>Run 1</th>
+                <th>Run 2</th>
+                <th>Change</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for metric in quality %}
+            <tr>
+                <td><strong>{{ metric.name }}</strong></td>
+                <td class="font-mono">{{ metric.run1_value|format_number }}</td>
+                <td class="font-mono">{{ metric.run2_value|format_number }}</td>
+                <td class="font-mono">
+                    <span class="delta {% if metric.direction.value == 'improved' %}delta-positive{% elif metric.direction.value == 'regressed' %}delta-negative{% else %}delta-neutral{% endif %}">
+                        {{ metric.percent_delta|format_percent }}
+                    </span>
+                </td>
+                <td>
+                    {% if metric.is_significant %}
+                        {% if metric.direction.value == 'improved' %}
+                        <span class="status-badge status-success">Improved</span>
+                        {% elif metric.direction.value == 'regressed' %}
+                        <span class="status-badge status-error">Regressed</span>
+                        {% else %}
+                        <span class="status-badge status-default">Unchanged</span>
+                        {% endif %}
+                    {% else %}
+                    <span class="status-badge status-default">Insignificant</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+<!-- Workflow Comparison -->
+{% if workflow %}
+<section id="workflow">
+    <h2>Workflow Comparison</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>Run 1</th>
+                <th>Run 2</th>
+                <th>Change</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for metric in workflow %}
+            <tr>
+                <td><strong>{{ metric.name }}</strong></td>
+                <td class="font-mono">{{ metric.run1_value|format_number }}</td>
+                <td class="font-mono">{{ metric.run2_value|format_number }}</td>
+                <td class="font-mono">
+                    <span class="delta {% if metric.direction.value == 'improved' %}delta-positive{% elif metric.direction.value == 'regressed' %}delta-negative{% else %}delta-neutral{% endif %}">
+                        {{ metric.percent_delta|format_percent }}
+                    </span>
+                </td>
+                <td>
+                    {% if metric.is_significant %}
+                        {% if metric.direction.value == 'improved' %}
+                        <span class="status-badge status-success">Improved</span>
+                        {% elif metric.direction.value == 'regressed' %}
+                        <span class="status-badge status-error">Regressed</span>
+                        {% else %}
+                        <span class="status-badge status-default">Unchanged</span>
+                        {% endif %}
+                    {% else %}
+                    <span class="status-badge status-default">Insignificant</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+<!-- Charts Section -->
+{% if charts %}
+<section id="charts">
+    <h2>Comparison Charts</h2>
+
+    {% for chart_name, chart_data in charts.items() %}
+        {% if chart_name != 'performance_comparison' %}
+        <h3>{{ chart_name|replace('_', ' ')|title }}</h3>
+        {% with image_data=chart_data, title=chart_name|replace('_', ' ')|title %}
+            {% include "partials/chart_container.html.j2" %}
+        {% endwith %}
+        {% endif %}
+    {% endfor %}
+</section>
+{% endif %}
+{% endblock %}

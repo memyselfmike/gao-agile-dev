@@ -1,0 +1,12 @@
+<div class="timeline">
+    {% if workflow and workflow.phase_durations %}
+        {% for phase_name, duration in workflow.phase_durations.items() %}
+        <div class="timeline-item">
+            <div class="timeline-time">{{ duration|format_duration }}</div>
+            <div class="timeline-event">{{ phase_name }}</div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted">No timeline data available</p>
+    {% endif %}
+</div>

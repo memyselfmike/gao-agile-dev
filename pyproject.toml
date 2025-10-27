@@ -27,6 +27,11 @@ dependencies = [
     "anthropic>=0.34.0",
     "claude-agent-sdk>=0.1.0",
     "structlog>=24.1.0",
+    "jinja2>=3.1.0",
+    "matplotlib>=3.7.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
@@ -58,6 +63,8 @@ gao_dev = [
     "agents/*",
     "checklists/*",
     "config/*",
+    "sandbox/reporting/templates/**/*",
+    "sandbox/reporting/assets/*",
 ]
 
 [tool.black]
