@@ -1,0 +1,11 @@
+user_name: "Mike"
+communication_language: "English"
+communication_technical_level: "advanced"
+output_folder: "docs"
+dev_story_location: "docs/stories"
+epic_location: "docs"
+architecture_location: "docs"
+prd_location: "docs"
+tech_spec_location: "docs"
+project_type: "software"
+scale_level: 3

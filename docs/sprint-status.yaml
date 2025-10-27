@@ -1,0 +1,76 @@
+sprint_name: "Sandbox & Benchmarking System"
+start_date: "2025-10-27"
+phase: 4-implementation
+scale_level: 3
+
+epics:
+  - epic_number: 1
+    name: "Sandbox Infrastructure"
+    status: completed
+    stories:
+      - number: 1
+        status: done
+        name: "Sandbox CLI Command Structure"
+      - number: 2
+        status: done
+        name: "Sandbox Manager Implementation"
+      - number: 3
+        status: done
+        name: "Project State Management"
+      - number: 4
+        status: done
+        name: "Sandbox init Command"
+      - number: 5
+        status: done
+        name: "Sandbox clean Command"
+      - number: 6
+        status: done
+        name: "Sandbox list Command"
+
+  - epic_number: 2
+    name: "Boilerplate Integration"
+    status: ready
+    stories:
+      - number: 1
+        status: ready
+        name: "Git Repository Cloning"
+        file: "docs/features/sandbox-system/stories/epic-2/story-2.1.md"
+      - number: 2
+        status: ready
+        name: "Template Variable Detection"
+        file: "docs/features/sandbox-system/stories/epic-2/story-2.2.md"
+      - number: 3
+        status: ready
+        name: "Variable Substitution Engine"
+        file: "docs/features/sandbox-system/stories/epic-2/story-2.3.md"
+      - number: 4
+        status: ready
+        name: "Dependency Installation"
+        file: "docs/features/sandbox-system/stories/epic-2/story-2.4.md"
+      - number: 5
+        status: ready
+        name: "Boilerplate Validation"
+        file: "docs/features/sandbox-system/stories/epic-2/story-2.5.md"
+
+  - epic_number: 3
+    name: "Metrics Collection System"
+    status: planned
+    stories: []
+
+  - epic_number: 4
+    name: "Benchmark Runner"
+    status: planned
+    stories: []
+
+  - epic_number: 5
+    name: "Reporting & Visualization"
+    status: planned
+    stories: []
+
+  - epic_number: 6
+    name: "Reference Todo Application"
+    status: planned
+    stories: []
+
+current_epic: 2
+current_story: null
