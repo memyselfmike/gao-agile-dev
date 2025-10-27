@@ -44,11 +44,11 @@ epics:
         name: "Variable Substitution Engine"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.3.md"
       - number: 4
-        status: done
+        status: ready
         name: "Dependency Installation"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.4.md"
       - number: 5
-        status: done
+        status: ready
         name: "Boilerplate Validation"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.5.md"
 
