@@ -36,7 +36,7 @@ epics:
         name: "Git Repository Cloning"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.1.md"
       - number: 2
-        status: ready
+        status: done
         name: "Template Variable Detection"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.2.md"
       - number: 3

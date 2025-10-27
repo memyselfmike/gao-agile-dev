@@ -14,6 +14,7 @@ from .exceptions import (
 )
 from .benchmark import BenchmarkConfig, BenchmarkError, load_benchmark, validate_benchmark_file
 from .git_cloner import GitCloner
+from .template_scanner import TemplateScanner, TemplateVariable
 
 __all__ = [
     "SandboxManager",
@@ -33,4 +34,6 @@ __all__ = [
     "load_benchmark",
     "validate_benchmark_file",
     "GitCloner",
+    "TemplateScanner",
+    "TemplateVariable",
 ]
