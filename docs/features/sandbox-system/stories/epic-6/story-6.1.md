@@ -1,11 +1,12 @@
 # Story 6.1: Todo App PRD
 
 **Epic**: Epic 6 - Reference Todo Application
-**Status**: In Progress
+**Status**: Done
 **Priority**: P1 (High)
 **Estimated Effort**: 5 story points
 **Owner**: John (Product Manager), Winston (Architect)
 **Created**: 2025-10-27
+**Completed**: 2025-10-27
 
 ---
 
