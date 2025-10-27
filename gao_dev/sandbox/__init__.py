@@ -17,6 +17,7 @@ from .git_cloner import GitCloner
 from .template_scanner import TemplateScanner, TemplateVariable
 from .template_substitutor import TemplateSubstitutor, SubstitutionResult, SubstitutionError
 from .dependency_installer import DependencyInstaller, PackageManager, DependencyInstallError
+from .boilerplate_validator import BoilerplateValidator, ValidationReport, ValidationIssue, ValidationLevel
 
 __all__ = [
     "SandboxManager",
@@ -44,4 +45,8 @@ __all__ = [
     "DependencyInstaller",
     "PackageManager",
     "DependencyInstallError",
+    "BoilerplateValidator",
+    "ValidationReport",
+    "ValidationIssue",
+    "ValidationLevel",
 ]
