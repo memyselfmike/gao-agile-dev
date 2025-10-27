@@ -250,6 +250,107 @@ Create comprehensive specification and implementation guide for the reference to
 
 ---
 
+## Epic 7: Iterative Improvement & Gap Remediation
+
+**Status**: Ongoing
+**Priority**: P1 (High)
+**Owner**: Full Team
+**Estimated Duration**: Continuous (throughout project lifecycle)
+
+### Description
+Capture, prioritize, and implement improvements discovered through benchmark runs and real-world usage. This epic serves as a continuous improvement backlog driven by data and experience.
+
+### Goals
+- Identify gaps in GAO-Dev capabilities through benchmarking
+- Prioritize improvements by impact and effort
+- Enhance agent prompts, tools, and workflows
+- Close the gap toward full autonomy
+- Document learnings for future development
+
+### Success Criteria
+- ✅ Measurable improvement in autonomy metrics
+- ✅ Reduction in manual interventions required
+- ✅ Improved one-shot success rate
+- ✅ Higher code quality scores
+- ✅ Faster completion times
+
+### Story Creation Process
+1. **Run Benchmark**: Execute sandbox benchmark (manual or automated)
+2. **Collect Data**: Gather metrics, observations, pain points
+3. **Analyze Gaps**: Identify what prevented full autonomy
+4. **Create Stories**: Document improvements needed
+5. **Prioritize**: Sort by impact/effort ratio
+6. **Implement**: Work through priority queue
+7. **Validate**: Re-run benchmark to measure improvement
+
+### Story Template
+Each Epic 7 story should include:
+- **Observation**: What we noticed during benchmark
+- **Impact**: How it affects autonomy/quality/performance
+- **Root Cause**: Why the issue exists
+- **Proposed Solution**: How to fix it
+- **Expected Impact**: Metrics we expect to improve
+- **Validation**: How to verify the fix works
+
+### Categories of Improvements
+
+**Agent Capabilities**:
+- Enhanced prompts for better decision-making
+- Additional tools for specific tasks
+- Improved context understanding
+- Better error recovery
+
+**Workflow Enhancements**:
+- Streamlined handoff protocols
+- Reduced redundancy
+- Better parallelization
+- Automated validation steps
+
+**Tool Improvements**:
+- New MCP tools for common operations
+- Enhanced existing tools
+- Better error messages
+- Performance optimizations
+
+**Quality & Testing**:
+- Stricter quality gates
+- Better test coverage
+- Automated security checks
+- Performance benchmarks
+
+**Documentation & Templates**:
+- Better workflow templates
+- Clearer agent instructions
+- Improved examples
+- Comprehensive guides
+
+### Initial Story Backlog
+
+Stories will be created after first benchmark run. Expected categories:
+- Story 7.1: [TBD based on Run 001]
+- Story 7.2: [TBD based on Run 001]
+- Story 7.3: [TBD based on Run 001]
+- ...
+
+### Metrics to Track
+- Improvement velocity (stories completed per week)
+- Impact per story (metric deltas before/after)
+- ROI (time saved vs. time invested)
+- Regression rate (new issues introduced)
+
+### Dependencies
+- Epic 1 (need sandbox to run benchmarks)
+- Epic 3 (need metrics to measure improvements)
+- Epic 4 (need automated benchmarks for validation)
+
+### Technical Notes
+- Stories stored in `docs/features/sandbox-system/stories/epic-7/`
+- Link each story to specific benchmark run
+- Include before/after metrics in story
+- Tag stories by category (agent, workflow, tool, quality, docs)
+
+---
+
 ## Epic Summary
 
 | Epic | Priority | Duration | Dependencies | Status |
@@ -260,8 +361,9 @@ Create comprehensive specification and implementation guide for the reference to
 | Epic 4: Benchmark Runner | P1 | 2 weeks | Epic 1, 2, 3 | Planned |
 | Epic 5: Reporting | P2 | 2 weeks | Epic 3, 4 | Planned |
 | Epic 6: Reference Todo App | P1 | 3 weeks | None | Planned |
+| Epic 7: Iterative Improvement | P1 | Ongoing | Epic 1, 3, 4 | Active |
 
-**Total Estimated Duration**: 8-10 weeks (with parallelization)
+**Total Estimated Duration**: 8-10 weeks (with parallelization) + ongoing improvements
 
 ---
 

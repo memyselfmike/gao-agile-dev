@@ -14,6 +14,7 @@ from ..core import (
     HealthCheck,
 )
 from ..orchestrator import GAODevOrchestrator
+from .sandbox_commands import sandbox
 
 
 @click.group()
@@ -347,6 +348,14 @@ def run_health_check():
     except Exception as e:
         click.echo(f"\n[ERROR] {e}", err=True)
         sys.exit(1)
+
+
+# ============================================================================
+# SANDBOX COMMANDS
+# ============================================================================
+
+# Register sandbox command group
+cli.add_command(sandbox)
 
 
 if __name__ == "__main__":
