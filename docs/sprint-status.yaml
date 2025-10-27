@@ -44,18 +44,54 @@ epics:
         name: "Variable Substitution Engine"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.3.md"
       - number: 4
-        status: ready
+        status: done
         name: "Dependency Installation"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.4.md"
       - number: 5
-        status: ready
+        status: done
         name: "Boilerplate Validation"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.5.md"
 
   - epic_number: 3
     name: "Metrics Collection System"
-    status: planned
-    stories: []
+    status: completed
+    stories:
+      - number: 1
+        status: done
+        name: "Metrics Data Models"
+        file: "docs/features/sandbox-system/stories/epic-3/story-3.1.md"
+      - number: 2
+        status: done
+        name: "SQLite Database Schema"
+        file: "docs/features/sandbox-system/stories/epic-3/story-3.2.md"
+      - number: 3
+        status: done
+        name: "Metrics Collector Implementation"
+        file: "docs/features/sandbox-system/stories/epic-3/story-3.3.md"
+      - number: 4
+        status: done
+        name: "Performance Metrics Tracking"
+        file: "docs/features/sandbox-system/stories/epic-3/story-3.4.md"
+      - number: 5
+        status: done
+        name: "Autonomy Metrics Tracking"
+        file: "docs/features/sandbox-system/stories/epic-3/story-3.5.md"
+      - number: 6
+        status: done
+        name: "Quality Metrics Tracking"
+        file: "docs/features/sandbox-system/stories/epic-3/story-3.6.md"
+      - number: 7
+        status: done
+        name: "Workflow Metrics Tracking"
+        file: "docs/features/sandbox-system/stories/epic-3/story-3.7.md"
+      - number: 8
+        status: done
+        name: "Metrics Storage & Retrieval"
+        file: "docs/features/sandbox-system/stories/epic-3/story-3.8.md"
+      - number: 9
+        status: done
+        name: "Metrics Export Functionality"
+        file: "docs/features/sandbox-system/stories/epic-3/story-3.9.md"
 
   - epic_number: 4
     name: "Benchmark Runner"
@@ -72,5 +108,5 @@ epics:
     status: planned
     stories: []
 
-current_epic: 2
-current_story: 1
+current_epic: 3
+current_story: 9
