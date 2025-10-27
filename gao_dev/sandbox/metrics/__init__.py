@@ -7,6 +7,8 @@ from .models import (
     WorkflowMetrics,
     BenchmarkMetrics,
 )
+from .collector import MetricsCollector
+from .performance_tracker import PerformanceTracker
 
 __all__ = [
     "PerformanceMetrics",
@@ -14,4 +16,6 @@ __all__ = [
     "QualityMetrics",
     "WorkflowMetrics",
     "BenchmarkMetrics",
+    "MetricsCollector",
+    "PerformanceTracker",
 ]
