@@ -95,8 +95,40 @@ epics:
 
   - epic_number: 4
     name: "Benchmark Runner"
-    status: planned
-    stories: []
+    status: in_progress
+    stories:
+      - number: 1
+        status: done
+        name: "Benchmark Config Schema"
+        file: "docs/features/sandbox-system/stories/epic-4/story-4.1.md"
+      - number: 2
+        status: done
+        name: "Config Validation"
+        file: "docs/features/sandbox-system/stories/epic-4/story-4.2.md"
+      - number: 3
+        status: done
+        name: "Benchmark Runner Core"
+        file: "docs/features/sandbox-system/stories/epic-4/story-4.3.md"
+      - number: 4
+        status: done
+        name: "Workflow Orchestration"
+        file: "docs/features/sandbox-system/stories/epic-4/story-4.4.md"
+      - number: 5
+        status: done
+        name: "Progress Tracking"
+        file: "docs/features/sandbox-system/stories/epic-4/story-4.5.md"
+      - number: 6
+        status: done
+        name: "Timeout Management"
+        file: "docs/features/sandbox-system/stories/epic-4/story-4.6.md"
+      - number: 7
+        status: done
+        name: "Success Criteria Checker"
+        file: "docs/features/sandbox-system/stories/epic-4/story-4.7.md"
+      - number: 8
+        status: ready
+        name: "Standalone Execution Mode"
+        file: "docs/features/sandbox-system/stories/epic-4/story-4.8.md"
 
   - epic_number: 5
     name: "Reporting & Visualization"
@@ -108,5 +140,5 @@ epics:
     status: planned
     stories: []
 
-current_epic: 3
-current_story: 9
+current_epic: 4
+current_story: 7

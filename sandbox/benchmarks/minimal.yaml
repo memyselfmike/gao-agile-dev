@@ -1,0 +1,44 @@
+# Minimal Benchmark Configuration
+#
+# A minimal benchmark for testing the benchmark system itself.
+# Simple configuration with basic requirements.
+
+name: minimal
+description: Minimal benchmark for testing benchmark runner functionality
+version: 1.0.0
+project_name: minimal-test
+
+# Use local template for speed
+boilerplate_path: ./templates/minimal
+
+# Short timeout: 30 minutes
+timeout_seconds: 1800
+
+# Minimal success criteria
+success_criteria:
+  min_test_coverage: 50.0
+  max_manual_interventions: 3
+  max_errors: 5
+  required_features:
+    - basic-functionality
+  quality_gates: {}
+
+# Single workflow phase
+workflow_phases:
+  - phase_name: implementation
+    timeout_seconds: 1800
+    expected_artifacts:
+      - src/main.py
+    skip_if_failed: false
+
+# Metadata
+metadata:
+  category: testing
+  difficulty: beginner
+  technologies:
+    - Python
+  estimated_duration: 1800
+  tags:
+    - test
+    - minimal
+    - quick

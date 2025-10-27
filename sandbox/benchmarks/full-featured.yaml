@@ -1,0 +1,151 @@
+# Full-Featured Benchmark Configuration
+#
+# A comprehensive benchmark that tests all features of GAO-Dev's autonomous
+# capabilities. This benchmark builds a complete e-commerce platform with
+# multiple complex features.
+
+name: full-featured-ecommerce
+description: Build a complete e-commerce platform with authentication, shopping cart, payment integration, and admin dashboard
+version: 1.0.0
+project_name: ecommerce-platform
+
+# Boilerplate template
+boilerplate_url: https://github.com/vercel/commerce
+
+# Extended timeout: 4 hours
+timeout_seconds: 14400
+
+# Strict success criteria
+success_criteria:
+  min_test_coverage: 90.0
+  max_manual_interventions: 0
+  max_errors: 0
+  required_features:
+    - user-authentication
+    - product-catalog
+    - shopping-cart
+    - checkout-process
+    - payment-integration
+    - admin-dashboard
+    - order-management
+    - inventory-tracking
+    - search-functionality
+    - email-notifications
+  quality_gates:
+    linting_score: 100
+    type_safety: true
+    security_score: 95
+    performance_score: 85
+    accessibility_score: 90
+    tests_passing: true
+    e2e_tests_passing: true
+
+# Comprehensive workflow phases
+workflow_phases:
+  - phase_name: analysis
+    timeout_seconds: 1800  # 30 minutes
+    expected_artifacts:
+      - docs/RESEARCH.md
+      - docs/COMPETITIVE_ANALYSIS.md
+    skip_if_failed: false
+
+  - phase_name: planning
+    timeout_seconds: 2400  # 40 minutes
+    expected_artifacts:
+      - docs/PRD.md
+      - docs/epics.md
+      - docs/stories/
+    skip_if_failed: false
+
+  - phase_name: architecture
+    timeout_seconds: 2400  # 40 minutes
+    expected_artifacts:
+      - docs/ARCHITECTURE.md
+      - docs/DATABASE_SCHEMA.md
+      - docs/API_DESIGN.md
+    quality_gates:
+      architecture_reviewed: true
+    skip_if_failed: false
+
+  - phase_name: design
+    timeout_seconds: 1800  # 30 minutes
+    expected_artifacts:
+      - docs/UI_UX_DESIGN.md
+      - docs/wireframes/
+    skip_if_failed: true
+
+  - phase_name: backend-implementation
+    timeout_seconds: 3600  # 1 hour
+    expected_artifacts:
+      - src/api/
+      - src/database/
+      - tests/api/
+    quality_gates:
+      api_tests_passing: true
+      db_migrations_valid: true
+    skip_if_failed: false
+
+  - phase_name: frontend-implementation
+    timeout_seconds: 3600  # 1 hour
+    expected_artifacts:
+      - src/components/
+      - src/pages/
+      - tests/components/
+    quality_gates:
+      component_tests_passing: true
+      linting_errors: 0
+    skip_if_failed: false
+
+  - phase_name: integration
+    timeout_seconds: 1800  # 30 minutes
+    expected_artifacts:
+      - tests/integration/
+    quality_gates:
+      integration_tests_passing: true
+    skip_if_failed: false
+
+  - phase_name: e2e-testing
+    timeout_seconds: 1800  # 30 minutes
+    expected_artifacts:
+      - tests/e2e/
+      - coverage/
+    quality_gates:
+      e2e_tests_passing: true
+      min_coverage: 90.0
+    skip_if_failed: false
+
+  - phase_name: deployment-prep
+    timeout_seconds: 900  # 15 minutes
+    expected_artifacts:
+      - Dockerfile
+      - docker-compose.yml
+      - .github/workflows/
+    quality_gates:
+      docker_build_success: true
+    skip_if_failed: true
+
+# Metadata
+metadata:
+  category: web-applications
+  difficulty: advanced
+  technologies:
+    - Next.js
+    - React
+    - TypeScript
+    - Tailwind CSS
+    - PostgreSQL
+    - Prisma
+    - Stripe
+    - NextAuth.js
+  estimated_duration: 14400
+  tags:
+    - web
+    - fullstack
+    - ecommerce
+    - complex
+    - nextjs
+    - react
+    - typescript
+  team_size: enterprise
+  complexity: high
+  business_value: high
