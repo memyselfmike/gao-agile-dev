@@ -1,8 +1,11 @@
 """CLI commands for GAO-Dev sandbox management."""
 
+import sys
+import subprocess
 import click
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 
 
 @click.group()
@@ -34,7 +37,30 @@ def sandbox():
     type=str,
     help="Boilerplate repository URL or path",
 )
-def init(project_name: str, config: Optional[str], boilerplate: Optional[str]):
+@click.option(
+    "--no-git",
+    is_flag=True,
+    help="Skip git initialization",
+)
+@click.option(
+    "--tags",
+    multiple=True,
+    help="Project tags (can be specified multiple times)",
+)
+@click.option(
+    "--description",
+    type=str,
+    default="",
+    help="Project description",
+)
+def init(
+    project_name: str,
+    config: Optional[str],
+    boilerplate: Optional[str],
+    no_git: bool,
+    tags: tuple,
+    description: str,
+):
     """
     Initialize a new sandbox project.
 
@@ -45,19 +71,82 @@ def init(project_name: str, config: Optional[str], boilerplate: Optional[str]):
     Examples:
         gao-dev sandbox init todo-app-001
         gao-dev sandbox init my-project --boilerplate https://github.com/user/starter
+        gao-dev sandbox init test-project --tags experiment --tags nextjs
     """
-    click.echo(f">> Initializing sandbox project: {project_name}")
+    try:
+        from ..sandbox import SandboxManager, ProjectExistsError, InvalidProjectNameError
 
-    # Implementation will be added in Story 1.4
-    click.echo(f"  [PENDING] Project initialization")
-    click.echo(f"  [PENDING] This feature will be implemented in Story 1.4")
+        click.echo(f">> Initializing sandbox project: {project_name}")
 
-    if config:
-        click.echo(f"  Config: {config}")
-    if boilerplate:
-        click.echo(f"  Boilerplate: {boilerplate}")
+        # Get sandbox root (current directory/sandbox)
+        sandbox_root = Path.cwd() / "sandbox"
+        manager = SandboxManager(sandbox_root)
 
-    click.echo("\n[INFO] Sandbox init command structure ready")
+        # Check if project already exists
+        if manager.project_exists(project_name):
+            click.echo(f"\n[ERROR] Project '{project_name}' already exists", err=True)
+            click.echo(f"  Use 'gao-dev sandbox clean {project_name}' to reset it")
+            sys.exit(1)
+
+        # Create project
+        click.echo(f"  Creating project directory structure...")
+        metadata = manager.create_project(
+            name=project_name,
+            boilerplate_url=boilerplate,
+            tags=list(tags) if tags else [],
+            description=description,
+        )
+
+        project_path = manager.get_project_path(project_name)
+        click.echo(f"  [OK] Project directory created")
+
+        # Create README
+        _create_project_readme(project_path, metadata, boilerplate)
+        click.echo(f"  [OK] README.md created")
+
+        # Initialize git (unless --no-git)
+        if not no_git:
+            if _init_git_repo(project_path):
+                click.echo(f"  [OK] Git repository initialized")
+            else:
+                click.echo(f"  [WARN] Git initialization failed (continuing anyway)")
+
+        # Load config if provided
+        if config:
+            click.echo(f"  [INFO] Config file: {config}")
+            # Config loading will be implemented in Epic 2
+
+        # Success summary
+        click.echo(f"\n[OK] Project initialized successfully!")
+        click.echo(f"\n  Project: {project_name}")
+        click.echo(f"  Location: {project_path}")
+        click.echo(f"  Status: {metadata.status.value}")
+        if tags:
+            click.echo(f"  Tags: {', '.join(tags)}")
+        if boilerplate:
+            click.echo(f"  Boilerplate: {boilerplate}")
+
+        click.echo(f"\nNext steps:")
+        click.echo(f"  1. cd {project_path}")
+        click.echo(f"  2. Add your project files")
+        click.echo(f"  3. Run: gao-dev sandbox run <benchmark-config>")
+
+    except InvalidProjectNameError as e:
+        click.echo(f"\n[ERROR] Invalid project name: {e}", err=True)
+        click.echo(f"\nProject names must:")
+        click.echo(f"  - Be 3-50 characters long")
+        click.echo(f"  - Start and end with alphanumeric character")
+        click.echo(f"  - Contain only lowercase letters, numbers, and hyphens")
+        click.echo(f"  - Not contain consecutive hyphens")
+        sys.exit(1)
+
+    except ProjectExistsError as e:
+        click.echo(f"\n[ERROR] {e}", err=True)
+        sys.exit(1)
+
+    except Exception as e:
+        click.echo(f"\n[ERROR] Unexpected error: {e}", err=True)
+        sys.exit(1)
 
 
 @sandbox.command()
@@ -309,3 +398,168 @@ def delete(project_name: str, force: bool):
     click.echo(f"  [PENDING] This feature will be implemented later")
 
     click.echo("\n[INFO] Sandbox delete command structure ready")
+
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+
+def _create_project_readme(project_path: Path, metadata, boilerplate_url: Optional[str]) -> None:
+    """Create README.md file for sandbox project."""
+    from ..sandbox import ProjectMetadata
+
+    metadata: ProjectMetadata = metadata
+
+    readme_content = f"""# {metadata.name}
+
+**Sandbox Project**
+
+## Project Information
+
+- **Created**: {metadata.created_at.strftime('%Y-%m-%d %H:%M:%S')}
+- **Status**: {metadata.status.value}
+- **Description**: {metadata.description or 'No description provided'}
+
+## Tags
+
+{', '.join(f'`{tag}`' for tag in metadata.tags) if metadata.tags else 'No tags'}
+
+## Boilerplate
+
+{f'This project uses boilerplate from: {boilerplate_url}' if boilerplate_url else 'No boilerplate specified'}
+
+## Directory Structure
+
+```
+{metadata.name}/
+├── docs/           # Documentation
+├── src/            # Source code
+├── tests/          # Test files
+├── benchmarks/     # Benchmark configurations
+├── .gao-dev/       # GAO-Dev metadata
+├── .sandbox.yaml   # Sandbox metadata
+└── README.md       # This file
+```
+
+## Usage
+
+This is a GAO-Dev sandbox project for testing and benchmarking.
+
+### Running Benchmarks
+
+```bash
+gao-dev sandbox run benchmarks/your-config.yaml
+```
+
+### Viewing Project Status
+
+```bash
+gao-dev sandbox list --format table
+```
+
+### Cleaning Project
+
+```bash
+gao-dev sandbox clean {metadata.name}
+```
+
+## Notes
+
+- This project is managed by GAO-Dev's sandbox system
+- Project metadata is stored in `.sandbox.yaml`
+- Do not manually edit `.sandbox.yaml` unless you know what you're doing
+
+---
+
+*Generated by GAO-Dev Sandbox System on {datetime.now().strftime('%Y-%m-%d')}*
+"""
+
+    readme_path = project_path / "README.md"
+    readme_path.write_text(readme_content, encoding="utf-8")
+
+
+def _init_git_repo(project_path: Path) -> bool:
+    """
+    Initialize git repository in project directory.
+
+    Returns True if successful, False otherwise.
+    """
+    try:
+        # Check if git is available
+        result = subprocess.run(
+            ["git", "--version"],
+            capture_output=True,
+            text=True,
+            cwd=project_path,
+        )
+
+        if result.returncode != 0:
+            return False
+
+        # Initialize git repo
+        result = subprocess.run(
+            ["git", "init"],
+            capture_output=True,
+            text=True,
+            cwd=project_path,
+        )
+
+        if result.returncode != 0:
+            return False
+
+        # Create .gitignore
+        gitignore_content = """# GAO-Dev Sandbox
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+"""
+        gitignore_path = project_path / ".gitignore"
+        gitignore_path.write_text(gitignore_content, encoding="utf-8")
+
+        # Initial commit
+        subprocess.run(["git", "add", "."], cwd=project_path, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit - GAO-Dev sandbox project"],
+            cwd=project_path,
+            capture_output=True,
+        )
+
+        return True
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
