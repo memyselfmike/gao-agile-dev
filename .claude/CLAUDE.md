@@ -247,14 +247,70 @@ sandbox/
 ## Git Workflow
 
 ### Branch Strategy
-- `main` - Production-ready code
-- `feature/<feature-name>` - Feature branches
+
+**IMPORTANT**: Always use feature branches and atomic commits!
+
+**Branch Naming**:
+- `main` - Production-ready code (protected)
+- `feature/epic-<N>-<epic-name>` - Epic-level feature branches
+- `feature/story-<N>.<M>-<story-name>` - Story-level branches (optional, for complex stories)
+
+**Workflow Process**:
+1. **Before Starting Work**: Always create a feature branch
+   ```bash
+   git checkout main
+   git pull origin main  # ALWAYS pull latest first!
+   git checkout -b feature/epic-3-metrics-collection
+   ```
+
+2. **During Development**: Commit atomically after each story
+   ```bash
+   # After completing Story 3.1
+   git add -A
+   git commit -m "feat(metrics): implement Story 3.1 - Metrics Data Models"
+
+   # Immediately after Story 3.2
+   git add -A
+   git commit -m "feat(metrics): implement Story 3.2 - SQLite Database Schema"
+   ```
+
+3. **After Epic Complete**: Merge to main and push
+   ```bash
+   git checkout main
+   git pull origin main  # Pull again before merge!
+   git merge feature/epic-3-metrics-collection
+   git push origin main
+   git branch -d feature/epic-3-metrics-collection
+   ```
+
+### Atomic Commits - REQUIRED
+
+**One Commit Per Story**:
+- ✅ Each story gets exactly ONE commit
+- ✅ Commit immediately after story completion
+- ✅ Never batch multiple stories into one commit
+- ✅ Never leave uncommitted work at end of session
+
+**Why Atomic Commits**:
+- Easy to track progress
+- Clean git history
+- Easy to revert specific stories if needed
+- Clear mapping: 1 story = 1 commit
+- Better collaboration and code review
+
+**Atomic Commit Checklist**:
+- [ ] All story acceptance criteria met
+- [ ] All tests passing for this story
+- [ ] Story documentation updated (status: Done)
+- [ ] Clean commit message following format
+- [ ] Commit pushed to feature branch (or ready to push)
 
 ### Commit Message Format
+
 ```
 <type>(<scope>): <description>
 
-<body>
+<optional body with details>
 
 🤖 Generated with GAO-Dev
 Co-Authored-By: Claude <noreply@anthropic.com>
@@ -263,9 +319,49 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 **Types**: feat, fix, docs, refactor, test, chore
 
 **Examples**:
-- `feat(sandbox): add sandbox init command`
-- `docs(architecture): create sandbox architecture document`
+- `feat(metrics): implement Story 3.1 - Metrics Data Models`
+- `feat(sandbox): implement Story 2.3 - Variable Substitution Engine`
+- `docs(epic-3): update sprint status for Epic 3 completion`
+- `fix(metrics): correct foreign key constraints in database schema`
 - `refactor(cli): reorganize sandbox commands`
+
+### Git Best Practices
+
+**Always Pull Before Starting**:
+```bash
+git checkout main
+git pull origin main  # Get latest changes
+git checkout -b feature/epic-N-name
+```
+
+**Commit After Each Story** (Atomic):
+```bash
+# Story complete? Commit immediately!
+git add -A
+git commit -m "feat(scope): implement Story N.M - Story Name"
+```
+
+**Push Regularly**:
+```bash
+# After each story or at end of session
+git push origin feature/epic-N-name
+```
+
+**Clean Merges**:
+```bash
+# Before merging to main
+git checkout main
+git pull origin main  # Critical: pull latest!
+git merge feature/epic-N-name --no-ff  # Preserve branch history
+git push origin main
+```
+
+**Never**:
+- ❌ Don't commit to main directly
+- ❌ Don't batch multiple stories into one commit
+- ❌ Don't leave work uncommitted
+- ❌ Don't forget to pull before merge
+- ❌ Don't push broken tests to shared branches
 
 ---
 
@@ -395,15 +491,29 @@ TodoWrite([
 - Understand which phase you're in
 - Know what comes next
 
-### 3. Plan Your Work
+### 3. Create Feature Branch
+
+**ALWAYS create a feature branch before starting work**:
+
+```bash
+# For Epic-level work
+git checkout main
+git pull origin main  # Always pull first!
+git checkout -b feature/epic-N-epic-name
+
+# For Story-level work (if needed)
+git checkout -b feature/story-N.M-story-name
+```
+
+### 4. Plan Your Work
 
 - Create todo list with TodoWrite
 - Break story into implementation steps
 - Identify files to read/modify
 - Consider testing requirements
-- Plan commit strategy
+- Plan atomic commit for this story
 
-### 4. Implement Using BMAD Workflow
+### 5. Implement Using BMAD Workflow
 
 **For Story Implementation**:
 1. Follow story acceptance criteria
@@ -418,7 +528,7 @@ TodoWrite([
 - Handles git operations
 - Ensures quality standards
 
-### 5. Validate & Complete
+### 6. Validate & Complete
 
 - ✅ All acceptance criteria met
 - ✅ Tests passing (>80% coverage)
@@ -426,14 +536,42 @@ TodoWrite([
 - ✅ Documentation updated
 - ✅ Code reviewed (quality standards)
 - ✅ Story file updated to "Done" status
-- ✅ Committed with proper message
 
-### 6. Update BMAD Status
+### 7. Commit Atomically (REQUIRED)
+
+**Immediately after completing each story**:
+
+```bash
+# Add all changes
+git add -A
+
+# Create atomic commit for this story
+git commit -m "feat(scope): implement Story N.M - Story Name
+
+<detailed description of what was implemented>
+
+Test Results: X/X tests passed, Y% coverage
+
+🤖 Generated with GAO-Dev
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# Push to feature branch
+git push origin feature/epic-N-name
+```
+
+**Commit Checklist**:
+- [ ] One commit per story (atomic)
+- [ ] Commit message follows format
+- [ ] All tests passing
+- [ ] Story status updated to "Done"
+- [ ] Committed immediately after story completion
+
+### 8. Update BMAD Status
 
 After completing story:
 - Update story status in `docs/sprint-status.yaml`
 - Update `docs/bmm-workflow-status.md` with progress
-- Commit status updates
+- Commit status updates (separate commit is OK)
 
 ---
 
