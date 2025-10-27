@@ -25,6 +25,40 @@ This document helps you (Claude) quickly understand the GAO-Dev project, its str
 
 ---
 
+## BMAD Method - Our Development Process
+
+**IMPORTANT**: GAO-Dev itself is being developed using the **BMAD Method** (Business, Market, Architecture, Development).
+
+### What is BMAD Method?
+
+BMAD Method is a proven agile development framework with specialized agents and workflows. We use it to build GAO-Dev before GAO-Dev can build other projects.
+
+### BMAD Four-Phase Methodology
+
+```
+Phase 1: Analysis (Optional) → Research, brainstorming, product brief
+Phase 2: Planning (Required) → PRD, epics, stories
+Phase 3: Solutioning (Level 3-4) → Architecture, technical specs
+Phase 4: Implementation (Current) → Story development, reviews, retrospectives
+```
+
+### Key BMAD Files
+
+**Always Read These First**:
+1. **`docs/bmm-workflow-status.md`** - Current phase, epic, story status
+2. **`docs/sprint-status.yaml`** - Sprint progress and story tracking
+3. **`bmad/bmm/workflows/README.md`** - Complete workflow guide
+
+### BMAD Workflows Location
+
+All BMAD workflows are in `bmad/bmm/workflows/`:
+- `1-analysis/` - Research and discovery workflows
+- `2-plan-workflows/` - PRD, GDD, tech-spec workflows
+- `3-solutioning/` - Architecture workflows
+- `4-implementation/` - Story creation, dev-story, reviews
+
+---
+
 ## The 7 Specialized Agents
 
 ### 1. Mary - Business Analyst
@@ -71,19 +105,33 @@ gao-agile-dev/
 ├── .claude/
 │   └── CLAUDE.md                  # This file
 │
+├── bmad/                           # BMAD Method (our dev process)
+│   ├── bmm/                        # BMAD Method Module
+│   │   ├── config.yaml             # BMAD configuration
+│   │   ├── workflows/              # All BMAD workflows
+│   │   │   ├── 1-analysis/
+│   │   │   ├── 2-plan-workflows/
+│   │   │   ├── 3-solutioning/
+│   │   │   └── 4-implementation/
+│   │   └── agents/                 # BMAD agent definitions
+│   └── core/                       # BMAD core files
+│
 ├── docs/                           # Documentation
 │   ├── README.md                   # Docs organization guide
+│   ├── bmm-workflow-status.md      # BMAD workflow status (CHECK FIRST!)
+│   ├── sprint-status.yaml          # Sprint and story tracking
 │   └── features/                   # Feature development docs
 │       └── sandbox-system/         # Current: Sandbox & Benchmarking
 │           ├── PRD.md
 │           ├── ARCHITECTURE.md
 │           ├── epics.md
 │           └── stories/
+│               ├── epic-1/         # Complete
+│               └── epic-2/         # Ready to implement
 │
 ├── sandbox/                        # Sandbox WORKSPACE (not docs!)
 │   ├── README.md                   # Explains workspace purpose
 │   ├── benchmarks/                 # Benchmark configs
-│   │   └── todo-baseline.yaml
 │   └── projects/                   # Test projects (created by agents)
 │
 ├── gao_dev/                        # Source code
@@ -123,27 +171,42 @@ gao-agile-dev/
 
 ## Current Status (As of 2025-10-27)
 
-### Completed
-✅ Phase 1-5 of Agent SDK Integration
-  - Custom tool layer (11 tools)
-  - Agent definitions (7 agents)
-  - GAODevOrchestrator
-  - CLI integration (autonomous commands)
-  - Environment setup (uv support)
+### BMAD Workflow Status
+**Phase**: 4 - Implementation
+**Scale Level**: 3 (12-40 stories, 2-5 epics)
+**Current Epic**: Epic 2 - Boilerplate Integration
+**Status**: Ready to begin Epic 2 implementation
 
-✅ Sandbox Planning Complete
-  - PRD, Architecture, Epics defined
-  - Story 1.1 ready for implementation
-  - Boilerplate identified (Next.js starter)
+### Completed Work
+✅ **Epic 1: Sandbox Infrastructure** (Stories 1.1-1.6)
+  - Sandbox CLI command structure
+  - SandboxManager implementation
+  - Project state management
+  - init, clean, list, run commands
+  - All tests passing
+
+✅ **BMAD Method Installed**
+  - BMAD v6-alpha configured for GAO-Dev
+  - Workflow status tracking initialized
+  - Sprint status file created
+
+✅ **Epic 2 Stories Created** (Stories 2.1-2.5)
+  - All 5 stories documented and ready
+  - 21 story points total
 
 ### Current Focus
-🔄 **Epic 1: Sandbox Infrastructure** (Ready to implement)
-  - Story 1.1: Sandbox CLI Command Structure ← **START HERE**
+🔄 **Epic 2: Boilerplate Integration** (Ready to implement)
+  - Story 2.1: Git Repository Cloning ← **START HERE**
+  - Story 2.2: Template Variable Detection
+  - Story 2.3: Variable Substitution Engine
+  - Story 2.4: Dependency Installation
+  - Story 2.5: Boilerplate Validation
 
 ### Next Steps
-1. Implement Story 1.1 (Sandbox CLI)
-2. Continue Epic 1 implementation
-3. Build complete sandbox & benchmarking system
+1. **Check BMAD workflow status** (`docs/bmm-workflow-status.md`)
+2. **Implement Story 2.1** using BMAD dev-story workflow
+3. Continue through Epic 2 stories sequentially
+4. Move to Epic 3 (Metrics Collection)
 
 ---
 
@@ -304,30 +367,73 @@ TodoWrite([
 
 ## Getting Started on a Task
 
-1. **Read Current Status**
-   - Check `SESSION_SUMMARY.md` for latest progress
-   - Check todo list if session interrupted
-   - Read relevant feature docs
+**IMPORTANT**: Always follow the BMAD Method workflow!
 
-2. **Understand Context**
-   - Read PRD for requirements
-   - Read ARCHITECTURE for design
-   - Read current story for specifics
+### 1. Check BMAD Workflow Status (REQUIRED)
 
-3. **Plan Your Work**
-   - Create todo list with TodoWrite
-   - Identify files you'll need to read/modify
-   - Consider dependencies
+**Read these files FIRST**:
+```bash
+1. docs/bmm-workflow-status.md    # Current phase, epic, story
+2. docs/sprint-status.yaml         # Story status and progress
+3. Current story file              # Detailed requirements
+```
 
-4. **Execute Incrementally**
-   - Work through todos one at a time
-   - Mark progress as you go
-   - Commit logically sized changes
+### 2. Understand Context
 
-5. **Validate**
-   - Test your changes
-   - Check against acceptance criteria
-   - Ensure quality standards met
+**For Current Epic/Story**:
+- Read the current story file (e.g., `docs/features/sandbox-system/stories/epic-2/story-2.1.md`)
+- Check acceptance criteria and technical details
+- Review dependencies on other stories
+
+**For Overall Feature**:
+- Read PRD (`docs/features/sandbox-system/PRD.md`)
+- Read ARCHITECTURE (`docs/features/sandbox-system/ARCHITECTURE.md`)
+- Read epics breakdown (`docs/features/sandbox-system/epics.md`)
+
+**For BMAD Process**:
+- Read BMAD workflows guide (`bmad/bmm/workflows/README.md`)
+- Understand which phase you're in
+- Know what comes next
+
+### 3. Plan Your Work
+
+- Create todo list with TodoWrite
+- Break story into implementation steps
+- Identify files to read/modify
+- Consider testing requirements
+- Plan commit strategy
+
+### 4. Implement Using BMAD Workflow
+
+**For Story Implementation**:
+1. Follow story acceptance criteria
+2. Write tests first (TDD approach)
+3. Implement functionality
+4. Run tests and validate
+5. Update documentation
+
+**BMAD dev-story Workflow** (optional but recommended):
+- Creates feature branch
+- Provides implementation guidance
+- Handles git operations
+- Ensures quality standards
+
+### 5. Validate & Complete
+
+- ✅ All acceptance criteria met
+- ✅ Tests passing (>80% coverage)
+- ✅ Type hints complete
+- ✅ Documentation updated
+- ✅ Code reviewed (quality standards)
+- ✅ Story file updated to "Done" status
+- ✅ Committed with proper message
+
+### 6. Update BMAD Status
+
+After completing story:
+- Update story status in `docs/sprint-status.yaml`
+- Update `docs/bmm-workflow-status.md` with progress
+- Commit status updates
 
 ---
 
@@ -384,21 +490,35 @@ gao-dev implement-story --epic 1 --story 1
 
 ## Key Files to Read When Starting
 
-1. **For Project Overview**:
-   - `README.md` - Main project README
-   - `SESSION_SUMMARY.md` - Latest session summary
-   - `.claude/CLAUDE.md` - This file
+### Priority 1: BMAD Workflow Status (ALWAYS READ FIRST!)
 
-2. **For Current Work**:
-   - `docs/features/sandbox-system/PRD.md` - Requirements
-   - `docs/features/sandbox-system/ARCHITECTURE.md` - Design
-   - `docs/features/sandbox-system/epics.md` - Epic breakdown
-   - Current story in `docs/features/sandbox-system/stories/`
+1. **`docs/bmm-workflow-status.md`** - Current phase, epic, story, next actions
+2. **`docs/sprint-status.yaml`** - All stories and their status
+3. **Current story file** - The specific story you'll be working on
 
-3. **For Implementation**:
-   - Relevant files in `gao_dev/`
-   - Existing similar implementations
-   - Test files for patterns
+### Priority 2: Feature Context
+
+1. **`docs/features/sandbox-system/PRD.md`** - Requirements and success criteria
+2. **`docs/features/sandbox-system/ARCHITECTURE.md`** - System design
+3. **`docs/features/sandbox-system/epics.md`** - Epic breakdown and timeline
+
+### Priority 3: BMAD Method Understanding
+
+1. **`bmad/bmm/workflows/README.md`** - Complete BMAD workflow guide
+2. **`bmad/bmm/config.yaml`** - BMAD configuration for this project
+3. **`bmad/bmm/workflows/4-implementation/`** - Implementation workflows
+
+### Priority 4: Implementation Reference
+
+1. **Existing implementations in `gao_dev/`** - Code patterns and style
+2. **Test files** - Testing patterns and structure
+3. **Similar completed stories** - Reference implementations
+
+### Priority 5: General Context
+
+1. **`README.md`** - Main project overview
+2. **`.claude/CLAUDE.md`** - This file
+3. **`SESSION_SUMMARY.md`** - Latest session notes (if exists)
 
 ---
 
@@ -406,24 +526,29 @@ gao-dev implement-story --epic 1 --story 1
 
 | Need to... | Look at... |
 |-----------|-----------|
-| Understand project goals | README.md, PRD.md |
-| See current progress | SESSION_SUMMARY.md |
-| Know what to build | Current story in docs/features/ |
-| Understand architecture | ARCHITECTURE.md |
-| Find agent definitions | gao_dev/agents/*.md |
+| **Check what to do next** | **docs/bmm-workflow-status.md** ← START HERE! |
+| See current story status | docs/sprint-status.yaml |
+| Understand BMAD workflows | bmad/bmm/workflows/README.md |
+| Know what to build | Current story in docs/features/sandbox-system/stories/ |
+| Understand project goals | docs/features/sandbox-system/PRD.md |
+| Understand architecture | docs/features/sandbox-system/ARCHITECTURE.md |
+| See epic breakdown | docs/features/sandbox-system/epics.md |
+| Find GAO-Dev agents | gao_dev/agents/*.md (these are different from BMAD!) |
+| Find BMAD agents | bmad/bmm/agents/*.agent.yaml |
 | See CLI commands | gao_dev/cli/commands.py |
-| Understand workflows | gao_dev/workflows/ |
 | Check code patterns | Existing implementations in gao_dev/ |
 
 ---
 
 ## When in Doubt
 
-1. **Ask the user** - They have context you may not
-2. **Read the docs** - Especially PRD and ARCHITECTURE
-3. **Follow existing patterns** - Match the codebase style
-4. **Use TodoWrite** - Keep user informed of progress
-5. **Test incrementally** - Verify as you go
+1. **Check BMAD workflow status** - `docs/bmm-workflow-status.md` always knows where you are
+2. **Ask the user** - They have context you may not have
+3. **Read the docs** - Especially PRD, ARCHITECTURE, and current story
+4. **Follow existing patterns** - Match the codebase style
+5. **Use TodoWrite** - Keep user informed of progress
+6. **Test incrementally** - Verify as you go
+7. **Follow BMAD workflows** - They guide you through the process
 
 ---
 
@@ -439,6 +564,42 @@ You'll know you're doing well when:
 
 ---
 
-**Remember**: GAO-Dev is about building a system that can autonomously build applications. Everything we do should move us closer to that goal of "simple prompt → production-ready app."
+---
 
-**Good luck! 🚀**
+## Important Notes
+
+### GAO-Dev vs BMAD Method
+
+**GAO-Dev**: The system we're building - will autonomously orchestrate development
+**BMAD Method**: The process we're using to BUILD GAO-Dev itself
+
+Once GAO-Dev is complete, it will use its own agents and workflows. But until then, we use BMAD Method to develop GAO-Dev with proper agile practices.
+
+### Two Sets of Agents
+
+**BMAD Agents** (in `bmad/bmm/agents/`):
+- analyst, pm, architect, dev, sm, ux-designer, tea
+- Used for developing GAO-Dev itself
+- Defined in BMAD Method workflow files
+
+**GAO-Dev Agents** (in `gao_dev/agents/`):
+- Mary, John, Winston, Sally, Bob, Amelia, Murat
+- Will be used BY GAO-Dev for autonomous development
+- The product we're building
+
+### Workflow Priority
+
+1. **Always use BMAD workflows** for developing GAO-Dev
+2. **Check workflow status first** before starting any work
+3. **Follow story acceptance criteria** exactly
+4. **Update status files** after completing work
+5. **Commit with proper messages** following BMAD conventions
+
+---
+
+**Remember**:
+- **For GAO-Dev development**: Use BMAD Method workflows
+- **For GAO-Dev goal**: Build autonomous development orchestration
+- **End goal**: "simple prompt → production-ready app"
+
+**Start every session by reading `docs/bmm-workflow-status.md`!**
