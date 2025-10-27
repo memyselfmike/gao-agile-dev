@@ -1,0 +1,142 @@
+# Todo App Minimal Benchmark
+# Version: 1.0.0
+# Complexity: Level 2 (Medium)
+# Estimated Time: 1-2 hours
+# Last Updated: 2025-10-27
+
+benchmark:
+  name: "todo-app-minimal"
+  description: "Simplified todo app without authentication for medium-complexity testing"
+  version: "1.0.0"
+  complexity_level: 2
+  estimated_duration_minutes: 90
+
+  # ===========================================================================
+  # STANDARDIZED INITIAL PROMPT
+  # DO NOT MODIFY - This ensures consistent benchmarking across all runs
+  # ===========================================================================
+  initial_prompt: |
+    Build a full-stack todo application with the following features:
+
+    Frontend Requirements:
+    - Create a React/Next.js web interface for managing todos
+    - Display a list of all todos
+    - Add new todos with a form (title and description)
+    - Mark todos as complete/incomplete (checkbox)
+    - Delete todos
+    - Filter todos by status (all/active/completed)
+    - Responsive design that works on mobile and desktop
+
+    Backend Requirements:
+    - RESTful API with these endpoints:
+      - GET /api/todos - List all todos
+      - POST /api/todos - Create new todo
+      - PUT /api/todos/:id - Update todo (toggle complete, edit text)
+      - DELETE /api/todos/:id - Delete todo
+    - Store data in PostgreSQL database
+    - Use Prisma ORM for database access
+
+    Technical Requirements:
+    - TypeScript for both frontend and backend
+    - Follow Next.js 14+ conventions (App Router)
+    - Database migrations using Prisma
+    - Include error handling and validation
+    - Add unit tests for API endpoints
+    - Add React Testing Library tests for key components
+
+    Documentation:
+    - README with setup instructions
+    - API endpoint documentation
+    - Database schema documentation
+
+    Success Criteria:
+    - All CRUD operations working
+    - UI is functional and responsive
+    - At least 70% test coverage
+    - Zero TypeScript errors
+    - Database schema is normalized
+    - Can run with: npm install && npm run dev
+
+  # ===========================================================================
+  # CONFIGURATION
+  # ===========================================================================
+
+  tech_stack:
+    frontend: "nextjs-14"
+    backend: "nextjs-api-routes"
+    language: "typescript"
+    database: "postgresql"
+    orm: "prisma"
+    test_framework: "jest"
+    ui_test_framework: "react-testing-library"
+
+  boilerplate:
+    use_boilerplate: true
+    repo_url: "https://github.com/webventurer/simple-nextjs-starter"
+    branch: "main"
+    notes: "Basic Next.js 15 starter with TypeScript"
+
+  success_criteria:
+    - name: "All CRUD operations functional"
+      type: "functional"
+      required: true
+
+    - name: "UI responsive and functional"
+      type: "functional"
+      required: true
+
+    - name: "Test coverage >= 70%"
+      type: "coverage"
+      threshold: 70
+      required: true
+
+    - name: "Zero TypeScript errors"
+      type: "type_check"
+      threshold: 0
+      required: true
+
+    - name: "Database schema normalized"
+      type: "code_review"
+      required: true
+
+    - name: "Tests passing"
+      type: "test_results"
+      threshold: 100
+      required: true
+
+    - name: "README with setup instructions"
+      type: "documentation"
+      required: true
+
+  metrics_enabled:
+    performance: true
+    autonomy: true
+    quality: true
+    workflow: true
+
+  constraints:
+    timeout_seconds: 7200  # 2 hours max
+    max_cost_usd: 5.00     # $5 budget
+    max_tokens: 500000     # 500k tokens max
+
+  expected_outcomes:
+    manual_interventions:
+      target: 5
+      acceptable_range: [0, 10]
+
+    completion_percentage:
+      target: 85
+      acceptable_range: [70, 100]
+
+    time_minutes:
+      target: 90
+      acceptable_range: [60, 120]
+
+# ===========================================================================
+# VERSION HISTORY
+# ===========================================================================
+version_history:
+  - version: "1.0.0"
+    date: "2025-10-27"
+    changes: "Initial standardized benchmark"
+    prompt_hash: "sha256:TBD"

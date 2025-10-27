@@ -1,0 +1,143 @@
+# [Benchmark Name] Benchmark Template
+# Version: 1.0.0
+# Complexity: Level [1/2/3] ([Simple/Medium/High])
+# Estimated Time: [X-Y hours]
+# Last Updated: [YYYY-MM-DD]
+
+benchmark:
+  name: "[unique-benchmark-id]"
+  description: "[Brief description of what this benchmark tests]"
+  version: "1.0.0"
+  complexity_level: [1/2/3]  # 1=Simple, 2=Medium, 3=High
+  estimated_duration_minutes: [number]
+
+  # ===========================================================================
+  # STANDARDIZED INITIAL PROMPT
+  # DO NOT MODIFY after first run - This ensures consistent benchmarking
+  # ===========================================================================
+  initial_prompt: |
+    [Your standardized prompt goes here]
+
+    [Be specific and detailed:]
+    - List exact features required
+    - Specify technical requirements
+    - Define success criteria clearly
+    - Include testing requirements
+    - Mention documentation needs
+
+    [This prompt should NEVER change once you start tracking metrics]
+    [If you need to change it, create a new version of the benchmark]
+
+  # ===========================================================================
+  # CONFIGURATION
+  # ===========================================================================
+
+  tech_stack:
+    frontend: "[framework]"           # e.g., nextjs-14, react, vue
+    backend: "[framework]"            # e.g., nodejs-express, fastapi, nextjs-api-routes
+    language: "[language]"            # e.g., typescript, python
+    database: "[database]"            # e.g., postgresql, mongodb, sqlite
+    orm: "[orm]"                      # e.g., prisma, typeorm, sqlalchemy
+    auth: "[auth-system]"             # e.g., next-auth, passport, custom
+    test_framework: "[framework]"     # e.g., jest, pytest, vitest
+    ui_test_framework: "[framework]"  # e.g., react-testing-library, cypress
+    e2e_framework: "[framework]"      # e.g., playwright, cypress
+
+  boilerplate:
+    use_boilerplate: [true/false]
+    repo_url: "[github-url]"          # If using boilerplate
+    branch: "[branch-name]"
+    notes: "[any notes about the boilerplate]"
+
+  success_criteria:
+    - name: "[Criterion 1]"
+      type: "[functional/test_results/coverage/type_check/lint/security/documentation/deployment]"
+      required: [true/false]
+      threshold: [number if applicable]
+      validation: "[how to verify]"
+
+    - name: "[Criterion 2]"
+      type: "[type]"
+      required: [true/false]
+
+    # Add more criteria as needed
+
+  metrics_enabled:
+    performance: true      # Time, tokens, cost
+    autonomy: true         # Manual interventions, one-shot success rate
+    quality: true          # Tests, coverage, type safety
+    workflow: true         # Stories, cycle time
+
+  constraints:
+    timeout_seconds: [number]     # Max execution time
+    max_cost_usd: [number]        # Budget limit
+    max_tokens: [number]          # Token limit
+
+  expected_outcomes:
+    manual_interventions:
+      target: [number]
+      acceptable_range: [[min, max]]
+
+    completion_percentage:
+      target: [number]
+      acceptable_range: [[min, max]]
+
+    time_minutes:
+      target: [number]
+      acceptable_range: [[min, max]]
+
+  # Optional: Define expected phase durations
+  phases:
+    - name: "Analysis"
+      expected_duration_minutes: [number]
+      agent: "Mary"
+
+    - name: "Planning"
+      expected_duration_minutes: [number]
+      agent: "John"
+
+    - name: "Architecture"
+      expected_duration_minutes: [number]
+      agent: "Winston"
+
+    - name: "UX Design"
+      expected_duration_minutes: [number]
+      agent: "Sally"
+
+    - name: "Story Creation"
+      expected_duration_minutes: [number]
+      agent: "Bob"
+
+    - name: "Implementation"
+      expected_duration_minutes: [number]
+      agent: "Amelia"
+
+    - name: "Quality Validation"
+      expected_duration_minutes: [number]
+      agent: "Murat"
+
+# ===========================================================================
+# VERSION HISTORY
+# ===========================================================================
+version_history:
+  - version: "1.0.0"
+    date: "[YYYY-MM-DD]"
+    changes: "[What changed in this version]"
+    prompt_hash: "sha256:[hash-of-prompt]"
+    notes: "[Any additional notes]"
+
+# ===========================================================================
+# USAGE INSTRUCTIONS
+# ===========================================================================
+#
+# To use this benchmark:
+#
+# 1. Copy this template to a new file
+# 2. Fill in all required fields
+# 3. Craft a detailed, standardized initial prompt
+# 4. Define clear success criteria
+# 5. Run initial test to validate timing estimates
+# 6. NEVER modify the initial_prompt after tracking begins
+# 7. Version the file if you need to change the prompt
+#
+# ===========================================================================

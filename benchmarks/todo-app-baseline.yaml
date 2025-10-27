@@ -1,0 +1,255 @@
+# Todo App Baseline Benchmark
+# Version: 1.0.0
+# Complexity: Level 3 (High - Production Ready)
+# Estimated Time: 2-4 hours
+# Last Updated: 2025-10-27
+
+benchmark:
+  name: "todo-app-baseline"
+  description: "Complete production-ready todo app - the gold standard benchmark"
+  version: "1.0.0"
+  complexity_level: 3
+  estimated_duration_minutes: 180
+
+  # ===========================================================================
+  # STANDARDIZED INITIAL PROMPT
+  # DO NOT MODIFY - This ensures consistent benchmarking across all runs
+  # ===========================================================================
+  initial_prompt: |
+    Build a production-ready, full-stack todo application with authentication.
+
+    Frontend Requirements:
+    - Next.js 14+ with TypeScript and App Router
+    - User authentication (register, login, logout)
+    - Todo management:
+      - Create todos with title, description, due date, priority
+      - Edit existing todos
+      - Mark todos as complete/incomplete
+      - Delete todos
+      - Organize todos with categories/tags
+      - Filter and sort todos (by status, date, priority, category)
+    - Responsive, accessible UI (WCAG 2.1 AA compliant)
+    - Loading states and error handling
+    - Form validation with clear error messages
+
+    Backend Requirements:
+    - RESTful API with authentication:
+      - POST /api/auth/register - User registration
+      - POST /api/auth/login - User login
+      - POST /api/auth/logout - User logout
+      - GET /api/todos - List user's todos (with filters)
+      - POST /api/todos - Create todo
+      - PUT /api/todos/:id - Update todo
+      - DELETE /api/todos/:id - Delete todo
+      - GET /api/categories - List user's categories
+      - POST /api/categories - Create category
+    - PostgreSQL database with Prisma ORM
+    - User sessions/JWT for authentication
+    - Row-level security (users only see their own data)
+    - Input validation and sanitization
+    - Rate limiting for API endpoints
+
+    Database Schema:
+    - Users table (id, email, password_hash, created_at)
+    - Todos table (id, user_id, title, description, due_date, priority, status, created_at, updated_at)
+    - Categories table (id, user_id, name, color, created_at)
+    - Todo_Categories junction table (todo_id, category_id)
+
+    Testing Requirements:
+    - Unit tests for all API endpoints (>80% coverage)
+    - Integration tests for auth flow
+    - React Testing Library tests for key components
+    - E2E tests for critical user flows (login, create todo, complete todo)
+    - All tests must pass
+
+    Security Requirements:
+    - Passwords hashed with bcrypt
+    - Protected API routes (authentication required)
+    - SQL injection prevention (via Prisma)
+    - XSS prevention
+    - CSRF protection
+
+    DevOps Requirements:
+    - Docker Compose for local development
+    - Environment variable configuration (.env.example provided)
+    - Database migrations via Prisma
+    - Seed data script for development
+
+    Documentation:
+    - Comprehensive README with:
+      - Project overview
+      - Features list
+      - Setup instructions (dev and production)
+      - API documentation (all endpoints)
+      - Database schema diagram
+      - Testing instructions
+      - Deployment guide
+    - Inline code comments for complex logic
+    - API endpoint documentation (OpenAPI/Swagger optional but recommended)
+
+    Code Quality:
+    - TypeScript strict mode with zero errors
+    - ESLint passing with zero warnings
+    - Consistent code formatting
+    - No hardcoded secrets
+    - Error handling throughout
+    - Logging for debugging
+
+    Success Criteria:
+    - All features functional end-to-end
+    - Authentication working correctly
+    - Users can only access their own todos
+    - All tests passing (unit, integration, E2E)
+    - >80% code coverage
+    - Zero TypeScript errors
+    - Zero ESLint errors
+    - Accessible (WCAG 2.1 AA)
+    - Can deploy with Docker Compose
+    - Documentation complete and accurate
+    - Can run with: docker-compose up
+
+  # ===========================================================================
+  # CONFIGURATION
+  # ===========================================================================
+
+  tech_stack:
+    frontend: "nextjs-14"
+    backend: "nextjs-api-routes"
+    language: "typescript"
+    database: "postgresql"
+    orm: "prisma"
+    auth: "next-auth"
+    test_framework: "jest"
+    ui_test_framework: "react-testing-library"
+    e2e_framework: "playwright"
+    containerization: "docker"
+
+  boilerplate:
+    use_boilerplate: true
+    repo_url: "https://github.com/webventurer/simple-nextjs-starter"
+    branch: "main"
+    notes: "Starting point - Next.js 15 with TypeScript, will need auth & DB added"
+
+  success_criteria:
+    - name: "All features functional"
+      type: "functional"
+      required: true
+      validation: "Manual E2E testing of all user flows"
+
+    - name: "Authentication working"
+      type: "functional"
+      required: true
+      validation: "Can register, login, logout; protected routes work"
+
+    - name: "Row-level security"
+      type: "security"
+      required: true
+      validation: "Users cannot access other users' data"
+
+    - name: "All tests passing"
+      type: "test_results"
+      threshold: 100
+      required: true
+
+    - name: "Code coverage >= 80%"
+      type: "coverage"
+      threshold: 80
+      required: true
+
+    - name: "Zero TypeScript errors"
+      type: "type_check"
+      threshold: 0
+      required: true
+
+    - name: "Zero ESLint errors"
+      type: "lint"
+      threshold: 0
+      required: true
+
+    - name: "Accessibility compliant"
+      type: "accessibility"
+      required: true
+      validation: "WCAG 2.1 AA via automated tools"
+
+    - name: "Docker deployment works"
+      type: "deployment"
+      required: true
+      validation: "docker-compose up starts application successfully"
+
+    - name: "Documentation complete"
+      type: "documentation"
+      required: true
+      validation: "README includes all required sections"
+
+    - name: "No security vulnerabilities"
+      type: "security"
+      required: true
+      validation: "npm audit shows zero high/critical issues"
+
+  metrics_enabled:
+    performance: true      # Time, tokens, cost
+    autonomy: true         # Manual interventions, one-shot success
+    quality: true          # Tests, coverage, type safety, security
+    workflow: true         # Stories, cycle time, phase distribution
+
+  constraints:
+    timeout_seconds: 14400 # 4 hours max
+    max_cost_usd: 10.00    # $10 budget
+    max_tokens: 1000000    # 1M tokens max
+
+  expected_outcomes:
+    manual_interventions:
+      target: 0
+      acceptable_range: [0, 5]
+      notes: "Goal is zero interventions (full autonomy)"
+
+    completion_percentage:
+      target: 95
+      acceptable_range: [85, 100]
+
+    time_minutes:
+      target: 180
+      acceptable_range: [120, 240]
+
+    cost_usd:
+      target: 5.00
+      acceptable_range: [2.00, 10.00]
+
+  phases:
+    - name: "Analysis"
+      expected_duration_minutes: 15
+      agent: "Mary"
+
+    - name: "Planning"
+      expected_duration_minutes: 30
+      agent: "John"
+
+    - name: "Architecture"
+      expected_duration_minutes: 30
+      agent: "Winston"
+
+    - name: "UX Design"
+      expected_duration_minutes: 20
+      agent: "Sally"
+
+    - name: "Story Creation"
+      expected_duration_minutes: 20
+      agent: "Bob"
+
+    - name: "Implementation"
+      expected_duration_minutes: 120
+      agent: "Amelia"
+
+    - name: "Quality Validation"
+      expected_duration_minutes: 25
+      agent: "Murat"
+
+# ===========================================================================
+# VERSION HISTORY
+# ===========================================================================
+version_history:
+  - version: "1.0.0"
+    date: "2025-10-27"
+    changes: "Initial standardized benchmark - production-ready todo app"
+    prompt_hash: "sha256:TBD"
+    notes: "This is the gold standard benchmark for measuring GAO-Dev autonomy"

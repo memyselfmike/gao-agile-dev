@@ -1,0 +1,115 @@
+# Simple API Baseline Benchmark
+# Version: 1.0.0
+# Complexity: Level 1 (Simple)
+# Estimated Time: 30-60 minutes
+# Last Updated: 2025-10-27
+
+benchmark:
+  name: "simple-api-baseline"
+  description: "Basic REST API for initial testing and quick validation"
+  version: "1.0.0"
+  complexity_level: 1
+  estimated_duration_minutes: 45
+
+  # ===========================================================================
+  # STANDARDIZED INITIAL PROMPT
+  # DO NOT MODIFY - This ensures consistent benchmarking across all runs
+  # ===========================================================================
+  initial_prompt: |
+    Build a simple REST API for managing a list of tasks.
+
+    Requirements:
+    - Create a Node.js/Express API with 3 endpoints:
+      - GET /tasks - List all tasks
+      - POST /tasks - Create a new task (requires: title, description)
+      - DELETE /tasks/:id - Delete a task by ID
+
+    - Store tasks in memory (no database needed)
+    - Each task should have: id, title, description, createdAt
+    - Return JSON responses
+    - Include basic error handling
+    - Add input validation
+
+    Technical requirements:
+    - Use TypeScript
+    - Include a README with API documentation
+    - Add at least 3 unit tests
+    - Follow REST best practices
+
+    Success criteria:
+    - All 3 endpoints functional
+    - Tests passing
+    - Zero TypeScript errors
+    - API documented in README
+
+  # ===========================================================================
+  # CONFIGURATION
+  # ===========================================================================
+
+  tech_stack:
+    backend: "nodejs-express"
+    language: "typescript"
+    test_framework: "jest"
+    runtime: "node-18"
+
+  boilerplate:
+    use_boilerplate: false
+    reason: "Simple enough to build from scratch"
+
+  success_criteria:
+    - name: "All endpoints functional"
+      type: "functional"
+      required: true
+      validation: "Manual test or automated E2E"
+
+    - name: "Unit tests passing"
+      type: "test_results"
+      threshold: 100
+      required: true
+
+    - name: "Zero TypeScript errors"
+      type: "type_check"
+      threshold: 0
+      required: true
+
+    - name: "API documented"
+      type: "documentation"
+      required: true
+      validation: "README includes endpoint descriptions"
+
+    - name: "Input validation implemented"
+      type: "code_review"
+      required: true
+
+  metrics_enabled:
+    performance: true      # Time, tokens, cost
+    autonomy: true         # Manual interventions, one-shot success
+    quality: true          # Tests, coverage, type safety
+    workflow: true         # Stories, cycle time
+
+  constraints:
+    timeout_seconds: 3600  # 1 hour max
+    max_cost_usd: 2.00     # $2 budget
+    max_tokens: 200000     # 200k tokens max
+
+  expected_outcomes:
+    manual_interventions:
+      target: 3
+      acceptable_range: [0, 5]
+
+    completion_percentage:
+      target: 90
+      acceptable_range: [80, 100]
+
+    time_minutes:
+      target: 45
+      acceptable_range: [30, 60]
+
+# ===========================================================================
+# VERSION HISTORY
+# ===========================================================================
+version_history:
+  - version: "1.0.0"
+    date: "2025-10-27"
+    changes: "Initial standardized benchmark"
+    prompt_hash: "sha256:TBD"  # Hash of initial_prompt for verification
