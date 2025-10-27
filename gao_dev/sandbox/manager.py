@@ -1,0 +1,404 @@
+"""Sandbox manager for project lifecycle operations."""
+
+import re
+import shutil
+from pathlib import Path
+from typing import List, Optional
+from datetime import datetime
+
+import yaml
+
+from .models import ProjectMetadata, ProjectStatus, BenchmarkRun
+from .exceptions import (
+    ProjectExistsError,
+    ProjectNotFoundError,
+    InvalidProjectNameError,
+)
+
+# Constants
+METADATA_FILENAME = ".sandbox.yaml"
+PROJECT_NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$")
+MAX_PROJECT_NAME_LENGTH = 50
+MIN_PROJECT_NAME_LENGTH = 3
+
+
+class SandboxManager:
+    """
+    Manages sandbox project lifecycle and operations.
+
+    Responsible for creating, reading, updating, and deleting
+    sandbox projects, as well as managing their metadata.
+
+    Attributes:
+        sandbox_root: Root directory for all sandbox projects
+        projects_dir: Directory containing project subdirectories
+    """
+
+    def __init__(self, sandbox_root: Path):
+        """
+        Initialize sandbox manager.
+
+        Args:
+            sandbox_root: Root directory for sandbox projects
+        """
+        self.sandbox_root = Path(sandbox_root).resolve()
+        self.projects_dir = self.sandbox_root / "projects"
+        self.projects_dir.mkdir(parents=True, exist_ok=True)
+
+    def create_project(
+        self,
+        name: str,
+        boilerplate_url: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        description: str = "",
+    ) -> ProjectMetadata:
+        """
+        Create a new sandbox project.
+
+        Creates project directory structure and initializes metadata.
+        Project will be created in sandbox_root/projects/<name>/.
+
+        Args:
+            name: Project name (must be unique and valid)
+            boilerplate_url: Optional boilerplate repository URL
+            tags: Optional project tags
+            description: Optional project description
+
+        Returns:
+            ProjectMetadata object for the new project
+
+        Raises:
+            ProjectExistsError: If project already exists
+            InvalidProjectNameError: If name doesn't meet requirements
+        """
+        # Validate project name
+        self._validate_project_name(name)
+
+        # Check if already exists
+        if self.project_exists(name):
+            raise ProjectExistsError(name)
+
+        # Create project directory
+        project_dir = self.projects_dir / name
+        project_dir.mkdir(parents=True, exist_ok=False)
+
+        # Create metadata
+        metadata = ProjectMetadata(
+            name=name,
+            created_at=datetime.now(),
+            status=ProjectStatus.ACTIVE,
+            boilerplate_url=boilerplate_url,
+            tags=tags or [],
+            description=description,
+        )
+
+        # Create directory structure
+        self._create_project_structure(project_dir)
+
+        # Save metadata
+        self._save_metadata(project_dir, metadata)
+
+        return metadata
+
+    def get_project(self, name: str) -> ProjectMetadata:
+        """
+        Get project metadata.
+
+        Args:
+            name: Project name
+
+        Returns:
+            ProjectMetadata object
+
+        Raises:
+            ProjectNotFoundError: If project doesn't exist
+        """
+        if not self.project_exists(name):
+            raise ProjectNotFoundError(name)
+
+        project_dir = self.get_project_path(name)
+        return self._load_metadata(project_dir)
+
+    def list_projects(
+        self, status: Optional[ProjectStatus] = None
+    ) -> List[ProjectMetadata]:
+        """
+        List all sandbox projects.
+
+        Args:
+            status: Optional status filter (only return projects with this status)
+
+        Returns:
+            List of ProjectMetadata objects, sorted by last_modified descending
+        """
+        projects: List[ProjectMetadata] = []
+
+        # Iterate through project directories
+        if not self.projects_dir.exists():
+            return projects
+
+        for project_dir in self.projects_dir.iterdir():
+            if not project_dir.is_dir():
+                continue
+
+            # Skip if no metadata file
+            metadata_file = project_dir / METADATA_FILENAME
+            if not metadata_file.exists():
+                continue
+
+            try:
+                metadata = self._load_metadata(project_dir)
+
+                # Apply status filter if specified
+                if status is None or metadata.status == status:
+                    projects.append(metadata)
+
+            except Exception:
+                # Skip projects with invalid metadata
+                continue
+
+        # Sort by last_modified descending (newest first)
+        projects.sort(key=lambda p: p.last_modified, reverse=True)
+
+        return projects
+
+    def update_project(self, name: str, metadata: ProjectMetadata) -> None:
+        """
+        Update project metadata.
+
+        Args:
+            name: Project name
+            metadata: Updated metadata object
+
+        Raises:
+            ProjectNotFoundError: If project doesn't exist
+        """
+        if not self.project_exists(name):
+            raise ProjectNotFoundError(name)
+
+        project_dir = self.get_project_path(name)
+        metadata.last_modified = datetime.now()
+        self._save_metadata(project_dir, metadata)
+
+    def delete_project(self, name: str) -> None:
+        """
+        Delete a sandbox project.
+
+        Permanently removes project directory and all contents.
+        This operation cannot be undone.
+
+        Args:
+            name: Project name
+
+        Raises:
+            ProjectNotFoundError: If project doesn't exist
+        """
+        if not self.project_exists(name):
+            raise ProjectNotFoundError(name)
+
+        project_dir = self.get_project_path(name)
+        shutil.rmtree(project_dir)
+
+    def project_exists(self, name: str) -> bool:
+        """
+        Check if project exists.
+
+        Args:
+            name: Project name
+
+        Returns:
+            True if project exists, False otherwise
+        """
+        project_dir = self.projects_dir / name
+        metadata_file = project_dir / METADATA_FILENAME
+        return project_dir.exists() and metadata_file.exists()
+
+    def get_project_path(self, name: str) -> Path:
+        """
+        Get absolute path to project directory.
+
+        Args:
+            name: Project name
+
+        Returns:
+            Absolute Path to project directory
+        """
+        return (self.projects_dir / name).resolve()
+
+    def _create_project_structure(self, project_dir: Path) -> None:
+        """
+        Create standard project directory structure.
+
+        Creates subdirectories for organizing project files.
+
+        Args:
+            project_dir: Project root directory
+        """
+        # Standard directories
+        directories = [
+            "docs",
+            "src",
+            "tests",
+            "benchmarks",
+            ".gao-dev",  # For GAO-Dev metadata
+        ]
+
+        for dir_name in directories:
+            (project_dir / dir_name).mkdir(parents=True, exist_ok=True)
+
+    def _load_metadata(self, project_dir: Path) -> ProjectMetadata:
+        """
+        Load project metadata from .sandbox.yaml file.
+
+        Args:
+            project_dir: Project directory containing metadata file
+
+        Returns:
+            ProjectMetadata object
+
+        Raises:
+            FileNotFoundError: If metadata file doesn't exist
+            ValueError: If metadata is invalid
+        """
+        metadata_file = project_dir / METADATA_FILENAME
+
+        if not metadata_file.exists():
+            raise FileNotFoundError(f"Metadata file not found: {metadata_file}")
+
+        with open(metadata_file, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        if not data:
+            raise ValueError(f"Empty or invalid metadata file: {metadata_file}")
+
+        return ProjectMetadata.from_dict(data)
+
+    def _save_metadata(self, project_dir: Path, metadata: ProjectMetadata) -> None:
+        """
+        Save project metadata to .sandbox.yaml file.
+
+        Args:
+            project_dir: Project directory to save metadata in
+            metadata: ProjectMetadata object to save
+        """
+        metadata_file = project_dir / METADATA_FILENAME
+
+        with open(metadata_file, "w", encoding="utf-8") as f:
+            yaml.safe_dump(
+                metadata.to_dict(),
+                f,
+                default_flow_style=False,
+                sort_keys=False,
+                allow_unicode=True,
+            )
+
+    def _validate_project_name(self, name: str) -> None:
+        """
+        Validate project name meets requirements.
+
+        Project names must:
+        - Be 3-50 characters long
+        - Start and end with alphanumeric character
+        - Contain only lowercase letters, numbers, and hyphens
+        - Not contain consecutive hyphens
+
+        Args:
+            name: Project name to validate
+
+        Raises:
+            InvalidProjectNameError: If name doesn't meet requirements
+        """
+        # Check length
+        if len(name) < MIN_PROJECT_NAME_LENGTH:
+            raise InvalidProjectNameError(
+                name, f"Must be at least {MIN_PROJECT_NAME_LENGTH} characters long"
+            )
+
+        if len(name) > MAX_PROJECT_NAME_LENGTH:
+            raise InvalidProjectNameError(
+                name, f"Must be at most {MAX_PROJECT_NAME_LENGTH} characters long"
+            )
+
+        # Check pattern (lowercase alphanumeric and hyphens only)
+        if not PROJECT_NAME_PATTERN.match(name):
+            raise InvalidProjectNameError(
+                name,
+                "Must start and end with alphanumeric character, "
+                "and contain only lowercase letters, numbers, and hyphens",
+            )
+
+        # Check for consecutive hyphens
+        if "--" in name:
+            raise InvalidProjectNameError(name, "Cannot contain consecutive hyphens")
+
+    def update_status(
+        self,
+        project_name: str,
+        new_status: ProjectStatus,
+        reason: Optional[str] = None,
+    ) -> None:
+        """
+        Update project status.
+
+        Args:
+            project_name: Name of project to update
+            new_status: New status to set
+            reason: Optional reason for status change
+
+        Raises:
+            ProjectNotFoundError: If project doesn't exist
+        """
+        metadata = self.get_project(project_name)
+        metadata.status = new_status
+        metadata.last_modified = datetime.now()
+        self.update_project(project_name, metadata)
+
+    def add_benchmark_run(
+        self,
+        project_name: str,
+        run_id: str,
+        config_file: str,
+    ) -> BenchmarkRun:
+        """
+        Add new benchmark run to project.
+
+        Args:
+            project_name: Name of project
+            run_id: Unique identifier for this run
+            config_file: Path to benchmark configuration file
+
+        Returns:
+            BenchmarkRun object
+
+        Raises:
+            ProjectNotFoundError: If project doesn't exist
+        """
+        metadata = self.get_project(project_name)
+
+        run = BenchmarkRun(
+            run_id=run_id,
+            started_at=datetime.now(),
+            config_file=config_file,
+        )
+
+        metadata.add_run(run)
+        self.update_project(project_name, metadata)
+
+        return run
+
+    def get_run_history(self, project_name: str) -> List[BenchmarkRun]:
+        """
+        Get all benchmark runs for project.
+
+        Args:
+            project_name: Name of project
+
+        Returns:
+            List of BenchmarkRun objects, sorted by started_at descending
+
+        Raises:
+            ProjectNotFoundError: If project doesn't exist
+        """
+        metadata = self.get_project(project_name)
+        runs = sorted(metadata.runs, key=lambda r: r.started_at, reverse=True)
+        return runs
