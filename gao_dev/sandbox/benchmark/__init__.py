@@ -5,9 +5,17 @@ from .config import (
     SuccessCriteria,
     WorkflowPhaseConfig,
 )
+from .validator import (
+    ConfigValidator,
+    ValidationResult,
+    ValidationMessage,
+)
 
 __all__ = [
     "BenchmarkConfig",
     "SuccessCriteria",
     "WorkflowPhaseConfig",
+    "ConfigValidator",
+    "ValidationResult",
+    "ValidationMessage",
 ]
