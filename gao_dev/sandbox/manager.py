@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 
+import structlog
 import yaml
 
 from .models import ProjectMetadata, ProjectStatus, BenchmarkRun
@@ -15,6 +16,9 @@ from .exceptions import (
     InvalidProjectNameError,
     ProjectStateError,
 )
+from .git_cloner import GitCloner
+
+logger = structlog.get_logger(__name__)
 
 # Constants
 METADATA_FILENAME = ".sandbox.yaml"
@@ -45,6 +49,7 @@ class SandboxManager:
         self.sandbox_root = Path(sandbox_root).resolve()
         self.projects_dir = self.sandbox_root / "projects"
         self.projects_dir.mkdir(parents=True, exist_ok=True)
+        self.git_cloner = GitCloner()
 
     def create_project(
         self,
@@ -93,8 +98,44 @@ class SandboxManager:
             description=description,
         )
 
-        # Create directory structure
-        self._create_project_structure(project_dir)
+        # Clone boilerplate if URL provided
+        if boilerplate_url:
+            logger.info(
+                "cloning_boilerplate",
+                project=name,
+                boilerplate_url=boilerplate_url,
+            )
+            try:
+                # Clone into a temporary directory first
+                temp_clone_dir = project_dir / ".boilerplate_clone"
+                self.git_cloner.clone_repository(boilerplate_url, temp_clone_dir)
+
+                # Move contents from clone to project root
+                self._merge_boilerplate_contents(temp_clone_dir, project_dir)
+
+                # Remove .git directory and temp clone dir
+                git_dir = project_dir / ".git"
+                if git_dir.exists():
+                    shutil.rmtree(git_dir)
+                if temp_clone_dir.exists():
+                    shutil.rmtree(temp_clone_dir)
+
+                logger.info(
+                    "boilerplate_cloned_successfully",
+                    project=name,
+                )
+            except Exception as e:
+                logger.error(
+                    "boilerplate_clone_failed",
+                    project=name,
+                    error=str(e),
+                )
+                # Clean up project directory on failure
+                shutil.rmtree(project_dir)
+                raise
+        else:
+            # Create standard directory structure
+            self._create_project_structure(project_dir)
 
         # Save metadata
         self._save_metadata(project_dir, metadata)
@@ -225,6 +266,34 @@ class SandboxManager:
             Absolute Path to project directory
         """
         return (self.projects_dir / name).resolve()
+
+    def _merge_boilerplate_contents(self, source: Path, dest: Path) -> None:
+        """
+        Merge contents from boilerplate clone into project directory.
+
+        Moves all files and directories from source to dest, excluding .git.
+
+        Args:
+            source: Source directory (boilerplate clone)
+            dest: Destination directory (project root)
+        """
+        for item in source.iterdir():
+            # Skip .git directory
+            if item.name == ".git":
+                continue
+
+            dest_item = dest / item.name
+
+            if item.is_dir():
+                # Move directory
+                if dest_item.exists():
+                    # Merge if directory exists
+                    shutil.copytree(item, dest_item, dirs_exist_ok=True)
+                else:
+                    shutil.move(str(item), str(dest_item))
+            else:
+                # Move file
+                shutil.move(str(item), str(dest_item))
 
     def _create_project_structure(self, project_dir: Path) -> None:
         """

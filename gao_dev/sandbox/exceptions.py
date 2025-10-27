@@ -43,3 +43,31 @@ class ProjectStateError(SandboxError):
             f"Project '{project_name}' is in state '{current_state}', "
             f"but '{required_state}' is required for this operation"
         )
+
+
+class GitCloneError(SandboxError):
+    """Raised when git clone operation fails."""
+
+    def __init__(self, repo_url: str, reason: str):
+        self.repo_url = repo_url
+        self.reason = reason
+        super().__init__(f"Failed to clone repository '{repo_url}': {reason}")
+
+
+class InvalidGitUrlError(SandboxError):
+    """Raised when git URL is invalid or unsupported."""
+
+    def __init__(self, url: str, reason: str):
+        self.url = url
+        self.reason = reason
+        super().__init__(f"Invalid git URL '{url}': {reason}")
+
+
+class GitNotInstalledError(SandboxError):
+    """Raised when git is not installed on the system."""
+
+    def __init__(self):
+        super().__init__(
+            "Git is not installed or not available in PATH. "
+            "Please install Git and try again."
+        )

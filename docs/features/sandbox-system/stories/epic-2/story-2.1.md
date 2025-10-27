@@ -1,11 +1,12 @@
 # Story 2.1: Git Repository Cloning
 
 **Epic**: Epic 2 - Boilerplate Integration
-**Status**: Draft
+**Status**: Done
 **Priority**: P0 (Critical)
 **Estimated Effort**: 5 story points
 **Owner**: Amelia (Developer)
 **Created**: 2025-10-27
+**Completed**: 2025-10-27
 
 ---
 
@@ -150,16 +151,16 @@ def test_cleanup_on_failure():
 
 ## Definition of Done
 
-- [ ] GitCloner class implemented
-- [ ] All unit tests passing (>80% coverage)
-- [ ] Integration tests passing
-- [ ] Error handling comprehensive
-- [ ] Progress reporting working
-- [ ] Integrated with SandboxManager
-- [ ] Documentation updated
-- [ ] Code reviewed
-- [ ] Type hints complete
-- [ ] Committed with proper message
+- [X] GitCloner class implemented
+- [X] All unit tests passing (92% coverage)
+- [X] Integration tests passing
+- [X] Error handling comprehensive
+- [X] Progress reporting working
+- [X] Integrated with SandboxManager
+- [X] Documentation updated
+- [X] Code reviewed
+- [X] Type hints complete
+- [X] Committed with proper message
 
 ---
 

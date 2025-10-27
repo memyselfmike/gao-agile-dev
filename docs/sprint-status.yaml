@@ -29,10 +29,10 @@ epics:
 
   - epic_number: 2
     name: "Boilerplate Integration"
-    status: ready
+    status: in_progress
     stories:
       - number: 1
-        status: ready
+        status: done
         name: "Git Repository Cloning"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.1.md"
       - number: 2
@@ -73,4 +73,4 @@ epics:
     stories: []
 
 current_epic: 2
-current_story: null
+current_story: 1

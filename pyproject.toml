@@ -81,6 +81,9 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --cov=gao_dev --cov-report=html --cov-report=term"
 asyncio_mode = "auto"
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+]
 
 [tool.uv]
 dev-dependencies = [

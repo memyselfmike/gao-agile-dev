@@ -8,8 +8,12 @@ from .exceptions import (
     ProjectNotFoundError,
     InvalidProjectNameError,
     ProjectStateError,
+    GitCloneError,
+    InvalidGitUrlError,
+    GitNotInstalledError,
 )
 from .benchmark import BenchmarkConfig, BenchmarkError, load_benchmark, validate_benchmark_file
+from .git_cloner import GitCloner
 
 __all__ = [
     "SandboxManager",
@@ -21,8 +25,12 @@ __all__ = [
     "ProjectNotFoundError",
     "InvalidProjectNameError",
     "ProjectStateError",
+    "GitCloneError",
+    "InvalidGitUrlError",
+    "GitNotInstalledError",
     "BenchmarkConfig",
     "BenchmarkError",
     "load_benchmark",
     "validate_benchmark_file",
+    "GitCloner",
 ]
