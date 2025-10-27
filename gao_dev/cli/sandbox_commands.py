@@ -161,7 +161,35 @@ def init(
     is_flag=True,
     help="Force clean without confirmation",
 )
-def clean(project_name: Optional[str], all: bool, force: bool):
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Show what would be deleted without actually deleting",
+)
+@click.option(
+    "--output-only",
+    is_flag=True,
+    help="Only remove generated output files",
+)
+@click.option(
+    "--runs-only",
+    is_flag=True,
+    help="Only clear run history",
+)
+@click.option(
+    "--full",
+    is_flag=True,
+    help="Full reset (removes all files except metadata)",
+)
+def clean(
+    project_name: Optional[str],
+    all: bool,
+    force: bool,
+    dry_run: bool,
+    output_only: bool,
+    runs_only: bool,
+    full: bool,
+):
     """
     Reset sandbox project to clean state.
 
@@ -173,29 +201,92 @@ def clean(project_name: Optional[str], all: bool, force: bool):
         gao-dev sandbox clean todo-app-001
         gao-dev sandbox clean --all
         gao-dev sandbox clean my-project --force
+        gao-dev sandbox clean test-project --output-only --dry-run
     """
-    if all:
-        click.echo(">> Cleaning all sandbox projects")
-    elif project_name:
-        click.echo(f">> Cleaning sandbox project: {project_name}")
-    else:
-        click.echo("[ERROR] Please specify a project name or use --all")
-        return
+    try:
+        from ..sandbox import SandboxManager, ProjectNotFoundError
 
-    # Implementation will be added in Story 1.5
-    click.echo(f"  [PENDING] Project cleanup")
-    click.echo(f"  [PENDING] This feature will be implemented in Story 1.5")
+        # Validate arguments
+        if not all and not project_name:
+            click.echo("[ERROR] Please specify a project name or use --all", err=True)
+            sys.exit(1)
 
-    if force:
-        click.echo(f"  Force mode: enabled")
+        # Get manager
+        sandbox_root = Path.cwd() / "sandbox"
+        manager = SandboxManager(sandbox_root)
 
-    click.echo("\n[INFO] Sandbox clean command structure ready")
+        # Get projects to clean
+        if all:
+            projects = [p.name for p in manager.list_projects()]
+            if not projects:
+                click.echo("[INFO] No projects to clean")
+                return
+        else:
+            projects = [project_name]
+
+        # Confirmation (unless --force or --dry-run)
+        if not force and not dry_run:
+            mode_str = "runs-only" if runs_only else "output-only" if output_only else "full" if full else "standard"
+            project_list = ", ".join(projects)
+            if not click.confirm(
+                f"Clean {len(projects)} project(s) ({mode_str} mode): {project_list}?"
+            ):
+                click.echo("[CANCELLED] Cleaning cancelled")
+                return
+
+        # Clean projects
+        total_stats = {"files_deleted": 0, "dirs_deleted": 0, "runs_cleared": 0}
+
+        for proj_name in projects:
+            try:
+                if dry_run:
+                    click.echo(f">> [DRY RUN] Would clean project: {proj_name}")
+                else:
+                    click.echo(f">> Cleaning project: {proj_name}")
+
+                    stats = manager.clean_project(
+                        proj_name,
+                        full=full,
+                        output_only=output_only,
+                        runs_only=runs_only,
+                    )
+
+                    if runs_only:
+                        click.echo(f"  [OK] Cleared {stats['runs_cleared']} run(s)")
+                    else:
+                        click.echo(
+                            f"  [OK] Removed {stats['files_deleted']} file(s), "
+                            f"{stats['dirs_deleted']} dir(s)"
+                        )
+
+                    # Update totals
+                    for key in total_stats:
+                        total_stats[key] += stats[key]
+
+            except ProjectNotFoundError as e:
+                click.echo(f"  [ERROR] {e}", err=True)
+                continue
+
+        # Summary
+        if not dry_run:
+            click.echo(f"\n[OK] Cleaned {len(projects)} project(s)")
+            if runs_only:
+                click.echo(f"  Total runs cleared: {total_stats['runs_cleared']}")
+            else:
+                click.echo(
+                    f"  Total files deleted: {total_stats['files_deleted']}"
+                )
+                click.echo(f"  Total dirs deleted: {total_stats['dirs_deleted']}")
+
+    except Exception as e:
+        click.echo(f"\n[ERROR] Unexpected error: {e}", err=True)
+        sys.exit(1)
 
 
 @sandbox.command()
 @click.option(
     "--status",
-    type=click.Choice(["active", "completed", "failed", "all"]),
+    type=click.Choice(["active", "completed", "failed", "archived", "all"]),
     default="all",
     help="Filter projects by status",
 )
@@ -205,7 +296,13 @@ def clean(project_name: Optional[str], all: bool, force: bool):
     default="table",
     help="Output format",
 )
-def list(status: str, format: str):
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Show detailed information",
+)
+def list(status: str, format: str, verbose: bool):
     """
     List all sandbox projects.
 
@@ -216,16 +313,35 @@ def list(status: str, format: str):
         gao-dev sandbox list
         gao-dev sandbox list --status active
         gao-dev sandbox list --format json
+        gao-dev sandbox list --verbose
     """
-    click.echo(">> Listing sandbox projects")
-    click.echo(f"  Filter: status={status}")
-    click.echo(f"  Format: {format}")
+    try:
+        import json as json_module
+        from ..sandbox import SandboxManager, ProjectStatus
 
-    # Implementation will be added in Story 1.6
-    click.echo(f"\n  [PENDING] Project listing")
-    click.echo(f"  [PENDING] This feature will be implemented in Story 1.6")
+        # Get manager
+        sandbox_root = Path.cwd() / "sandbox"
+        manager = SandboxManager(sandbox_root)
 
-    click.echo("\n[INFO] Sandbox list command structure ready")
+        # Get projects
+        status_filter = ProjectStatus(status) if status != "all" else None
+        projects = manager.list_projects(status=status_filter)
+
+        if not projects:
+            click.echo("[INFO] No projects found")
+            return
+
+        # Output based on format
+        if format == "table":
+            _print_table(projects, verbose)
+        elif format == "json":
+            _print_json(projects)
+        elif format == "simple":
+            _print_simple(projects)
+
+    except Exception as e:
+        click.echo(f"\n[ERROR] Unexpected error: {e}", err=True)
+        sys.exit(1)
 
 
 @sandbox.command()
@@ -563,3 +679,71 @@ venv/
 
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
+
+
+def _print_table(projects: list, verbose: bool) -> None:
+    """Print projects in table format."""
+    from ..sandbox import ProjectMetadata
+
+    projects_list: list[ProjectMetadata] = projects
+
+    if not verbose:
+        # Simple table
+        click.echo("\n" + "-" * 80)
+        click.echo(f"{'Project Name':<25} {'Status':<12} {'Created':<12} {'Runs':<8}")
+        click.echo("-" * 80)
+
+        for project in projects_list:
+            created_str = project.created_at.strftime("%Y-%m-%d")
+            runs = project.get_run_count()
+
+            click.echo(
+                f"{project.name:<25} {project.status.value:<12} "
+                f"{created_str:<12} {runs:<8}"
+            )
+
+        click.echo("-" * 80)
+        click.echo(f"Total: {len(projects_list)} project(s)\n")
+
+    else:
+        # Verbose table
+        for project in projects_list:
+            click.echo("\n" + "=" * 80)
+            click.echo(f"Project: {project.name}")
+            click.echo("=" * 80)
+            click.echo(f"  Status: {project.status.value}")
+            click.echo(f"  Created: {project.created_at.strftime('%Y-%m-%d %H:%M:%S')}")
+            click.echo(f"  Modified: {project.last_modified.strftime('%Y-%m-%d %H:%M:%S')}")
+            click.echo(f"  Description: {project.description or 'No description'}")
+            click.echo(f"  Tags: {', '.join(project.tags) if project.tags else 'None'}")
+            click.echo(f"  Boilerplate: {project.boilerplate_url or 'None'}")
+            click.echo(f"  Runs: {project.get_run_count()}")
+
+            if project.runs:
+                latest = project.get_latest_run()
+                if latest:
+                    click.echo(f"  Latest run: {latest.run_id} ({latest.status.value})")
+
+        click.echo("\n" + "=" * 80)
+        click.echo(f"Total: {len(projects_list)} project(s)\n")
+
+
+def _print_json(projects: list) -> None:
+    """Print projects in JSON format."""
+    import json
+    from ..sandbox import ProjectMetadata
+
+    projects_list: list[ProjectMetadata] = projects
+
+    data = [project.to_dict() for project in projects_list]
+    click.echo(json.dumps(data, indent=2, default=str))
+
+
+def _print_simple(projects: list) -> None:
+    """Print projects in simple format (one per line)."""
+    from ..sandbox import ProjectMetadata
+
+    projects_list: list[ProjectMetadata] = projects
+
+    for project in projects_list:
+        click.echo(project.name)

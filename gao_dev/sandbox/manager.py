@@ -506,3 +506,97 @@ class SandboxManager:
         }
 
         return new_status in valid_transitions.get(current_status, set())
+
+    def clean_project(
+        self,
+        project_name: str,
+        full: bool = False,
+        output_only: bool = False,
+        runs_only: bool = False,
+    ) -> dict:
+        """
+        Clean project to fresh state.
+
+        Args:
+            project_name: Project to clean
+            full: If True, remove all files except metadata
+            output_only: If True, only remove generated output files
+            runs_only: If True, only clear run history
+
+        Returns:
+            Dictionary with cleanup statistics
+
+        Raises:
+            ProjectNotFoundError: If project doesn't exist
+        """
+        if not self.project_exists(project_name):
+            raise ProjectNotFoundError(project_name)
+
+        project_dir = self.get_project_path(project_name)
+        stats = {
+            "files_deleted": 0,
+            "dirs_deleted": 0,
+            "runs_cleared": 0,
+        }
+
+        if runs_only:
+            # Only clear run history
+            metadata = self.get_project(project_name)
+            stats["runs_cleared"] = len(metadata.runs)
+            metadata.runs = []
+            metadata.last_modified = datetime.now()
+            self.update_project(project_name, metadata)
+            return stats
+
+        # Define directories to clean
+        clean_dirs = []
+
+        if full:
+            # Full clean: remove everything except metadata
+            for item in project_dir.iterdir():
+                if item.name not in [METADATA_FILENAME, ".gao-dev"]:
+                    if item.is_dir():
+                        shutil.rmtree(item)
+                        stats["dirs_deleted"] += 1
+                    else:
+                        item.unlink()
+                        stats["files_deleted"] += 1
+
+        elif output_only:
+            # Output only: clean generated files
+            output_patterns = [
+                "src/**/*.pyc",
+                "src/**/__pycache__",
+                "dist",
+                "build",
+                ".next",
+                "node_modules",
+                "*.log",
+            ]
+
+            for pattern in output_patterns:
+                for item in project_dir.glob(pattern):
+                    if item.is_dir():
+                        shutil.rmtree(item)
+                        stats["dirs_deleted"] += 1
+                    elif item.is_file():
+                        item.unlink()
+                        stats["files_deleted"] += 1
+
+        else:
+            # Standard clean: remove src, docs, tests contents but keep structure
+            for subdir in ["src", "docs", "tests"]:
+                subdir_path = project_dir / subdir
+                if subdir_path.exists():
+                    for item in subdir_path.iterdir():
+                        if item.is_dir():
+                            shutil.rmtree(item)
+                            stats["dirs_deleted"] += 1
+                        else:
+                            item.unlink()
+                            stats["files_deleted"] += 1
+
+        # Reset project to clean state
+        self.mark_clean(project_name)
+
+        return stats
