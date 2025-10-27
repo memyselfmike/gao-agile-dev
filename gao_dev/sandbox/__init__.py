@@ -16,6 +16,7 @@ from .benchmark import BenchmarkConfig, BenchmarkError, load_benchmark, validate
 from .git_cloner import GitCloner
 from .template_scanner import TemplateScanner, TemplateVariable
 from .template_substitutor import TemplateSubstitutor, SubstitutionResult, SubstitutionError
+from .dependency_installer import DependencyInstaller, PackageManager, DependencyInstallError
 
 __all__ = [
     "SandboxManager",
@@ -40,4 +41,7 @@ __all__ = [
     "TemplateSubstitutor",
     "SubstitutionResult",
     "SubstitutionError",
+    "DependencyInstaller",
+    "PackageManager",
+    "DependencyInstallError",
 ]
