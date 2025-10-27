@@ -469,6 +469,116 @@ class SandboxManager:
         metadata.last_modified = datetime.now()
         self.update_project(project_name, metadata)
 
+    def get_projects_for_benchmark(self, benchmark_name: str) -> List[ProjectMetadata]:
+        """
+        Get all projects associated with a specific benchmark.
+
+        Finds projects whose names start with the benchmark name pattern
+        (e.g., 'todo-app-baseline-run-001', 'todo-app-baseline-run-002').
+
+        Args:
+            benchmark_name: Name of the benchmark (e.g., 'todo-app-baseline')
+
+        Returns:
+            List of ProjectMetadata objects for matching projects
+        """
+        pattern = f"{benchmark_name}-run-"
+        all_projects = self.list_projects()
+        return [p for p in all_projects if p.name.startswith(pattern)]
+
+    def get_last_run_number(self, benchmark_name: str) -> int:
+        """
+        Get the highest run number for a benchmark.
+
+        Scans all projects matching the benchmark name pattern
+        and returns the highest run number found. Returns 0 if
+        no runs exist yet.
+
+        Args:
+            benchmark_name: Name of the benchmark (e.g., 'todo-app-baseline')
+
+        Returns:
+            Highest run number (0 if no runs exist)
+        """
+        projects = self.get_projects_for_benchmark(benchmark_name)
+
+        if not projects:
+            return 0
+
+        # Extract run numbers from project names
+        # Format: benchmark-name-run-NNN
+        pattern = f"{benchmark_name}-run-"
+        max_num = 0
+
+        for project in projects:
+            if project.name.startswith(pattern):
+                # Extract the number part
+                suffix = project.name[len(pattern) :]
+                try:
+                    run_num = int(suffix)
+                    max_num = max(max_num, run_num)
+                except ValueError:
+                    # Not a valid run number, skip
+                    continue
+
+        return max_num
+
+    def create_run_project(
+        self, benchmark_file: Path, benchmark_config: "BenchmarkConfig"
+    ) -> ProjectMetadata:
+        """
+        Create a new project with auto-generated run ID.
+
+        Automatically generates the next run ID in sequence for the
+        specified benchmark, following the format: benchmark-name-run-NNN
+
+        Example: If last run was 'todo-app-baseline-run-003',
+        creates 'todo-app-baseline-run-004'.
+
+        Args:
+            benchmark_file: Path to the benchmark YAML file
+            benchmark_config: Parsed benchmark configuration
+
+        Returns:
+            ProjectMetadata for the created project
+
+        Raises:
+            InvalidProjectNameError: If generated name is invalid
+            ProjectExistsError: If project somehow already exists
+        """
+        benchmark_name = benchmark_config.name
+        benchmark_version = benchmark_config.version
+
+        # Get next run number
+        last_run = self.get_last_run_number(benchmark_name)
+        next_run = last_run + 1
+
+        # Generate run ID with zero-padding (3 digits)
+        run_id = f"{benchmark_name}-run-{next_run:03d}"
+
+        # Create project with generated name
+        metadata = self.create_project(
+            name=run_id,
+            tags=["benchmark", benchmark_name, f"version:{benchmark_version}"],
+            description=f"Benchmark run {next_run} for {benchmark_name} v{benchmark_version}",
+        )
+
+        # Add benchmark info to metadata
+        metadata.benchmark_info = {
+            "benchmark_name": benchmark_name,
+            "benchmark_version": benchmark_version,
+            "benchmark_file": str(benchmark_file),
+            "prompt_hash": benchmark_config.prompt_hash,
+            "run_number": next_run,
+            "complexity_level": benchmark_config.complexity_level,
+            "estimated_duration_minutes": benchmark_config.estimated_duration_minutes,
+        }
+
+        # Update metadata with benchmark info
+        self.update_project(run_id, metadata)
+
+        return metadata
+
     def _is_valid_transition(
         self, current_status: ProjectStatus, new_status: ProjectStatus
     ) -> bool:

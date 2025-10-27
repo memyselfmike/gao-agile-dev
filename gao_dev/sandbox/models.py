@@ -64,10 +64,11 @@ class ProjectMetadata:
     runs: List[BenchmarkRun] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
     description: str = ""
+    benchmark_info: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for YAML serialization."""
-        return {
+        result = {
             "name": self.name,
             "created_at": self.created_at.isoformat(),
             "status": self.status.value,
@@ -77,6 +78,11 @@ class ProjectMetadata:
             "tags": self.tags,
             "description": self.description,
         }
+
+        if self.benchmark_info:
+            result["benchmark_info"] = self.benchmark_info
+
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ProjectMetadata":
@@ -90,6 +96,7 @@ class ProjectMetadata:
             runs=[BenchmarkRun.from_dict(run) for run in data.get("runs", [])],
             tags=data.get("tags", []),
             description=data.get("description", ""),
+            benchmark_info=data.get("benchmark_info"),
         )
 
     def add_run(self, run: BenchmarkRun) -> None:

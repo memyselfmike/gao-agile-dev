@@ -9,6 +9,7 @@ from .exceptions import (
     InvalidProjectNameError,
     ProjectStateError,
 )
+from .benchmark import BenchmarkConfig, BenchmarkError, load_benchmark, validate_benchmark_file
 
 __all__ = [
     "SandboxManager",
@@ -20,4 +21,8 @@ __all__ = [
     "ProjectNotFoundError",
     "InvalidProjectNameError",
     "ProjectStateError",
+    "BenchmarkConfig",
+    "BenchmarkError",
+    "load_benchmark",
+    "validate_benchmark_file",
 ]

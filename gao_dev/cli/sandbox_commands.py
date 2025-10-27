@@ -370,37 +370,243 @@ def run(
     api_key: Optional[str],
 ):
     """
-    Execute a benchmark run.
+    Execute a benchmark run with auto-generated run ID.
 
-    Runs a complete benchmark based on the provided configuration file.
-    This executes the full BMAD workflow autonomously and collects metrics.
+    Loads the benchmark configuration, auto-generates a sequential run ID
+    (e.g., todo-app-baseline-run-001), and creates the sandbox project.
 
-    Note: Requires Anthropic API key for autonomous agent execution.
+    The run ID follows the scientific method: benchmark-name-run-NNN
 
     Examples:
         gao-dev sandbox run benchmarks/todo-baseline.yaml
         gao-dev sandbox run benchmarks/custom.yaml --timeout 7200
-        gao-dev sandbox run benchmarks/test.yaml --project todo-app-001
+
+    Note: Full autonomous execution will be added in Epic 4.
     """
-    click.echo(f">> Running benchmark: {benchmark_config}")
+    try:
+        from pathlib import Path
+        from gao_dev.sandbox import load_benchmark, SandboxManager
 
-    if project:
-        click.echo(f"  Using project: {project}")
-    else:
-        click.echo(f"  Creating new project")
+        click.echo(f"\n>> Reading benchmark: {benchmark_config}")
 
-    click.echo(f"  Timeout: {timeout}s")
+        # Load and validate benchmark
+        benchmark_file = Path(benchmark_config)
+        try:
+            config = load_benchmark(benchmark_file)
+        except Exception as e:
+            click.echo(f"\n[ERROR] Failed to load benchmark: {e}", err=True)
+            sys.exit(1)
 
-    if not api_key:
-        click.echo("\n[ERROR] Anthropic API key required")
-        click.echo("  Set ANTHROPIC_API_KEY environment variable or use --api-key option")
-        return
+        click.echo(f"  Benchmark: {config.name} v{config.version}")
+        click.echo(f"  Complexity: Level {config.complexity_level}")
+        click.echo(f"  Estimated: {config.estimated_duration_minutes} minutes")
 
-    # Implementation will be added in Epic 4
-    click.echo(f"\n  [PENDING] Benchmark execution")
-    click.echo(f"  [PENDING] This feature will be implemented in Epic 4")
+        # Initialize sandbox manager
+        sandbox_root = Path.cwd() / "sandbox"
+        manager = SandboxManager(sandbox_root)
 
-    click.echo("\n[INFO] Sandbox run command structure ready")
+        # Check if using existing project or creating new one
+        if project:
+            # Use existing project
+            if not manager.project_exists(project):
+                click.echo(f"\n[ERROR] Project not found: {project}", err=True)
+                sys.exit(1)
+
+            click.echo(f"\n>> Using existing project: {project}")
+            metadata = manager.get_project(project)
+            run_id = project
+
+        else:
+            # Auto-generate run ID
+            last_run = manager.get_last_run_number(config.name)
+            next_run = last_run + 1
+
+            click.echo(f"\n>> Auto-generating run ID...")
+            if last_run > 0:
+                click.echo(f"  Last run: {config.name}-run-{last_run:03d}")
+            else:
+                click.echo(f"  No previous runs found")
+
+            click.echo(f"  Creating: {config.name}-run-{next_run:03d}")
+
+            # Create project with auto-generated ID
+            metadata = manager.create_run_project(benchmark_file, config)
+            run_id = metadata.name
+
+            click.echo(f"\n>> Project created: sandbox/projects/{run_id}")
+
+            # Create project structure
+            project_path = manager.get_project_path(run_id)
+            _create_project_readme(project_path, metadata, config.boilerplate.get("repo_url"))
+
+            if not config.boilerplate.get("repo_url"):
+                click.echo("  Note: No boilerplate specified, starting from empty project")
+
+        # Display prompt hash for verification
+        click.echo(f"\n>> Benchmark Details:")
+        click.echo(f"  Prompt hash: {config.prompt_hash[:16]}...")
+        click.echo(f"  Description: {config.description}")
+
+        # Display initial prompt (first 300 chars)
+        prompt_preview = config.initial_prompt[:300].strip()
+        if len(config.initial_prompt) > 300:
+            prompt_preview += "..."
+
+        click.echo(f"\n>> Initial Prompt:")
+        click.echo("  " + "-" * 70)
+        for line in prompt_preview.split("\n"):
+            click.echo(f"  {line}")
+        click.echo("  " + "-" * 70)
+
+        # Display next steps
+        click.echo(f"\n>> Next Steps:")
+        click.echo(f"  1. Navigate to: cd sandbox/projects/{run_id}")
+        click.echo(f"  2. Review the standardized prompt in README.md")
+        click.echo(f"  3. Execute the benchmark (manual or via GAO-Dev agents)")
+        click.echo(f"  4. Document results in ITERATION_LOG.md")
+
+        click.echo(f"\n>> Scientific Tracking:")
+        click.echo(f"  Run ID: {run_id}")
+        click.echo(f"  Benchmark: {config.name} v{config.version}")
+        click.echo(f"  All metrics will be tracked under this run ID")
+
+        if not api_key:
+            click.echo(f"\n[INFO] Autonomous execution requires API key")
+            click.echo(f"  Set ANTHROPIC_API_KEY or use --api-key option")
+            click.echo(f"  (Full autonomous execution coming in Epic 4)")
+
+        click.echo(f"\n[OK] Benchmark run initialized successfully")
+
+    except Exception as e:
+        click.echo(f"\n[ERROR] Unexpected error: {e}", err=True)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+@sandbox.command(name="runs")
+@click.argument("benchmark_name")
+@click.option(
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Show detailed information for each run",
+)
+@click.option(
+    "--format",
+    type=click.Choice(["table", "json", "simple"]),
+    default="table",
+    help="Output format (default: table)",
+)
+def list_runs(benchmark_name: str, verbose: bool, format: str):
+    """
+    List all runs for a specific benchmark.
+
+    Shows all benchmark runs in chronological order with key metrics.
+    Use this to track improvement over time for a specific benchmark.
+
+    Examples:
+        gao-dev sandbox runs todo-app-baseline
+        gao-dev sandbox runs simple-api-baseline -v
+        gao-dev sandbox runs todo-app-baseline --format json
+    """
+    try:
+        from pathlib import Path
+        from gao_dev.sandbox import SandboxManager
+
+        click.echo(f"\n>> Listing runs for: {benchmark_name}")
+
+        # Initialize manager
+        sandbox_root = Path.cwd() / "sandbox"
+        manager = SandboxManager(sandbox_root)
+
+        # Get all projects for this benchmark
+        projects = manager.get_projects_for_benchmark(benchmark_name)
+
+        if not projects:
+            click.echo(f"\n[INFO] No runs found for benchmark: {benchmark_name}")
+            click.echo(f"  Create a run with: gao-dev sandbox run benchmarks/{benchmark_name}.yaml")
+            return
+
+        # Sort by run number (extracted from name)
+        def get_run_num(p):
+            try:
+                return int(p.name.split("-run-")[-1])
+            except:
+                return 0
+
+        projects.sort(key=get_run_num)
+
+        # Display based on format
+        if format == "json":
+            import json
+
+            runs_data = []
+            for p in projects:
+                run_num = get_run_num(p)
+                runs_data.append(
+                    {
+                        "run_number": run_num,
+                        "run_id": p.name,
+                        "status": p.status.value,
+                        "created_at": p.created_at.isoformat(),
+                        "run_count": p.get_run_count(),
+                        "tags": p.tags,
+                        "benchmark_info": p.benchmark_info,
+                    }
+                )
+
+            click.echo(json.dumps(runs_data, indent=2))
+
+        elif format == "simple":
+            for p in projects:
+                click.echo(p.name)
+
+        else:
+            # Table format
+            click.echo(f"\nBenchmark: {benchmark_name}")
+            click.echo("=" * 80)
+
+            for p in projects:
+                run_num = get_run_num(p)
+                status_symbol = {
+                    "active": "[ACTIVE]",
+                    "completed": "[DONE]",
+                    "failed": "[FAIL]",
+                    "archived": "[ARCH]",
+                }.get(p.status.value, "[????]")
+
+                click.echo(f"\nRun {run_num:03d} | {status_symbol} | {p.name}")
+                click.echo(f"  Created: {p.created_at.strftime('%Y-%m-%d %H:%M')}")
+
+                if p.benchmark_info:
+                    version = p.benchmark_info.get("benchmark_version", "unknown")
+                    prompt_hash = p.benchmark_info.get("prompt_hash", "")[:16]
+                    click.echo(f"  Version: {version} | Prompt: {prompt_hash}...")
+
+                if verbose:
+                    click.echo(f"  Description: {p.description}")
+                    click.echo(f"  Tags: {', '.join(p.tags)}")
+                    if p.get_run_count() > 0:
+                        click.echo(f"  Runs: {p.get_run_count()}")
+
+            click.echo("\n" + "=" * 80)
+            click.echo(f"Total runs: {len(projects)}")
+
+            # Show trend
+            completed = sum(1 for p in projects if p.status.value == "completed")
+            failed = sum(1 for p in projects if p.status.value == "failed")
+            active = sum(1 for p in projects if p.status.value == "active")
+
+            click.echo(f"\nStatus: {completed} completed | {failed} failed | {active} active")
+
+        click.echo(f"\n[OK] Listed {len(projects)} runs for {benchmark_name}")
+
+    except Exception as e:
+        click.echo(f"\n[ERROR] Failed to list runs: {e}", err=True)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 @sandbox.command()
