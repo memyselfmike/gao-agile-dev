@@ -1,11 +1,12 @@
 # Story 6.3: Authentication Specification
 
 **Epic**: Epic 6 - Reference Todo Application
-**Status**: In Progress
+**Status**: Done
 **Priority**: P0 (Critical)
 **Estimated Effort**: 3 story points
 **Owner**: Winston (Architect), Murat (QA)
 **Created**: 2025-10-27
+**Completed**: 2025-10-27
 
 ---
 
