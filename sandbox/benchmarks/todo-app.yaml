@@ -1,0 +1,80 @@
+# Todo Application Benchmark Configuration
+#
+# This benchmark tests GAO-Dev's ability to build a complete todo application
+# with authentication, CRUD operations, and database integration.
+
+name: todo-app
+description: Build a complete todo application with user authentication, CRUD operations, and categories
+version: 1.0.0
+project_name: todo-app-benchmark
+
+# Boilerplate template
+boilerplate_url: https://github.com/vercel/next.js/tree/canary/examples/with-tailwindcss
+
+# Overall timeout: 2 hours
+timeout_seconds: 7200
+
+# Success criteria
+success_criteria:
+  min_test_coverage: 80.0
+  max_manual_interventions: 0
+  max_errors: 0
+  required_features:
+    - user-authentication
+    - todo-crud
+    - categories
+    - database-integration
+  quality_gates:
+    linting_score: 100
+    type_safety: true
+    tests_passing: true
+
+# Workflow phases
+workflow_phases:
+  - phase_name: planning
+    timeout_seconds: 1800  # 30 minutes
+    expected_artifacts:
+      - docs/PRD.md
+      - docs/epics.md
+    skip_if_failed: false
+
+  - phase_name: architecture
+    timeout_seconds: 1800  # 30 minutes
+    expected_artifacts:
+      - docs/ARCHITECTURE.md
+    skip_if_failed: false
+
+  - phase_name: implementation
+    timeout_seconds: 3600  # 1 hour
+    expected_artifacts:
+      - src/
+      - tests/
+      - package.json
+    quality_gates:
+      tests_passing: true
+      linting_errors: 0
+    skip_if_failed: false
+
+  - phase_name: testing
+    timeout_seconds: 900  # 15 minutes
+    expected_artifacts:
+      - coverage/
+    quality_gates:
+      min_coverage: 80.0
+    skip_if_failed: false
+
+# Metadata
+metadata:
+  category: web-applications
+  difficulty: intermediate
+  technologies:
+    - Next.js
+    - React
+    - Tailwind CSS
+    - TypeScript
+  estimated_duration: 7200
+  tags:
+    - web
+    - fullstack
+    - nextjs
+    - todo
