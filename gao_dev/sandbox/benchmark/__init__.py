@@ -20,6 +20,12 @@ from .orchestrator import (
     PhaseResult,
     WorkflowExecutionResult,
 )
+from .checker import (
+    SuccessCriteriaChecker,
+    CheckResult,
+    CriterionResult,
+    CriterionStatus,
+)
 
 __all__ = [
     "BenchmarkConfig",
@@ -34,4 +40,8 @@ __all__ = [
     "WorkflowOrchestrator",
     "PhaseResult",
     "WorkflowExecutionResult",
+    "SuccessCriteriaChecker",
+    "CheckResult",
+    "CriterionResult",
+    "CriterionStatus",
 ]

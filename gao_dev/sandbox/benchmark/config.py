@@ -46,7 +46,9 @@ class WorkflowPhaseConfig:
     """
 
     phase_name: str
+    command: Optional[str] = None
     timeout_seconds: int = 3600
+    continue_on_failure: bool = False
     expected_artifacts: List[str] = field(default_factory=list)
     quality_gates: Dict[str, Any] = field(default_factory=dict)
     skip_if_failed: bool = False
