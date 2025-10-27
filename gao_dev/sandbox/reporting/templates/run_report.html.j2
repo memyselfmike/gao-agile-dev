@@ -1,0 +1,250 @@
+{% extends "base_report.html.j2" %}
+
+{% block title %}Run Report - {{ run.benchmark_name }}{% endblock %}
+
+{% block header_title %}Benchmark Run Report{% endblock %}
+
+{% block header_subtitle %}
+{{ run.benchmark_name }} - {{ run.start_time|format_timestamp }}
+{% endblock %}
+
+{% block navigation %}
+<nav>
+    <a href="#summary" class="active">Summary</a>
+    <a href="#performance">Performance</a>
+    <a href="#quality">Quality</a>
+    <a href="#workflow">Workflow</a>
+    {% if charts %}
+    <a href="#charts">Charts</a>
+    {% endif %}
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Section -->
+<section id="summary">
+    <h2>Benchmark Summary</h2>
+
+    <div class="metric-grid">
+        <div class="metric">
+            <span class="label">Status</span>
+            <span class="value">
+                {% include "partials/status_badge.html.j2" with context %}
+            </span>
+        </div>
+
+        <div class="metric">
+            <span class="label">Duration</span>
+            <span class="value">
+                {% if summary.total_duration %}
+                {{ summary.total_duration.total_seconds()|format_duration }}
+                {% else %}
+                N/A
+                {% endif %}
+            </span>
+        </div>
+
+        {% if summary.test_coverage is defined %}
+        <div class="metric">
+            <span class="label">Test Coverage</span>
+            <span class="value">{{ summary.test_coverage|format_percent }}</span>
+        </div>
+        {% endif %}
+
+        {% if summary.total_errors is defined %}
+        <div class="metric">
+            <span class="label">Total Errors</span>
+            <span class="value">{{ summary.total_errors }}</span>
+        </div>
+        {% endif %}
+
+        {% if summary.total_api_calls is defined %}
+        <div class="metric">
+            <span class="label">API Calls</span>
+            <span class="value">{{ summary.total_api_calls }}</span>
+        </div>
+        {% endif %}
+
+        {% if summary.avg_response_time is defined %}
+        <div class="metric">
+            <span class="label">Avg Response Time</span>
+            <span class="value">{{ summary.avg_response_time|format_number }}<span class="unit">ms</span></span>
+        </div>
+        {% endif %}
+    </div>
+
+    <h3>Run Information</h3>
+    <table>
+        <tbody>
+            <tr>
+                <td><strong>Run ID</strong></td>
+                <td class="font-mono">{{ run.run_id }}</td>
+            </tr>
+            <tr>
+                <td><strong>Benchmark Name</strong></td>
+                <td>{{ run.benchmark_name }}</td>
+            </tr>
+            <tr>
+                <td><strong>Project Name</strong></td>
+                <td>{{ run.project_name }}</td>
+            </tr>
+            <tr>
+                <td><strong>Start Time</strong></td>
+                <td>{{ run.start_time|format_timestamp }}</td>
+            </tr>
+            {% if run.end_time %}
+            <tr>
+                <td><strong>End Time</strong></td>
+                <td>{{ run.end_time|format_timestamp }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</section>
+
+<!-- Performance Metrics Section -->
+{% if performance %}
+<section id="performance">
+    <h2>Performance Metrics</h2>
+
+    <div class="metric-grid">
+        <div class="metric">
+            <span class="label">Avg Response Time</span>
+            <span class="value">{{ performance.avg_response_time_ms|format_number }}<span class="unit">ms</span></span>
+        </div>
+        <div class="metric">
+            <span class="label">Min Response Time</span>
+            <span class="value">{{ performance.min_response_time_ms|format_number }}<span class="unit">ms</span></span>
+        </div>
+        <div class="metric">
+            <span class="label">Max Response Time</span>
+            <span class="value">{{ performance.max_response_time_ms|format_number }}<span class="unit">ms</span></span>
+        </div>
+        <div class="metric">
+            <span class="label">Total API Calls</span>
+            <span class="value">{{ performance.total_api_calls }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Total Tokens</span>
+            <span class="value">{{ performance.total_tokens_used|format_number }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Peak Memory</span>
+            <span class="value">{{ performance.peak_memory_mb|format_number }}<span class="unit">MB</span></span>
+        </div>
+    </div>
+
+    {% if charts and charts.response_time %}
+    <h3>Response Time Chart</h3>
+    {% with image_data=charts.response_time, title="Response Time Over Time" %}
+        {% include "partials/chart_container.html.j2" %}
+    {% endwith %}
+    {% endif %}
+</section>
+{% endif %}
+
+<!-- Quality Metrics Section -->
+{% if quality %}
+<section id="quality">
+    <h2>Quality Metrics</h2>
+
+    <div class="metric-grid">
+        <div class="metric">
+            <span class="label">Test Coverage</span>
+            <span class="value">{{ quality.test_coverage_percent|format_percent }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Test Count</span>
+            <span class="value">{{ quality.test_count }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Tests Passed</span>
+            <span class="value">{{ quality.tests_passed }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Tests Failed</span>
+            <span class="value">{{ quality.tests_failed }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Error Count</span>
+            <span class="value">{{ quality.error_count }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Type Check Pass</span>
+            <span class="value">
+                {% if quality.type_check_passed %}
+                <span class="status-badge status-success">Pass</span>
+                {% else %}
+                <span class="status-badge status-error">Fail</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    {% if charts and charts.test_coverage %}
+    <h3>Test Coverage</h3>
+    {% with image_data=charts.test_coverage, title="Test Coverage" %}
+        {% include "partials/chart_container.html.j2" %}
+    {% endwith %}
+    {% endif %}
+</section>
+{% endif %}
+
+<!-- Workflow Metrics Section -->
+{% if workflow %}
+<section id="workflow">
+    <h2>Workflow Metrics</h2>
+
+    <div class="metric-grid">
+        <div class="metric">
+            <span class="label">Total Phases</span>
+            <span class="value">{{ workflow.phase_durations|length }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Agent Handoffs</span>
+            <span class="value">{{ workflow.agent_handoffs }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Manual Interventions</span>
+            <span class="value">{{ workflow.manual_interventions }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Autonomy Score</span>
+            <span class="value">{{ workflow.autonomy_score|format_percent }}</span>
+        </div>
+    </div>
+
+    <h3>Phase Timeline</h3>
+    {% include "partials/timeline.html.j2" %}
+
+    {% if charts and charts.phase_durations %}
+    <h3>Phase Duration Chart</h3>
+    {% with image_data=charts.phase_durations, title="Phase Durations" %}
+        {% include "partials/chart_container.html.j2" %}
+    {% endwith %}
+    {% endif %}
+</section>
+{% endif %}
+
+<!-- Charts Section -->
+{% if charts %}
+<section id="charts">
+    <h2>Visualizations</h2>
+
+    {% for chart_name, chart_data in charts.items() %}
+        {% if chart_name not in ['response_time', 'test_coverage', 'phase_durations'] %}
+        <h3>{{ chart_name|replace('_', ' ')|title }}</h3>
+        {% with image_data=chart_data, title=chart_name|replace('_', ' ')|title %}
+            {% include "partials/chart_container.html.j2" %}
+        {% endwith %}
+        {% endif %}
+    {% endfor %}
+</section>
+{% endif %}
+
+<!-- Detailed Metrics -->
+<section id="details">
+    <h2>Detailed Metrics</h2>
+    {% include "partials/metrics_table.html.j2" %}
+</section>
+{% endblock %}

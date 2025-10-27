@@ -953,3 +953,12 @@ def _print_simple(projects: list) -> None:
 
     for project in projects_list:
         click.echo(project.name)
+
+
+# ============================================================================
+# REPORT COMMANDS
+# ============================================================================
+
+# Import and register report commands
+from .report_commands import report_group
+sandbox.add_command(report_group)

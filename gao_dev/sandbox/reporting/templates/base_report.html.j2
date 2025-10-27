@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GAO-Dev Benchmark Report{% endblock %}</title>
+    <style>
+        {% include 'assets/report_styles.css' %}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>{% block header_title %}GAO-Dev Benchmark Report{% endblock %}</h1>
+        <div class="subtitle">{% block header_subtitle %}{% endblock %}</div>
+
+        {% block navigation %}
+        <nav>
+            <a href="#summary">Summary</a>
+            <a href="#metrics">Metrics</a>
+            <a href="#details">Details</a>
+        </nav>
+        {% endblock %}
+    </header>
+
+    <main>
+        {% block content %}
+        <!-- Content goes here -->
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>Generated: {{ generation_time|format_timestamp }}</p>
+        <p>GAO-Dev v{{ version }}</p>
+        <p>Report generated with GAO-Dev Benchmarking System</p>
+    </footer>
+
+    <script>
+        {% include 'assets/report.js' %}
+    </script>
+</body>
+</html>

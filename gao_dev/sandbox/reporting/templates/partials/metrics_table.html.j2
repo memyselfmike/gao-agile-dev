@@ -1,0 +1,64 @@
+<table class="sortable">
+    <thead>
+        <tr>
+            <th>Metric</th>
+            <th>Value</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if performance %}
+        <tr>
+            <td>Average Response Time</td>
+            <td class="font-mono">{{ performance.avg_response_time_ms|format_number }} ms</td>
+            <td>
+                <span class="status-badge {% if performance.avg_response_time_ms < 1000 %}status-success{% elif performance.avg_response_time_ms < 3000 %}status-warning{% else %}status-error{% endif %}">
+                    {% if performance.avg_response_time_ms < 1000 %}Excellent{% elif performance.avg_response_time_ms < 3000 %}Good{% else %}Needs Improvement{% endif %}
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td>Total API Calls</td>
+            <td class="font-mono">{{ performance.total_api_calls }}</td>
+            <td>
+                <span class="status-badge status-info">{{ performance.total_api_calls }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>Total Tokens Used</td>
+            <td class="font-mono">{{ performance.total_tokens_used|format_number }}</td>
+            <td>
+                <span class="status-badge status-info">{{ performance.total_tokens_used|format_number }}</span>
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if quality %}
+        <tr>
+            <td>Test Coverage</td>
+            <td class="font-mono">{{ quality.test_coverage_percent|format_percent }}</td>
+            <td>
+                <span class="status-badge {% if quality.test_coverage_percent >= 80 %}status-success{% elif quality.test_coverage_percent >= 60 %}status-warning{% else %}status-error{% endif %}">
+                    {% if quality.test_coverage_percent >= 80 %}Excellent{% elif quality.test_coverage_percent >= 60 %}Good{% else %}Low{% endif %}
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td>Total Errors</td>
+            <td class="font-mono">{{ quality.error_count }}</td>
+            <td>
+                <span class="status-badge {% if quality.error_count == 0 %}status-success{% elif quality.error_count < 5 %}status-warning{% else %}status-error{% endif %}">
+                    {% if quality.error_count == 0 %}No Errors{% elif quality.error_count < 5 %}Few Errors{% else %}Many Errors{% endif %}
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td>Test Count</td>
+            <td class="font-mono">{{ quality.test_count }}</td>
+            <td>
+                <span class="status-badge status-info">{{ quality.test_count }} tests</span>
+            </td>
+        </tr>
+        {% endif %}
+    </tbody>
+</table>

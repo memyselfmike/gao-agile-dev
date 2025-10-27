@@ -1,0 +1,266 @@
+{% extends "base_report.html.j2" %}
+
+{% block title %}Trend Analysis Report{% endblock %}
+
+{% block header_title %}Benchmark Trend Analysis{% endblock %}
+
+{% block header_subtitle %}
+Analyzing {{ runs|length }} runs from {{ summary.first_run_date|format_timestamp }} to {{ summary.last_run_date|format_timestamp }}
+{% endblock %}
+
+{% block navigation %}
+<nav>
+    <a href="#summary" class="active">Summary</a>
+    <a href="#performance">Performance Trends</a>
+    <a href="#quality">Quality Trends</a>
+    <a href="#workflow">Workflow Trends</a>
+    <a href="#insights">Insights</a>
+    {% if charts %}
+    <a href="#charts">Charts</a>
+    {% endif %}
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Section -->
+<section id="summary">
+    <h2>Trend Summary</h2>
+
+    <div class="metric-grid">
+        <div class="metric">
+            <span class="label">Total Runs</span>
+            <span class="value">{{ summary.total_runs }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Time Span</span>
+            <span class="value">{{ summary.time_span_days }} <span class="unit">days</span></span>
+        </div>
+        <div class="metric">
+            <span class="label">Improving Metrics</span>
+            <span class="value" style="color: var(--success-color);">{{ summary.metrics_improving }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Degrading Metrics</span>
+            <span class="value" style="color: var(--error-color);">{{ summary.metrics_degrading }}</span>
+        </div>
+        <div class="metric">
+            <span class="label">Stable Metrics</span>
+            <span class="value" style="color: var(--gray-600);">{{ summary.metrics_stable }}</span>
+        </div>
+    </div>
+
+    <h3>Analysis Period</h3>
+    <table>
+        <tbody>
+            <tr>
+                <td><strong>First Run</strong></td>
+                <td>{{ summary.first_run_date|format_timestamp }}</td>
+            </tr>
+            <tr>
+                <td><strong>Last Run</strong></td>
+                <td>{{ summary.last_run_date|format_timestamp }}</td>
+            </tr>
+            <tr>
+                <td><strong>Total Runs Analyzed</strong></td>
+                <td>{{ summary.total_runs }}</td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- Performance Trends -->
+{% if performance_trends %}
+<section id="performance">
+    <h2>Performance Trends</h2>
+
+    {% for trend in performance_trends %}
+    <h3 class="collapsible">{{ trend.metric_name }}</h3>
+    <div class="collapsible-content">
+        <div class="metric-grid">
+            <div class="metric">
+                <span class="label">Trend Direction</span>
+                <span class="value">
+                    {% if trend.trend_direction == 'improving' %}
+                    <span class="status-badge status-success">Improving</span>
+                    {% elif trend.trend_direction == 'degrading' %}
+                    <span class="status-badge status-error">Degrading</span>
+                    {% else %}
+                    <span class="status-badge status-default">Stable</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="metric">
+                <span class="label">Mean</span>
+                <span class="value">{{ trend.mean|format_number }}</span>
+            </div>
+            <div class="metric">
+                <span class="label">Median</span>
+                <span class="value">{{ trend.median|format_number }}</span>
+            </div>
+            <div class="metric">
+                <span class="label">Std Dev</span>
+                <span class="value">{{ trend.std_dev|format_number }}</span>
+            </div>
+            <div class="metric">
+                <span class="label">Min</span>
+                <span class="value">{{ trend.min_value|format_number }}</span>
+            </div>
+            <div class="metric">
+                <span class="label">Max</span>
+                <span class="value">{{ trend.max_value|format_number }}</span>
+            </div>
+        </div>
+
+        <table>
+            <tbody>
+                <tr>
+                    <td><strong>Overall Change</strong></td>
+                    <td class="font-mono">
+                        <span class="delta {% if trend.percent_change > 0 %}delta-positive{% elif trend.percent_change < 0 %}delta-negative{% else %}delta-neutral{% endif %}">
+                            {{ trend.percent_change|format_percent }}
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>R-Squared (fit)</strong></td>
+                    <td class="font-mono">{{ (trend.r_squared * 100)|format_percent }}</td>
+                </tr>
+                {% if trend.outlier_indices %}
+                <tr>
+                    <td><strong>Outliers</strong></td>
+                    <td>{{ trend.outlier_indices|length }} detected</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        {% if charts %}
+            {% set chart_name = trend.metric_name|lower|replace(' ', '_') %}
+            {% if charts[chart_name] %}
+            {% with image_data=charts[chart_name], title=trend.metric_name + " Trend" %}
+                {% include "partials/chart_container.html.j2" %}
+            {% endwith %}
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+<!-- Quality Trends -->
+{% if quality_trends %}
+<section id="quality">
+    <h2>Quality Trends</h2>
+
+    {% for trend in quality_trends %}
+    <h3 class="collapsible">{{ trend.metric_name }}</h3>
+    <div class="collapsible-content">
+        <div class="metric-grid">
+            <div class="metric">
+                <span class="label">Trend Direction</span>
+                <span class="value">
+                    {% if trend.trend_direction == 'improving' %}
+                    <span class="status-badge status-success">Improving</span>
+                    {% elif trend.trend_direction == 'degrading' %}
+                    <span class="status-badge status-error">Degrading</span>
+                    {% else %}
+                    <span class="status-badge status-default">Stable</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="metric">
+                <span class="label">Mean</span>
+                <span class="value">{{ trend.mean|format_number }}</span>
+            </div>
+            <div class="metric">
+                <span class="label">Overall Change</span>
+                <span class="value">{{ trend.percent_change|format_percent }}</span>
+            </div>
+        </div>
+
+        {% if charts %}
+            {% set chart_name = trend.metric_name|lower|replace(' ', '_') %}
+            {% if charts[chart_name] %}
+            {% with image_data=charts[chart_name], title=trend.metric_name + " Trend" %}
+                {% include "partials/chart_container.html.j2" %}
+            {% endwith %}
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+<!-- Workflow Trends -->
+{% if workflow_trends %}
+<section id="workflow">
+    <h2>Workflow Trends</h2>
+
+    {% for trend in workflow_trends %}
+    <h3 class="collapsible">{{ trend.metric_name }}</h3>
+    <div class="collapsible-content">
+        <div class="metric-grid">
+            <div class="metric">
+                <span class="label">Trend Direction</span>
+                <span class="value">
+                    {% if trend.trend_direction == 'improving' %}
+                    <span class="status-badge status-success">Improving</span>
+                    {% elif trend.trend_direction == 'degrading' %}
+                    <span class="status-badge status-error">Degrading</span>
+                    {% else %}
+                    <span class="status-badge status-default">Stable</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="metric">
+                <span class="label">Mean</span>
+                <span class="value">{{ trend.mean|format_number }}</span>
+            </div>
+            <div class="metric">
+                <span class="label">Overall Change</span>
+                <span class="value">{{ trend.percent_change|format_percent }}</span>
+            </div>
+        </div>
+
+        {% if charts %}
+            {% set chart_name = trend.metric_name|lower|replace(' ', '_') %}
+            {% if charts[chart_name] %}
+            {% with image_data=charts[chart_name], title=trend.metric_name + " Trend" %}
+                {% include "partials/chart_container.html.j2" %}
+            {% endwith %}
+            {% endif %}
+        {% endif %}
+    </div>
+    {% endfor %}
+</section>
+{% endif %}
+
+<!-- Insights Section -->
+{% if insights %}
+<section id="insights">
+    <h2>Key Insights</h2>
+
+    <ul style="list-style: none; padding: 0;">
+        {% for insight in insights %}
+        <li style="padding: var(--spacing-md); margin-bottom: var(--spacing-sm); background-color: var(--gray-100); border-left: 4px solid var(--primary-color); border-radius: var(--radius-sm);">
+            {{ insight }}
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+<!-- Charts Section -->
+{% if charts %}
+<section id="charts">
+    <h2>All Trend Charts</h2>
+
+    {% for chart_name, chart_data in charts.items() %}
+    <h3>{{ chart_name|replace('_', ' ')|title }}</h3>
+    {% with image_data=chart_data, title=chart_name|replace('_', ' ')|title %}
+        {% include "partials/chart_container.html.j2" %}
+    {% endwith %}
+    {% endfor %}
+</section>
+{% endif %}
+{% endblock %}
