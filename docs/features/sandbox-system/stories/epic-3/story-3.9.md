@@ -1,11 +1,12 @@
 # Story 3.9: Metrics Export Functionality
 
 **Epic**: Epic 3 - Metrics Collection System
-**Status**: Ready
+**Status**: Done
 **Priority**: P2 (Medium)
 **Estimated Effort**: 2 story points
 **Owner**: Amelia (Developer)
 **Created**: 2025-10-27
+**Completed**: 2025-10-27
 
 ---
 
@@ -20,28 +21,28 @@
 ## Acceptance Criteria
 
 ### AC1: JSON Export
-- [ ] Export single run to JSON file
-- [ ] Export multiple runs to JSON array
-- [ ] Pretty-printed JSON output
-- [ ] Include all metric categories
+- [x] Export single run to JSON file
+- [x] Export multiple runs to JSON array
+- [x] Pretty-printed JSON output
+- [x] Include all metric categories
 
 ### AC2: CSV Export
-- [ ] Export metrics to CSV format
-- [ ] Separate CSV files for each metric category
-- [ ] Headers with descriptive column names
-- [ ] Support for multiple runs in single CSV
+- [x] Export metrics to CSV format
+- [x] Separate CSV files for each metric category
+- [x] Headers with descriptive column names
+- [x] Support for multiple runs in single CSV
 
 ### AC3: Export Options
-- [ ] Export by run_id
-- [ ] Export by date range
-- [ ] Export by project name
-- [ ] Export all runs
+- [x] Export by run_id
+- [x] Export by date range
+- [x] Export by project name
+- [x] Export all runs
 
 ### AC4: CLI Integration
-- [ ] `gao-dev metrics export` command
-- [ ] Format option (--format json|csv)
-- [ ] Output path option (--output)
-- [ ] Filter options (--project, --run-id, --since)
+- [x] `gao-dev metrics export` command
+- [x] Format option (--format json|csv)
+- [x] Output path option (--output)
+- [x] Filter options (--project, --run-id, --since)
 
 ---
 
@@ -345,13 +346,13 @@ def test_cli_command():
 
 ## Definition of Done
 
-- [ ] MetricsExporter implemented
-- [ ] JSON export working
-- [ ] CSV export working (all 5 files)
-- [ ] CLI command added
-- [ ] Unit tests passing (>85% coverage)
-- [ ] Documentation complete
-- [ ] Committed with proper message
+- [x] MetricsExporter implemented
+- [x] JSON export working
+- [x] CSV export working (all 5 files)
+- [x] CLI command added
+- [x] Unit tests passing (100% coverage)
+- [x] Documentation complete
+- [x] Committed with proper message
 
 ---
 

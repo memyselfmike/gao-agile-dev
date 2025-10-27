@@ -351,6 +351,121 @@ def run_health_check():
 
 
 # ============================================================================
+# METRICS COMMANDS
+# ============================================================================
+
+@cli.group()
+def metrics():
+    """Metrics management commands."""
+    pass
+
+
+@metrics.command("export")
+@click.option(
+    "--format",
+    type=click.Choice(["json", "csv"]),
+    default="json",
+    help="Export format (json or csv)",
+)
+@click.option(
+    "--output",
+    type=click.Path(),
+    required=True,
+    help="Output path (file for JSON, directory for CSV)",
+)
+@click.option("--run-id", help="Specific run ID to export")
+@click.option("--project", help="Export all runs for project")
+@click.option("--benchmark", help="Export all runs for benchmark")
+@click.option("--since", help="Export runs since date (YYYY-MM-DD)")
+@click.option("--until", help="Export runs until date (YYYY-MM-DD)")
+@click.option(
+    "--limit",
+    type=int,
+    default=100,
+    help="Maximum number of runs to export (default: 100)",
+)
+def metrics_export(format, output, run_id, project, benchmark, since, until, limit):
+    """Export metrics to JSON or CSV format.
+
+    Examples:
+
+      # Export single run to JSON
+      gao-dev metrics export --format json --run-id abc123 --output metrics.json
+
+      # Export all runs for project to CSV
+      gao-dev metrics export --format csv --project todo-app --output ./exports
+
+      # Export recent runs since date
+      gao-dev metrics export --format json --since 2025-10-01 --output recent.json
+
+      # Export specific benchmark runs
+      gao-dev metrics export --format csv --benchmark full-stack --output ./data
+    """
+    from pathlib import Path
+    from gao_dev.sandbox.metrics.export import MetricsExporter
+    from gao_dev.sandbox.metrics.storage import MetricsStorage
+
+    try:
+        storage = MetricsStorage()
+        exporter = MetricsExporter(storage)
+        output_path = Path(output)
+
+        # Export single run by ID
+        if run_id:
+            click.echo(f">> Exporting run: {run_id}")
+            exporter.export_run(run_id, output_path, format=format)
+
+            if format == "json":
+                click.echo(f"[OK] Exported to {output_path}")
+            else:
+                click.echo(f"[OK] Exported CSV files to {output_path.parent}/")
+
+        # Export with filters
+        else:
+            # Convert date formats if provided
+            start_date = None
+            end_date = None
+            if since:
+                start_date = f"{since}T00:00:00Z"
+            if until:
+                end_date = f"{until}T23:59:59Z"
+
+            click.echo(">> Exporting metrics with filters:")
+            if project:
+                click.echo(f"  Project: {project}")
+            if benchmark:
+                click.echo(f"  Benchmark: {benchmark}")
+            if since:
+                click.echo(f"  Since: {since}")
+            if until:
+                click.echo(f"  Until: {until}")
+
+            count = exporter.export_filtered(
+                output_path,
+                format=format,
+                project_name=project,
+                benchmark_name=benchmark,
+                start_date=start_date,
+                end_date=end_date,
+                limit=limit,
+            )
+
+            if count == 0:
+                click.echo("[WARN] No metrics found matching filters")
+            elif format == "json":
+                click.echo(f"[OK] Exported {count} run(s) to {output_path}")
+            else:
+                click.echo(f"[OK] Exported {count} run(s) to {output_path}/")
+
+    except ValueError as e:
+        click.echo(f"[ERROR] {e}", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"[ERROR] Export failed: {e}", err=True)
+        sys.exit(1)
+
+
+# ============================================================================
 # SANDBOX COMMANDS
 # ============================================================================
 
