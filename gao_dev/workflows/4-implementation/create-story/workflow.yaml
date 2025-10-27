@@ -1,0 +1,35 @@
+name: create-story
+description: Create a new user story from an epic
+phase: 4
+author: Bob (Scrum Master)
+non_interactive: false
+autonomous: true
+iterative: false
+web_bundle: false
+
+variables:
+  epic_num:
+    description: Epic number
+    type: integer
+    required: true
+  story_num:
+    description: Story number
+    type: integer
+    required: true
+  story_title:
+    description: Story title
+    type: string
+    required: false
+  dev_story_location:
+    description: Path to stories folder
+    type: string
+    default: "docs/stories"
+
+required_tools:
+  - read_file
+  - write_file
+
+output_file: "{{dev_story_location}}/epic-{{epic_num}}/story-{{epic_num}}.{{story_num}}.md"
+
+templates:
+  main: template.md

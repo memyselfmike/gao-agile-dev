@@ -1,0 +1,26 @@
+name: prd
+description: Create Product Requirements Document
+phase: 2
+author: John (Product Manager)
+non_interactive: false
+autonomous: true
+iterative: false
+web_bundle: false
+
+variables:
+  project_name:
+    description: Project name
+    type: string
+    required: true
+  prd_location:
+    description: Path to PRD file
+    type: string
+    default: "docs/PRD.md"
+
+required_tools:
+  - write_file
+
+output_file: "{{prd_location}}"
+
+templates:
+  main: template.md

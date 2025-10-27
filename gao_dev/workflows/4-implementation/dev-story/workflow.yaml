@@ -1,0 +1,33 @@
+name: dev-story
+description: Implement a user story
+phase: 4
+author: Amelia (Developer)
+non_interactive: false
+autonomous: true
+iterative: false
+web_bundle: false
+
+variables:
+  epic_num:
+    description: Epic number
+    type: integer
+    required: true
+  story_num:
+    description: Story number
+    type: integer
+    required: true
+  dev_story_location:
+    description: Path to stories folder
+    type: string
+    default: "docs/stories"
+
+required_tools:
+  - read_file
+  - write_file
+  - git_create_branch
+  - git_commit
+
+output_file: null
+
+templates:
+  main: null

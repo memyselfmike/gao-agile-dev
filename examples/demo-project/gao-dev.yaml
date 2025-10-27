@@ -1,0 +1,7 @@
+# GAO-Dev Configuration
+project_name: "Demo Project"
+project_level: 2
+output_folder: "docs"
+dev_story_location: "docs/stories"
+git_auto_commit: true
+qa_enabled: true

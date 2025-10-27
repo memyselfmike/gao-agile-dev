@@ -1,0 +1,282 @@
+Metadata-Version: 2.4
+Name: gao-dev
+Version: 1.0.0
+Summary: GAO-Dev - Software Engineering Team for Generative Autonomous Organisation
+Author: GAO Development Team
+License: MIT
+Project-URL: Homepage, https://github.com/gao-org/gao-dev
+Project-URL: Documentation, https://github.com/gao-org/gao-dev#readme
+Project-URL: Repository, https://github.com/gao-org/gao-dev
+Project-URL: Issues, https://github.com/gao-org/gao-dev/issues
+Keywords: ai,agents,autonomous,development,gao
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: gitpython>=3.1.0
+Requires-Dist: click>=8.1.0
+Requires-Dist: anthropic>=0.34.0
+Requires-Dist: claude-agent-sdk>=0.1.0
+Requires-Dist: structlog>=24.1.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: black>=23.10.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Requires-Dist: mypy>=1.6.0; extra == "dev"
+Requires-Dist: types-PyYAML; extra == "dev"
+
+# GAO-Dev
+
+**Software Engineering Team for Generative Autonomous Organisation**
+
+GAO-Dev is an autonomous AI development orchestration system that manages the complete software development lifecycle using specialized Claude agents. It's the development arm of GAO (Generative Autonomous Organisation).
+
+## Features
+
+- 🤖 **Autonomous Development**: Specialized Claude agents for PM, Architect, Developer, and Scrum Master roles
+- 📋 **Workflow Management**: 34+ embedded development workflows for the complete SDLC
+- 🔄 **Full Lifecycle**: From PRD creation to story implementation
+- 🎯 **Quality Enforcement**: Built-in quality standards and phase gates
+- 📊 **State Tracking**: Automatic story and sprint status management
+- 🌳 **Git Integration**: GitFlow workflows with conventional commits
+- 💻 **CLI Interface**: Easy-to-use command-line interface
+
+## Installation
+
+### Quick Setup with uv (Recommended)
+
+**Windows:**
+```bash
+# Run setup script
+setup.bat
+```
+
+**Unix/Linux/Mac:**
+```bash
+# Run setup script
+chmod +x setup.sh
+./setup.sh
+```
+
+### From Source (Manual)
+
+```bash
+# Clone the repository
+cd gao-agile-dev
+
+# Install with uv (recommended)
+uv sync
+uv pip install -e .
+
+# Or install with pip
+pip install -e .
+
+# Or install with dev dependencies
+pip install -e ".[dev]"
+```
+
+### Verify Installation
+
+```bash
+gao-dev --version
+gao-dev --help
+```
+
+**📖 See [QUICKSTART.md](QUICKSTART.md) for a detailed getting started guide.**
+
+## Quick Start
+
+### 1. Initialize a Project
+
+```bash
+cd your-project
+gao-dev init --name "My Awesome Project"
+```
+
+This creates:
+- Project structure (`docs/`, `docs/stories/`)
+- Configuration file (`gao-dev.yaml`)
+- Git repository (if not already initialized)
+
+### 2. Create a PRD (Autonomous)
+
+```bash
+gao-dev create-prd --name "My Awesome Project"
+```
+
+This spawns **John (Product Manager)** to autonomously create a comprehensive PRD.
+
+### 3. Create System Architecture (Autonomous)
+
+```bash
+gao-dev create-architecture --name "My Awesome Project"
+```
+
+This spawns **Winston (Technical Architect)** to design the system architecture.
+
+### 4. Create a User Story (Autonomous)
+
+```bash
+gao-dev create-story --epic 1 --story 1 --title "User authentication"
+```
+
+This spawns **Bob (Scrum Master)** to create a well-defined user story.
+
+### 5. Implement a Story (Autonomous Multi-Agent)
+
+```bash
+gao-dev implement-story --epic 1 --story 1
+```
+
+This coordinates **Bob** and **Amelia (Developer)** through the full implementation workflow:
+- Story verification
+- Feature branch creation
+- Implementation with tests
+- Code review
+- Merge and completion
+
+### 6. Utility Commands
+
+```bash
+# Check system health
+gao-dev health
+
+# List available workflows
+gao-dev list-workflows
+
+# List available agents
+gao-dev list-agents
+```
+
+## Project Structure
+
+```
+your-project/
+├── gao-dev.yaml          # Project configuration
+├── docs/                 # Documentation and artifacts
+│   ├── PRD.md           # Product Requirements
+│   ├── epics.md         # Epic definitions
+│   ├── architecture.md  # System architecture
+│   └── stories/         # User stories
+│       └── epic-1/
+│           ├── story-1.1.md
+│           └── story-1.2.md
+└── src/                  # Your source code
+```
+
+## Configuration
+
+Edit `gao-dev.yaml` in your project root:
+
+```yaml
+# Project Configuration
+project_name: "My Project"
+project_level: 2
+output_folder: "docs"
+dev_story_location: "docs/stories"
+
+# Git Settings
+git_auto_commit: true
+git_branch_prefix: "feature/epic"
+
+# Quality Settings
+qa_enabled: true
+test_coverage_threshold: 80
+```
+
+## Available Workflows
+
+### Phase 2: Planning
+- **prd**: Create Product Requirements Document
+
+### Phase 4: Implementation
+- **create-story**: Create a new user story from an epic
+- **dev-story**: Implement a user story
+
+## Available Agents
+
+- **bob**: Scrum Master - Creates and manages stories
+- **amelia**: Software Developer - Implements stories and writes code
+- **john**: Product Manager - Creates PRDs and defines features
+
+## Development
+
+### Running Tests
+
+```bash
+pytest
+pytest --cov=gao_dev --cov-report=html
+```
+
+### Code Quality
+
+```bash
+# Format code
+black gao_dev tests
+
+# Lint code
+ruff check gao_dev tests
+
+# Type check
+mypy gao_dev
+```
+
+### Building Package
+
+```bash
+python -m build
+pip install dist/gao_dev-*.whl
+```
+
+## Architecture
+
+GAO-Dev uses a clean architecture with the following layers:
+
+1. **CLI Layer**: User interface (`gao_dev/cli/`)
+2. **Core Services**: Business logic (`gao_dev/core/`)
+   - WorkflowRegistry: Workflow discovery and indexing
+   - WorkflowExecutor: Workflow execution engine
+   - StateManager: Story and state tracking
+   - GitManager: Git operations
+   - HealthCheck: System validation
+3. **Embedded Assets**: Zero external dependencies
+   - Workflows: 34+ development workflows
+   - Agents: Specialized agent personas
+   - Checklists: Quality standards
+
+## About GAO
+
+**GAO (Generative Autonomous Organisation)** is a parent organization exploring autonomous operations through AI agents across multiple domains.
+
+**GAO-Dev** is the software engineering team within GAO. The `gao-dev` command prefix distinguishes development team commands from higher-level GAO organizational commands.
+
+Future GAO teams may include:
+- `gao init` - Initialize a new GAO organization
+- `gao-dev` - Development team (this project)
+- `gao-ops` - Operations team
+- `gao-research` - Research team
+
+## Acknowledgments
+
+Built on proven patterns from BMAD Method while evolving the approach for modern autonomous AI orchestration within the GAO framework.
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Contributing
+
+This is a proof-of-concept implementation. Contributions and feedback are welcome!
+
+## Support
+
+For issues and feature requests, please create an issue in the repository.
+
+---
+
+**🤖 Built with GAO-Dev - Autonomous AI Development Orchestration**

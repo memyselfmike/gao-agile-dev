@@ -1,0 +1,2 @@
+[console_scripts]
+gao-dev = gao_dev.cli.commands:cli

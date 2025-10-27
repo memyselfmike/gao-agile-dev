@@ -1,0 +1,35 @@
+# Default GAO-Dev Configuration
+
+# Project Structure
+output_folder: "docs"
+dev_story_location: "docs/stories"
+context_xml_folder: "docs/stories/{epic}/context"
+architecture_location: "docs/architecture.md"
+prd_location: "docs/PRD.md"
+epics_location: "docs/epics.md"
+
+# Git Settings
+git_auto_commit: true
+git_branch_prefix: "feature/epic"
+git_commit_footer: |
+
+  🤖 Generated with GAO-Dev
+  Co-Authored-By: Claude <noreply@anthropic.com>
+
+# Quality Settings
+qa_enabled: true
+test_coverage_threshold: 80
+type_safety_required: true
+
+# Workflow Settings
+workflow_validation: true
+phase_gates_enabled: true
+story_approval_required: true
+
+# Logging
+log_level: "INFO"
+log_format: "json"
+
+# Claude Settings
+claude_model: "claude-sonnet-4"
+claude_max_tokens: 8000
