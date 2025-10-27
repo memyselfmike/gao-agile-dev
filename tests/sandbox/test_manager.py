@@ -163,11 +163,18 @@ class TestCreateProject:
             metadata = manager.create_project(name=valid_name)
             assert metadata.name == valid_name
 
-    @patch("gao_dev.sandbox.manager.GitCloner")
-    def test_create_project_with_boilerplate_url(self, mock_git_cloner_class, manager):
+    def test_create_project_with_boilerplate_url(self, manager):
         """Test creating project with boilerplate repository."""
+        # Mock the git_cloner instance that's already in the manager
+        # The mock needs to create the directory structure that the real cloner would create
+        def mock_clone(url, dest, branch=None):
+            dest.mkdir(parents=True, exist_ok=True)
+            (dest / "README.md").write_text("test")
+            return True
+
         mock_cloner = Mock()
-        mock_git_cloner_class.return_value = mock_cloner
+        mock_cloner.clone_repository.side_effect = mock_clone
+        manager.git_cloner = mock_cloner
 
         boilerplate_url = "https://github.com/test/repo.git"
         metadata = manager.create_project(
@@ -179,14 +186,12 @@ class TestCreateProject:
         # Verify git clone was called
         mock_cloner.clone_repository.assert_called_once()
 
-    @patch("gao_dev.sandbox.manager.GitCloner")
-    def test_create_project_cleans_up_on_boilerplate_failure(
-        self, mock_git_cloner_class, manager
-    ):
+    def test_create_project_cleans_up_on_boilerplate_failure(self, manager):
         """Test that project is cleaned up if boilerplate clone fails."""
+        # Mock the git_cloner instance to raise an error
         mock_cloner = Mock()
         mock_cloner.clone_repository.side_effect = Exception("Clone failed")
-        mock_git_cloner_class.return_value = mock_cloner
+        manager.git_cloner = mock_cloner
 
         with pytest.raises(Exception):
             manager.create_project(

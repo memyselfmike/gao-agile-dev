@@ -40,15 +40,15 @@ epics:
         name: "Template Variable Detection"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.2.md"
       - number: 3
-        status: ready
+        status: done
         name: "Variable Substitution Engine"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.3.md"
       - number: 4
-        status: ready
+        status: done
         name: "Dependency Installation"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.4.md"
       - number: 5
-        status: ready
+        status: done
         name: "Boilerplate Validation"
         file: "docs/features/sandbox-system/stories/epic-2/story-2.5.md"
 
