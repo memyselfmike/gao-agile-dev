@@ -1,11 +1,12 @@
 # Story 3.8: Metrics Storage & Retrieval
 
 **Epic**: Epic 3 - Metrics Collection System
-**Status**: Ready
+**Status**: Done
 **Priority**: P0 (Critical)
 **Estimated Effort**: 3 story points
 **Owner**: Amelia (Developer)
 **Created**: 2025-10-27
+**Completed**: 2025-10-27
 
 ---
 
@@ -20,29 +21,29 @@
 ## Acceptance Criteria
 
 ### AC1: Metrics Persistence
-- [ ] Save complete metrics to SQLite database
-- [ ] Save all metric categories (performance, autonomy, quality, workflow)
-- [ ] Transactional saves (all or nothing)
-- [ ] Validate metrics before saving
+- [x] Save complete metrics to SQLite database
+- [x] Save all metric categories (performance, autonomy, quality, workflow)
+- [x] Transactional saves (all or nothing)
+- [x] Validate metrics before saving
 
 ### AC2: Metrics Retrieval
-- [ ] Query single run by run_id
-- [ ] Query runs by project name
-- [ ] Query runs by benchmark name
-- [ ] Query runs by date range
-- [ ] Sort results by timestamp
+- [x] Query single run by run_id
+- [x] Query runs by project name
+- [x] Query runs by benchmark name
+- [x] Query runs by date range
+- [x] Sort results by timestamp
 
 ### AC3: Aggregation Queries
-- [ ] Get latest N runs
-- [ ] Get runs between dates
-- [ ] Get average metrics across runs
-- [ ] Get metric trends over time
+- [x] Get latest N runs
+- [x] Get runs between dates
+- [x] Get average metrics across runs
+- [x] Get metric trends over time
 
 ### AC4: Integration
-- [ ] Works with MetricsCollector
-- [ ] Works with all tracker classes
-- [ ] Automatic saving at end of run
-- [ ] Error handling for DB issues
+- [x] Works with MetricsCollector
+- [x] Works with all tracker classes
+- [x] Automatic saving at end of run (via MetricsStorage API)
+- [x] Error handling for DB issues
 
 ---
 
@@ -323,13 +324,13 @@ def test_transaction_rollback():
 
 ## Definition of Done
 
-- [ ] MetricsStorage implemented
-- [ ] All CRUD operations working
-- [ ] Transactional saves working
-- [ ] Query methods working
-- [ ] Unit tests passing (>90% coverage)
-- [ ] Documentation complete
-- [ ] Committed with proper message
+- [x] MetricsStorage implemented
+- [x] All CRUD operations working
+- [x] Transactional saves working
+- [x] Query methods working
+- [x] Unit tests passing (94% coverage - 32/32 tests passed)
+- [x] Documentation complete
+- [x] Committed with proper message
 
 ---
 
