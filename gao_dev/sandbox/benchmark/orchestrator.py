@@ -12,6 +12,7 @@ from .config import WorkflowPhaseConfig
 from ...orchestrator import GAODevOrchestrator
 from ..artifact_parser import ArtifactParser
 from ..git_commit_manager import GitCommitManager
+from ..artifact_verifier import ArtifactVerifier
 
 
 logger = structlog.get_logger()
@@ -127,10 +128,11 @@ class WorkflowOrchestrator:
             execution_mode=execution_mode,
         )
 
-        # Initialize GAODevOrchestrator, ArtifactParser, and GitCommitManager for agent mode
+        # Initialize GAODevOrchestrator, ArtifactParser, GitCommitManager, and ArtifactVerifier for agent mode
         self.gao_orchestrator = None
         self.artifact_parser = None
         self.git_commit_manager = None
+        self.artifact_verifier = None
         if execution_mode == "agent":
             self.gao_orchestrator = GAODevOrchestrator(project_root=self.project_path)
             self.artifact_parser = ArtifactParser(project_root=self.project_path)
@@ -138,6 +140,7 @@ class WorkflowOrchestrator:
                 project_root=self.project_path,
                 run_id=self.run_id,
             )
+            self.artifact_verifier = ArtifactVerifier(project_root=self.project_path)
 
     def execute_workflow(
         self,
@@ -395,6 +398,23 @@ class WorkflowOrchestrator:
                             "artifacts_committed",
                             phase=phase_config.phase_name,
                             commit_sha=commit_sha[:8],
+                        )
+
+                # Verify artifacts were created correctly
+                verification_result = None
+                if self.artifact_verifier and artifacts_created:
+                    verification_result = self.artifact_verifier.verify_artifacts(
+                        artifact_paths=artifacts_created,
+                        phase=phase_config.phase_name,
+                    )
+
+                    if not verification_result.success:
+                        self.logger.warning(
+                            "artifact_verification_warnings",
+                            phase=phase_config.phase_name,
+                            expected=verification_result.expected_count,
+                            found=verification_result.found_count,
+                            valid=verification_result.valid_count,
                         )
 
             self.logger.info(
