@@ -1,0 +1,48 @@
+# Simple Story-Based Benchmark - No Boilerplate
+# Tests story-by-story QA-as-you-go workflow
+
+name: "simple-story-test"
+description: "Simple test of story-based workflow with QA validation per story"
+version: "1.0.0"
+project_name: "simple-test"
+
+# No boilerplate - start from scratch
+boilerplate_url: null
+
+# 1 hour timeout
+timeout_seconds: 3600
+
+# Success criteria
+success_criteria:
+  min_test_coverage: 70.0
+  max_manual_interventions: 0
+  max_errors: 0
+  quality_gates:
+    tests_passing: true
+
+# Single epic with 2 simple stories
+epics:
+  - name: "Simple Feature"
+    description: "Basic test feature"
+    priority: "P0"
+    stories:
+      - name: "Create Hello World Function"
+        agent: "Amelia"
+        description: "Create a simple hello world function in Python"
+        acceptance_criteria:
+          - "Function returns 'Hello, World!'"
+          - "Function has docstring"
+          - "Unit test written and passing"
+        story_points: 2
+        timeout_seconds: 900  # 15 minutes
+
+      - name: "Create Greeting Function"
+        agent: "Amelia"
+        description: "Create a function that greets a person by name"
+        acceptance_criteria:
+          - "Function accepts name parameter"
+          - "Returns formatted greeting"
+          - "Unit test with multiple cases"
+        story_points: 2
+        dependencies: ["Create Hello World Function"]
+        timeout_seconds: 900  # 15 minutes

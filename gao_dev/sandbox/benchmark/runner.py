@@ -353,6 +353,9 @@ class BenchmarkRunner:
         progress_tracker = ProgressTracker()
         progress_tracker.add_observer(ConsoleProgressObserver())
 
+        # Calculate total stories
+        total_stories = self.config.total_stories()
+
         # Log benchmark start
         metrics_aggregator.log_event(
             "story_based_benchmark_started",
@@ -375,7 +378,6 @@ class BenchmarkRunner:
 
         try:
             # Execute all epics
-            total_stories = self.config.total_stories()
             progress_tracker.benchmark_started(self.config.name, total_stories)
             epic_results = orchestrator.execute_epics(
                 epics=self.config.epics,
