@@ -230,7 +230,7 @@ epics:
     status: in_progress
     stories:
       - number: 1
-        status: ready
+        status: done
         name: "Fix Phase-Based Workflow (ConfigLoader Bug)"
         file: "docs/features/sandbox-system/stories/epic-7.1/story-7.1.1.md"
       - number: 2
@@ -261,4 +261,4 @@ epics:
     stories: []
 
 current_epic: 7.1
-current_story: 1
+current_story: 2
