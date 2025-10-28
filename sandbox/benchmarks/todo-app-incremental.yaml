@@ -1,0 +1,210 @@
+# Story-Based Incremental Benchmark Configuration
+# GAO-Dev - Incremental Agile Development Mode
+#
+# This config demonstrates story-based workflow where each story is:
+#   1. Created (Bob - Scrum Master)
+#   2. Implemented (Amelia - Developer)
+#   3. Validated (Murat - QA)
+#   4. Committed (Automatic)
+#
+# Compare with phase-based configs (todo-app.yaml) which use waterfall phases.
+
+name: "todo-app-incremental"
+description: "Incremental story-based development of a Todo application"
+version: "2.0.0"  # Story-based format version
+project_name: "todo-app-agile"
+
+# Boilerplate template (optional - can start from scratch)
+boilerplate_url: "https://github.com/vercel/next.js/tree/canary/examples/with-typescript"
+
+# Global timeout for entire benchmark (2 hours)
+timeout_seconds: 7200
+
+# Success criteria
+success_criteria:
+  min_test_coverage: 80.0
+  max_manual_interventions: 0
+  max_errors: 0
+  required_features:
+    - "Task CRUD operations"
+    - "User authentication"
+    - "Persistence layer"
+  quality_gates:
+    type_safety: true
+    linting: true
+    tests_passing: true
+
+# Epics define major features, each containing multiple stories
+epics:
+  - name: "Core Task Management"
+    description: "Basic CRUD operations for tasks"
+    priority: "P0"
+    stories:
+      - name: "Task Data Model"
+        agent: "Amelia"
+        description: "Create Task entity with id, title, description, status, createdAt"
+        acceptance_criteria:
+          - "Task interface defined with proper types"
+          - "Task status enum (todo, in_progress, done)"
+          - "Timestamps for creation and updates"
+        story_points: 3
+        timeout_seconds: 1800  # 30 minutes
+
+      - name: "Create Task API"
+        agent: "Amelia"
+        description: "Implement POST /api/tasks endpoint"
+        acceptance_criteria:
+          - "API endpoint accepts task data"
+          - "Validates required fields"
+          - "Returns created task with ID"
+          - "Unit tests with 80% coverage"
+        story_points: 5
+        dependencies: ["Task Data Model"]
+        timeout_seconds: 3600  # 1 hour
+
+      - name: "List Tasks API"
+        agent: "Amelia"
+        description: "Implement GET /api/tasks endpoint with filtering"
+        acceptance_criteria:
+          - "Returns all tasks"
+          - "Supports status filtering"
+          - "Pagination support"
+          - "Unit and integration tests"
+        story_points: 5
+        dependencies: ["Task Data Model"]
+        timeout_seconds: 3600
+
+      - name: "Update Task API"
+        agent: "Amelia"
+        description: "Implement PATCH /api/tasks/:id endpoint"
+        acceptance_criteria:
+          - "Updates task fields"
+          - "Validates task exists"
+          - "Updates timestamp"
+          - "Unit tests passing"
+        story_points: 3
+        dependencies: ["Task Data Model", "Create Task API"]
+        timeout_seconds: 2400  # 40 minutes
+
+      - name: "Delete Task API"
+        agent: "Amelia"
+        description: "Implement DELETE /api/tasks/:id endpoint"
+        acceptance_criteria:
+          - "Deletes task by ID"
+          - "Returns 404 if not found"
+          - "Unit tests passing"
+        story_points: 2
+        dependencies: ["Task Data Model", "Create Task API"]
+        timeout_seconds: 1800
+
+  - name: "User Interface"
+    description: "React components for task management"
+    priority: "P0"
+    stories:
+      - name: "Task List Component"
+        agent: "Amelia"
+        description: "Create TaskList React component to display tasks"
+        acceptance_criteria:
+          - "Displays all tasks from API"
+          - "Shows task status visually"
+          - "Responsive design"
+          - "Component tests passing"
+        story_points: 5
+        dependencies: ["List Tasks API"]
+        timeout_seconds: 3600
+
+      - name: "Task Form Component"
+        agent: "Amelia"
+        description: "Create TaskForm for adding/editing tasks"
+        acceptance_criteria:
+          - "Form validation"
+          - "Create and update modes"
+          - "Error handling"
+          - "Component tests"
+        story_points: 5
+        dependencies: ["Create Task API", "Update Task API"]
+        timeout_seconds: 3600
+
+      - name: "Task Item Component"
+        agent: "Amelia"
+        description: "Create TaskItem component for individual task display"
+        acceptance_criteria:
+          - "Status toggle functionality"
+          - "Delete confirmation"
+          - "Edit mode trigger"
+          - "Component tests"
+        story_points: 3
+        dependencies: ["Update Task API", "Delete Task API"]
+        timeout_seconds: 2400
+
+  - name: "Data Persistence"
+    description: "Database integration for task storage"
+    priority: "P0"
+    stories:
+      - name: "Database Schema"
+        agent: "Amelia"
+        description: "Define database schema for tasks"
+        acceptance_criteria:
+          - "SQLite/PostgreSQL schema"
+          - "Migration scripts"
+          - "Indexes for performance"
+        story_points: 3
+        timeout_seconds: 1800
+
+      - name: "Task Repository"
+        agent: "Amelia"
+        description: "Implement data access layer for tasks"
+        acceptance_criteria:
+          - "CRUD operations"
+          - "Query methods"
+          - "Transaction support"
+          - "Repository tests"
+        story_points: 5
+        dependencies: ["Database Schema"]
+        timeout_seconds: 3600
+
+      - name: "API-Database Integration"
+        agent: "Amelia"
+        description: "Connect API endpoints to database"
+        acceptance_criteria:
+          - "All endpoints use database"
+          - "Remove mock data"
+          - "Integration tests passing"
+        story_points: 3
+        dependencies: ["Task Repository", "Create Task API"]
+        timeout_seconds: 2400
+
+  - name: "Testing & Quality"
+    description: "Comprehensive testing and quality assurance"
+    priority: "P1"
+    stories:
+      - name: "E2E Test Suite"
+        agent: "Murat"
+        description: "Create end-to-end tests for complete workflows"
+        acceptance_criteria:
+          - "Create-Read-Update-Delete flow"
+          - "Error scenarios covered"
+          - "Tests run in CI"
+        story_points: 5
+        dependencies: ["API-Database Integration", "Task Form Component"]
+        timeout_seconds: 3600
+
+      - name: "Performance Testing"
+        agent: "Murat"
+        description: "Test application performance under load"
+        acceptance_criteria:
+          - "Load testing for API"
+          - "Response time < 200ms"
+          - "Handles 100 concurrent users"
+        story_points: 3
+        dependencies: ["E2E Test Suite"]
+        timeout_seconds: 2400
+
+# Metadata
+metadata:
+  category: "web-application"
+  complexity: "medium"
+  expected_duration_hours: 6
+  total_story_points: 52
+  workflow_mode: "story-based"
+  comparison: "Phase-based version in todo-app.yaml"

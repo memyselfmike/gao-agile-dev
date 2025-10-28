@@ -8,6 +8,70 @@ import json
 
 
 @dataclass
+class StoryConfig:
+    """
+    Configuration for a single user story in incremental workflow.
+
+    Defines a story to be implemented as part of an epic, including
+    the responsible agent and acceptance criteria.
+    """
+
+    name: str
+    agent: str
+    description: str = ""
+    acceptance_criteria: List[str] = field(default_factory=list)
+    story_points: int = 3
+    dependencies: List[str] = field(default_factory=list)
+    timeout_seconds: int = 3600  # 1 hour default per story
+
+    def validate(self) -> bool:
+        """
+        Validate story configuration.
+
+        Returns:
+            bool: True if configuration is valid
+        """
+        return (
+            bool(self.name)
+            and bool(self.agent)
+            and self.story_points > 0
+            and self.timeout_seconds > 0
+        )
+
+
+@dataclass
+class EpicConfig:
+    """
+    Configuration for an epic containing multiple stories.
+
+    Defines a collection of related stories that together deliver
+    a major feature or capability.
+    """
+
+    name: str
+    description: str
+    stories: List[StoryConfig] = field(default_factory=list)
+    priority: str = "P1"  # P0, P1, P2, P3
+
+    def validate(self) -> bool:
+        """
+        Validate epic configuration.
+
+        Returns:
+            bool: True if configuration is valid
+        """
+        return (
+            bool(self.name)
+            and bool(self.description)
+            and all(story.validate() for story in self.stories)
+        )
+
+    def total_story_points(self) -> int:
+        """Calculate total story points in epic."""
+        return sum(story.story_points for story in self.stories)
+
+
+@dataclass
 class SuccessCriteria:
     """
     Success criteria for benchmark run.
@@ -70,6 +134,10 @@ class BenchmarkConfig:
 
     Defines all parameters for running a benchmark, including project
     setup, success criteria, workflow phases, and timeouts.
+
+    Supports two modes:
+    1. Phase-based (legacy): Uses workflow_phases for waterfall execution
+    2. Story-based (new): Uses epics for incremental agile execution
     """
 
     name: str
@@ -80,28 +148,78 @@ class BenchmarkConfig:
     boilerplate_path: Optional[Path] = None
     timeout_seconds: int = 7200  # 2 hours default
     success_criteria: SuccessCriteria = field(default_factory=SuccessCriteria)
-    workflow_phases: List[WorkflowPhaseConfig] = field(default_factory=list)
+    workflow_phases: List[WorkflowPhaseConfig] = field(default_factory=list)  # Legacy mode
+    epics: List[EpicConfig] = field(default_factory=list)  # New story-based mode
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def validate(self) -> bool:
         """
         Validate entire configuration.
 
+        Ensures either workflow_phases (legacy) or epics (new) is provided,
+        but not both simultaneously.
+
         Returns:
             bool: True if all configuration is valid
         """
+        has_phases = bool(self.workflow_phases)
+        has_epics = bool(self.epics)
+
+        # Must have either phases or epics, but not both
+        if has_phases == has_epics:
+            return False  # Either both empty or both filled
+
         return (
             bool(self.name)
             and bool(self.description)
             and self.timeout_seconds > 0
             and self.success_criteria.validate()
             and all(phase.validate() for phase in self.workflow_phases)
+            and all(epic.validate() for epic in self.epics)
         )
+
+    def is_story_based(self) -> bool:
+        """
+        Check if configuration uses story-based mode.
+
+        Returns:
+            bool: True if using epics/stories, False if using phases
+        """
+        return bool(self.epics)
+
+    def is_phase_based(self) -> bool:
+        """
+        Check if configuration uses phase-based mode (legacy).
+
+        Returns:
+            bool: True if using workflow phases
+        """
+        return bool(self.workflow_phases)
+
+    def total_stories(self) -> int:
+        """
+        Get total number of stories across all epics.
+
+        Returns:
+            int: Total story count (0 if phase-based)
+        """
+        return sum(len(epic.stories) for epic in self.epics)
+
+    def total_story_points(self) -> int:
+        """
+        Get total story points across all epics.
+
+        Returns:
+            int: Total story points (0 if phase-based)
+        """
+        return sum(epic.total_story_points() for epic in self.epics)
 
     @classmethod
     def from_yaml(cls, path: Path) -> "BenchmarkConfig":
         """
         Load config from YAML file.
+
+        Supports both phase-based and story-based configurations.
 
         Args:
             path: Path to YAML configuration file
@@ -120,11 +238,28 @@ class BenchmarkConfig:
         if "success_criteria" in data and isinstance(data["success_criteria"], dict):
             data["success_criteria"] = SuccessCriteria(**data["success_criteria"])
 
+        # Convert workflow_phases (legacy/phase-based mode)
         if "workflow_phases" in data and isinstance(data["workflow_phases"], list):
             data["workflow_phases"] = [
                 WorkflowPhaseConfig(**phase) if isinstance(phase, dict) else phase
                 for phase in data["workflow_phases"]
             ]
+
+        # Convert epics and stories (new story-based mode)
+        if "epics" in data and isinstance(data["epics"], list):
+            epics = []
+            for epic_data in data["epics"]:
+                if isinstance(epic_data, dict):
+                    # Convert stories within epic
+                    if "stories" in epic_data and isinstance(epic_data["stories"], list):
+                        epic_data["stories"] = [
+                            StoryConfig(**story) if isinstance(story, dict) else story
+                            for story in epic_data["stories"]
+                        ]
+                    epics.append(EpicConfig(**epic_data))
+                else:
+                    epics.append(epic_data)
+            data["epics"] = epics
 
         # Convert boilerplate_path string to Path if present
         if "boilerplate_path" in data and data["boilerplate_path"] is not None:
@@ -136,6 +271,8 @@ class BenchmarkConfig:
     def from_json(cls, path: Path) -> "BenchmarkConfig":
         """
         Load config from JSON file.
+
+        Supports both phase-based and story-based configurations.
 
         Args:
             path: Path to JSON configuration file
@@ -154,11 +291,28 @@ class BenchmarkConfig:
         if "success_criteria" in data and isinstance(data["success_criteria"], dict):
             data["success_criteria"] = SuccessCriteria(**data["success_criteria"])
 
+        # Convert workflow_phases (legacy/phase-based mode)
         if "workflow_phases" in data and isinstance(data["workflow_phases"], list):
             data["workflow_phases"] = [
                 WorkflowPhaseConfig(**phase) if isinstance(phase, dict) else phase
                 for phase in data["workflow_phases"]
             ]
+
+        # Convert epics and stories (new story-based mode)
+        if "epics" in data and isinstance(data["epics"], list):
+            epics = []
+            for epic_data in data["epics"]:
+                if isinstance(epic_data, dict):
+                    # Convert stories within epic
+                    if "stories" in epic_data and isinstance(epic_data["stories"], list):
+                        epic_data["stories"] = [
+                            StoryConfig(**story) if isinstance(story, dict) else story
+                            for story in epic_data["stories"]
+                        ]
+                    epics.append(EpicConfig(**epic_data))
+                else:
+                    epics.append(epic_data)
+            data["epics"] = epics
 
         # Convert boilerplate_path string to Path if present
         if "boilerplate_path" in data and data["boilerplate_path"] is not None:

@@ -182,6 +182,9 @@ class TestBenchmarkConfig:
             name="valid",
             description="Valid config",
             boilerplate_url="https://github.com/user/template",
+            workflow_phases=[
+                WorkflowPhaseConfig(phase_name="test_phase", timeout_seconds=60)
+            ],
         )
 
         assert config.validate() is True
@@ -411,3 +414,130 @@ class TestExampleConfigs:
         assert config.validate() is True
         assert config.name == "full-featured-ecommerce"
         assert len(config.workflow_phases) > 0
+
+
+class TestStoryBasedConfig:
+    """Tests for story-based configuration (Epic 6)."""
+
+    def test_story_config_creation(self):
+        """Test creating StoryConfig."""
+        from gao_dev.sandbox.benchmark.config import StoryConfig
+
+        story = StoryConfig(
+            name="Implement login feature",
+            agent="Amelia",
+            description="User authentication",
+            acceptance_criteria=["Users can log in", "Sessions persist"],
+            story_points=5,
+        )
+
+        assert story.name == "Implement login feature"
+        assert story.agent == "Amelia"
+        assert story.story_points == 5
+        assert len(story.acceptance_criteria) == 2
+        assert story.validate() is True
+
+    def test_epic_config_creation(self):
+        """Test creating EpicConfig with stories."""
+        from gao_dev.sandbox.benchmark.config import EpicConfig, StoryConfig
+
+        stories = [
+            StoryConfig(name="Story 1", agent="Amelia", story_points=3),
+            StoryConfig(name="Story 2", agent="Bob", story_points=5),
+        ]
+
+        epic = EpicConfig(
+            name="User Authentication",
+            description="Complete auth system",
+            stories=stories,
+        )
+
+        assert epic.name == "User Authentication"
+        assert len(epic.stories) == 2
+        assert epic.total_story_points() == 8
+        assert epic.validate() is True
+
+    def test_benchmark_config_story_based(self):
+        """Test BenchmarkConfig with epics (story-based mode)."""
+        from gao_dev.sandbox.benchmark.config import (
+            BenchmarkConfig,
+            EpicConfig,
+            StoryConfig,
+        )
+
+        epic = EpicConfig(
+            name="Test Epic",
+            description="Test epic description",
+            stories=[
+                StoryConfig(name="Story 1", agent="Amelia", story_points=3),
+            ],
+        )
+
+        config = BenchmarkConfig(
+            name="story-based-test",
+            description="Test story-based config",
+            epics=[epic],
+        )
+
+        assert config.is_story_based() is True
+        assert config.is_phase_based() is False
+        assert config.total_stories() == 1
+        assert config.total_story_points() == 3
+        assert config.validate() is True
+
+    def test_backward_compatibility_phase_based(self):
+        """Test that phase-based configs still work."""
+        from gao_dev.sandbox.benchmark.config import (
+            BenchmarkConfig,
+            WorkflowPhaseConfig,
+        )
+
+        config = BenchmarkConfig(
+            name="phase-based-test",
+            description="Test phase-based config",
+            workflow_phases=[
+                WorkflowPhaseConfig(phase_name="Planning", timeout_seconds=600),
+            ],
+        )
+
+        assert config.is_phase_based() is True
+        assert config.is_story_based() is False
+        assert config.total_stories() == 0
+        assert config.validate() is True
+
+    def test_validation_rejects_both_modes(self):
+        """Test that config with both phases and epics is invalid."""
+        from gao_dev.sandbox.benchmark.config import (
+            BenchmarkConfig,
+            EpicConfig,
+            StoryConfig,
+            WorkflowPhaseConfig,
+        )
+
+        config = BenchmarkConfig(
+            name="mixed-test",
+            description="Invalid mixed config",
+            workflow_phases=[WorkflowPhaseConfig(phase_name="Test", timeout_seconds=60)],
+            epics=[
+                EpicConfig(
+                    name="Test",
+                    description="Test",
+                    stories=[StoryConfig(name="Test", agent="Amelia")],
+                )
+            ],
+        )
+
+        # Should be invalid - can't have both
+        assert config.validate() is False
+
+    def test_validation_rejects_neither_mode(self):
+        """Test that config with neither phases nor epics is invalid."""
+        from gao_dev.sandbox.benchmark.config import BenchmarkConfig
+
+        config = BenchmarkConfig(
+            name="empty-test",
+            description="Invalid empty config",
+        )
+
+        # Should be invalid - must have one or the other
+        assert config.validate() is False
