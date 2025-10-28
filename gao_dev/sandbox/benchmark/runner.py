@@ -315,7 +315,7 @@ class BenchmarkRunner:
         from .story_orchestrator import StoryOrchestrator
         from .progress import ProgressTracker, ConsoleProgressObserver
         from .metrics_aggregator import MetricsAggregator
-        from ...sandbox.git_manager import GitManager
+        from ...core.git_manager import GitManager
 
         self.logger.info(
             "story_based_workflow_started",
@@ -606,7 +606,7 @@ Work autonomously to FULLY complete this phase."""
         Raises:
             Exception: If git initialization fails
         """
-        from ...sandbox.git_manager import GitManager
+        from ...core.git_manager import GitManager
 
         self.logger.info("initializing_git_repository", project_path=str(project_path))
 

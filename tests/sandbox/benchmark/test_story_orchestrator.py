@@ -291,7 +291,7 @@ class TestIntegration:
 
     def test_full_story_workflow(self, real_project_path):
         """Test complete story workflow from start to finish."""
-        from gao_dev.sandbox.git_manager import GitManager
+        from gao_dev.core.git_manager import GitManager
 
         # Initialize git repo
         git_manager = GitManager(real_project_path)
@@ -342,7 +342,7 @@ class TestCommitAutomation:
     @pytest.fixture
     def git_manager(self, temp_project_path):
         """Create real GitManager."""
-        from gao_dev.sandbox.git_manager import GitManager
+        from gao_dev.core.git_manager import GitManager
 
         temp_project_path.mkdir(parents=True, exist_ok=True)
         manager = GitManager(temp_project_path)

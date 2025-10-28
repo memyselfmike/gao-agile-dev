@@ -7,7 +7,7 @@ from datetime import datetime
 
 import pytest
 
-from gao_dev.sandbox.git_manager import GitManager
+from gao_dev.core.git_manager import GitManager
 from gao_dev.sandbox.exceptions import ProjectStateError
 
 
@@ -35,7 +35,7 @@ class TestGitManager:
         """Test that initialization creates a logger."""
         assert git_manager.logger is not None
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_init_repo_success(self, mock_run, git_manager, temp_project_path):
         """Test successful git repository initialization."""
         # Mock git commands
@@ -69,7 +69,7 @@ class TestGitManager:
         assert result["user_email"] == "test@example.com"
         assert "timestamp" in result
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_init_repo_with_defaults(self, mock_run, git_manager):
         """Test git init with default user name and email."""
         mock_run.return_value = Mock(returncode=0, stdout="", stderr="")
@@ -80,7 +80,7 @@ class TestGitManager:
         assert result["user_name"] == GitManager.DEFAULT_USER_NAME
         assert result["user_email"] == GitManager.DEFAULT_USER_EMAIL
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_init_repo_with_initial_commit(self, mock_run, git_manager):
         """Test git init with initial commit."""
         # Mock git commands
@@ -106,7 +106,7 @@ class TestGitManager:
         assert "commit_hash" in result
         assert result["commit_hash"] == "abc1234"
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_init_repo_creates_gitignore(self, mock_run, git_manager, temp_project_path):
         """Test that .gitignore is created during init."""
         mock_run.return_value = Mock(returncode=0, stdout="", stderr="")
@@ -120,7 +120,7 @@ class TestGitManager:
         assert "node_modules/" in content
         assert ".env" in content
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_init_repo_preserves_existing_gitignore(
         self, mock_run, git_manager, temp_project_path
     ):
@@ -137,21 +137,17 @@ class TestGitManager:
         assert "# Custom gitignore" in content
         assert "my-file.txt" in content
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_init_repo_fails_gracefully(self, mock_run, git_manager):
         """Test that init_repo raises error on git failure."""
         mock_run.side_effect = subprocess.CalledProcessError(
             returncode=1, cmd=["git", "init"], stderr="Git error"
         )
 
-        with pytest.raises(ProjectStateError) as exc_info:
+        with pytest.raises(subprocess.CalledProcessError):
             git_manager.init_repo()
 
-        # Check that ProjectStateError was raised with correct states
-        assert exc_info.value.current_state == "uninitialized"
-        assert exc_info.value.required_state == "git_initialized"
-
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_create_commit_success(self, mock_run, git_manager):
         """Test successful commit creation."""
         # Mock git commands
@@ -190,7 +186,7 @@ class TestGitManager:
         assert result["files_changed"] == ["file1.py", "file2.py"]
         assert "timestamp" in result
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_create_commit_with_allow_empty(self, mock_run, git_manager):
         """Test commit creation with allow_empty flag."""
         mock_run.return_value = Mock(returncode=0, stdout="abc1234\n", stderr="")
@@ -208,7 +204,7 @@ class TestGitManager:
         ]
         assert any("--allow-empty" in cmd for cmd in commit_calls)
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_create_commit_without_add_all(self, mock_run, git_manager):
         """Test commit creation without staging all files."""
         mock_run.return_value = Mock(returncode=0, stdout="abc1234\n", stderr="")
@@ -224,21 +220,17 @@ class TestGitManager:
             for call_args in mock_run.call_args_list
         )
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_create_commit_fails_gracefully(self, mock_run, git_manager):
         """Test that create_commit raises error on failure."""
         mock_run.side_effect = subprocess.CalledProcessError(
             returncode=1, cmd=["git", "commit"], stderr="Nothing to commit"
         )
 
-        with pytest.raises(ProjectStateError) as exc_info:
+        with pytest.raises(subprocess.CalledProcessError):
             git_manager.create_commit(message="test")
 
-        # Check that ProjectStateError was raised with correct states
-        assert exc_info.value.current_state == "uncommitted"
-        assert exc_info.value.required_state == "committed"
-
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_get_status_not_git_repo(self, mock_run, git_manager):
         """Test get_status when directory is not a git repo."""
         # Mock git rev-parse to fail (not a repo)
@@ -256,7 +248,7 @@ class TestGitManager:
         assert status["unstaged_files"] == []
         assert status["untracked_files"] == []
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_get_status_clean_repo(self, mock_run, git_manager):
         """Test get_status for clean repository."""
         # Mock git commands for clean repo
@@ -283,7 +275,7 @@ class TestGitManager:
         assert status["unstaged_files"] == []
         assert status["untracked_files"] == []
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_get_status_with_changes(self, mock_run, git_manager):
         """Test get_status with staged, unstaged, and untracked files."""
         # Mock git commands
@@ -317,7 +309,7 @@ class TestGitManager:
         assert status["unstaged_files"] == ["modified.py"]
         assert status["untracked_files"] == ["new_file.py"]
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_get_status_no_commits_yet(self, mock_run, git_manager):
         """Test get_status when repo has no commits."""
         # Mock git commands
@@ -342,7 +334,7 @@ class TestGitManager:
 
     def test_run_git_command_success(self, git_manager):
         """Test _run_git_command with successful execution."""
-        with patch("gao_dev.sandbox.git_manager.subprocess.run") as mock_run:
+        with patch("gao_dev.core.git_manager.subprocess.run") as mock_run:
             mock_run.return_value = Mock(returncode=0, stdout="success\n", stderr="")
 
             result = git_manager._run_git_command(["status"])
@@ -355,7 +347,7 @@ class TestGitManager:
 
     def test_run_git_command_failure(self, git_manager):
         """Test _run_git_command with failed execution."""
-        with patch("gao_dev.sandbox.git_manager.subprocess.run") as mock_run:
+        with patch("gao_dev.core.git_manager.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(
                 returncode=1, cmd=["git", "status"], stderr="Error"
             )
@@ -363,30 +355,30 @@ class TestGitManager:
             with pytest.raises(subprocess.CalledProcessError):
                 git_manager._run_git_command(["status"])
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_is_git_repo_true(self, mock_run, git_manager):
-        """Test _is_git_repo returns True for git repository."""
+        """Test is_git_repo returns True for git repository."""
         mock_run.return_value = Mock(returncode=0, stdout=".git\n", stderr="")
 
-        assert git_manager._is_git_repo() is True
+        assert git_manager.is_git_repo() is True
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_is_git_repo_false(self, mock_run, git_manager):
-        """Test _is_git_repo returns False for non-git directory."""
+        """Test is_git_repo returns False for non-git directory."""
         mock_run.side_effect = subprocess.CalledProcessError(
             returncode=128, cmd=["git", "rev-parse"], stderr="Not a git repository"
         )
 
-        assert git_manager._is_git_repo() is False
+        assert git_manager.is_git_repo() is False
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_has_commits_true(self, mock_run, git_manager):
         """Test _has_commits returns True when commits exist."""
         mock_run.return_value = Mock(returncode=0, stdout="abc1234\n", stderr="")
 
         assert git_manager._has_commits() is True
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_has_commits_false(self, mock_run, git_manager):
         """Test _has_commits returns False with no commits."""
         mock_run.side_effect = subprocess.CalledProcessError(
@@ -395,7 +387,7 @@ class TestGitManager:
 
         assert git_manager._has_commits() is False
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_get_staged_files(self, mock_run, git_manager):
         """Test _get_staged_files returns list of staged files."""
         mock_run.return_value = Mock(
@@ -406,7 +398,7 @@ class TestGitManager:
 
         assert files == ["file1.py", "file2.py"]
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_get_unstaged_files(self, mock_run, git_manager):
         """Test _get_unstaged_files returns list of modified files."""
         mock_run.return_value = Mock(
@@ -417,7 +409,7 @@ class TestGitManager:
 
         assert files == ["modified.py"]
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_get_untracked_files(self, mock_run, git_manager):
         """Test _get_untracked_files returns list of untracked files."""
         mock_run.return_value = Mock(
@@ -428,7 +420,7 @@ class TestGitManager:
 
         assert files == ["new_file.py", "README.md"]
 
-    @patch("gao_dev.sandbox.git_manager.subprocess.run")
+    @patch("gao_dev.core.git_manager.subprocess.run")
     def test_get_changed_files(self, mock_run, git_manager):
         """Test _get_changed_files returns files changed in commit."""
         mock_run.return_value = Mock(
