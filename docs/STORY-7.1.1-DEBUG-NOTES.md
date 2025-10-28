@@ -76,3 +76,67 @@ And verify they're receiving Path objects, not config objects.
 ## Time Estimate
 
 Once we have the full traceback: 15-30 minutes to fix
+
+---
+
+## RESOLUTION (2025-10-28)
+
+### Root Cause Found
+
+**File**: `gao_dev/sandbox/git_commit_manager.py:36`
+**Error**: Passing `ConfigLoader` object as positional argument to `GitManager`
+
+Full traceback:
+```
+File "gao_dev/sandbox/benchmark/runner.py", line 504
+  orchestrator = WorkflowOrchestrator(...)
+File "gao_dev/sandbox/benchmark/orchestrator.py", line 139
+  self.git_commit_manager = GitCommitManager(project_root=self.project_path, run_id=self.run_id)
+File "gao_dev/sandbox/git_commit_manager.py", line 36
+  self.git_manager = GitManager(config)  # <-- BUG HERE
+File "gao_dev/core/git_manager.py", line 59
+  self.project_path = Path(project_path).resolve()
+TypeError: argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'ConfigLoader'
+```
+
+### The Bug
+
+In `git_commit_manager.py`:
+```python
+# WRONG:
+from ..core import ConfigLoader
+config = ConfigLoader(self.project_root)
+self.git_manager = GitManager(config)  # Passes ConfigLoader as first positional arg (project_path)
+```
+
+`GitManager.__init__` signature:
+```python
+def __init__(self, project_path: Optional[Path] = None, config_loader: Optional[Any] = None):
+```
+
+By passing `config` as a positional argument, it was being interpreted as `project_path` instead of `config_loader`.
+
+### The Fix
+
+Changed to pass `project_root` directly (sandbox/agent mode doesn't need ConfigLoader):
+
+```python
+# CORRECT:
+self.git_manager = GitManager(project_path=self.project_root)
+```
+
+### Test Results
+
+After fix:
+```
+2025-10-28 20:09:16 [debug] workflow_orchestrator_created
+2025-10-28 20:09:16 [debug] executing_workflow phases_count=4
+2025-10-28 20:09:16 [info] phase_execution_started phase_name='Product Requirements'
+2025-10-28 20:09:16 [info] executing_phase_with_gao_orchestrator agent=John
+```
+
+Phase-based workflow now initializes successfully and begins execution.
+
+### Status
+
+**FIXED** - Story 7.1.1 complete

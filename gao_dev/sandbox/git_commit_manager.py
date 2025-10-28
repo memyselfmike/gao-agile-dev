@@ -30,10 +30,8 @@ class GitCommitManager:
         self.run_id = run_id
         self.logger = logger.bind(component="GitCommitManager", run_id=run_id)
 
-        # Initialize git manager (will handle config loading)
-        from ..core import ConfigLoader
-        config = ConfigLoader(self.project_root)
-        self.git_manager = GitManager(config)
+        # Initialize git manager with project_path (sandbox/agent mode)
+        self.git_manager = GitManager(project_path=self.project_root)
 
     def commit_artifacts(
         self,
