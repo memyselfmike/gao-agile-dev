@@ -194,10 +194,10 @@ epics:
 
   - epic_number: 7
     name: "Autonomous Artifact Creation & Git Integration"
-    status: ready
+    status: in_progress
     stories:
       - number: 1
-        status: ready
+        status: done
         name: "Remove AgentSpawner & Refactor to GAODevOrchestrator"
         file: "docs/features/sandbox-system/stories/epic-7/story-7.1.md"
       - number: 2
