@@ -161,7 +161,7 @@ epics:
 
   - epic_number: 6
     name: "Incremental Story-Based Workflow"
-    status: in_progress
+    status: completed
     stories:
       - number: 1
         status: done
@@ -180,11 +180,11 @@ epics:
         name: "Incremental Commit Automation"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.4.md"
       - number: 5
-        status: todo
+        status: done
         name: "Agent Prompts for Incremental Work"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.5.md"
       - number: 6
-        status: todo
+        status: done
         name: "Story-Level Metrics Tracking"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.6.md"
       - number: 7
