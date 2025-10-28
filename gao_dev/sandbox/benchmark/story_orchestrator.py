@@ -150,6 +150,12 @@ class StoryOrchestrator:
             component="StoryOrchestrator", project=str(project_path)
         )
 
+        # Initialize agent spawner if API key provided
+        self.agent_spawner = None
+        if api_key:
+            from .agent_spawner import AgentSpawner
+            self.agent_spawner = AgentSpawner(api_key=api_key)
+
     def execute_epics(
         self,
         epics: List[EpicConfig],
@@ -359,10 +365,31 @@ class StoryOrchestrator:
         """
         self.logger.debug("story_creation_phase", story=story.name)
 
-        # TODO: In Story 6.5, this will spawn Bob agent
-        # For now, use the story config directly
-        result.acceptance_criteria_met.append("Story specification created")
-        result.metadata["creation_phase"] = "completed"
+        if self.agent_spawner:
+            # Spawn Bob to create detailed story specification
+            prompt = self._create_story_creation_prompt(story, result)
+
+            agent_result = self.agent_spawner.spawn_agent(
+                agent_name="Bob",
+                task_prompt=prompt,
+                project_path=self.project_path,
+                timeout_seconds=story.timeout_seconds // 3,  # 1/3 of story time for creation
+            )
+
+            # Record metrics
+            if self.metrics_aggregator and agent_result.metrics:
+                self.metrics_aggregator.record_agent_metrics(agent_result.metrics)
+
+            if agent_result.success:
+                result.acceptance_criteria_met.append("Story specification created by Bob")
+                result.metadata["creation_phase"] = "completed"
+                result.metadata["creation_output"] = agent_result.output[:500]  # First 500 chars
+            else:
+                raise Exception(f"Story creation failed: {agent_result.error}")
+        else:
+            # Fallback if no agent spawner
+            result.acceptance_criteria_met.append("Story specification created (no agent)")
+            result.metadata["creation_phase"] = "skipped"
 
     def _execute_story_implementation(
         self, story: StoryConfig, result: StoryResult
@@ -377,10 +404,31 @@ class StoryOrchestrator:
         """
         self.logger.debug("story_implementation_phase", story=story.name)
 
-        # TODO: In Story 6.5, this will spawn Amelia agent
-        # For now, mark as implemented
-        result.acceptance_criteria_met.append("Story implemented")
-        result.metadata["implementation_phase"] = "completed"
+        if self.agent_spawner:
+            # Spawn Amelia to implement ONE story
+            prompt = self._create_story_implementation_prompt(story, result)
+
+            agent_result = self.agent_spawner.spawn_agent(
+                agent_name="Amelia",
+                task_prompt=prompt,
+                project_path=self.project_path,
+                timeout_seconds=story.timeout_seconds // 2,  # 1/2 of story time for implementation
+            )
+
+            # Record metrics
+            if self.metrics_aggregator and agent_result.metrics:
+                self.metrics_aggregator.record_agent_metrics(agent_result.metrics)
+
+            if agent_result.success:
+                result.acceptance_criteria_met.append("Story implemented by Amelia")
+                result.metadata["implementation_phase"] = "completed"
+                result.metadata["implementation_output"] = agent_result.output[:500]
+            else:
+                raise Exception(f"Story implementation failed: {agent_result.error}")
+        else:
+            # Fallback if no agent spawner
+            result.acceptance_criteria_met.append("Story implemented (no agent)")
+            result.metadata["implementation_phase"] = "skipped"
 
     def _execute_story_validation(
         self, story: StoryConfig, result: StoryResult
@@ -395,11 +443,33 @@ class StoryOrchestrator:
         """
         self.logger.debug("story_validation_phase", story=story.name)
 
-        # TODO: In Story 6.5, this will spawn Murat agent
-        # For now, mark as validated
-        result.acceptance_criteria_met.append("Story validated")
-        result.tests_passed = len(story.acceptance_criteria)
-        result.metadata["validation_phase"] = "completed"
+        if self.agent_spawner:
+            # Spawn Murat to validate ONE story
+            prompt = self._create_story_validation_prompt(story, result)
+
+            agent_result = self.agent_spawner.spawn_agent(
+                agent_name="Murat",
+                task_prompt=prompt,
+                project_path=self.project_path,
+                timeout_seconds=story.timeout_seconds // 6,  # 1/6 of story time for validation
+            )
+
+            # Record metrics
+            if self.metrics_aggregator and agent_result.metrics:
+                self.metrics_aggregator.record_agent_metrics(agent_result.metrics)
+
+            if agent_result.success:
+                result.acceptance_criteria_met.append("Story validated by Murat")
+                result.tests_passed = len(story.acceptance_criteria)
+                result.metadata["validation_phase"] = "completed"
+                result.metadata["validation_output"] = agent_result.output[:500]
+            else:
+                raise Exception(f"Story validation failed: {agent_result.error}")
+        else:
+            # Fallback if no agent spawner
+            result.acceptance_criteria_met.append("Story validated (no agent)")
+            result.tests_passed = len(story.acceptance_criteria)
+            result.metadata["validation_phase"] = "skipped"
 
     def _execute_story_commit(
         self, story: StoryConfig, result: StoryResult
@@ -480,3 +550,184 @@ class StoryOrchestrator:
         ]
 
         return "\n".join(lines)
+
+    def _create_story_creation_prompt(
+        self, story: StoryConfig, result: StoryResult
+    ) -> str:
+        """
+        Create focused prompt for Bob to create ONE story specification.
+
+        Emphasizes:
+        - Working on ONE story at a time
+        - Clear acceptance criteria
+        - No epic-level planning (just this story)
+        """
+        return f"""You are Bob, the Scrum Master for GAO-Dev.
+
+## YOUR TASK: Create Specification for ONE Story
+
+**IMPORTANT**: Focus ONLY on this ONE story. Do not create other stories or plan the epic.
+
+### Story Overview
+- **Epic**: {result.epic_name}
+- **Story Name**: {story.name}
+- **Story Points**: {story.story_points}
+- **Agent Responsible**: {story.agent}
+- **Description**: {story.description}
+
+### Predefined Acceptance Criteria
+{chr(10).join(f"- {criterion}" for criterion in story.acceptance_criteria)}
+
+### Your Responsibilities
+
+1. **Review the Story**: Understand what needs to be built for THIS ONE story
+2. **Enhance Acceptance Criteria**: Add any technical acceptance criteria needed
+3. **Identify Dependencies**: List any files or components this story depends on
+4. **Define Technical Requirements**: Specify implementation details
+5. **Create Story Document**: Document this ONE story for Amelia to implement
+
+### Output Required
+
+Create a detailed story specification document that includes:
+- Clear, testable acceptance criteria
+- Technical implementation notes
+- Dependencies and prerequisites
+- Definition of done
+- Estimated complexity
+
+### Context
+- **Project Path**: {self.project_path}
+- **Working on**: ONE story at a time (incremental agile workflow)
+- **Next Step**: Amelia will implement this story based on your specification
+
+**Remember**: Focus on THIS ONE story. Amelia will use your specification to implement it.
+
+Begin creating the story specification now."""
+
+    def _create_story_implementation_prompt(
+        self, story: StoryConfig, result: StoryResult
+    ) -> str:
+        """
+        Create focused prompt for Amelia to implement ONE story.
+
+        Emphasizes:
+        - Implementing ONE story at a time
+        - Following acceptance criteria
+        - Writing tests for this story only
+        """
+        # Get context from creation phase
+        creation_output = result.metadata.get("creation_output", "")
+
+        return f"""You are Amelia, the Software Developer for GAO-Dev.
+
+## YOUR TASK: Implement ONE Story
+
+**IMPORTANT**: Implement ONLY this ONE story. Do not implement other stories.
+
+### Story Details
+- **Epic**: {result.epic_name}
+- **Story Name**: {story.name}
+- **Story Points**: {story.story_points}
+- **Description**: {story.description}
+
+### Acceptance Criteria (Must All Be Met)
+{chr(10).join(f"- {criterion}" for criterion in story.acceptance_criteria)}
+
+### Context from Story Creation Phase
+{creation_output if creation_output else "No additional context from Bob"}
+
+### Your Responsibilities
+
+1. **Implement THIS Story**: Write code to meet all acceptance criteria
+2. **Write Tests**: Create unit tests that verify acceptance criteria
+3. **Follow Standards**: Use TypeScript, proper typing, clean code
+4. **Document Code**: Add docstrings and comments as needed
+5. **Verify Locally**: Ensure tests pass before marking complete
+
+### Implementation Guidelines
+- **Focus**: ONE story at a time (not the whole epic)
+- **Quality**: Production-ready code with 80%+ test coverage
+- **Tests**: Write tests that verify each acceptance criterion
+- **Types**: Full TypeScript type safety, no 'any' types
+- **Style**: Follow project conventions and best practices
+
+### Context
+- **Project Path**: {self.project_path}
+- **Working on**: ONE story (incremental workflow)
+- **Next Step**: Murat will validate your implementation
+
+### Output Format
+Provide:
+- Summary of files created/modified
+- Test results showing acceptance criteria met
+- Any issues or blockers encountered
+- Confirmation that all acceptance criteria are satisfied
+
+**Remember**: Implement THIS ONE story completely. Murat will validate it next.
+
+Begin implementing the story now."""
+
+    def _create_story_validation_prompt(
+        self, story: StoryConfig, result: StoryResult
+    ) -> str:
+        """
+        Create focused prompt for Murat to validate ONE story.
+
+        Emphasizes:
+        - Validating ONE story at a time
+        - Checking all acceptance criteria
+        - Running tests for this story only
+        """
+        # Get context from implementation phase
+        implementation_output = result.metadata.get("implementation_output", "")
+
+        return f"""You are Murat, the Test Architect and QA Engineer for GAO-Dev.
+
+## YOUR TASK: Validate ONE Story
+
+**IMPORTANT**: Validate ONLY this ONE story. Do not test other stories.
+
+### Story Details
+- **Epic**: {result.epic_name}
+- **Story Name**: {story.name}
+- **Story Points**: {story.story_points}
+- **Description**: {story.description}
+
+### Acceptance Criteria to Verify
+{chr(10).join(f"- {criterion}" for criterion in story.acceptance_criteria)}
+
+### Context from Implementation Phase
+{implementation_output if implementation_output else "No context from Amelia"}
+
+### Your Responsibilities
+
+1. **Run Tests**: Execute all tests related to THIS story
+2. **Verify Acceptance Criteria**: Confirm each criterion is met
+3. **Check Code Quality**: Verify type safety, linting, coverage
+4. **Validate Functionality**: Manual testing if needed
+5. **Report Results**: Clear pass/fail for each criterion
+
+### Validation Checklist
+- [ ] All tests passing for this story
+- [ ] Test coverage >= 80% for new code
+- [ ] No TypeScript errors
+- [ ] No linting errors
+- [ ] All acceptance criteria verified
+- [ ] Code follows project standards
+
+### Context
+- **Project Path**: {self.project_path}
+- **Working on**: ONE story (incremental validation)
+- **Next Step**: If passing, story will be committed
+
+### Output Format
+Provide:
+- Test results (passing/failing counts)
+- Acceptance criteria verification (checked/unchecked)
+- Code quality metrics (coverage, linting, types)
+- Overall verdict: PASS or FAIL
+- If FAIL: Specific issues that need fixing
+
+**Remember**: Validate THIS ONE story. If it passes, it will be committed atomically.
+
+Begin validating the story now."""
