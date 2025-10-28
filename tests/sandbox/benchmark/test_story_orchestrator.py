@@ -329,3 +329,110 @@ class TestIntegration:
         status = git_manager.get_status()
         assert status["has_commits"] is True
         assert status["clean"] is True  # All committed
+
+
+class TestCommitAutomation:
+    """Tests for incremental commit automation (Story 6.4)."""
+
+    @pytest.fixture
+    def temp_project_path(self, tmp_path):
+        """Create temp project path."""
+        return tmp_path / "commit_test"
+
+    @pytest.fixture
+    def git_manager(self, temp_project_path):
+        """Create real GitManager."""
+        from gao_dev.sandbox.git_manager import GitManager
+
+        temp_project_path.mkdir(parents=True, exist_ok=True)
+        manager = GitManager(temp_project_path)
+        manager.init_repo(initial_commit=True)
+        return manager
+
+    def test_auto_commit_after_story_completion(self, temp_project_path, git_manager):
+        """Test that story automatically commits after completion."""
+        # Create test file
+        test_file = temp_project_path / "feature.py"
+        test_file.write_text("# Feature code\n")
+
+        orchestrator = StoryOrchestrator(
+            project_path=temp_project_path,
+            git_manager=git_manager,
+        )
+
+        story = StoryConfig(name="Add feature", agent="Amelia", story_points=3)
+        result = orchestrator.execute_story(story, "Test Epic")
+
+        # Verify auto-commit occurred
+        assert result.status == StoryStatus.COMPLETED
+        assert result.commit_hash is not None
+        assert len(result.artifacts_created) > 0
+
+    def test_conventional_commit_format(self, temp_project_path):
+        """Test that commit follows conventional format."""
+        orchestrator = StoryOrchestrator(project_path=temp_project_path)
+
+        story = StoryConfig(
+            name="User Login",
+            agent="Amelia",
+            description="Implement user auth",
+            story_points=5,
+        )
+
+        result = StoryResult(
+            story_name="User Login",
+            epic_name="Authentication System",
+            agent="Amelia",
+            status=StoryStatus.COMPLETED,
+            start_time=datetime.now(),
+        )
+
+        message = orchestrator._generate_commit_message(story, result)
+
+        # Verify conventional format
+        assert message.startswith("feat(authentication-system)")
+        assert "User Login" in message
+        assert "Story Points: 5" in message
+        assert "🤖 Generated with GAO-Dev" in message
+        assert "Co-Authored-By: Claude" in message
+
+    def test_commit_metadata_tracked(self, temp_project_path, git_manager):
+        """Test that commit metadata is properly tracked."""
+        test_file = temp_project_path / "test.py"
+        test_file.write_text("print('test')\n")
+
+        orchestrator = StoryOrchestrator(
+            project_path=temp_project_path,
+            git_manager=git_manager,
+        )
+
+        story = StoryConfig(name="Test Story", agent="Amelia")
+        result = orchestrator.execute_story(story, "Epic")
+
+        # Verify metadata
+        assert result.commit_hash is not None
+        assert isinstance(result.commit_hash, str)
+        assert len(result.commit_hash) > 0
+        assert "test.py" in result.artifacts_created
+        assert result.duration_seconds > 0
+
+    def test_robust_error_handling_on_commit_failure(self, temp_project_path):
+        """Test that commit failures don't break story execution."""
+        # Mock git manager that fails
+        mock_git = Mock()
+        mock_git.create_commit.side_effect = Exception("Git error")
+
+        orchestrator = StoryOrchestrator(
+            project_path=temp_project_path,
+            git_manager=mock_git,
+        )
+
+        story = StoryConfig(name="Test", agent="Amelia")
+        result = orchestrator.execute_story(story, "Epic")
+
+        # Story should still complete
+        assert result.status == StoryStatus.COMPLETED
+        # But no commit hash
+        assert result.commit_hash is None
+        # Warning logged in metadata
+        assert "commit_warning" in result.metadata

@@ -176,7 +176,7 @@ epics:
         name: "Story Iteration Orchestrator"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.3.md"
       - number: 4
-        status: todo
+        status: done
         name: "Incremental Commit Automation"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.4.md"
       - number: 5
