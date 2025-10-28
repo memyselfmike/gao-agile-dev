@@ -28,8 +28,7 @@ from .story_orchestrator import (
     EpicResult,
     StoryStatus,
 )
-from .agent_spawner import (
-    AgentSpawner,
+from .models import (
     AgentResult,
     AgentMetrics,
 )
@@ -78,7 +77,6 @@ __all__ = [
     "StoryResult",
     "EpicResult",
     "StoryStatus",
-    "AgentSpawner",
     "AgentResult",
     "AgentMetrics",
     "MetricsAggregator",
