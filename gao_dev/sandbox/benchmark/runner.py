@@ -272,8 +272,8 @@ class BenchmarkRunner:
         if self.config.boilerplate_url:
             self.logger.info("cloning_boilerplate", url=self.config.boilerplate_url)
             cloner = GitCloner()
-            cloner.clone(
-                url=self.config.boilerplate_url, target_dir=project.project_path
+            cloner.clone_repository(
+                repo_url=self.config.boilerplate_url, destination=project.project_path
             )
         elif self.config.boilerplate_path:
             self.logger.info("copying_boilerplate", path=self.config.boilerplate_path)
