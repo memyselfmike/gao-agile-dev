@@ -272,17 +272,19 @@ class BenchmarkRunner:
         if self.config.boilerplate_url:
             self.logger.info("cloning_boilerplate", url=self.config.boilerplate_url)
             cloner = GitCloner()
+            project_path = self.sandbox_manager.get_project_path(project.name)
             cloner.clone_repository(
-                repo_url=self.config.boilerplate_url, destination=project.project_path
+                repo_url=self.config.boilerplate_url, destination=project_path
             )
         elif self.config.boilerplate_path:
             self.logger.info("copying_boilerplate", path=self.config.boilerplate_path)
             # Copy local template
             import shutil
 
+            project_path = self.sandbox_manager.get_project_path(project.name)
             shutil.copytree(
                 self.config.boilerplate_path,
-                project.project_path,
+                project_path,
                 dirs_exist_ok=True,
             )
 
