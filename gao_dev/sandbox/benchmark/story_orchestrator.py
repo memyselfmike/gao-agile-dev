@@ -150,11 +150,13 @@ class StoryOrchestrator:
             component="StoryOrchestrator", project=str(project_path)
         )
 
-        # Initialize agent spawner if API key provided
+        # DEPRECATED (Epic 7.1.2): AgentSpawner removed
+        # Story workflows now use GAODevOrchestrator.execute_story_workflow()
+        # This class is kept for backwards compatibility but should not be used
         self.agent_spawner = None
-        if api_key:
-            from .agent_spawner import AgentSpawner
-            self.agent_spawner = AgentSpawner(api_key=api_key)
+        # if api_key:
+        #     from .agent_spawner import AgentSpawner
+        #     self.agent_spawner = AgentSpawner(api_key=api_key)
 
     def execute_epics(
         self,

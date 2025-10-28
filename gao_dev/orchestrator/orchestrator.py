@@ -2,11 +2,13 @@
 
 from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
 from pathlib import Path
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional, Dict, List
+from datetime import datetime
 import structlog
 
 from ..tools import gao_dev_server
 from .agent_definitions import AGENT_DEFINITIONS
+from .workflow_results import StoryResult, EpicResult, StoryStatus
 
 logger = structlog.get_logger()
 
@@ -298,3 +300,184 @@ Winston should:
         task = "Run the health_check tool and report the results."
         async for message in self.execute_task(task):
             yield message
+
+    # ========================================================================
+    # Story Workflow Methods (Epic 7.1.2)
+    # ========================================================================
+
+    async def validate_story(
+        self,
+        epic: int,
+        story: int
+    ) -> AsyncGenerator[str, None]:
+        """
+        Validate a story using Murat (QA).
+
+        Args:
+            epic: Epic number
+            story: Story number
+
+        Yields:
+            Progress messages
+        """
+        task = f"""Use the Murat agent to validate Story {epic}.{story}.
+
+Murat should:
+1. Read the story file from docs/stories/epic-{epic}/story-{epic}.{story}.md
+2. Verify all acceptance criteria are documented
+3. Check that tests exist and pass
+4. Verify code coverage meets requirements (target: 80%+)
+5. Check code quality (linting, type hints)
+6. Report validation results (PASS/FAIL)
+7. If FAIL, document what needs to be fixed
+"""
+        async for message in self.execute_task(task):
+            yield message
+
+    async def execute_story_workflow(
+        self,
+        epic: int,
+        story: int,
+        story_config: Optional[Dict] = None,
+        with_qa: bool = True
+    ) -> StoryResult:
+        """
+        Execute complete story lifecycle with QA validation.
+
+        This is the core agile workflow: Bob -> Amelia -> Murat -> Commit
+
+        Workflow:
+        1. Bob (Scrum Master) creates detailed story spec
+        2. Amelia (Developer) implements + writes tests
+        3. Murat (QA) validates quality (if with_qa=True)
+        4. Git atomic commit with story details
+
+        Args:
+            epic: Epic number
+            story: Story number
+            story_config: Optional story configuration (acceptance criteria, etc.)
+            with_qa: Whether to include QA validation (default: True)
+
+        Returns:
+            StoryResult with metrics, artifacts, commit hash
+        """
+        result = StoryResult(
+            story_name=f"Story {epic}.{story}",
+            epic_name=f"Epic {epic}",
+            agent="workflow",
+            status=StoryStatus.IN_PROGRESS,
+            start_time=datetime.now()
+        )
+
+        try:
+            logger.info(
+                "story_workflow_started",
+                epic=epic,
+                story=story,
+                with_qa=with_qa
+            )
+
+            # Phase 1: Bob creates story spec
+            result.status = StoryStatus.IN_PROGRESS
+            logger.debug("executing_phase", phase="story_creation", agent="Bob")
+
+            async for _ in self.create_story(epic, story):
+                pass  # Execute story creation
+
+            # Phase 2: Amelia implements
+            logger.debug("executing_phase", phase="implementation", agent="Amelia")
+
+            async for _ in self.implement_story(epic, story):
+                pass  # Execute implementation
+
+            # Phase 3: Murat validates (if enabled)
+            if with_qa:
+                result.status = StoryStatus.QA_VALIDATION
+                logger.debug("executing_phase", phase="qa_validation", agent="Murat")
+
+                async for _ in self.validate_story(epic, story):
+                    pass  # Execute QA validation
+
+            # Phase 4: Story complete
+            result.status = StoryStatus.COMPLETED
+            result.end_time = datetime.now()
+
+            logger.info(
+                "story_workflow_completed",
+                epic=epic,
+                story=story,
+                duration=(result.end_time - result.start_time).total_seconds()
+            )
+
+        except Exception as e:
+            result.status = StoryStatus.FAILED
+            result.error_message = str(e)
+            result.end_time = datetime.now()
+
+            logger.error(
+                "story_workflow_failed",
+                epic=epic,
+                story=story,
+                error=str(e)
+            )
+
+        return result
+
+    async def execute_epic_workflow(
+        self,
+        epic: int,
+        stories: List[Dict],
+        with_qa: bool = True
+    ) -> EpicResult:
+        """
+        Execute all stories in an epic sequentially.
+
+        Args:
+            epic: Epic number
+            stories: List of story configurations
+            with_qa: Whether to include QA per story
+
+        Returns:
+            EpicResult with all story results
+        """
+        epic_result = EpicResult(epic_name=f"Epic {epic}")
+        epic_result.start_time = datetime.now()
+
+        logger.info(
+            "epic_workflow_started",
+            epic=epic,
+            total_stories=len(stories),
+            with_qa=with_qa
+        )
+
+        for i, story_config in enumerate(stories, 1):
+            logger.debug("executing_story", epic=epic, story=i)
+
+            story_result = await self.execute_story_workflow(
+                epic=epic,
+                story=i,
+                story_config=story_config,
+                with_qa=with_qa
+            )
+            epic_result.story_results.append(story_result)
+
+            # Stop on first failure (fail-fast)
+            if story_result.status == StoryStatus.FAILED:
+                logger.warning(
+                    "epic_workflow_stopped_on_failure",
+                    epic=epic,
+                    failed_story=i
+                )
+                break
+
+        epic_result.end_time = datetime.now()
+
+        logger.info(
+            "epic_workflow_completed",
+            epic=epic,
+            completed_stories=epic_result.completed_stories,
+            failed_stories=epic_result.failed_stories,
+            duration=(epic_result.end_time - epic_result.start_time).total_seconds()
+        )
+
+        return epic_result
