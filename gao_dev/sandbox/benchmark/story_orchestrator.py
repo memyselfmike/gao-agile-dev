@@ -308,6 +308,14 @@ class StoryOrchestrator:
             start_time=datetime.now(),
         )
 
+        # Record story start in metrics
+        if self.metrics_aggregator:
+            self.metrics_aggregator.record_story_start(
+                epic_name=epic_name,
+                story_name=story.name,
+                metadata={"agent": story.agent, "story_points": story.story_points},
+            )
+
         try:
             # Phase 1: Story Creation (Bob creates detailed spec)
             self._execute_story_creation(story, result)
@@ -328,6 +336,13 @@ class StoryOrchestrator:
                 result.end_time - result.start_time
             ).total_seconds()
 
+            # Record story completion in metrics
+            if self.metrics_aggregator:
+                self.metrics_aggregator.record_story_complete(
+                    status="completed",
+                    metadata={"commit_hash": result.commit_hash},
+                )
+
             self.logger.info(
                 "story_completed_successfully",
                 epic=epic_name,
@@ -342,6 +357,13 @@ class StoryOrchestrator:
             result.duration_seconds = (
                 result.end_time - result.start_time
             ).total_seconds()
+
+            # Record story failure in metrics
+            if self.metrics_aggregator:
+                self.metrics_aggregator.record_story_complete(
+                    status="failed",
+                    metadata={"error": str(e)},
+                )
 
             self.logger.error(
                 "story_failed",
