@@ -281,10 +281,153 @@ class BenchmarkRunner:
 
     def _execute_workflow(self, project: Any, result: BenchmarkResult) -> None:
         """
-        Execute workflow phases.
+        Execute workflow - either phase-based or story-based.
 
-        Uses WorkflowOrchestrator to execute each phase sequentially,
-        with progress tracking and metrics collection.
+        Detects mode from config and delegates to appropriate orchestrator:
+        - Phase-based: Uses WorkflowOrchestrator (legacy waterfall mode)
+        - Story-based: Uses StoryOrchestrator (incremental agile mode)
+
+        Args:
+            project: Sandbox project
+            result: Benchmark result to update
+        """
+        self.logger.info("workflow_execution_started", run_id=result.run_id)
+
+        # Check if config is story-based
+        if self.config.is_story_based():
+            self._execute_story_based_workflow(project, result)
+        else:
+            self._execute_phase_based_workflow(project, result)
+
+    def _execute_story_based_workflow(
+        self, project: Any, result: BenchmarkResult
+    ) -> None:
+        """
+        Execute story-based incremental workflow.
+
+        Uses StoryOrchestrator to iterate through epics and stories,
+        with each story following: create → implement → test → commit.
+
+        Args:
+            project: Sandbox project
+            result: Benchmark result to update
+        """
+        from .story_orchestrator import StoryOrchestrator
+        from .progress import ProgressTracker, ConsoleProgressObserver
+        from .metrics_aggregator import MetricsAggregator
+        from ...sandbox.git_manager import GitManager
+
+        self.logger.info(
+            "story_based_workflow_started",
+            run_id=result.run_id,
+            total_epics=len(self.config.epics),
+            total_stories=self.config.total_stories(),
+        )
+
+        # Get project path
+        project_path = self.sandbox_root / "projects" / project.name
+
+        # Initialize git manager for commits
+        git_manager = GitManager(project_path)
+
+        # Initialize metrics aggregator
+        output_dir = self.sandbox_root / "metrics"
+        metrics_aggregator = MetricsAggregator(
+            run_id=result.run_id,
+            benchmark_name=self.config.name,
+            output_dir=output_dir,
+        )
+
+        # Initialize progress tracker
+        total_stories = self.config.total_stories()
+        progress_tracker = ProgressTracker(
+            total_phases=total_stories,
+            benchmark_name=self.config.name,
+        )
+        progress_tracker.add_observer(ConsoleProgressObserver())
+
+        # Log benchmark start
+        metrics_aggregator.log_event(
+            "story_based_benchmark_started",
+            f"Starting story-based benchmark: {self.config.name}",
+            {
+                "epics": len(self.config.epics),
+                "stories": total_stories,
+                "project_path": str(project_path),
+                "story_points": self.config.total_story_points(),
+            },
+        )
+
+        # Create story orchestrator
+        orchestrator = StoryOrchestrator(
+            project_path=project_path,
+            api_key=self.api_key,
+            git_manager=git_manager,
+            metrics_aggregator=metrics_aggregator,
+        )
+
+        try:
+            # Execute all epics
+            progress_tracker.start()
+            epic_results = orchestrator.execute_epics(
+                epics=self.config.epics,
+                timeout_seconds=self.config.timeout_seconds,
+            )
+            progress_tracker.complete()
+
+            # Store results
+            result.metadata["story_based_workflow"] = True
+            result.metadata["epic_results"] = [
+                epic_result.to_dict() for epic_result in epic_results
+            ]
+            result.metadata["total_epics"] = len(epic_results)
+            result.metadata["completed_stories"] = sum(
+                epic.completed_stories for epic in epic_results
+            )
+            result.metadata["failed_stories"] = sum(
+                epic.failed_stories for epic in epic_results
+            )
+            result.metadata["total_stories"] = total_stories
+
+            # Check if all epics succeeded
+            all_succeeded = all(epic.success for epic in epic_results)
+            if not all_succeeded:
+                error_msg = "Some stories failed in story-based workflow"
+                result.errors.append(error_msg)
+                self.logger.error("story_based_workflow_partial_failure")
+
+            self.logger.info(
+                "story_based_workflow_completed",
+                total_epics=len(epic_results),
+                completed_stories=result.metadata["completed_stories"],
+                failed_stories=result.metadata["failed_stories"],
+            )
+
+            # Generate metrics report
+            metrics_report = metrics_aggregator.generate_report()
+            result.metadata["metrics_report"] = metrics_report
+            metrics_aggregator.print_summary()
+
+        except Exception as e:
+            error_msg = f"Story-based workflow error: {str(e)}"
+            result.errors.append(error_msg)
+            progress_tracker.fail(error_msg)
+            self.logger.error("story_based_workflow_exception", error=str(e))
+
+            # Log error to metrics
+            metrics_aggregator.log_event(
+                "story_based_workflow_failed",
+                f"Workflow failed: {str(e)}",
+                {"error": str(e)},
+            )
+
+    def _execute_phase_based_workflow(
+        self, project: Any, result: BenchmarkResult
+    ) -> None:
+        """
+        Execute phase-based workflow (legacy waterfall mode).
+
+        Uses WorkflowOrchestrator to execute workflow phases sequentially.
 
         Args:
             project: Sandbox project
@@ -294,7 +437,7 @@ class BenchmarkRunner:
         from .progress import ProgressTracker, ConsoleProgressObserver
         from .metrics_aggregator import MetricsAggregator
 
-        self.logger.info("workflow_execution_started", run_id=result.run_id)
+        self.logger.info("phase_based_workflow_started", run_id=result.run_id)
 
         # Create workflow phases from benchmark config
         workflow_phases = self._create_workflow_phases()

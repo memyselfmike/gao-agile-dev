@@ -172,7 +172,7 @@ epics:
         name: "Story-Based Config Format"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.2.md"
       - number: 3
-        status: todo
+        status: done
         name: "Story Iteration Orchestrator"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.3.md"
       - number: 4
