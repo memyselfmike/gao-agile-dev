@@ -10,6 +10,7 @@ import structlog
 
 from .config import WorkflowPhaseConfig
 from ...orchestrator import GAODevOrchestrator
+from ..artifact_parser import ArtifactParser
 
 
 logger = structlog.get_logger()
@@ -122,10 +123,12 @@ class WorkflowOrchestrator:
             execution_mode=execution_mode,
         )
 
-        # Initialize GAODevOrchestrator for agent mode
+        # Initialize GAODevOrchestrator and ArtifactParser for agent mode
         self.gao_orchestrator = None
+        self.artifact_parser = None
         if execution_mode == "agent":
             self.gao_orchestrator = GAODevOrchestrator(project_root=self.project_path)
+            self.artifact_parser = ArtifactParser(project_root=self.project_path)
 
     def execute_workflow(
         self,
@@ -346,12 +349,36 @@ class WorkflowOrchestrator:
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
 
+            # Parse output for artifacts
+            artifacts_created = []
+            if self.artifact_parser:
+                parsed_artifacts = self.artifact_parser.parse_output(
+                    output=output,
+                    phase=phase_config.phase_name,
+                )
+
+                # Write artifacts to disk
+                write_results = self.artifact_parser.write_artifacts(parsed_artifacts)
+
+                # Track which artifacts were created
+                artifacts_created = [
+                    path for path, success in write_results.items() if success
+                ]
+
+                self.logger.info(
+                    "artifacts_created",
+                    phase=phase_config.phase_name,
+                    artifact_count=len(artifacts_created),
+                    artifacts=artifacts_created,
+                )
+
             self.logger.info(
                 "phase_execution_completed",
                 phase=phase_config.phase_name,
                 agent=agent_name,
                 duration_seconds=duration,
                 output_length=len(output),
+                artifacts_created=len(artifacts_created),
             )
 
             # Record metrics if aggregator available
@@ -364,6 +391,7 @@ class WorkflowOrchestrator:
                     details={
                         "output_length": len(output),
                         "orchestration_mode": "gao-dev",
+                        "artifacts_created": artifacts_created,
                     },
                 )
 
@@ -380,6 +408,7 @@ class WorkflowOrchestrator:
                 artifacts={
                     "agent": agent_name,
                     "orchestration_mode": "gao-dev",
+                    "files_created": artifacts_created,
                 },
             )
 
