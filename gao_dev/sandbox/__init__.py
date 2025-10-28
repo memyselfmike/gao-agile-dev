@@ -12,8 +12,10 @@ from .exceptions import (
     InvalidGitUrlError,
     GitNotInstalledError,
 )
-from .benchmark import BenchmarkConfig, SuccessCriteria, WorkflowPhaseConfig
+# Import benchmark loader (from benchmark_loader.py)
+from .benchmark_loader import BenchmarkConfig, load_benchmark
 from .git_cloner import GitCloner
+from .git_manager import GitManager
 from .template_scanner import TemplateScanner, TemplateVariable
 from .template_substitutor import TemplateSubstitutor, SubstitutionResult, SubstitutionError
 from .dependency_installer import DependencyInstaller, PackageManager, DependencyInstallError
@@ -33,9 +35,9 @@ __all__ = [
     "InvalidGitUrlError",
     "GitNotInstalledError",
     "BenchmarkConfig",
-    "SuccessCriteria",
-    "WorkflowPhaseConfig",
+    "load_benchmark",
     "GitCloner",
+    "GitManager",
     "TemplateScanner",
     "TemplateVariable",
     "TemplateSubstitutor",

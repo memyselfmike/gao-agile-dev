@@ -98,6 +98,7 @@ class BenchmarkRunner:
         sandbox_manager: SandboxManager,
         metrics_collector: MetricsCollector,
         sandbox_root: Path,
+        api_key: Optional[str] = None,
     ):
         """
         Initialize benchmark runner.
@@ -107,11 +108,13 @@ class BenchmarkRunner:
             sandbox_manager: Sandbox project manager
             metrics_collector: Metrics collection service
             sandbox_root: Root directory for sandbox projects
+            api_key: Anthropic API key for agent spawning (if None, uses env var)
         """
         self.config = config
         self.sandbox_manager = sandbox_manager
         self.metrics_collector = metrics_collector
         self.sandbox_root = sandbox_root
+        self.api_key = api_key
         self.validator = ConfigValidator()
         self.logger = logger.bind(component="BenchmarkRunner")
 
@@ -214,7 +217,7 @@ class BenchmarkRunner:
 
     def _initialize_sandbox(self, result: BenchmarkResult) -> Any:
         """
-        Initialize sandbox project.
+        Initialize sandbox project with git repository.
 
         Args:
             result: Benchmark result to update
@@ -236,6 +239,10 @@ class BenchmarkRunner:
                 "benchmark_name": self.config.name,
             },
         )
+
+        # Initialize git repository for incremental story-based workflow
+        project_path = self.sandbox_root / "projects" / project.name
+        self._initialize_git_repository(project_path, result)
 
         self.logger.info("sandbox_initialized", project_name=project_name)
         return project
@@ -276,15 +283,221 @@ class BenchmarkRunner:
         """
         Execute workflow phases.
 
-        This is a placeholder that will be implemented in Story 4.4.
+        Uses WorkflowOrchestrator to execute each phase sequentially,
+        with progress tracking and metrics collection.
 
         Args:
             project: Sandbox project
             result: Benchmark result to update
         """
-        self.logger.info("workflow_execution_placeholder")
-        # TODO: Implement in Story 4.4
-        pass
+        from .orchestrator import WorkflowOrchestrator
+        from .progress import ProgressTracker, ConsoleProgressObserver
+        from .metrics_aggregator import MetricsAggregator
+
+        self.logger.info("workflow_execution_started", run_id=result.run_id)
+
+        # Create workflow phases from benchmark config
+        workflow_phases = self._create_workflow_phases()
+
+        if not workflow_phases:
+            self.logger.warning("no_workflow_phases_configured")
+            result.warnings.append("No workflow phases configured in benchmark")
+            return
+
+        # Initialize progress tracking
+        progress_tracker = ProgressTracker(
+            total_phases=len(workflow_phases),
+            benchmark_name=self.config.name,
+        )
+        progress_tracker.add_observer(ConsoleProgressObserver())
+
+        # Get project path
+        project_path = self.sandbox_root / "projects" / project.name
+
+        # Initialize metrics aggregator for comprehensive logging
+        output_dir = self.sandbox_root / "metrics"
+        metrics_aggregator = MetricsAggregator(
+            run_id=result.run_id,
+            benchmark_name=self.config.name,
+            output_dir=output_dir,
+        )
+
+        # Log benchmark start
+        metrics_aggregator.log_event(
+            "benchmark_started",
+            f"Starting benchmark: {self.config.name}",
+            {
+                "phases": len(workflow_phases),
+                "project_path": str(project_path),
+                "timeout_seconds": self.config.timeout_seconds,
+            },
+        )
+
+        # Create orchestrator (use 'agent' mode for autonomous execution)
+        orchestrator = WorkflowOrchestrator(
+            project_path=project_path,
+            execution_mode="agent",  # Use agent mode for autonomous execution
+            api_key=self.api_key,  # Pass API key for agent spawning
+            metrics_aggregator=metrics_aggregator,  # Pass metrics aggregator
+        )
+
+        try:
+            # Execute workflow
+            progress_tracker.start()
+            workflow_result = orchestrator.execute_workflow(
+                phases=workflow_phases,
+                timeout_seconds=self.config.timeout_seconds,
+            )
+            progress_tracker.complete()
+
+            # Store workflow results in benchmark result
+            result.metadata["workflow_result"] = workflow_result.to_dict()
+            result.metadata["completed_phases"] = workflow_result.completed_phases
+            result.metadata["failed_phases"] = workflow_result.failed_phases
+
+            # Check if workflow succeeded
+            if not workflow_result.success:
+                error_msg = (
+                    f"Workflow failed: {workflow_result.failed_phases} phase(s) failed"
+                )
+                result.errors.append(error_msg)
+                self.logger.error("workflow_execution_failed", error=error_msg)
+
+            self.logger.info(
+                "workflow_execution_completed",
+                success=workflow_result.success,
+                completed=workflow_result.completed_phases,
+                failed=workflow_result.failed_phases,
+            )
+
+            # Generate comprehensive metrics report
+            metrics_report = metrics_aggregator.generate_report()
+            result.metadata["metrics_report"] = metrics_report
+
+            # Print summary to console
+            metrics_aggregator.print_summary()
+
+        except Exception as e:
+            error_msg = f"Workflow execution error: {str(e)}"
+            result.errors.append(error_msg)
+            progress_tracker.fail(error_msg)
+            self.logger.error("workflow_execution_exception", error=str(e))
+
+            # Log error to metrics
+            metrics_aggregator.log_event(
+                "benchmark_failed",
+                f"Benchmark failed with error: {str(e)}",
+                {"error": str(e)},
+            )
+
+    def _create_workflow_phases(self) -> List:
+        """
+        Create workflow phase configurations from benchmark config.
+
+        Returns:
+            List[WorkflowPhaseConfig]: List of workflow phases to execute
+        """
+        from .config import WorkflowPhaseConfig
+
+        phases = []
+
+        # Check if using new-style config with workflow_phases
+        if hasattr(self.config, 'workflow_phases') and self.config.workflow_phases:
+            return self.config.workflow_phases
+
+        # Handle simple BenchmarkConfig from sandbox/benchmark.py
+        # This has a 'phases' attribute extracted from YAML
+        if hasattr(self.config, 'phases') and self.config.phases:
+            for phase_def in self.config.phases:
+                # Extract phase information
+                phase_name = phase_def.get('name', 'Unknown')
+                agent_name = phase_def.get('agent', 'Amelia')
+                duration_minutes = phase_def.get('expected_duration_minutes', 60)
+
+                # Create prompt for the agent
+                # The agent will receive the initial prompt from the benchmark
+                # CRITICAL: Agents must complete ALL work, not just foundation
+                prompt = f"""You are {agent_name}, working on phase: {phase_name}
+
+IMPORTANT: This is a COMPLETE END-TO-END BENCHMARK. You must finish ALL work for this phase, not just setup or foundation.
+
+Initial Benchmark Prompt:
+{self.config.initial_prompt}
+
+Your task is to FULLY COMPLETE the {phase_name} phase according to your role and responsibilities.
+
+Time allocation: {duration_minutes} minutes
+
+COMPLETION CRITERIA:
+- For implementation phases: Complete ALL stories in the epic, with tests
+- For planning phases: Create COMPLETE and DETAILED documentation
+- For quality phases: Run ALL tests and audits, fix ALL issues
+
+DO NOT stop at "foundation" or "setup" - you must deliver a COMPLETE, PRODUCTION-READY result.
+
+Work autonomously to FULLY complete this phase."""
+
+                phase = WorkflowPhaseConfig(
+                    phase_name=phase_name,
+                    command=prompt,  # Store prompt as command for agent execution
+                    timeout_seconds=duration_minutes * 60,
+                    quality_gates={"agent": agent_name, "prompt": prompt},
+                )
+                phases.append(phase)
+
+        return phases
+
+    def _initialize_git_repository(
+        self, project_path: Path, result: BenchmarkResult
+    ) -> None:
+        """
+        Initialize git repository in sandbox project.
+
+        Creates git repo, configures user info, and makes initial commit
+        with project structure (README, .gitignore, package.json if present).
+
+        Args:
+            project_path: Path to project directory
+            result: Benchmark result to update with git info
+
+        Raises:
+            Exception: If git initialization fails
+        """
+        from ...sandbox.git_manager import GitManager
+
+        self.logger.info("initializing_git_repository", project_path=str(project_path))
+
+        try:
+            # Create GitManager instance
+            git_manager = GitManager(project_path)
+
+            # Initialize repository with initial commit
+            init_result = git_manager.init_repo(
+                user_name="GAO-Dev Benchmark",
+                user_email="benchmark@gao-dev.local",
+                initial_commit=True,
+            )
+
+            # Store git initialization info in result metadata
+            result.metadata["git_initialized"] = True
+            result.metadata["git_init_timestamp"] = init_result["timestamp"].isoformat()
+            result.metadata["git_initial_commit"] = init_result.get("commit_hash")
+
+            # Get and log git status
+            status = git_manager.get_status()
+            self.logger.info(
+                "git_repository_initialized",
+                project_path=str(project_path),
+                commit_hash=init_result.get("commit_hash"),
+                branch=status.get("branch"),
+            )
+
+        except Exception as e:
+            error_msg = f"Failed to initialize git repository: {str(e)}"
+            result.warnings.append(error_msg)
+            self.logger.warning("git_initialization_failed", error=error_msg)
+            # Don't fail the entire benchmark if git init fails
+            # This allows the benchmark to continue without git integration
 
     def _cleanup(self, result: BenchmarkResult) -> None:
         """

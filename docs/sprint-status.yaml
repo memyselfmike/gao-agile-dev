@@ -160,9 +160,47 @@ epics:
         file: "docs/features/sandbox-system/stories/epic-5/story-5.6.md"
 
   - epic_number: 6
+    name: "Incremental Story-Based Workflow"
+    status: in_progress
+    stories:
+      - number: 1
+        status: done
+        name: "Git Repository Integration"
+        file: "docs/features/sandbox-system/stories/epic-6/story-6.1.md"
+      - number: 2
+        status: todo
+        name: "Story-Based Config Format"
+        file: "docs/features/sandbox-system/stories/epic-6/story-6.2.md"
+      - number: 3
+        status: todo
+        name: "Story Iteration Orchestrator"
+        file: "docs/features/sandbox-system/stories/epic-6/story-6.3.md"
+      - number: 4
+        status: todo
+        name: "Incremental Commit Automation"
+        file: "docs/features/sandbox-system/stories/epic-6/story-6.4.md"
+      - number: 5
+        status: todo
+        name: "Agent Prompts for Incremental Work"
+        file: "docs/features/sandbox-system/stories/epic-6/story-6.5.md"
+      - number: 6
+        status: todo
+        name: "Story-Level Metrics Tracking"
+        file: "docs/features/sandbox-system/stories/epic-6/story-6.6.md"
+      - number: 7
+        status: todo
+        name: "Updated Benchmark Configs"
+        file: "docs/features/sandbox-system/stories/epic-6/story-6.7.md"
+
+  - epic_number: 7
     name: "Reference Todo Application"
     status: planned
     stories: []
 
-current_epic: 5
-current_story: 6
+  - epic_number: 8
+    name: "Iterative Improvement & Gap Remediation"
+    status: planned
+    stories: []
+
+current_epic: 6
+current_story: 1
