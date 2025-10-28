@@ -11,6 +11,7 @@ import structlog
 from .config import WorkflowPhaseConfig
 from ...orchestrator import GAODevOrchestrator
 from ..artifact_parser import ArtifactParser
+from ..git_commit_manager import GitCommitManager
 
 
 logger = structlog.get_logger()
@@ -102,6 +103,7 @@ class WorkflowOrchestrator:
         execution_mode: str = "subprocess",
         api_key: Optional[str] = None,
         metrics_aggregator: Optional[Any] = None,
+        run_id: Optional[str] = None,
     ):
         """
         Initialize orchestrator.
@@ -111,11 +113,13 @@ class WorkflowOrchestrator:
             execution_mode: How to execute phases (subprocess, agent, dry-run)
             api_key: Anthropic API key (required for agent mode - currently unused)
             metrics_aggregator: MetricsAggregator for comprehensive logging (optional)
+            run_id: Benchmark run ID for git commit tracking
         """
         self.project_path = Path(project_path)
         self.execution_mode = execution_mode
         self.api_key = api_key
         self.metrics_aggregator = metrics_aggregator
+        self.run_id = run_id or "benchmark"
         self.context: Dict[str, Any] = {}
         self.logger = logger.bind(
             component="WorkflowOrchestrator",
@@ -123,12 +127,17 @@ class WorkflowOrchestrator:
             execution_mode=execution_mode,
         )
 
-        # Initialize GAODevOrchestrator and ArtifactParser for agent mode
+        # Initialize GAODevOrchestrator, ArtifactParser, and GitCommitManager for agent mode
         self.gao_orchestrator = None
         self.artifact_parser = None
+        self.git_commit_manager = None
         if execution_mode == "agent":
             self.gao_orchestrator = GAODevOrchestrator(project_root=self.project_path)
             self.artifact_parser = ArtifactParser(project_root=self.project_path)
+            self.git_commit_manager = GitCommitManager(
+                project_root=self.project_path,
+                run_id=self.run_id,
+            )
 
     def execute_workflow(
         self,
@@ -351,6 +360,7 @@ class WorkflowOrchestrator:
 
             # Parse output for artifacts
             artifacts_created = []
+            commit_sha = None
             if self.artifact_parser:
                 parsed_artifacts = self.artifact_parser.parse_output(
                     output=output,
@@ -371,6 +381,21 @@ class WorkflowOrchestrator:
                     artifact_count=len(artifacts_created),
                     artifacts=artifacts_created,
                 )
+
+                # Create atomic commit for artifacts
+                if self.git_commit_manager and artifacts_created:
+                    commit_sha = self.git_commit_manager.commit_artifacts(
+                        phase=phase_config.phase_name,
+                        artifact_paths=artifacts_created,
+                        agent_name=agent_name,
+                    )
+
+                    if commit_sha:
+                        self.logger.info(
+                            "artifacts_committed",
+                            phase=phase_config.phase_name,
+                            commit_sha=commit_sha[:8],
+                        )
 
             self.logger.info(
                 "phase_execution_completed",
@@ -409,6 +434,7 @@ class WorkflowOrchestrator:
                     "agent": agent_name,
                     "orchestration_mode": "gao-dev",
                     "files_created": artifacts_created,
+                    "commit_sha": commit_sha,
                 },
             )
 
