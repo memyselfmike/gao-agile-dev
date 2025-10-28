@@ -188,7 +188,7 @@ epics:
         name: "Story-Level Metrics Tracking"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.6.md"
       - number: 7
-        status: todo
+        status: done
         name: "Updated Benchmark Configs"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.7.md"
 
