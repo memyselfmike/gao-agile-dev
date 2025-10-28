@@ -1,0 +1,64 @@
+# Simple Benchmark with Artifacts - Epic 7 Example
+#
+# This benchmark demonstrates GAO-Dev's artifact creation capabilities
+# introduced in Epic 7. It creates real files with atomic git commits.
+#
+# What to expect:
+# - PRD document in docs/PRD.md
+# - Architecture document in docs/ARCHITECTURE.md
+# - User stories in docs/stories/
+# - Implementation files in src/
+# - Git commits after each phase
+
+benchmark:
+  name: "simple-with-artifacts"
+  description: "Minimal benchmark demonstrating Epic 7 artifact creation"
+  version: "1.0.0"
+  complexity_level: 1
+  estimated_duration_minutes: 60
+
+  initial_prompt: "Create a simple 'Hello World' command-line application in Python. Include basic project structure, documentation, and one test."
+
+  tech_stack:
+    language: "Python"
+    testing: "pytest"
+
+  boilerplate:
+    repo_url: null
+
+  success_criteria:
+    min_test_coverage: 50.0
+    max_manual_interventions: 10
+    max_errors: 5
+    required_features:
+      - "Hello World functionality"
+    quality_gates:
+      artifacts_created: true
+      git_commits: true
+
+  phases:
+    - phase_name: "Product Requirements"
+      expected_duration_minutes: 10
+      agent: "John"
+      description: "Create minimal PRD for Hello World app"
+      expected_artifacts:
+        - "docs/PRD.md"
+
+    - phase_name: "System Architecture"
+      expected_duration_minutes: 10
+      agent: "Winston"
+      description: "Design simple architecture"
+      expected_artifacts:
+        - "docs/ARCHITECTURE.md"
+
+  constraints:
+    max_retries: 1
+    allow_manual_intervention: true
+
+  metadata:
+    category: "epic-7-example"
+    tags:
+      - simple
+      - artifacts
+      - epic-7
+      - hello-world
