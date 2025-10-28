@@ -168,7 +168,7 @@ epics:
         name: "Git Repository Integration"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.1.md"
       - number: 2
-        status: todo
+        status: done
         name: "Story-Based Config Format"
         file: "docs/features/sandbox-system/stories/epic-6/story-6.2.md"
       - number: 3

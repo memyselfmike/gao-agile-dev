@@ -4,6 +4,8 @@ from .config import (
     BenchmarkConfig,
     SuccessCriteria,
     WorkflowPhaseConfig,
+    StoryConfig,
+    EpicConfig,
 )
 from .validator import (
     ConfigValidator,
@@ -19,6 +21,15 @@ from .orchestrator import (
     WorkflowOrchestrator,
     PhaseResult,
     WorkflowExecutionResult,
+)
+from .agent_spawner import (
+    AgentSpawner,
+    AgentResult,
+    AgentMetrics,
+)
+from .metrics_aggregator import (
+    MetricsAggregator,
+    BenchmarkMetricsReport,
 )
 from .checker import (
     SuccessCriteriaChecker,
@@ -46,6 +57,8 @@ __all__ = [
     "BenchmarkConfig",
     "SuccessCriteria",
     "WorkflowPhaseConfig",
+    "StoryConfig",
+    "EpicConfig",
     "ConfigValidator",
     "ValidationResult",
     "ValidationMessage",
@@ -55,6 +68,11 @@ __all__ = [
     "WorkflowOrchestrator",
     "PhaseResult",
     "WorkflowExecutionResult",
+    "AgentSpawner",
+    "AgentResult",
+    "AgentMetrics",
+    "MetricsAggregator",
+    "BenchmarkMetricsReport",
     "SuccessCriteriaChecker",
     "CheckResult",
     "CriterionResult",
