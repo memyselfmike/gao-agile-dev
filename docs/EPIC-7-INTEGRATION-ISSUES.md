@@ -34,30 +34,43 @@ Result: **Cannot run benchmarks yet** - multiple integration bugs discovered.
 
 ---
 
-## Bugs Remaining (Not Fixed Yet)
+## Epic 7.1 Resolution (2025-10-28)
 
-### ❌ Bug 4: ConfigLoader Type Mismatch (Phase-Based Workflow)
-**File**: Unknown location in workflow orchestrator
+All integration bugs fixed! System now functional for both phase-based and story-based workflows.
+
+### ✅ Bug 4: ConfigLoader Type Mismatch (Phase-Based Workflow) - **FIXED**
+**File**: `gao_dev/sandbox/git_commit_manager.py:36`
 **Error**: `argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'ConfigLoader'`
-**Impact**: Phase-based benchmarks (greenfield-simple.yaml) fail immediately
-**Severity**: High - blocks all phase-based testing
+**Impact**: Phase-based benchmarks (greenfield-simple.yaml) failed immediately
+**Severity**: High - blocked all phase-based testing
 
-**Details**:
-- Occurs in phase-based workflow execution
-- Something is passing a ConfigLoader object where a Path is expected
-- Need to trace through WorkflowOrchestrator to find exact location
+**Root Cause**:
+- GitCommitManager was passing ConfigLoader as positional argument to GitManager
+- GitManager expected first parameter to be `project_path` (Path), not `config_loader`
 
-### ❌ Bug 5: StoryOrchestrator Still Uses AgentSpawner (Story-Based Workflow)
+**Fix**: Changed from `GitManager(config)` to `GitManager(project_path=self.project_root)`
+**Commit**: 596dd4f (Story 7.1.1)
+**Status**: ✅ FIXED - Phase-based workflow now initializes successfully
+
+### ✅ Bug 5: StoryOrchestrator Uses Removed AgentSpawner - **FIXED**
 **File**: `gao_dev/sandbox/benchmark/story_orchestrator.py:156-157`
 **Error**: `No module named 'gao_dev.sandbox.benchmark.agent_spawner'`
-**Impact**: Story-based benchmarks (todo-app-incremental.yaml) fail immediately
-**Severity**: High - blocks all story-based testing with QA-as-you-go
+**Impact**: Story-based benchmarks (todo-app-incremental.yaml) failed immediately
+**Severity**: High - blocked all story-based testing with QA-as-you-go
 
-**Details**:
-- StoryOrchestrator still imports and uses AgentSpawner
+**Root Cause**:
+- StoryOrchestrator still imported and used AgentSpawner
 - AgentSpawner was removed in Epic 7 (Story 7.1)
-- Should use GAODevOrchestrator instead
-- Affects all story lifecycle methods:
+- Story workflows should use GAODevOrchestrator instead
+
+**Fix**:
+- Deprecated AgentSpawner import in StoryOrchestrator
+- Added story workflow methods to core GAODevOrchestrator:
+  - `execute_story_workflow()` - Bob → Amelia → Murat → Commit
+  - `execute_epic_workflow()` - Execute all stories with QA-as-you-go
+  - `validate_story()` - Murat QA validation
+**Commit**: 50840cb (Story 7.1.2)
+**Status**: ✅ FIXED - Story workflows moved to core orchestrator
   - `_execute_story_creation()` - line 390
   - `_execute_story_implementation()` - line 429
   - `_execute_story_validation()` - line 468 (QA validation!)
