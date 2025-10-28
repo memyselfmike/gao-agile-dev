@@ -13,6 +13,8 @@ GAO-Dev is an autonomous AI development orchestration system that manages the co
 - 📊 **State Tracking**: Automatic story and sprint status management
 - 🌳 **Git Integration**: GitFlow workflows with conventional commits
 - 💻 **CLI Interface**: Easy-to-use command-line interface
+- ✨ **NEW: Artifact Creation**: Automatically creates real project files with atomic git commits (Epic 7)
+- 🧪 **NEW: Sandbox & Benchmarking**: Test and measure autonomous development capabilities
 
 ## Installation
 
@@ -56,6 +58,8 @@ gao-dev --help
 ```
 
 **📖 See [QUICKSTART.md](QUICKSTART.md) for a detailed getting started guide.**
+
+**🔑 See [docs/SETUP.md](docs/SETUP.md) for API key configuration and autonomous benchmark setup.**
 
 ## Quick Start
 

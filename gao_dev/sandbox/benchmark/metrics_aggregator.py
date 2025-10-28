@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import structlog
 
-from .agent_spawner import AgentMetrics
+from .models import AgentMetrics
 
 
 logger = structlog.get_logger()

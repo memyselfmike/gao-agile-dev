@@ -8,7 +8,7 @@
 
 ## Epic Overview
 
-This project consists of 6 major epics that deliver a complete sandbox and benchmarking system for GAO-Dev.
+This project consists of 8 major epics that deliver a complete sandbox and benchmarking system for GAO-Dev.
 
 ---
 
@@ -208,7 +208,119 @@ Build reporting system that generates HTML dashboards, comparison reports, and t
 
 ---
 
-## Epic 6: Reference Todo Application
+## Epic 6: Incremental Story-Based Workflow
+
+**Status**: Planned
+**Priority**: P0 (Critical)
+**Owner**: Amelia (Developer), Bob (Scrum Master)
+**Estimated Duration**: 1.5 weeks
+
+### Description
+Transform benchmark execution from waterfall phases to true agile/BMAD incremental story development with git integration and continuous validation. This aligns with the BMAD greenfield approach and how GAO-Dev itself is being built.
+
+### Goals
+- Git repository initialization for all sandbox projects
+- Story-by-story development with incremental commits
+- Continuous testing and validation (not waterfall QA)
+- Feedback loops between stories
+- True agile development workflow
+- Observable progress at story level
+
+### Success Criteria
+- ✅ Git repo initialized in sandbox projects
+- ✅ Auto-commit after each story completion
+- ✅ Bob creates ONE story at a time
+- ✅ Amelia implements ONE story at a time
+- ✅ Murat validates ONE story at a time
+- ✅ Metrics tracked per story (not just per phase)
+- ✅ Can observe progress story-by-story
+- ✅ Conventional commit format followed
+
+### Stories
+1. Story 6.1: Git Repository Integration
+2. Story 6.2: Story-Based Config Format
+3. Story 6.3: Story Iteration Orchestrator
+4. Story 6.4: Incremental Commit Automation
+5. Story 6.5: Agent Prompts for Incremental Work
+6. Story 6.6: Story-Level Metrics Tracking
+7. Story 6.7: Updated Benchmark Configs
+
+### Dependencies
+- Epic 4 (Benchmark Runner)
+
+### Technical Notes
+- Follows BMAD greenfield development approach
+- Mirrors how GAO-Dev itself is being built (one story at a time)
+- Foundation for future workflow scenarios (brownfield, bug fixes, features)
+- Enables realistic agile development benchmarking
+
+### Problem Solved
+**Current Issue**: Benchmarks run in waterfall mode:
+- All stories created at once
+- All implementation attempted in one phase
+- Testing only at the end
+- No git commits during development
+- No incremental validation
+
+**New Approach**: True agile/BMAD workflow:
+- Initialize git repo first
+- Create ONE story → Implement → Test → Commit → Repeat
+- Continuous validation throughout
+- Observable progress at story level
+- Recoverable state at any point
+
+---
+
+## Epic 7: Autonomous Artifact Creation & Git Integration
+
+**Status**: Ready
+**Priority**: P0 (Critical)
+**Owner**: Amelia (Developer)
+**Estimated Duration**: 1.5 weeks
+
+### Description
+Remove AgentSpawner and refactor benchmark system to use GAODevOrchestrator for real artifact creation with atomic git commits. This is THE core functionality that makes GAO-Dev autonomously build real projects.
+
+### Goals
+- Use GAODevOrchestrator instead of direct API calls
+- Parse agent outputs to extract artifacts
+- Write artifacts to disk in correct locations
+- Create atomic git commits after each phase
+- Collect metrics around artifact creation
+- Verify artifacts were created correctly
+
+### Success Criteria
+- ✅ AgentSpawner deleted
+- ✅ Benchmark uses GAODevOrchestrator
+- ✅ All agent outputs persisted to appropriate files
+- ✅ Atomic git commits after each phase/story
+- ✅ Full project artifacts visible in sandbox/projects/
+- ✅ Metrics collected (tokens, cost, duration)
+- ✅ Can see complete project history in git log
+
+### Stories
+1. Story 7.1: Remove AgentSpawner & Refactor to GAODevOrchestrator (5 pts)
+2. Story 7.2: Implement Artifact Output Parser (3 pts)
+3. Story 7.3: Implement Atomic Git Commits (3 pts)
+4. Story 7.4: Update Metrics Collection (2 pts)
+5. Story 7.5: Add Artifact Verification (3 pts)
+6. Story 7.6: Create Example Benchmark with Artifacts (2 pts)
+7. Story 7.7: Update Documentation (3 pts)
+
+**Total**: 21 story points, 7 stories
+
+### Dependencies
+- Requires: Existing GAODevOrchestrator, GitManager, Claude SDK
+- Blocks: All future artifact-based benchmarking
+
+### Technical Notes
+This is THE critical refactor that makes GAO-Dev actually create artifacts. Without this, GAO-Dev is just a chatbot that generates responses and throws them away. This epic makes it a real autonomous development system.
+
+**Quote from user**: "the whole point is to have gao-dev build a real project we can see all artefacts for and live commit atomically as we go"
+
+---
+
+## Epic 8: Reference Todo Application
 
 **Status**: Planned
 **Priority**: P1 (High)
@@ -234,23 +346,23 @@ Create comprehensive specification and implementation guide for the reference to
 - ✅ Can be built autonomously
 
 ### Stories
-1. Story 6.1: Todo App PRD
-2. Story 6.2: Todo App Architecture
-3. Story 6.3: Authentication Specification
-4. Story 6.4: CRUD Operations Specification
-5. Story 6.5: Categories & Tags Specification
-6. Story 6.6: UI/UX Design
-7. Story 6.7: API Design
-8. Story 6.8: Database Schema
-9. Story 6.9: Test Strategy
-10. Story 6.10: Deployment Configuration
+1. Story 8.1: Todo App PRD
+2. Story 8.2: Todo App Architecture
+3. Story 8.3: Authentication Specification
+4. Story 8.4: CRUD Operations Specification
+5. Story 8.5: Categories & Tags Specification
+6. Story 8.6: UI/UX Design
+7. Story 8.7: API Design
+8. Story 8.8: Database Schema
+9. Story 8.9: Test Strategy
+10. Story 8.10: Deployment Configuration
 
 ### Dependencies
 - None (can be developed in parallel)
 
 ---
 
-## Epic 7: Iterative Improvement & Gap Remediation
+## Epic 9: Iterative Improvement & Gap Remediation
 
 **Status**: Ongoing
 **Priority**: P1 (High)
@@ -327,9 +439,9 @@ Each Epic 7 story should include:
 ### Initial Story Backlog
 
 Stories will be created after first benchmark run. Expected categories:
-- Story 7.1: [TBD based on Run 001]
-- Story 7.2: [TBD based on Run 001]
-- Story 7.3: [TBD based on Run 001]
+- Story 8.1: [TBD based on Run 001]
+- Story 8.2: [TBD based on Run 001]
+- Story 8.3: [TBD based on Run 001]
 - ...
 
 ### Metrics to Track
@@ -344,7 +456,7 @@ Stories will be created after first benchmark run. Expected categories:
 - Epic 4 (need automated benchmarks for validation)
 
 ### Technical Notes
-- Stories stored in `docs/features/sandbox-system/stories/epic-7/`
+- Stories stored in `docs/features/sandbox-system/stories/epic-8/`
 - Link each story to specific benchmark run
 - Include before/after metrics in story
 - Tag stories by category (agent, workflow, tool, quality, docs)
@@ -355,15 +467,17 @@ Stories will be created after first benchmark run. Expected categories:
 
 | Epic | Priority | Duration | Dependencies | Status |
 |------|----------|----------|--------------|--------|
-| Epic 1: Sandbox Infrastructure | P0 | 2 weeks | None | Ready |
+| Epic 1: Sandbox Infrastructure | P0 | 2 weeks | None | Complete |
 | Epic 2: Boilerplate Integration | P0 | 1 week | Epic 1 | Planned |
 | Epic 3: Metrics Collection | P1 | 2 weeks | Epic 1 | Planned |
-| Epic 4: Benchmark Runner | P1 | 2 weeks | Epic 1, 2, 3 | Planned |
-| Epic 5: Reporting | P2 | 2 weeks | Epic 3, 4 | Planned |
-| Epic 6: Reference Todo App | P1 | 3 weeks | None | Planned |
-| Epic 7: Iterative Improvement | P1 | Ongoing | Epic 1, 3, 4 | Active |
+| Epic 4: Benchmark Runner | P1 | 2 weeks | Epic 1, 2, 3 | Complete |
+| Epic 5: Reporting | P2 | 2 weeks | Epic 3, 4 | Complete |
+| Epic 6: Incremental Workflow | P0 | 1.5 weeks | Epic 4 | Planned |
+| Epic 7: Artifact Creation | P0 | 1.5 weeks | Epic 1-6 | Ready |
+| Epic 8: Reference Todo App | P1 | 3 weeks | None | Planned |
+| Epic 9: Iterative Improvement | P1 | Ongoing | Epic 1, 3, 4 | Active |
 
-**Total Estimated Duration**: 8-10 weeks (with parallelization) + ongoing improvements
+**Total Estimated Duration**: 9-11 weeks (with parallelization) + ongoing improvements
 
 ---
 
@@ -375,24 +489,29 @@ Stories will be created after first benchmark run. Expected categories:
 - **Deliverable**: Working sandbox management
 
 ### Phase 2: Integration (Weeks 3-4)
-- **Epics**: 2, 6 (start)
+- **Epics**: 2, 7 (start)
 - **Focus**: Boilerplate integration, Todo app spec
 - **Deliverable**: Can scaffold projects
 
 ### Phase 3: Metrics (Weeks 5-6)
-- **Epics**: 3, 6 (continue)
+- **Epics**: 3, 7 (continue)
 - **Focus**: Metrics collection
 - **Deliverable**: Can track metrics
 
 ### Phase 4: Automation (Weeks 7-8)
-- **Epics**: 4, 6 (complete)
+- **Epics**: 4, 7 (continue)
 - **Focus**: Automated benchmarking
 - **Deliverable**: First end-to-end run
 
 ### Phase 5: Reporting (Weeks 9-10)
-- **Epics**: 5
+- **Epics**: 5, 7 (complete)
 - **Focus**: Reports and analysis
 - **Deliverable**: Complete system
+
+### Phase 6: Incremental Workflow (Weeks 11-12)
+- **Epics**: 6
+- **Focus**: True agile story-based workflow
+- **Deliverable**: Realistic incremental development
 
 ---
 
