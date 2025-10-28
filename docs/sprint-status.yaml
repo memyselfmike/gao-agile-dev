@@ -193,14 +193,47 @@ epics:
         file: "docs/features/sandbox-system/stories/epic-6/story-6.7.md"
 
   - epic_number: 7
+    name: "Autonomous Artifact Creation & Git Integration"
+    status: ready
+    stories:
+      - number: 1
+        status: ready
+        name: "Remove AgentSpawner & Refactor to GAODevOrchestrator"
+        file: "docs/features/sandbox-system/stories/epic-7/story-7.1.md"
+      - number: 2
+        status: ready
+        name: "Implement Artifact Output Parser"
+        file: "docs/features/sandbox-system/stories/epic-7/story-7.2.md"
+      - number: 3
+        status: ready
+        name: "Implement Atomic Git Commits"
+        file: "docs/features/sandbox-system/stories/epic-7/story-7.3.md"
+      - number: 4
+        status: ready
+        name: "Update Metrics Collection"
+        file: "docs/features/sandbox-system/stories/epic-7/story-7.4.md"
+      - number: 5
+        status: ready
+        name: "Add Artifact Verification"
+        file: "docs/features/sandbox-system/stories/epic-7/story-7.5.md"
+      - number: 6
+        status: ready
+        name: "Create Example Benchmark with Artifacts"
+        file: "docs/features/sandbox-system/stories/epic-7/story-7.6.md"
+      - number: 7
+        status: ready
+        name: "Update Documentation"
+        file: "docs/features/sandbox-system/stories/epic-7/story-7.7.md"
+
+  - epic_number: 8
     name: "Reference Todo Application"
     status: planned
     stories: []
 
-  - epic_number: 8
+  - epic_number: 9
     name: "Iterative Improvement & Gap Remediation"
     status: planned
     stories: []
 
-current_epic: 6
+current_epic: 7
 current_story: 1
