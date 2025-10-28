@@ -94,6 +94,72 @@ The Sandbox & Benchmarking System enables deterministic testing and measurement 
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### Epic 7: Artifact Creation & Git Integration Architecture
+
+**Added:** 2025-10-28
+
+Epic 7 introduces the core artifact creation pipeline that makes GAO-Dev autonomously build real projects:
+
+```
+Benchmark Runner
+    |
+    v
+Workflow Orchestrator (Agent Mode)
+    |
+    +---> GAODevOrchestrator
+    |         |
+    |         +---> Agent Execution (create-prd, implement-story, etc.)
+    |         |
+    |         v
+    |     [Agent Output - Markdown with code blocks]
+    |
+    +---> ArtifactParser
+    |         |
+    |         +---> Extract code blocks from markdown
+    |         +---> Match blocks to file paths (**Save as**: ...)
+    |         +---> Validate paths (no traversal, within project)
+    |         |
+    |         v
+    |     [Parsed Artifacts - List[Artifact(path, content)]]
+    |         |
+    |         +---> Write to disk
+    |         |
+    |         v
+    |     [Files Created]
+    |
+    +---> GitCommitManager
+    |         |
+    |         +---> Stage created files
+    |         +---> Create conventional commit
+    |         +---> Record commit SHA
+    |         |
+    |         v
+    |     [Atomic Commit Created]
+    |
+    +---> ArtifactVerifier
+              |
+              +---> Check file existence
+              +---> Validate syntax (Python, JSON, YAML)
+              +---> Verify non-empty content
+              |
+              v
+          [Verification Result]
+```
+
+**Key Components:**
+
+1. **GAODevOrchestrator**: Replaces AgentSpawner, provides proper agent context
+2. **ArtifactParser**: Extracts files from markdown, validates paths, writes to disk
+3. **GitCommitManager**: Creates atomic commits with conventional messages
+4. **ArtifactVerifier**: Validates created artifacts (existence, syntax, content)
+
+**Benefits:**
+- Real project artifacts visible in sandbox/projects/
+- Git history shows autonomous development progress
+- Proper file organization (docs/, src/, tests/)
+- Atomic commits enable rollback and debugging
+- Metrics track artifact creation (count, size, types)
+
 ### Architectural Principles
 
 1. **Separation of Concerns**: CLI, business logic, data access clearly separated
