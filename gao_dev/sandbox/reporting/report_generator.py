@@ -14,11 +14,11 @@ import structlog
 
 from gao_dev.sandbox.metrics.storage import MetricsStorage
 from gao_dev.sandbox.metrics.models import (
-    BenchmarkRun,
     PerformanceMetrics,
     QualityMetrics,
     WorkflowMetrics,
 )
+from gao_dev.sandbox.models import BenchmarkRun
 from gao_dev.sandbox.reporting.chart_generator import ChartGenerator
 
 
