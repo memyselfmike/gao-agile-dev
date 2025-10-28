@@ -1,0 +1,69 @@
+# Greenfield Todo App - Simple Benchmark
+# Tests GAO-Dev orchestration using the benchmark runner
+#
+# This benchmark uses phase-based workflow to test GAO-Dev's orchestration capabilities.
+
+benchmark:
+  name: "greenfield-simple"
+  description: "Simple greenfield todo app using GAO-Dev orchestration"
+  version: "1.0.0"
+  complexity_level: 2
+  estimated_duration_minutes: 120
+
+  initial_prompt: "Build a simple todo application with user authentication, CRUD operations for tasks, and a responsive UI. Use Next.js, TypeScript, and PostgreSQL. Include 80%+ test coverage and production-ready code quality."
+
+  tech_stack:
+    frontend: "Next.js"
+    language: "TypeScript"
+    database: "PostgreSQL"
+    testing: "Jest"
+    styling: "Tailwind CSS"
+
+  boilerplate:
+    repo_url: null
+
+  success_criteria:
+    min_test_coverage: 80.0
+    max_manual_interventions: 5
+    max_errors: 3
+    required_features:
+      - "Task CRUD operations"
+      - "User authentication"
+      - "Responsive UI"
+    quality_gates:
+      type_safety: true
+      linting: true
+      tests_passing: true
+
+  phases:
+    - phase_name: "Product Requirements"
+      expected_duration_minutes: 20
+      agent: "John"
+      description: "Create comprehensive PRD"
+
+    - phase_name: "System Architecture"
+      expected_duration_minutes: 20
+      agent: "Winston"
+      description: "Design system architecture"
+
+    - phase_name: "Story Creation"
+      expected_duration_minutes: 30
+      agent: "Bob"
+      description: "Break down into implementable stories"
+
+    - phase_name: "Implementation"
+      expected_duration_minutes: 50
+      agent: "Amelia"
+      description: "Implement all stories with tests"
+
+  constraints:
+    max_retries: 2
+    allow_manual_intervention: true
+
+  metadata:
+    category: "greenfield-orchestration"
+    tags:
+      - greenfield
+      - orchestration
+      - simple
+      - todo-app

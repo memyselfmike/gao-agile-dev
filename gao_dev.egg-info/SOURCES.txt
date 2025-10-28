@@ -17,6 +17,16 @@ gao_dev/agents/sally.md
 gao_dev/agents/winston.md
 gao_dev/checklists/qa-comprehensive.md
 gao_dev/config/defaults.yaml
+gao_dev/sandbox/reporting/assets/report.js
+gao_dev/sandbox/reporting/assets/report_styles.css
+gao_dev/sandbox/reporting/templates/base_report.html.j2
+gao_dev/sandbox/reporting/templates/comparison_report.html.j2
+gao_dev/sandbox/reporting/templates/run_report.html.j2
+gao_dev/sandbox/reporting/templates/trend_report.html.j2
+gao_dev/sandbox/reporting/templates/partials/chart_container.html.j2
+gao_dev/sandbox/reporting/templates/partials/metrics_table.html.j2
+gao_dev/sandbox/reporting/templates/partials/status_badge.html.j2
+gao_dev/sandbox/reporting/templates/partials/timeline.html.j2
 gao_dev/workflows/2-plan/prd/instructions.md
 gao_dev/workflows/2-plan/prd/template.md
 gao_dev/workflows/2-plan/prd/workflow.yaml

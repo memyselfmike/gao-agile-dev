@@ -117,6 +117,11 @@ class WorkflowPhaseConfig:
     quality_gates: Dict[str, Any] = field(default_factory=dict)
     skip_if_failed: bool = False
 
+    # Additional fields for documentation and planning
+    description: str = ""
+    agent: str = ""
+    expected_duration_minutes: int = 60
+
     def validate(self) -> bool:
         """
         Validate phase configuration.
@@ -151,6 +156,12 @@ class BenchmarkConfig:
     workflow_phases: List[WorkflowPhaseConfig] = field(default_factory=list)  # Legacy mode
     epics: List[EpicConfig] = field(default_factory=list)  # New story-based mode
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    # Additional fields for CLI display and tracking
+    initial_prompt: str = ""
+    complexity_level: int = 2
+    estimated_duration_minutes: int = 120
+    prompt_hash: str = ""
 
     def validate(self) -> bool:
         """
@@ -231,12 +242,30 @@ class BenchmarkConfig:
             FileNotFoundError: If config file doesn't exist
             yaml.YAMLError: If YAML is invalid
         """
+        import hashlib
+
         with open(path, "r") as f:
-            data = yaml.safe_load(f)
+            yaml_data = yaml.safe_load(f)
+
+        # Handle both wrapped (with "benchmark:" key) and unwrapped formats
+        if "benchmark" in yaml_data and isinstance(yaml_data["benchmark"], dict):
+            data = yaml_data["benchmark"]
+        else:
+            data = yaml_data
+
+        # Calculate prompt hash if initial_prompt exists
+        if "initial_prompt" in data and data["initial_prompt"]:
+            normalized = " ".join(data["initial_prompt"].split())
+            hash_bytes = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+            data["prompt_hash"] = f"sha256:{hash_bytes}"
 
         # Convert nested dicts to dataclasses
         if "success_criteria" in data and isinstance(data["success_criteria"], dict):
             data["success_criteria"] = SuccessCriteria(**data["success_criteria"])
+
+        # Support both "phases" and "workflow_phases" keys (phases is alias)
+        if "phases" in data and "workflow_phases" not in data:
+            data["workflow_phases"] = data.pop("phases")
 
         # Convert workflow_phases (legacy/phase-based mode)
         if "workflow_phases" in data and isinstance(data["workflow_phases"], list):
@@ -265,7 +294,11 @@ class BenchmarkConfig:
         if "boilerplate_path" in data and data["boilerplate_path"] is not None:
             data["boilerplate_path"] = Path(data["boilerplate_path"])
 
-        return cls(**data)
+        # Filter out fields that aren't in the dataclass
+        valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
+        filtered_data = {k: v for k, v in data.items() if k in valid_fields}
+
+        return cls(**filtered_data)
 
     @classmethod
     def from_json(cls, path: Path) -> "BenchmarkConfig":
@@ -290,6 +323,10 @@ class BenchmarkConfig:
         # Convert nested dicts to dataclasses
         if "success_criteria" in data and isinstance(data["success_criteria"], dict):
             data["success_criteria"] = SuccessCriteria(**data["success_criteria"])
+
+        # Support both "phases" and "workflow_phases" keys (phases is alias)
+        if "phases" in data and "workflow_phases" not in data:
+            data["workflow_phases"] = data.pop("phases")
 
         # Convert workflow_phases (legacy/phase-based mode)
         if "workflow_phases" in data and isinstance(data["workflow_phases"], list):

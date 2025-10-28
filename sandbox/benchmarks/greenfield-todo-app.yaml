@@ -1,0 +1,396 @@
+# Greenfield Todo App Benchmark
+# Tests GAO-Dev orchestration system as Product Owner would use it
+#
+# This benchmark simulates a Product Owner giving systematic prompts to GAO-Dev
+# and measures how well GAO-Dev autonomously delivers a working application.
+#
+# Key Differences from Other Benchmarks:
+# - Uses GAO-Dev commands (create-prd, create-architecture, implement-story)
+# - Tests agent orchestration and handoffs
+# - Starts from greenfield (no boilerplate)
+# - Mimics real PO interaction patterns
+# - Measures full BMAD Method workflow
+
+name: "greenfield-todo-app"
+description: "Greenfield todo application built through Product Owner prompts"
+version: "3.0.0"  # Orchestration-based benchmark format
+project_name: "todo-app-greenfield"
+mode: "orchestrated"  # vs "phase-based" or "story-based"
+
+# ============================================================================
+# PRODUCT OWNER INTERACTION SEQUENCE
+# ============================================================================
+#
+# This section defines the systematic prompts a Product Owner would give
+# to GAO-Dev to build a todo application from scratch.
+
+interaction_sequence:
+  # Phase 1: Planning (Product Owner defines what they want)
+  - name: "Initial Product Vision"
+    actor: "Product Owner"
+    command: "gao-dev create-prd --name 'Todo Application'"
+    prompt: |
+      I want to build a simple but complete todo application. Here are my requirements:
+
+      Core Features:
+      - Users can create, read, update, and delete tasks
+      - Tasks have title, description, and status (todo/in-progress/done)
+      - Tasks can be organized into categories
+      - Simple user authentication (register/login)
+
+      Technical Requirements:
+      - Modern web application (React/Next.js preferred)
+      - RESTful API or GraphQL
+      - Database for persistence (PostgreSQL or SQLite)
+      - Responsive design for mobile and desktop
+      - Clean, accessible UI
+
+      Quality Standards:
+      - 80%+ test coverage
+      - Type-safe (TypeScript)
+      - Linting passing
+      - Production-ready code quality
+
+      Please create a comprehensive PRD that the team can work from.
+
+    expected_agent: "John (Product Manager)"
+    expected_artifacts:
+      - "docs/features/todo-app/PRD.md"
+      - "docs/features/todo-app/epics.md"
+
+    success_criteria:
+      - PRD contains clear feature descriptions
+      - Epics are well-defined with story breakdown
+      - Success metrics are measurable
+      - Technical requirements are specific
+
+    timeout_seconds: 1200  # 20 minutes
+
+  # Phase 2: Architecture (PO asks for technical design)
+  - name: "System Architecture Design"
+    actor: "Product Owner"
+    command: "gao-dev create-architecture --name 'Todo Application'"
+    prompt: |
+      Based on the PRD, please design the system architecture. I need:
+
+      - High-level system design
+      - Component breakdown (frontend, backend, database)
+      - API design (endpoints, data models)
+      - Database schema
+      - Technology stack recommendations
+      - Security considerations
+      - Deployment architecture
+
+      Make sure it's clean, scalable, and follows best practices.
+
+    expected_agent: "Winston (Technical Architect)"
+    expected_artifacts:
+      - "docs/features/todo-app/ARCHITECTURE.md"
+      - "docs/features/todo-app/API_DESIGN.md"
+      - "docs/features/todo-app/DATABASE_SCHEMA.md"
+
+    success_criteria:
+      - Architecture is complete and detailed
+      - Technology stack is appropriate
+      - API design follows REST/GraphQL standards
+      - Database schema is normalized
+      - Security considerations addressed
+
+    timeout_seconds: 1200  # 20 minutes
+
+    dependencies: ["Initial Product Vision"]
+
+  # Phase 3: Story Creation (PO asks to break down into implementable stories)
+  - name: "Create Implementation Stories"
+    actor: "Product Owner"
+    command: "gao-dev create-stories --epic all"
+    prompt: |
+      Great! Now please break down the epics into implementable user stories.
+
+      For each story, I need:
+      - Clear acceptance criteria
+      - Story points estimate
+      - Dependencies on other stories
+      - Technical implementation notes
+
+      Prioritize stories so we can implement incrementally:
+      1. Core data models first
+      2. Then API endpoints
+      3. Then UI components
+      4. Finally integration and polish
+
+      Create all stories for the project.
+
+    expected_agent: "Bob (Scrum Master)"
+    expected_artifacts:
+      - "docs/features/todo-app/stories/epic-1/*.md"
+      - "docs/features/todo-app/stories/epic-2/*.md"
+      - "docs/sprint-status.yaml"
+
+    success_criteria:
+      - All stories have clear acceptance criteria
+      - Story points are reasonable
+      - Dependencies are identified
+      - Stories are prioritized correctly
+
+    timeout_seconds: 1800  # 30 minutes
+
+    dependencies: ["System Architecture Design"]
+
+  # Phase 4: Implementation (PO asks to implement stories incrementally)
+  - name: "Implement Core Data Models"
+    actor: "Product Owner"
+    command: "gao-dev implement-story --epic 1 --story 1"
+    prompt: |
+      Let's start implementing! Please implement the first story:
+      Core Data Models (Task, Category, User).
+
+      Make sure to:
+      - Follow the architecture design
+      - Write comprehensive tests
+      - Use TypeScript for type safety
+      - Follow coding standards
+      - Update documentation as needed
+
+      When complete, commit the code with a clear message.
+
+    expected_agent: "Amelia (Developer) + Bob (Scrum Master)"
+    expected_artifacts:
+      - "src/models/*.ts"
+      - "tests/models/*.test.ts"
+      - Git commit for Story 1.1
+
+    success_criteria:
+      - Code implements acceptance criteria
+      - Tests written and passing
+      - Type-safe implementation
+      - Clean git commit
+
+    timeout_seconds: 2400  # 40 minutes
+
+    dependencies: ["Create Implementation Stories"]
+
+  # Repeat for remaining stories...
+  - name: "Implement Remaining Stories"
+    actor: "Product Owner"
+    command: "gao-dev implement-all-stories"
+    prompt: |
+      Continue implementing all remaining stories in priority order.
+
+      For each story:
+      1. Implement according to acceptance criteria
+      2. Write tests (unit + integration)
+      3. Ensure linting and type checking pass
+      4. Commit atomically with clear message
+      5. Update story status to "Done"
+
+      Work through the stories systematically until the application is complete.
+
+    expected_agent: "Amelia (Developer) + Bob (Scrum Master)"
+    expected_artifacts:
+      - "src/**/*.ts"
+      - "tests/**/*.test.ts"
+      - Multiple git commits (one per story)
+      - Updated sprint-status.yaml
+
+    success_criteria:
+      - All stories implemented
+      - All tests passing
+      - No linting or type errors
+      - Each story has atomic commit
+      - Application is functional
+
+    timeout_seconds: 7200  # 2 hours
+
+    dependencies: ["Implement Core Data Models"]
+
+  # Phase 5: Validation (PO asks for quality check)
+  - name: "Quality Assurance & Testing"
+    actor: "Product Owner"
+    command: "gao-dev run-qa --comprehensive"
+    prompt: |
+      Please run comprehensive quality assurance on the todo application:
+
+      - Run all tests (unit, integration, e2e)
+      - Check code coverage (target: 80%+)
+      - Run linting and type checking
+      - Test all user flows manually
+      - Verify all acceptance criteria met
+      - Check for security vulnerabilities
+
+      Provide a detailed QA report.
+
+    expected_agent: "Murat (QA/Test Architect)"
+    expected_artifacts:
+      - "docs/QA_REPORT.md"
+      - "coverage/" directory
+      - Test results summary
+
+    success_criteria:
+      - All tests passing
+      - Coverage >= 80%
+      - No linting errors
+      - No type errors
+      - No critical security issues
+      - All acceptance criteria verified
+
+    timeout_seconds: 1800  # 30 minutes
+
+    dependencies: ["Implement Remaining Stories"]
+
+# ============================================================================
+# GLOBAL CONFIGURATION
+# ============================================================================
+
+# Overall timeout for entire benchmark (4 hours)
+timeout_seconds: 14400
+
+# Starting point (greenfield - no boilerplate)
+boilerplate: null
+starting_point: "empty"  # Start from scratch
+
+# Tech stack preferences (GAO-Dev decides based on PRD/Architecture)
+tech_preferences:
+  frontend_framework: "nextjs"
+  backend: "nextjs-api-routes"
+  database: "postgresql"
+  testing: "jest"
+  language: "typescript"
+
+# Success Criteria (Overall)
+success_criteria:
+  # Functional Requirements
+  functional:
+    - name: "All PRD features implemented"
+      validator: "check_prd_features_complete"
+      required: true
+
+    - name: "User authentication working"
+      validator: "test_auth_flow"
+      required: true
+
+    - name: "CRUD operations working"
+      validator: "test_todo_crud"
+      required: true
+
+    - name: "Categories working"
+      validator: "test_categories"
+      required: true
+
+  # Quality Requirements
+  quality:
+    - name: "Test coverage >= 80%"
+      type: "coverage"
+      threshold: 80.0
+      required: true
+
+    - name: "All tests passing"
+      type: "test_results"
+      threshold: 100
+      required: true
+
+    - name: "Zero type errors"
+      type: "type_check"
+      threshold: 0
+      required: true
+
+    - name: "Zero linting errors"
+      type: "linting"
+      threshold: 0
+      required: true
+
+  # Workflow Requirements
+  workflow:
+    - name: "PRD created"
+      artifact: "docs/features/todo-app/PRD.md"
+      required: true
+
+    - name: "Architecture created"
+      artifact: "docs/features/todo-app/ARCHITECTURE.md"
+      required: true
+
+    - name: "All stories created"
+      validator: "check_stories_exist"
+      required: true
+
+    - name: "Atomic commits per story"
+      validator: "check_atomic_commits"
+      required: true
+
+    - name: "Working application"
+      validator: "check_app_runs"
+      required: true
+
+# ============================================================================
+# METRICS COLLECTION
+# ============================================================================
+
+metrics_enabled:
+  # Performance Metrics
+  performance: true
+  track_token_usage: true
+  track_api_calls: true
+  track_time_per_phase: true
+  track_time_per_story: true
+
+  # Autonomy Metrics
+  autonomy: true
+  track_manual_interventions: true
+  track_error_recovery: true
+  track_agent_handoffs: true
+  track_prompt_count: true
+
+  # Quality Metrics
+  quality: true
+  track_test_coverage: true
+  track_linting_errors: true
+  track_type_errors: true
+  track_security_issues: true
+  track_acceptance_criteria: true
+
+  # Workflow Metrics
+  workflow: true
+  track_story_cycle_time: true
+  track_commits: true
+  track_artifacts_created: true
+  track_documentation_quality: true
+
+# ============================================================================
+# METADATA
+# ============================================================================
+
+metadata:
+  category: "orchestration-benchmark"
+  complexity: "medium"
+  expected_duration_hours: 4
+  workflow_mode: "orchestrated"  # KEY: Tests GAO-Dev orchestration
+
+  purpose: |
+    This benchmark tests GAO-Dev as a Product Owner would use it:
+    - Systematic prompts from PO
+    - GAO-Dev orchestrates agents autonomously
+    - Full BMAD Method workflow
+    - Greenfield project (no boilerplate)
+    - Measures real-world usage patterns
+
+  comparison_to_other_benchmarks: |
+    - todo-app.yaml: Phase-based (waterfall), not orchestrated
+    - todo-app-incremental.yaml: Story-based, predefined tasks
+    - greenfield-todo-app.yaml: Orchestration-based, PO interaction (THIS FILE)
+
+  success_definition: |
+    Success means GAO-Dev can autonomously:
+    1. Take Product Owner prompts
+    2. Create comprehensive planning docs (PRD, Architecture)
+    3. Break work into implementable stories
+    4. Implement all stories with quality
+    5. Produce working, tested, documented application
+    6. All with minimal manual intervention
+
+  tags:
+    - orchestration
+    - greenfield
+    - product-owner-interaction
+    - bmad-method
+    - autonomous
+    - full-workflow

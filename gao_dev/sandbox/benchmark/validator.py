@@ -122,11 +122,12 @@ class ConfigValidator:
             result.add_error("name", "Benchmark name is required")
         if not config.description:
             result.add_error("description", "Benchmark description is required")
+        # Boilerplate is optional for greenfield benchmarks
         if not config.boilerplate_url and not config.boilerplate_path:
-            result.add_error(
+            result.add_info(
                 "boilerplate",
-                "Either boilerplate_url or boilerplate_path must be provided",
-                suggestion="Specify a Git repository URL or local path",
+                "No boilerplate specified - will start from empty project (greenfield)",
+                suggestion="For faster setup, consider providing a boilerplate template",
             )
 
     def _validate_field_types(

@@ -6,16 +6,18 @@ This directory contains all documentation for the GAO-Dev project.
 
 ```
 docs/
-├── README.md                    # This file
-├── features/                    # Feature development documentation
-│   └── sandbox-system/          # Sandbox & Benchmarking System
-│       ├── PRD.md               # Product Requirements
-│       ├── ARCHITECTURE.md      # Technical architecture
-│       ├── BOILERPLATE_INFO.md  # Boilerplate analysis
-│       ├── PROJECT_BRIEF.md     # Initial brief
-│       ├── NEXT_STEPS.md        # Action items
-│       ├── epics.md             # Epic breakdown
-│       └── stories/             # User stories
+├── README.md                           # This file
+├── SETUP.md                            # Setup guide (API keys, config)
+├── sandbox-autonomous-benchmark-guide.md # Complete benchmarking guide
+├── features/                           # Feature development documentation
+│   └── sandbox-system/                 # Sandbox & Benchmarking System
+│       ├── PRD.md                      # Product Requirements
+│       ├── ARCHITECTURE.md             # Technical architecture
+│       ├── BOILERPLATE_INFO.md         # Boilerplate analysis
+│       ├── PROJECT_BRIEF.md            # Initial brief
+│       ├── NEXT_STEPS.md               # Action items
+│       ├── epics.md                    # Epic breakdown
+│       └── stories/                    # User stories
 │           └── epic-1/
 │               └── story-1.1.md
 └── (future: project-level docs like original PRD, roadmap, etc.)
@@ -87,9 +89,14 @@ When developing a new feature:
 
 **Looking for...** | **Check...**
 --- | ---
+**Getting Started** |
+Setup & API key config | [SETUP.md](SETUP.md)
+Autonomous benchmark guide | [sandbox-autonomous-benchmark-guide.md](sandbox-autonomous-benchmark-guide.md)
+**Sandbox System** |
 Sandbox system requirements | `features/sandbox-system/PRD.md`
 Sandbox architecture | `features/sandbox-system/ARCHITECTURE.md`
 Sandbox stories | `features/sandbox-system/stories/`
+**Workspace & Projects** |
 Sandbox test projects | `../sandbox/projects/`
 Benchmark configs | `../sandbox/benchmarks/`
 How to use sandbox | `../sandbox/README.md`

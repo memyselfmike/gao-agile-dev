@@ -361,38 +361,55 @@ def list(status: str, format: str, verbose: bool):
     "--api-key",
     type=str,
     envvar="ANTHROPIC_API_KEY",
-    help="Anthropic API key (or set ANTHROPIC_API_KEY env var)",
+    help="Anthropic API key for agent spawning (or add to .env file)",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Setup project but don't execute (for testing)",
 )
 def run(
     benchmark_config: str,
     project: Optional[str],
     timeout: int,
     api_key: Optional[str],
+    dry_run: bool,
 ):
     """
     Execute a benchmark run with auto-generated run ID.
 
-    Loads the benchmark configuration, auto-generates a sequential run ID
-    (e.g., todo-app-baseline-run-001), and creates the sandbox project.
+    Loads the benchmark configuration, auto-generates a sequential run ID,
+    sets up the sandbox project, and executes the benchmark using GAO-Dev agents.
 
     The run ID follows the scientific method: benchmark-name-run-NNN
 
     Examples:
         gao-dev sandbox run benchmarks/todo-baseline.yaml
         gao-dev sandbox run benchmarks/custom.yaml --timeout 7200
+        gao-dev sandbox run benchmarks/todo-baseline.yaml --dry-run
 
-    Note: Full autonomous execution will be added in Epic 4.
+    This command now provides FULL AUTONOMOUS EXECUTION with real-time monitoring.
     """
     try:
         from pathlib import Path
-        from gao_dev.sandbox import load_benchmark, SandboxManager
+        from gao_dev.sandbox import SandboxManager
+        from gao_dev.sandbox.benchmark import BenchmarkRunner
+        from gao_dev.sandbox.benchmark.config import BenchmarkConfig
+        from gao_dev.sandbox.metrics.collector import MetricsCollector
+        from gao_dev.core.env_config import get_env_config
+
+        # Load environment config (.env file)
+        env_config = get_env_config()
+
+        # Get API key with fallback: CLI arg > .env file > environment variable
+        api_key = env_config.get_anthropic_api_key(api_key)
 
         click.echo(f"\n>> Reading benchmark: {benchmark_config}")
 
         # Load and validate benchmark
         benchmark_file = Path(benchmark_config)
         try:
-            config = load_benchmark(benchmark_file)
+            config = BenchmarkConfig.from_yaml(benchmark_file)
         except Exception as e:
             click.echo(f"\n[ERROR] Failed to load benchmark: {e}", err=True)
             sys.exit(1)
@@ -437,9 +454,9 @@ def run(
 
             # Create project structure
             project_path = manager.get_project_path(run_id)
-            _create_project_readme(project_path, metadata, config.boilerplate.get("repo_url"))
+            _create_project_readme(project_path, metadata, config.boilerplate_url)
 
-            if not config.boilerplate.get("repo_url"):
+            if not config.boilerplate_url:
                 click.echo("  Note: No boilerplate specified, starting from empty project")
 
         # Display prompt hash for verification
@@ -458,24 +475,99 @@ def run(
             click.echo(f"  {line}")
         click.echo("  " + "-" * 70)
 
-        # Display next steps
-        click.echo(f"\n>> Next Steps:")
-        click.echo(f"  1. Navigate to: cd sandbox/projects/{run_id}")
-        click.echo(f"  2. Review the standardized prompt in README.md")
-        click.echo(f"  3. Execute the benchmark (manual or via GAO-Dev agents)")
-        click.echo(f"  4. Document results in ITERATION_LOG.md")
+        if dry_run:
+            click.echo(f"\n[DRY RUN] Stopping before execution")
+            click.echo(f"  Project: sandbox/projects/{run_id}")
+            click.echo(f"  Remove --dry-run flag to execute benchmark")
+            return
 
-        click.echo(f"\n>> Scientific Tracking:")
-        click.echo(f"  Run ID: {run_id}")
-        click.echo(f"  Benchmark: {config.name} v{config.version}")
-        click.echo(f"  All metrics will be tracked under this run ID")
-
+        # Check for API key - optional now, interactive mode is preferred
         if not api_key:
-            click.echo(f"\n[INFO] Autonomous execution requires API key")
-            click.echo(f"  Set ANTHROPIC_API_KEY or use --api-key option")
-            click.echo(f"  (Full autonomous execution coming in Epic 4)")
+            click.echo(f"\n[INFO] No API key detected - Interactive mode recommended")
+            click.echo(f"")
+            click.echo(f"For autonomous execution, you have three options:")
+            click.echo(f"")
+            click.echo(f"  Option 1: .env File (Recommended for development)")
+            click.echo(f"    1. Copy .env.example to .env")
+            click.echo(f"    2. Add your API key: ANTHROPIC_API_KEY=sk-ant-...")
+            click.echo(f"    3. Run: gao-dev sandbox run {benchmark_config}")
+            click.echo(f"")
+            click.echo(f"  Option 2: Environment Variable")
+            click.echo(f"    export ANTHROPIC_API_KEY=your-key  # Linux/Mac")
+            click.echo(f"    set ANTHROPIC_API_KEY=your-key     # Windows CMD")
+            click.echo(f"    gao-dev sandbox run {benchmark_config}")
+            click.echo(f"")
+            click.echo(f"  Option 3: Interactive Mode (No API Key Required)")
+            click.echo(f"    Run this benchmark through Claude Code using Task tool:")
+            click.echo(f"    Ask Claude: 'Please run this benchmark interactively:")
+            click.echo(f"                  {benchmark_config}'")
+            click.echo(f"")
+            click.echo(f"Project setup completed. Run ID: {run_id}")
+            click.echo(f"")
+            return
 
-        click.echo(f"\n[OK] Benchmark run initialized successfully")
+        # Execute benchmark autonomously
+        # Determine API key source for display
+        api_key_source = "CLI argument"
+        env_file = env_config.project_root / ".env"
+        if env_file.exists() and not sys.argv.__contains__(api_key):
+            api_key_source = ".env file"
+        elif api_key and not sys.argv.__contains__(api_key):
+            api_key_source = "environment variable"
+
+        click.echo(f"\n>> Executing Benchmark Autonomously")
+        click.echo(f"  Mode: Full autonomous execution with GAO-Dev agents")
+        click.echo(f"  Real-time monitoring: ENABLED")
+        click.echo(f"  Metrics collection: ENABLED")
+        click.echo(f"  API: Anthropic Claude")
+        click.echo(f"  API Key: {api_key[:10]}... (from {api_key_source})")
+        click.echo("")
+
+        # Initialize metrics collector
+        metrics_collector = MetricsCollector()
+
+        # Create benchmark runner with API key and pre-created project name
+        runner = BenchmarkRunner(
+            config=config,
+            sandbox_manager=manager,
+            metrics_collector=metrics_collector,
+            sandbox_root=sandbox_root,
+            api_key=api_key,
+            project_name=run_id,  # Use the pre-created project
+        )
+
+        # Execute benchmark
+        click.echo("=" * 80)
+        click.echo("BENCHMARK EXECUTION STARTED")
+        click.echo("=" * 80)
+        click.echo("")
+
+        result = runner.run()
+
+        # Display results
+        click.echo("")
+        click.echo("=" * 80)
+        click.echo("BENCHMARK EXECUTION COMPLETED")
+        click.echo("=" * 80)
+        click.echo("")
+        click.echo(result.summary())
+
+        if result.errors:
+            click.echo(f"\n[ERRORS]")
+            for error in result.errors:
+                click.echo(f"  - {error}")
+
+        if result.warnings:
+            click.echo(f"\n[WARNINGS]")
+            for warning in result.warnings:
+                click.echo(f"  - {warning}")
+
+        click.echo(f"\n>> Results saved to metrics database")
+        click.echo(f"  Run ID: {result.run_id}")
+        click.echo(f"  Generate report: gao-dev sandbox report run {result.run_id}")
+
+        # Exit with appropriate code
+        sys.exit(0 if result.status.value == "completed" else 1)
 
     except Exception as e:
         click.echo(f"\n[ERROR] Unexpected error: {e}", err=True)

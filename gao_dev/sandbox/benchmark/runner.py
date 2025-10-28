@@ -99,6 +99,7 @@ class BenchmarkRunner:
         metrics_collector: MetricsCollector,
         sandbox_root: Path,
         api_key: Optional[str] = None,
+        project_name: Optional[str] = None,
     ):
         """
         Initialize benchmark runner.
@@ -109,12 +110,14 @@ class BenchmarkRunner:
             metrics_collector: Metrics collection service
             sandbox_root: Root directory for sandbox projects
             api_key: Anthropic API key for agent spawning (if None, uses env var)
+            project_name: Pre-created project name (if None, creates new one)
         """
         self.config = config
         self.sandbox_manager = sandbox_manager
         self.metrics_collector = metrics_collector
         self.sandbox_root = sandbox_root
         self.api_key = api_key
+        self.project_name = project_name
         self.validator = ConfigValidator()
         self.logger = logger.bind(component="BenchmarkRunner")
 
@@ -154,7 +157,7 @@ class BenchmarkRunner:
             self._setup_boilerplate(project, result)
 
             # Start metrics collection
-            self.metrics_collector.start_collection(run_id)
+            self.metrics_collector.start_collection(project.name, self.config.name)
 
             # Execute workflow (placeholder - will be implemented in Story 4.4)
             self._execute_workflow(project, result)
@@ -219,6 +222,9 @@ class BenchmarkRunner:
         """
         Initialize sandbox project with git repository.
 
+        If project_name was provided in __init__, uses the existing project.
+        Otherwise, creates a new project.
+
         Args:
             result: Benchmark result to update
 
@@ -228,23 +234,26 @@ class BenchmarkRunner:
         Raises:
             Exception: If initialization fails
         """
-        project_name = self.config.project_name or self.config.name
-
-        self.logger.info("initializing_sandbox", project_name=project_name)
-
-        project = self.sandbox_manager.init_project(
-            name=project_name,
-            config={
-                "benchmark_run_id": result.run_id,
-                "benchmark_name": self.config.name,
-            },
-        )
+        # Use pre-created project if provided, otherwise create new one
+        if self.project_name:
+            project_name = self.project_name
+            self.logger.info("using_existing_sandbox", project_name=project_name)
+            project = self.sandbox_manager.get_project(project_name)
+        else:
+            project_name = self.config.project_name or self.config.name
+            self.logger.info("creating_new_sandbox", project_name=project_name)
+            project = self.sandbox_manager.create_project(
+                name=project_name,
+                boilerplate_url=self.config.boilerplate_url,
+                tags=[f"benchmark:{self.config.name}", f"run:{result.run_id}"],
+                description=f"Benchmark: {self.config.description}",
+            )
 
         # Initialize git repository for incremental story-based workflow
         project_path = self.sandbox_root / "projects" / project.name
         self._initialize_git_repository(project_path, result)
 
-        self.logger.info("sandbox_initialized", project_name=project_name)
+        self.logger.info("sandbox_initialized", project_name=project.name)
         return project
 
     def _setup_boilerplate(self, project: Any, result: BenchmarkResult) -> None:
@@ -339,11 +348,7 @@ class BenchmarkRunner:
         )
 
         # Initialize progress tracker
-        total_stories = self.config.total_stories()
-        progress_tracker = ProgressTracker(
-            total_phases=total_stories,
-            benchmark_name=self.config.name,
-        )
+        progress_tracker = ProgressTracker()
         progress_tracker.add_observer(ConsoleProgressObserver())
 
         # Log benchmark start
@@ -368,12 +373,13 @@ class BenchmarkRunner:
 
         try:
             # Execute all epics
-            progress_tracker.start()
+            total_stories = self.config.total_stories()
+            progress_tracker.benchmark_started(self.config.name, total_stories)
             epic_results = orchestrator.execute_epics(
                 epics=self.config.epics,
                 timeout_seconds=self.config.timeout_seconds,
             )
-            progress_tracker.complete()
+            progress_tracker.benchmark_completed(True)
 
             # Store results
             result.metadata["story_based_workflow"] = True
@@ -411,7 +417,7 @@ class BenchmarkRunner:
         except Exception as e:
             error_msg = f"Story-based workflow error: {str(e)}"
             result.errors.append(error_msg)
-            progress_tracker.fail(error_msg)
+            progress_tracker.benchmark_completed(False)
             self.logger.error("story_based_workflow_exception", error=str(e))
 
             # Log error to metrics
@@ -448,10 +454,7 @@ class BenchmarkRunner:
             return
 
         # Initialize progress tracking
-        progress_tracker = ProgressTracker(
-            total_phases=len(workflow_phases),
-            benchmark_name=self.config.name,
-        )
+        progress_tracker = ProgressTracker()
         progress_tracker.add_observer(ConsoleProgressObserver())
 
         # Get project path
@@ -486,12 +489,12 @@ class BenchmarkRunner:
 
         try:
             # Execute workflow
-            progress_tracker.start()
+            progress_tracker.benchmark_started(self.config.name, len(workflow_phases))
             workflow_result = orchestrator.execute_workflow(
                 phases=workflow_phases,
                 timeout_seconds=self.config.timeout_seconds,
             )
-            progress_tracker.complete()
+            progress_tracker.benchmark_completed(True)
 
             # Store workflow results in benchmark result
             result.metadata["workflow_result"] = workflow_result.to_dict()
@@ -523,7 +526,7 @@ class BenchmarkRunner:
         except Exception as e:
             error_msg = f"Workflow execution error: {str(e)}"
             result.errors.append(error_msg)
-            progress_tracker.fail(error_msg)
+            progress_tracker.benchmark_completed(False)
             self.logger.error("workflow_execution_exception", error=str(e))
 
             # Log error to metrics
@@ -657,7 +660,7 @@ Work autonomously to FULLY complete this phase."""
                 from ...sandbox.metrics.storage import MetricsStorage
 
                 storage = MetricsStorage()
-                storage.save_benchmark_metrics(result.run_id, result.metrics)
+                storage.save_metrics(result.metrics)
             except Exception as e:
                 self.logger.error("failed_to_save_metrics", error=str(e))
 

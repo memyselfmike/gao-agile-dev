@@ -1,0 +1,26 @@
+- build out and utilise core repos for quickstart/boilerplate e.g. full saas (plans, licensing, customer portal, support, billing) / marketing funnel etc
+- bmad story context creation step missing
+- autoscale prompting level (bmad scale level)
+    -> chores > bugs > features > brownfield / greenfield < we need to know when the human or agentic product owner need to get involved to guide
+    -> we need benchmarking projects for each of these
+- always ensure architectural checks before and after features
+- add dedicated qa agent/team that works with 
+- know when the PO needs to be invoked
+- add comliance checks at every step > compliance agent in the loop to constantly check and iterate if sops are being adhered to
+- e2e testing in the loop > for any frontend work we need to ensure we utlise playwright to thoroughly test core features in desltop / mobile
+- chrome extension developer
+- firebase hosting team / migrations
+- documentation specialist 
+    - document lifecycle - we need to properly archive once work is done and reset to keep better track
+    - < we need both dev and user docs always updated in realtime - video demos are useful too
+- usablity expert <-- tooltips, accessiblity how intuitive is it to use>
+- persistant dev memory
+- retrospectives
+- self improve the core team.. framework not function
+- point of contact - brian - entry point agent that can coordinate and orchestrate projects and transform into other personas for agent handoff from other gao depts that need some engineering working done or 
+- changelog handling (user facing)
+- automatic tech support and bug fixes
+- automatic feature adding
+- mass email users capability
+- gamification standards
+
