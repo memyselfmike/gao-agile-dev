@@ -417,6 +417,9 @@ class WorkflowOrchestrator:
                         "output_length": len(output),
                         "orchestration_mode": "gao-dev",
                         "artifacts_created": artifacts_created,
+                        "artifact_count": len(artifacts_created),
+                        "commit_sha": commit_sha,
+                        "git_committed": commit_sha is not None,
                     },
                 )
 
