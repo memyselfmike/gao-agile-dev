@@ -59,3 +59,13 @@ class AgentCreationError(AgentError):
 class AgentValidationError(AgentError):
     """Exception raised when agent validation fails."""
     pass
+
+
+class RegistrationError(AgentError):
+    """Exception raised when agent registration fails."""
+    pass
+
+
+class DuplicateRegistrationError(AgentError):
+    """Exception raised when attempting to register duplicate agent type."""
+    pass
