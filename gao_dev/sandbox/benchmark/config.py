@@ -167,16 +167,28 @@ class BenchmarkConfig:
         """
         Validate entire configuration.
 
-        Ensures either workflow_phases (legacy) or epics (new) is provided,
-        but not both simultaneously.
+        Supports three modes:
+        1. Autonomous (Story 7.2.3): Has initial_prompt, no phases/epics
+        2. Phase-based (legacy): Has workflow_phases
+        3. Story-based (new): Has epics
 
         Returns:
             bool: True if all configuration is valid
         """
+        has_initial_prompt = bool(self.initial_prompt)
         has_phases = bool(self.workflow_phases)
         has_epics = bool(self.epics)
 
-        # Must have either phases or epics, but not both
+        # Autonomous mode: initial_prompt without phases or epics
+        if has_initial_prompt and not has_phases and not has_epics:
+            return (
+                bool(self.name)
+                and bool(self.description)
+                and self.timeout_seconds > 0
+                and self.success_criteria.validate()
+            )
+
+        # Legacy/story modes: Must have either phases or epics, but not both
         if has_phases == has_epics:
             return False  # Either both empty or both filled
 

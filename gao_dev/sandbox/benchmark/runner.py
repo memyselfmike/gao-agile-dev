@@ -1,6 +1,7 @@
 """Core benchmark runner implementation."""
 
 import uuid
+import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -292,9 +293,8 @@ class BenchmarkRunner:
 
     def _execute_workflow(self, project: Any, result: BenchmarkResult) -> None:
         """
-        Execute workflow - either phase-based or story-based.
-
-        Detects mode from config and delegates to appropriate orchestrator:
+        Execute workflow - delegates to appropriate mode:
+        - Autonomous: Uses GAODevOrchestrator.execute_workflow() (NEW - Story 7.2.3)
         - Phase-based: Uses WorkflowOrchestrator (legacy waterfall mode)
         - Story-based: Uses StoryOrchestrator (incremental agile mode)
 
@@ -304,11 +304,95 @@ class BenchmarkRunner:
         """
         self.logger.info("workflow_execution_started", run_id=result.run_id)
 
+        # Check for new autonomous mode (has initial_prompt, no phases/epics)
+        if hasattr(self.config, 'initial_prompt') and self.config.initial_prompt:
+            self._execute_autonomous_workflow(project, result)
         # Check if config is story-based
-        if self.config.is_story_based():
+        elif self.config.is_story_based():
             self._execute_story_based_workflow(project, result)
         else:
             self._execute_phase_based_workflow(project, result)
+
+    def _execute_autonomous_workflow(
+        self, project: Any, result: BenchmarkResult
+    ) -> None:
+        """
+        Execute autonomous workflow using GAODevOrchestrator (Story 7.2.3).
+
+        This is the new simplified approach where:
+        1. Benchmark provides only initial_prompt
+        2. GAO-Dev (via Brian) selects appropriate workflows
+        3. GAO-Dev executes autonomously
+        4. Benchmark collects metrics and validates results
+
+        Args:
+            project: Sandbox project
+            result: Benchmark result to update
+        """
+        from ...orchestrator import GAODevOrchestrator
+
+        self.logger.info(
+            "autonomous_workflow_started",
+            run_id=result.run_id,
+            prompt_preview=self.config.initial_prompt[:100]
+        )
+
+        try:
+            # Get project path
+            project_path = self.sandbox_root / "projects" / project.name
+
+            # Initialize GAO-Dev orchestrator
+            orchestrator = GAODevOrchestrator(
+                project_root=project_path,
+                api_key=self.api_key
+            )
+
+            # Execute workflow autonomously
+            # GAO-Dev decides everything: workflow selection, agent coordination, etc.
+            workflow_result = asyncio.run(
+                orchestrator.execute_workflow_sequence_from_prompt(
+                    self.config.initial_prompt
+                )
+            )
+
+            # Store workflow results in benchmark metadata
+            result.metadata['workflow_result'] = {
+                'workflow_name': workflow_result.workflow_name,
+                'status': workflow_result.status.value,
+                'total_steps': workflow_result.total_steps,
+                'successful_steps': workflow_result.successful_steps,
+                'failed_steps': workflow_result.failed_steps,
+                'duration_seconds': workflow_result.duration_seconds,
+                'total_artifacts': workflow_result.total_artifacts,
+            }
+
+            # Check if workflow succeeded
+            if not workflow_result.success:
+                error_msg = workflow_result.error_message or "Workflow execution failed"
+                result.errors.append(error_msg)
+                self.logger.error(
+                    "autonomous_workflow_failed",
+                    run_id=result.run_id,
+                    error=error_msg
+                )
+
+            self.logger.info(
+                "autonomous_workflow_completed",
+                run_id=result.run_id,
+                workflow=workflow_result.workflow_name,
+                success=workflow_result.success,
+                steps=workflow_result.total_steps
+            )
+
+        except Exception as e:
+            error_msg = f"Autonomous workflow execution failed: {str(e)}"
+            result.errors.append(error_msg)
+            self.logger.error(
+                "autonomous_workflow_error",
+                run_id=result.run_id,
+                error=str(e),
+                exc_info=True
+            )
 
     def _execute_story_based_workflow(
         self, project: Any, result: BenchmarkResult
