@@ -250,6 +250,31 @@ epics:
         name: "Update Documentation"
         file: "docs/features/sandbox-system/stories/epic-7.1/story-7.1.5.md"
 
+  - epic_number: 7.2
+    name: "Workflow-Driven Core Architecture"
+    status: ready
+    stories:
+      - number: 1
+        status: ready
+        name: "Create Workflow Selector"
+        file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.1.md"
+      - number: 2
+        status: ready
+        name: "Add Workflow Executor to Core"
+        file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.2.md"
+      - number: 3
+        status: ready
+        name: "Refactor Benchmark to Use Core Workflows"
+        file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.3.md"
+      - number: 4
+        status: ready
+        name: "Add Clarification Dialog"
+        file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.4.md"
+      - number: 5
+        status: ready
+        name: "Integration Testing"
+        file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.5.md"
+
   - epic_number: 8
     name: "Reference Todo Application"
     status: planned
@@ -260,5 +285,5 @@ epics:
     status: planned
     stories: []
 
-current_epic: 8
-current_story: 0
+current_epic: 7.2
+current_story: 1
