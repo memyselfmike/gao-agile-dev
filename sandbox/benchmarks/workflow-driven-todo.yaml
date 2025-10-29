@@ -1,0 +1,119 @@
+# Workflow-Driven Todo App Benchmark (Epic 7.2 Format)
+#
+# This benchmark tests the Epic 7.2 workflow-driven architecture:
+# - Brian agent selects appropriate workflows
+# - Scale-adaptive routing based on project complexity
+# - Multi-workflow sequencing
+# - Autonomous artifact creation
+#
+# The benchmark provides WHAT to build (initial_prompt)
+# GAO-Dev + Brian decide HOW to build it (workflow selection)
+
+benchmark:
+  name: "workflow-driven-todo"
+  description: "Test Epic 7.2 workflow-driven architecture with autonomous todo app creation"
+  version: "1.0.0"
+
+  # THE ONLY REQUIRED INPUT: What to build
+  initial_prompt: |
+    Build a production-ready todo application with the following requirements:
+
+    Features:
+    - User authentication (register, login, logout)
+    - CRUD operations for tasks (create, read, update, delete)
+    - Task categories/tags
+    - Due dates and reminders
+    - Mark tasks as complete/incomplete
+    - Filter tasks by status, category, due date
+    - Responsive UI that works on desktop and mobile
+
+    Technical Requirements:
+    - Backend: Python with FastAPI
+    - Frontend: React with TypeScript
+    - Database: PostgreSQL
+    - Authentication: JWT tokens
+    - API: RESTful endpoints with OpenAPI docs
+    - Testing: >80% code coverage
+    - Code quality: Type hints, linting (ruff), formatted (black)
+    - Deployment: Docker compose for local development
+
+    Deliverables:
+    - Complete project documentation (PRD, architecture, API docs)
+    - Production-ready code with tests
+    - Database schema and migrations
+    - Docker setup for easy deployment
+    - README with setup instructions
+
+  # Optional: Force specific workflow (for testing)
+  # Omit this to let Brian select automatically
+  # workflow_name: "greenfield-full-development"
+
+  # Optional: Scale level hint (0-4)
+  # If omitted, Brian will infer from prompt
+  scale_level: 2  # Level 2: Small feature (3-8 stories)
+
+  # Expected duration (for reporting, not a hard timeout)
+  expected_duration_minutes: 180
+
+  # Hard timeout (will stop execution)
+  timeout_seconds: 10800  # 3 hours
+
+  # Success criteria (evaluated after completion)
+  success_criteria:
+    # Artifacts must exist
+    artifacts_exist:
+      - "docs/PRD.md"
+      - "docs/ARCHITECTURE.md"
+      - "docs/API.md"
+      - "backend/**/*.py"
+      - "frontend/**/*.tsx"
+      - "tests/**/*.py"
+      - "docker-compose.yml"
+      - "README.md"
+
+    # Tests must pass
+    tests_pass: true
+
+    # Build must succeed
+    builds_successfully: true
+
+    # Minimum test coverage
+    min_test_coverage: 80
+
+    # Quality checks
+    quality_checks:
+      - type: "linting"
+        tool: "ruff"
+        must_pass: true
+
+      - type: "type_checking"
+        tool: "mypy"
+        must_pass: true
+
+      - type: "formatting"
+        tool: "black"
+        must_pass: true
+
+    # Git commits
+    min_commits: 5  # Should have multiple atomic commits
+    commit_format: "conventional"  # feat:, fix:, docs:, etc.
+
+  # Optional metadata
+  metadata:
+    project_type: "greenfield"  # greenfield, enhancement, bug_fix
+    complexity: "medium"  # simple, medium, complex
+    language: "python"
+    framework: "fastapi"
+    epic: "7.2"  # Testing Epic 7.2
+    test_mode: "integration"  # This is an integration test
+
+    # Tags for filtering/reporting
+    tags:
+      - epic-7.2
+      - workflow-driven
+      - greenfield
+      - todo-app
+      - full-stack
+      - python
+      - fastapi
+      - react
