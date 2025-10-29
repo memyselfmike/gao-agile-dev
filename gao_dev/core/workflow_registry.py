@@ -23,18 +23,30 @@ class WorkflowRegistry:
         self._indexed = False
 
     def index_workflows(self) -> None:
-        """Scan and index all workflows from embedded location."""
-        workflows_path = self.config_loader.get_workflows_path()
+        """
+        Scan and index all workflows from both embedded and BMAD locations.
+
+        Story 7.2.6: Load complete workflow catalog from bmad/bmm/workflows
+        (34+ workflows) in addition to embedded workflows.
+        """
         self._workflows = {}
 
-        if not workflows_path.exists():
-            return
+        # Load from both locations
+        paths_to_scan = [
+            self.config_loader.get_workflows_path(),  # Embedded: gao_dev/workflows
+            self.config_loader.get_bmad_workflows_path()  # BMAD: bmad/bmm/workflows
+        ]
 
-        # Recursively find all workflow.yaml files
-        for workflow_file in workflows_path.rglob("workflow.yaml"):
-            workflow_info = self._load_workflow(workflow_file)
-            if workflow_info:
-                self._workflows[workflow_info.name] = workflow_info
+        for workflows_path in paths_to_scan:
+            if not workflows_path.exists():
+                continue
+
+            # Recursively find all workflow.yaml files
+            for workflow_file in workflows_path.rglob("workflow.yaml"):
+                workflow_info = self._load_workflow(workflow_file)
+                if workflow_info:
+                    # Use workflow name as key (later paths override earlier ones)
+                    self._workflows[workflow_info.name] = workflow_info
 
         self._indexed = True
 

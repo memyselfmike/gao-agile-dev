@@ -55,6 +55,15 @@ class ConfigLoader:
         """Get path to embedded workflows."""
         return Path(__file__).parent.parent / "workflows"
 
+    def get_bmad_workflows_path(self) -> Path:
+        """
+        Get path to BMAD workflows (Story 7.2.6).
+
+        Returns path to bmad/bmm/workflows where the complete catalog
+        of 34+ workflows is installed.
+        """
+        return self.project_root / "bmad" / "bmm" / "workflows"
+
     def get_agents_path(self) -> Path:
         """Get path to embedded agents."""
         return Path(__file__).parent.parent / "agents"
