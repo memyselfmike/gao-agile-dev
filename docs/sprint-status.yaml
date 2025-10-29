@@ -295,13 +295,32 @@ epics:
 
   - epic_number: 8
     name: "Reference Todo Application"
-    status: planned
+    status: cancelled
     stories: []
+    cancellation_reason: |
+      Epic 8 is obsolete due to architectural shift in Epic 7.2.
+
+      Original Plan: Manually create a reference todo application as a benchmark target.
+
+      After Epic 7.2: GAO-Dev should AUTONOMOUSLY BUILD the todo app from a prompt!
+
+      The workflow-driven architecture means GAO-Dev can now:
+      - Accept initial_prompt: "Build a todo application..."
+      - Brian selects appropriate workflows
+      - System autonomously creates PRD, architecture, stories, code, tests
+      - Makes atomic git commits throughout
+
+      Therefore, manually creating a reference application contradicts the core
+      value proposition. Instead, we test GAO-Dev by having IT build the todo app.
+
+      See: sandbox/benchmarks/workflow-driven-todo.yaml for the new approach.
+    cancelled_date: "2025-10-29"
 
   - epic_number: 9
     name: "Iterative Improvement & Gap Remediation"
-    status: planned
+    status: ongoing
+    notes: "Continuous improvement based on real-world usage and benchmark learnings"
     stories: []
 
 current_epic: 7.2
-current_story: 1
+current_story: 6

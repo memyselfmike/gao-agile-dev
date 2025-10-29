@@ -265,25 +265,62 @@ All core infrastructure and workflow orchestration complete! The system now has:
 - ✅ Full BMAD workflow registry (55+ workflows)
 
 Ready for:
-1. **Epic 8**: Reference Todo Application (comprehensive benchmark target)
-2. **Real-world testing** with production-like projects
-3. **Continuous improvement** based on benchmark learnings
+1. **Real-world testing** - GAO-Dev autonomously building applications
+2. **Production deployment** - System architecture complete
+3. **Continuous improvement** (Epic 9) based on benchmark learnings
+
+## Epic 8: Reference Todo Application - CANCELLED
+
+**Status**: ❌ CANCELLED (2025-10-29)
+
+**Original Plan**: Manually create a comprehensive reference todo application as a benchmark target with detailed specifications, tests, and documentation.
+
+**Why Cancelled**: Architectural paradigm shift in Epic 7.2 makes this obsolete.
+
+**The Shift**:
+- **Before Epic 7.2**: We create reference apps manually → Use as benchmarks → GAO-Dev tries to match
+- **After Epic 7.2**: We give GAO-Dev a prompt → GAO-Dev autonomously BUILDS the app → We validate
+
+**The Problem with Epic 8**:
+Creating a reference todo app manually contradicts GAO-Dev's core value proposition: **"Simple prompt → Production-ready app"**
+
+If we manually build the reference app, we're not testing GAO-Dev's autonomous capabilities. We're just testing if it can copy something we already built.
+
+**The Solution**:
+Instead of Epic 8, we created `sandbox/benchmarks/workflow-driven-todo.yaml`:
+- Provides initial_prompt: "Build a todo application..."
+- Brian selects appropriate workflows
+- GAO-Dev autonomously creates ALL artifacts
+- System proves itself by BUILDING the app
+
+This tests the ACTUAL autonomous development capability, not just comparison to a manual reference.
+
+**Replacement**: `sandbox/benchmarks/workflow-driven-todo.yaml` - Let GAO-Dev BUILD it!
 
 ## Next Actions
 
-1. **START Epic 8** - Reference Todo Application benchmark
-   - Comprehensive spec for benchmark target
-   - Full application with real-world complexity
-   - Validates entire GAO-Dev workflow
+1. **RUN WORKFLOW-DRIVEN BENCHMARKS** - Test GAO-Dev's autonomous capabilities
+   - Use: `sandbox/benchmarks/workflow-driven-todo.yaml`
+   - Requires: ANTHROPIC_API_KEY
+   - Command: `gao-dev sandbox run sandbox/benchmarks/workflow-driven-todo.yaml`
+   - Expected: Complete todo app autonomously created
 
-2. **OPTIONAL: Story 4.8** - Implement Standalone Execution Mode (requires anthropic SDK)
+2. **TEST AT DIFFERENT SCALE LEVELS**
+   - Level 0: Chore (fix typo, update docs)
+   - Level 1: Bug fix (single file change)
+   - Level 2: Small feature (3-8 stories) ← tested with todo app
+   - Level 3: Medium feature (12-20 stories)
+   - Level 4: Greenfield application (40+ stories)
 
-3. **TEST WITH REAL PROJECTS** - Run benchmarks on production-like applications
-   - Greenfield applications
-   - Feature enhancements
-   - Bug fixes at various scale levels
+3. **OPTIONAL: Story 4.8** - Implement Standalone Execution Mode (requires anthropic SDK)
 
-4. **Continue BMAD Process** - Follow implementation workflows
+4. **EPIC 9: Continuous Improvement** - Based on real benchmark results
+   - Create stories for gaps identified
+   - Optimize workflow selection
+   - Improve agent prompts
+   - Enhance error handling
+
+5. **Continue BMAD Process** - Follow implementation workflows
 
 ## Update History
 
@@ -305,7 +342,9 @@ Ready for:
 - **2025-10-28**: Epic 7 COMPLETE - All 7 stories done! AgentSpawner removed, GAODevOrchestrator integrated, artifact creation & git commits working
 - **2025-10-28**: System ready for benchmark testing - Core autonomous functionality complete
 - **2025-10-29**: Epic 7.2 COMPLETE - All 6 stories done! Brian agent, scale-adaptive routing, multi-workflow sequencing, 41 integration tests passing
-- **2025-10-29**: Core workflow-driven architecture complete - System ready for Epic 8
+- **2025-10-29**: Core workflow-driven architecture complete and validated
+- **2025-10-29**: Epic 8 CANCELLED - Obsolete due to architectural shift in Epic 7.2 (GAO-Dev should BUILD the reference app, not us!)
+- **2025-10-29**: Created workflow-driven-todo.yaml benchmark - Tests autonomous app creation
 
 ---
 
