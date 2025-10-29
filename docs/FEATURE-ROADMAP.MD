@@ -1,3 +1,5 @@
+- move to uv not pip as a runner 
+- add rich cli interface formatting
 - build out and utilise core repos for quickstart/boilerplate e.g. full saas (plans, licensing, customer portal, support, billing) / marketing funnel etc
 - bmad story context creation step missing
 - autoscale prompting level (bmad scale level)
@@ -11,7 +13,7 @@
 - retrospective at end of each epic
 - can we use git prs / branches (and worktrees within branches) to instantiate instances of a team with improvement opportunities to imporve the core system as it works on other projects???
 - chrome extension developer
-- firebase hosting team / migrations
+- firebase hosting team / migrations<<< should it be a small locally hosted tool or shoudl we set up full firebase project?>>>
 - documentation specialist 
     - document lifecycle - we need to properly archive once work is done and reset to keep better track
     - < we need both dev and user docs always updated in realtime - video demos are useful too
@@ -25,4 +27,21 @@
 - automatic feature adding
 - mass email users capability
 - gamification standards
+- apply budgeting to work e.g. if a new project - what are we investing in this development cycle - do we want to go fully fleshed out high end app or simple mvp and what are we willng to spend 
+- utlise much better wireframe / graphical prototyping
+- ensure everything is multiple pass at review from different useful persepticves
 
+- see also 
+    D:\GAO Agile Dev\docs\CONTEXT-TRACKING-ROADMAP.md
+
+
+- immediate bug fixes
+    - logs and metrics not working
+    - working sanbox folder doesnt align with metrics naming so confusing
+    - not doign git commits < lets have a method for pulling a benchmarking branch then committing everything there and making comments along the way to give realt time observability in the remote repo
+
+once this is all sorted...
+- better cli
+- chat capability
+- gao-forge agent factory and academy
+- 

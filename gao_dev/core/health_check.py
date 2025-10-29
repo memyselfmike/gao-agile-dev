@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 from .config_loader import ConfigLoader
-from .models import HealthStatus, CheckResult, HealthCheckResult
+from .legacy_models import HealthStatus, CheckResult, HealthCheckResult
 from .workflow_registry import WorkflowRegistry
 
 
