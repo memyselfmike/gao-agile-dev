@@ -8,6 +8,8 @@
 - know when the PO needs to be invoked
 - add comliance checks at every step > compliance agent in the loop to constantly check and iterate if sops are being adhered to
 - e2e testing in the loop > for any frontend work we need to ensure we utlise playwright to thoroughly test core features in desltop / mobile
+- retrospective at end of each epic
+- can we use git prs / branches (and worktrees within branches) to instantiate instances of a team with 
 - chrome extension developer
 - firebase hosting team / migrations
 - documentation specialist 

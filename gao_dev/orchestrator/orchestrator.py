@@ -26,16 +26,18 @@ logger = structlog.get_logger()
 class GAODevOrchestrator:
     """Main orchestrator for GAO-Dev autonomous development team."""
 
-    def __init__(self, project_root: Path, api_key: Optional[str] = None):
+    def __init__(self, project_root: Path, api_key: Optional[str] = None, mode: str = "cli"):
         """
         Initialize the GAO-Dev orchestrator.
 
         Args:
             project_root: Root directory of the project
             api_key: Optional Anthropic API key for Brian's analysis
+            mode: Execution mode - "cli", "benchmark", or "api"
         """
         self.project_root = project_root
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.mode = mode  # Story 7.2.4: Execution mode for clarification handling
 
         # Initialize configuration and registries
         self.config_loader = ConfigLoader(project_root)
@@ -567,6 +569,66 @@ Murat should:
         return self.brian_orchestrator.get_scale_level_description(scale_level)
 
     # ========================================================================
+    # Clarification Dialog (Story 7.2.4)
+    # ========================================================================
+
+    def handle_clarification(
+        self,
+        clarifying_questions: List[str],
+        initial_prompt: str
+    ) -> Optional[str]:
+        """
+        Handle clarification when workflow selection is ambiguous.
+
+        Behavior depends on execution mode:
+        - CLI mode: Would prompt user interactively (simplified for now)
+        - Benchmark mode: Returns None (fail gracefully)
+        - API mode: Returns None (caller should handle)
+
+        Args:
+            clarifying_questions: List of questions to ask
+            initial_prompt: Original user prompt
+
+        Returns:
+            Enhanced prompt with clarification, or None if cannot clarify
+        """
+        logger.info(
+            "clarification_needed",
+            mode=self.mode,
+            questions_count=len(clarifying_questions),
+            initial_prompt=initial_prompt[:100]
+        )
+
+        # Log questions
+        for i, question in enumerate(clarifying_questions, 1):
+            logger.info("clarifying_question", number=i, question=question)
+
+        if self.mode == "benchmark":
+            # Benchmark mode: Fail gracefully
+            logger.warning(
+                "clarification_in_benchmark_mode",
+                message="Cannot ask clarifying questions in benchmark mode"
+            )
+            return None
+
+        elif self.mode == "cli":
+            # CLI mode: For now, return None (interactive prompting to be added)
+            # TODO: Add interactive CLI prompting
+            logger.info(
+                "clarification_cli_mode",
+                message="Interactive clarification not yet implemented"
+            )
+            return None
+
+        else:
+            # API mode or unknown
+            logger.info(
+                "clarification_api_mode",
+                message="Clarification handling delegated to caller"
+            )
+            return None
+
+    # ========================================================================
     # Multi-Workflow Sequence Executor (Story 7.2.2)
     # ========================================================================
 
@@ -612,11 +674,27 @@ Murat should:
                 workflow = await self.assess_and_select_workflows(initial_prompt)
 
                 if not workflow.workflows:
-                    # Need clarification or no workflows available
+                    # Check if clarification is needed (Story 7.2.4)
+                    # Note: Brian returns empty workflow list when needs_clarification=True
+                    # We pass questions through routing_rationale for now
+                    logger.info("workflow_selection_needs_clarification")
+
+                    # Extract clarifying questions from routing_rationale if present
+                    clarifying_questions = []
+                    if "clarification" in workflow.routing_rationale.lower():
+                        clarifying_questions = [workflow.routing_rationale]
+
+                    # Handle clarification based on mode
+                    enhanced_prompt = self.handle_clarification(
+                        clarifying_questions if clarifying_questions else ["Unable to determine workflow from prompt"],
+                        initial_prompt
+                    )
+
+                    # If clarification failed or returned None
                     result.status = WorkflowStatus.FAILED
                     result.end_time = datetime.now()
-                    result.error_message = "No workflows selected. May need clarification."
-                    logger.warning("workflow_selection_failed", workflows_count=0)
+                    result.error_message = "Workflow selection requires clarification. " + workflow.routing_rationale
+                    logger.warning("workflow_selection_failed", workflows_count=0, needs_clarification=True)
                     return result
 
                 result.workflow_name = f"{workflow.scale_level.name}_sequence"

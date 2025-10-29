@@ -341,10 +341,11 @@ class BenchmarkRunner:
             # Get project path
             project_path = self.sandbox_root / "projects" / project.name
 
-            # Initialize GAO-Dev orchestrator
+            # Initialize GAO-Dev orchestrator in benchmark mode (Story 7.2.4)
             orchestrator = GAODevOrchestrator(
                 project_root=project_path,
-                api_key=self.api_key
+                api_key=self.api_key,
+                mode="benchmark"
             )
 
             # Execute workflow autonomously
