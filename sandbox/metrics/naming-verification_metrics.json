@@ -1,0 +1,30 @@
+{
+  "run_id": "naming-verification",
+  "benchmark_name": "naming-verification",
+  "start_time": "2025-10-29T15:25:46.073065",
+  "end_time": "2025-10-29T15:25:46.190037",
+  "total_duration_seconds": 0.116972,
+  "total_cost_usd": 0,
+  "total_tokens": 0,
+  "total_input_tokens": 0,
+  "total_output_tokens": 0,
+  "agent_count": 0,
+  "phase_count": 0,
+  "story_count": 1,
+  "success": true,
+  "agent_metrics": [],
+  "phase_summary": [],
+  "story_summary": [
+    {
+      "epic_name": "Epic 1",
+      "story_name": "Story 1.1",
+      "start_time": "2025-10-29T15:25:46.074622",
+      "end_time": "2025-10-29T15:25:46.188489",
+      "duration_seconds": 0.113867,
+      "total_tokens": 0,
+      "total_cost_usd": 0,
+      "agents_used": [],
+      "status": "failed"
+    }
+  ]
+}

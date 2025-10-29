@@ -16,9 +16,12 @@ benchmark:
 
   # THE ONLY REQUIRED INPUT: What to build
   initial_prompt: |
-    Build a production-ready todo application with the following requirements:
+    Build a COMPLETE, WORKING, END-TO-END production-ready todo application.
 
-    Features:
+    IMPORTANT: Implement ALL features and ALL stories until you have a fully functional MVP that can be run and tested.
+    Do not stop after one story - continue implementing stories until the entire application is complete and working.
+
+    Features (ALL must be implemented):
     - User authentication (register, login, logout)
     - CRUD operations for tasks (create, read, update, delete)
     - Task categories/tags
@@ -30,19 +33,22 @@ benchmark:
     Technical Requirements:
     - Backend: Python with FastAPI
     - Frontend: React with TypeScript
-    - Database: PostgreSQL
+    - Database: PostgreSQL (or SQLite for MVP)
     - Authentication: JWT tokens
     - API: RESTful endpoints with OpenAPI docs
     - Testing: >80% code coverage
     - Code quality: Type hints, linting (ruff), formatted (black)
     - Deployment: Docker compose for local development
 
-    Deliverables:
+    Deliverables (ALL must be completed):
     - Complete project documentation (PRD, architecture, API docs)
     - Production-ready code with tests
     - Database schema and migrations
     - Docker setup for easy deployment
     - README with setup instructions
+    - Working application that can be started with: docker-compose up
+
+    SUCCESS CRITERIA: The final deliverable must be a working application that can be started and used immediately.
 
   # Optional: Force specific workflow (for testing)
   # Omit this to let Brian select automatically
@@ -50,18 +56,27 @@ benchmark:
 
   # Optional: Scale level hint (0-4)
   # If omitted, Brian will infer from prompt
-  scale_level: 2  # Level 2: Small feature (3-8 stories)
+  scale_level: 3  # Level 3: Large project (12-40 stories, 2-5 epics)
 
   # Expected duration (for reporting, not a hard timeout)
-  expected_duration_minutes: 180
+  expected_duration_minutes: 360
 
   # Hard timeout (will stop execution)
-  timeout_seconds: 10800  # 3 hours
+  timeout_seconds: 21600  # 6 hours
 
   # Success criteria (evaluated after completion)
   success_criteria:
-    # Artifacts must exist
-    artifacts_exist:
+    # Minimum test coverage
+    min_test_coverage: 80.0
+
+    # Maximum manual interventions allowed
+    max_manual_interventions: 0
+
+    # Maximum errors allowed
+    max_errors: 0
+
+    # Required features/artifacts
+    required_features:
       - "docs/PRD.md"
       - "docs/ARCHITECTURE.md"
       - "docs/API.md"
@@ -71,32 +86,15 @@ benchmark:
       - "docker-compose.yml"
       - "README.md"
 
-    # Tests must pass
-    tests_pass: true
-
-    # Build must succeed
-    builds_successfully: true
-
-    # Minimum test coverage
-    min_test_coverage: 80
-
-    # Quality checks
-    quality_checks:
-      - type: "linting"
-        tool: "ruff"
-        must_pass: true
-
-      - type: "type_checking"
-        tool: "mypy"
-        must_pass: true
-
-      - type: "formatting"
-        tool: "black"
-        must_pass: true
-
-    # Git commits
-    min_commits: 5  # Should have multiple atomic commits
-    commit_format: "conventional"  # feat:, fix:, docs:, etc.
+    # Quality gates
+    quality_gates:
+      tests_must_pass: true
+      build_must_succeed: true
+      min_commits: 5
+      commit_format: "conventional"
+      linting_tool: "ruff"
+      type_checking_tool: "mypy"
+      formatting_tool: "black"
 
   # Optional metadata
   metadata:

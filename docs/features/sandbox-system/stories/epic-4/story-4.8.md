@@ -1,58 +1,59 @@
-# Story 4.8: Standalone Execution Mode
+# Story 4.8: Standalone Execution Mode (Programmatic Claude CLI)
 
 **Epic**: Epic 4 - Benchmark Runner
-**Status**: Ready
+**Status**: In Progress
 **Priority**: P1 (High)
 **Estimated Effort**: 4 story points
 **Owner**: Amelia (Developer)
 **Created**: 2025-10-27
+**Updated**: 2025-10-29
 
 ---
 
 ## User Story
 
 **As a** developer running benchmarks
-**I want** to execute benchmarks in standalone mode with API key
-**So that** benchmarks can run without interactive Claude Code sessions
+**I want** to execute benchmarks using programmatic Claude CLI mode
+**So that** benchmarks can run non-interactively with full agent-sdk capabilities
 
 ---
 
 ## Acceptance Criteria
 
-### AC1: Standalone Runner
-- [ ] StandaloneRunner class implemented
-- [ ] Uses Anthropic API key for agent spawning
-- [ ] Runs completely non-interactively
-- [ ] No dependency on Claude Code session
-- [ ] Can be scheduled or run in CI/CD
+### AC1: Programmatic Claude CLI Configuration
+- [ ] ClaudeAgentOptions configured with cli_path
+- [ ] Uses Claude CLI in --print mode for non-interactive execution
+- [ ] Passes API key via environment to CLI process
+- [ ] Permission mode set to "bypassPermissions" for benchmarks
+- [ ] Working directory set to sandbox project
 
-### AC2: API Key Management
-- [ ] Reads API key from environment variable
-- [ ] Reads API key from config file
+### AC2: CLI Path Detection
+- [ ] Automatically detects Claude CLI path
+- [ ] Supports Windows (claude.bat) and Unix (claude)
+- [ ] Fallback paths checked in order
+- [ ] Clear error if Claude CLI not found
+- [ ] Validates CLI is executable
+
+### AC3: API Key Management
+- [ ] API key passed to Claude CLI via env vars
+- [ ] Reads from .env file (already working)
+- [ ] Reads from ANTHROPIC_API_KEY environment
 - [ ] Validates API key before starting
 - [ ] Secure key handling (no logging)
-- [ ] Clear error if key missing/invalid
 
-### AC3: CLI Integration
-- [ ] `gao-dev sandbox run --standalone` flag
-- [ ] `--api-key` option for explicit key
-- [ ] `--api-key-file` option for key file
-- [ ] Works with all benchmark configs
-- [ ] Exit codes indicate success/failure
+### AC4: Benchmark Mode Configuration
+- [ ] permission_mode="bypassPermissions" for sandbox safety
+- [ ] extra_args configured for --print mode
+- [ ] add_dirs includes project_root for file access
+- [ ] Keeps full agent-sdk capabilities (agents, MCP, tools)
+- [ ] Non-interactive execution
 
-### AC4: Agent Spawning
-- [ ] Can spawn GAO-Dev agents using SDK
-- [ ] Passes tools to agents correctly
-- [ ] Captures agent outputs
-- [ ] Handles agent errors
-- [ ] Logs all agent interactions
-
-### AC5: Headless Operation
-- [ ] No interactive prompts
-- [ ] All progress to structured logs
-- [ ] Results saved to files
-- [ ] Can run unattended
-- [ ] Provides run summary at end
+### AC5: Agent Orchestration
+- [ ] Agent spawning works in programmatic mode
+- [ ] Subagents can be created (Task tool)
+- [ ] MCP servers accessible
+- [ ] Tool use works correctly
+- [ ] Output captured and logged
 
 ---
 
@@ -60,40 +61,157 @@
 
 ### Implementation Approach
 
-**New Module**: `gao_dev/sandbox/benchmark/standalone.py`
+**Key Insight**: Use agent-sdk's programmatic capabilities instead of replacing with basic API.
+
+**Benefits**:
+- Keeps agent orchestration, MCP integration, tool management
+- Uses Claude CLI `--print` mode for non-interactive execution
+- Leverages `permission_mode="bypassPermissions"` for sandbox safety
+- Full agentic harness capabilities maintained
+
+**Updated Module**: `gao_dev/core/cli_detector.py` (New)
 
 ```python
-"""Standalone benchmark execution using Anthropic API."""
+"""Detect Claude CLI installation."""
 
 import os
-from dataclasses import dataclass
+import shutil
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional
 import structlog
-
-from anthropic import Anthropic
-from .runner import BenchmarkRunner, BenchmarkResult
-from .config import BenchmarkConfig
-from ..sandbox_manager import SandboxManager
-from ..boilerplate.manager import BoilerplateManager
-from ..metrics.collector import MetricsCollector
-
 
 logger = structlog.get_logger()
 
 
+def find_claude_cli() -> Optional[Path]:
+    """
+    Find Claude CLI executable.
+
+    Checks locations in priority order:
+    1. 'claude' or 'claude.bat' in PATH
+    2. VS Code extension directory
+    3. Common installation locations
+
+    Returns:
+        Path to Claude CLI or None if not found
+    """
+    # Try PATH first
+    if os.name == 'nt':  # Windows
+        claude_cmd = shutil.which('claude.bat') or shutil.which('claude.cmd')
+    else:  # Unix
+        claude_cmd = shutil.which('claude')
+
+    if claude_cmd:
+        logger.debug("found_claude_cli_in_path", path=claude_cmd)
+        return Path(claude_cmd)
+
+    # Try VS Code extension directory
+    home = Path.home()
+    vscode_ext = home / '.vscode' / 'extensions'
+
+    if vscode_ext.exists():
+        # Find latest anthropic.claude-code extension
+        claude_dirs = sorted(vscode_ext.glob('anthropic.claude-code-*'))
+        if claude_dirs:
+            cli_js = claude_dirs[-1] / 'resources' / 'claude-code' / 'cli.js'
+            if cli_js.exists():
+                logger.debug("found_claude_cli_in_vscode", path=str(cli_js))
+                return cli_js
+
+    # Try common locations (Windows)
+    if os.name == 'nt':
+        common_paths = [
+            Path(os.environ.get('USERPROFILE', '')) / 'bin' / 'claude.bat',
+            Path(os.environ.get('LOCALAPPDATA', '')) / 'Programs' / 'claude' / 'claude.bat',
+        ]
+        for path in common_paths:
+            if path.exists():
+                logger.debug("found_claude_cli_common", path=str(path))
+                return path
+
+    logger.warning("claude_cli_not_found")
+    return None
+```
+
+**Updated Module**: `gao_dev/orchestrator/orchestrator.py`
+
+```python
+# Key changes to __init__:
+
+def __init__(self, project_root: Path, api_key: Optional[str] = None, mode: str = "cli"):
+    """
+    Initialize the GAO-Dev orchestrator.
+
+    Args:
+        project_root: Root directory of the project
+        api_key: Optional Anthropic API key
+        mode: Execution mode - "cli", "benchmark", or "api"
+    """
+    self.project_root = project_root
+    self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+    self.mode = mode
+
+    # ... existing code ...
+
+    # NEW: Find Claude CLI for programmatic execution
+    from ..core.cli_detector import find_claude_cli
+    cli_path = find_claude_cli()
+
+    if not cli_path and mode == "benchmark":
+        raise ValueError("Claude CLI not found. Cannot run in benchmark mode.")
+
+    # Configure main orchestrator options FOR PROGRAMMATIC EXECUTION
+    self.options = ClaudeAgentOptions(
+        # Point to Claude CLI executable
+        cli_path=cli_path,
+
+        # Set working directory to project
+        cwd=self.project_root,
+
+        # Pass API key via environment (secure)
+        env={"ANTHROPIC_API_KEY": self.api_key} if self.api_key else {},
+
+        # Model configuration
+        model="claude-sonnet-4",
+
+        # Permission mode: bypass for benchmarks (sandbox-safe)
+        permission_mode="bypassPermissions" if mode == "benchmark" else "default",
+
+        # Agent definitions (keeps agent orchestration)
+        agents=AGENT_DEFINITIONS,
+
+        # MCP servers (keeps MCP integration)
+        mcp_servers={"gao_dev": gao_dev_server},
+
+        # Tools (keeps tool management)
+        allowed_tools=[...],  # Same as before
+
+        # Grant access to project directory
+        add_dirs=[self.project_root],
+
+        # For benchmark mode: configure for non-interactive --print mode
+        # (The SDK will use these when spawning Claude CLI)
+        max_turns=None,  # Let benchmark determine turns
+    )
+```
+
+**New Module**: `gao_dev/sandbox/benchmark/standalone.py` (Simplified)
+
+```python
+"""Programmatic benchmark execution using Claude CLI."""
+
 class StandaloneRunner:
     """
-    Runs benchmarks in standalone mode using Anthropic API.
+    Runs benchmarks using programmatic Claude CLI mode.
 
-    This mode allows benchmarks to run non-interactively without
-    a Claude Code session, using an API key for agent spawning.
+    Uses agent-sdk with Claude CLI configured for non-interactive
+    --print mode execution, maintaining full agentic capabilities.
     """
 
     def __init__(
         self,
         api_key: Optional[str] = None,
-        api_key_file: Optional[Path] = None,
+        cli_path: Optional[Path] = None,
         sandbox_root: Path = Path("sandbox")
     ):
         """
@@ -101,22 +219,24 @@ class StandaloneRunner:
 
         Args:
             api_key: Anthropic API key (optional if in environment)
-            api_key_file: Path to file containing API key
+            cli_path: Path to Claude CLI (auto-detected if not provided)
             sandbox_root: Root directory for sandbox projects
 
         Raises:
-            ValueError: If API key not found
+            ValueError: If API key not found or CLI not found
         """
-        self.api_key = self._get_api_key(api_key, api_key_file)
+        self.api_key = self._get_api_key(api_key)
+        self.cli_path = cli_path or find_claude_cli()
+
+        if not self.cli_path:
+            raise ValueError(
+                "Claude CLI not found. Install Claude Code or provide --cli-path"
+            )
+
         self.sandbox_root = sandbox_root
-        self.client = Anthropic(api_key=self.api_key)
         self.logger = logger.bind(component="StandaloneRunner")
 
-    def _get_api_key(
-        self,
-        api_key: Optional[str],
-        api_key_file: Optional[Path]
-    ) -> str:
+    def _get_api_key(self, api_key: Optional[str]) -> str:
         """
         Get API key from various sources.
 

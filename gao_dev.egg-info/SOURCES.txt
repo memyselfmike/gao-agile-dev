@@ -10,6 +10,7 @@ gao_dev.egg-info/requires.txt
 gao_dev.egg-info/top_level.txt
 gao_dev/agents/amelia.md
 gao_dev/agents/bob.md
+gao_dev/agents/brian.md
 gao_dev/agents/john.md
 gao_dev/agents/mary.md
 gao_dev/agents/murat.md
