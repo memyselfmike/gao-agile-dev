@@ -565,3 +565,295 @@ Murat should:
             Description string
         """
         return self.brian_orchestrator.get_scale_level_description(scale_level)
+
+    # ========================================================================
+    # Multi-Workflow Sequence Executor (Story 7.2.2)
+    # ========================================================================
+
+    async def execute_workflow(
+        self,
+        initial_prompt: str,
+        workflow: Optional[WorkflowSequence] = None,
+        commit_after_steps: bool = True
+    ) -> "WorkflowResult":
+        """
+        Execute complete workflow sequence from initial prompt.
+
+        This is the core autonomous execution method that:
+        1. Selects appropriate workflow sequence (if not provided)
+        2. Executes workflows sequentially across phases
+        3. Calls agents to perform tasks
+        4. Creates artifacts and commits to git
+        5. Returns comprehensive results
+
+        Args:
+            initial_prompt: User's initial request
+            workflow: Optional pre-selected workflow sequence (if None, auto-select)
+            commit_after_steps: Whether to commit after each workflow step
+
+        Returns:
+            WorkflowResult with execution details and metrics
+        """
+        from .workflow_results import WorkflowResult, WorkflowStepResult, WorkflowStatus
+
+        # Initialize result
+        result = WorkflowResult(
+            workflow_name=workflow.workflows[0].name if workflow and workflow.workflows else "auto-select",
+            initial_prompt=initial_prompt,
+            status=WorkflowStatus.IN_PROGRESS,
+            start_time=datetime.now(),
+            project_path=str(self.project_root) if self.project_root else None
+        )
+
+        try:
+            # Step 1: Select workflow sequence if not provided
+            if workflow is None:
+                logger.info("workflow_auto_select", prompt=initial_prompt)
+                workflow = await self.assess_and_select_workflows(initial_prompt)
+
+                if not workflow.workflows:
+                    # Need clarification or no workflows available
+                    result.status = WorkflowStatus.FAILED
+                    result.end_time = datetime.now()
+                    result.error_message = "No workflows selected. May need clarification."
+                    logger.warning("workflow_selection_failed", workflows_count=0)
+                    return result
+
+                result.workflow_name = f"{workflow.scale_level.name}_sequence"
+
+            logger.info(
+                "workflow_execution_started",
+                workflow_count=len(workflow.workflows),
+                scale_level=workflow.scale_level.value
+            )
+
+            # Step 2: Execute workflows sequentially
+            for i, workflow_info in enumerate(workflow.workflows, 1):
+                logger.info(
+                    "workflow_step_started",
+                    step=i,
+                    total=len(workflow.workflows),
+                    workflow_name=workflow_info.name
+                )
+
+                step_result = await self._execute_workflow_step(
+                    workflow_info=workflow_info,
+                    step_number=i,
+                    total_steps=len(workflow.workflows)
+                )
+
+                result.step_results.append(step_result)
+
+                # Commit after step if enabled
+                if commit_after_steps and step_result.status == "success":
+                    # Git commits are handled by the individual agent methods
+                    pass
+
+                # Fail-fast: Stop on first failure
+                if step_result.status == "failed":
+                    logger.error(
+                        "workflow_step_failed",
+                        step=workflow_info.name,
+                        error=step_result.error_message
+                    )
+                    result.status = WorkflowStatus.FAILED
+                    break
+
+            # Step 3: Mark complete if all steps succeeded
+            if result.status != WorkflowStatus.FAILED:
+                result.status = WorkflowStatus.COMPLETED
+                logger.info(
+                    "workflow_execution_completed",
+                    steps_completed=len(result.step_results),
+                    duration=result.duration_seconds
+                )
+
+        except Exception as e:
+            result.status = WorkflowStatus.FAILED
+            result.error_message = str(e)
+            logger.error(
+                "workflow_execution_error",
+                error=str(e),
+                exc_info=True
+            )
+
+        finally:
+            result.end_time = datetime.now()
+            result.total_artifacts = sum(
+                len(step.artifacts_created) for step in result.step_results
+            )
+
+        return result
+
+    async def _execute_workflow_step(
+        self,
+        workflow_info: "WorkflowInfo",
+        step_number: int,
+        total_steps: int
+    ) -> "WorkflowStepResult":
+        """
+        Execute a single workflow step.
+
+        Maps workflow to appropriate agent method and executes.
+
+        Args:
+            workflow_info: Workflow metadata
+            step_number: Current step number
+            total_steps: Total number of steps
+
+        Returns:
+            WorkflowStepResult with execution details
+        """
+        from .workflow_results import WorkflowStepResult
+
+        step_result = WorkflowStepResult(
+            step_name=workflow_info.name,
+            agent=self._get_agent_for_workflow(workflow_info),
+            status="in_progress",
+            start_time=datetime.now()
+        )
+
+        try:
+            # Map workflow to agent method
+            agent_method = self._get_agent_method_for_workflow(workflow_info)
+
+            if agent_method is None:
+                raise ValueError(f"No agent method found for workflow: {workflow_info.name}")
+
+            # Execute agent method
+            output_parts = []
+            async for message in agent_method():
+                output_parts.append(message)
+
+            step_result.output = "\n".join(output_parts)
+            step_result.status = "success"
+
+            logger.info(
+                "workflow_step_completed",
+                workflow=workflow_info.name,
+                agent=step_result.agent
+            )
+
+        except Exception as e:
+            step_result.status = "failed"
+            step_result.error_message = str(e)
+            logger.error(
+                "step_execution_failed",
+                workflow=workflow_info.name,
+                error=str(e)
+            )
+
+        finally:
+            step_result.end_time = datetime.now()
+            step_result.duration_seconds = (
+                step_result.end_time - step_result.start_time
+            ).total_seconds()
+
+        return step_result
+
+    def _get_agent_for_workflow(self, workflow_info: "WorkflowInfo") -> str:
+        """
+        Determine which agent should execute a workflow.
+
+        Args:
+            workflow_info: Workflow metadata
+
+        Returns:
+            Agent name (Mary, John, Winston, etc.)
+        """
+        # Map workflow name patterns to agents
+        workflow_name_lower = workflow_info.name.lower()
+
+        if "prd" in workflow_name_lower:
+            return "John"
+        elif "architecture" in workflow_name_lower or "tech-spec" in workflow_name_lower:
+            return "Winston"
+        elif "story" in workflow_name_lower and "create" in workflow_name_lower:
+            return "Bob"
+        elif "implement" in workflow_name_lower or "dev" in workflow_name_lower:
+            return "Amelia"
+        elif "test" in workflow_name_lower or "qa" in workflow_name_lower:
+            return "Murat"
+        elif "ux" in workflow_name_lower or "design" in workflow_name_lower:
+            return "Sally"
+        elif "brief" in workflow_name_lower or "research" in workflow_name_lower:
+            return "Mary"
+        else:
+            # Default to orchestrator
+            return "Orchestrator"
+
+    def _get_agent_method_for_workflow(self, workflow_info: "WorkflowInfo"):
+        """
+        Map workflow to orchestrator method.
+
+        Args:
+            workflow_info: Workflow metadata
+
+        Returns:
+            Async method to call, or None if not found
+        """
+        # Map workflow names to orchestrator methods
+        workflow_name_lower = workflow_info.name.lower()
+
+        # PRD workflows
+        if workflow_name_lower == "prd":
+            return lambda: self.create_prd(project_name="Project")
+
+        # Architecture workflows
+        elif workflow_name_lower in ["architecture", "tech-spec"]:
+            return lambda: self.create_architecture(project_name="Project")
+
+        # Story workflows
+        elif "create-story" in workflow_name_lower:
+            return lambda: self.create_story(epic=1, story=1)
+
+        # Implementation workflows
+        elif "dev-story" in workflow_name_lower or "implement" in workflow_name_lower:
+            return lambda: self.implement_story(epic=1, story=1)
+
+        # Validation workflows
+        elif "validate" in workflow_name_lower or "qa" in workflow_name_lower:
+            return lambda: self.validate_story(epic=1, story=1)
+
+        # Default: Execute generic task
+        else:
+            task_description = f"Execute the {workflow_info.name} workflow"
+            return lambda: self.execute_task(task_description)
+
+    async def execute_workflow_sequence_from_prompt(
+        self,
+        initial_prompt: str
+    ) -> "WorkflowResult":
+        """
+        Convenience method: assess prompt and execute full workflow sequence.
+
+        This is the main entry point for autonomous execution from a user prompt.
+
+        Args:
+            initial_prompt: User's initial request
+
+        Returns:
+            WorkflowResult with complete execution results
+        """
+        logger.info(
+            "autonomous_execution_starting",
+            prompt_preview=initial_prompt[:100]
+        )
+
+        # Brian assesses and selects workflows
+        workflow_sequence = await self.assess_and_select_workflows(initial_prompt)
+
+        # Execute the selected workflow sequence
+        result = await self.execute_workflow(
+            initial_prompt=initial_prompt,
+            workflow=workflow_sequence
+        )
+
+        logger.info(
+            "autonomous_execution_complete",
+            success=result.success,
+            duration=result.duration_seconds,
+            steps=result.total_steps
+        )
+
+        return result
