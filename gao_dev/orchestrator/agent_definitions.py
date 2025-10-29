@@ -224,6 +224,31 @@ murat_agent = AgentDefinition(
 
 
 # ============================================================================
+# BRIAN - Senior Engineering Manager & Workflow Orchestrator
+# ============================================================================
+
+brian_agent = AgentDefinition(
+    description="Senior Engineering Manager who orchestrates workflows and determines project approach",
+    prompt=load_agent_persona("brian"),
+    model="sonnet",
+    tools=[
+        # File operations
+        "Read",
+        "Grep",
+        "Glob",
+        # GAO-Dev tools
+        "mcp__gao_dev__list_workflows",
+        "mcp__gao_dev__get_workflow",
+        "mcp__gao_dev__get_sprint_status",
+        "mcp__gao_dev__health_check",
+        # Research tools
+        "WebSearch",
+        "WebFetch",
+    ]
+)
+
+
+# ============================================================================
 # AGENT REGISTRY
 # ============================================================================
 
@@ -235,6 +260,7 @@ AGENT_DEFINITIONS: Dict[str, AgentDefinition] = {
     "bob": bob_agent,
     "amelia": amelia_agent,
     "murat": murat_agent,
+    "brian": brian_agent,
 }
 
 
@@ -257,6 +283,8 @@ def get_agent_by_role(role: str) -> AgentDefinition:
         "scrum_master": "bob",
         "developer": "amelia",
         "test_architect": "murat",
+        "engineering_manager": "brian",
+        "workflow_orchestrator": "brian",
     }
 
     agent_name = role_mapping.get(role.lower())

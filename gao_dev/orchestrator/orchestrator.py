@@ -5,10 +5,20 @@ from pathlib import Path
 from typing import AsyncGenerator, Optional, Dict, List
 from datetime import datetime
 import structlog
+import os
 
 from ..tools import gao_dev_server
 from .agent_definitions import AGENT_DEFINITIONS
 from .workflow_results import StoryResult, EpicResult, StoryStatus
+from .brian_orchestrator import (
+    BrianOrchestrator,
+    WorkflowSequence,
+    ScaleLevel,
+    ProjectType,
+    PromptAnalysis
+)
+from ..core.config_loader import ConfigLoader
+from ..core.workflow_registry import WorkflowRegistry
 
 logger = structlog.get_logger()
 
@@ -16,14 +26,29 @@ logger = structlog.get_logger()
 class GAODevOrchestrator:
     """Main orchestrator for GAO-Dev autonomous development team."""
 
-    def __init__(self, project_root: Path):
+    def __init__(self, project_root: Path, api_key: Optional[str] = None):
         """
         Initialize the GAO-Dev orchestrator.
 
         Args:
             project_root: Root directory of the project
+            api_key: Optional Anthropic API key for Brian's analysis
         """
         self.project_root = project_root
+        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+
+        # Initialize configuration and registries
+        self.config_loader = ConfigLoader(project_root)
+        self.workflow_registry = WorkflowRegistry(self.config_loader)
+        self.workflow_registry.index_workflows()
+
+        # Initialize Brian - Senior Engineering Manager and Workflow Orchestrator
+        brian_persona_path = self.config_loader.get_agents_path() / "brian.md"
+        self.brian_orchestrator = BrianOrchestrator(
+            workflow_registry=self.workflow_registry,
+            api_key=self.api_key,
+            brian_persona_path=brian_persona_path if brian_persona_path.exists() else None
+        )
 
         # Configure main orchestrator options
         self.options = ClaudeAgentOptions(
@@ -481,3 +506,62 @@ Murat should:
         )
 
         return epic_result
+
+    # ========================================================================
+    # Brian - Scale-Adaptive Workflow Selection (Story 7.2.1)
+    # ========================================================================
+
+    async def assess_and_select_workflows(
+        self,
+        initial_prompt: str,
+        force_scale_level: Optional[ScaleLevel] = None
+    ) -> WorkflowSequence:
+        """
+        Use Brian (Engineering Manager) to analyze prompt and select workflows.
+
+        Brian applies his 20 years of experience to:
+        - Assess project complexity (Scale Level 0-4)
+        - Determine project type (greenfield, brownfield, game, etc.)
+        - Build appropriate workflow sequence
+        - Provide routing rationale
+
+        This is the entry point for scale-adaptive workflow selection.
+
+        Args:
+            initial_prompt: User's initial request
+            force_scale_level: Optional override for scale level (for testing)
+
+        Returns:
+            WorkflowSequence with selected workflows and rationale
+        """
+        logger.info(
+            "brian_assessing_prompt",
+            prompt_preview=initial_prompt[:100]
+        )
+
+        workflow_sequence = await self.brian_orchestrator.assess_and_select_workflows(
+            initial_prompt=initial_prompt,
+            force_scale_level=force_scale_level
+        )
+
+        logger.info(
+            "brian_workflow_selection_complete",
+            scale_level=workflow_sequence.scale_level.value,
+            project_type=workflow_sequence.project_type.value,
+            workflow_count=len(workflow_sequence.workflows),
+            jit_tech_specs=workflow_sequence.jit_tech_specs
+        )
+
+        return workflow_sequence
+
+    def get_scale_level_description(self, scale_level: ScaleLevel) -> str:
+        """
+        Get human-readable description of scale level.
+
+        Args:
+            scale_level: Scale level enum
+
+        Returns:
+            Description string
+        """
+        return self.brian_orchestrator.get_scale_level_description(scale_level)

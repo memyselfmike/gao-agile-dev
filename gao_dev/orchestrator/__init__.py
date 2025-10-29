@@ -3,6 +3,13 @@
 from .orchestrator import GAODevOrchestrator
 from .agent_definitions import AGENT_DEFINITIONS, get_agent_by_role
 from .workflow_results import StoryResult, EpicResult, StoryStatus
+from .brian_orchestrator import (
+    BrianOrchestrator,
+    WorkflowSequence,
+    ScaleLevel,
+    ProjectType,
+    PromptAnalysis
+)
 
 __all__ = [
     "GAODevOrchestrator",
@@ -11,4 +18,9 @@ __all__ = [
     "StoryResult",
     "EpicResult",
     "StoryStatus",
+    "BrianOrchestrator",
+    "WorkflowSequence",
+    "ScaleLevel",
+    "ProjectType",
+    "PromptAnalysis",
 ]

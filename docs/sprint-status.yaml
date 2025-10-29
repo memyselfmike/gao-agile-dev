@@ -252,12 +252,12 @@ epics:
 
   - epic_number: 7.2
     name: "Workflow-Driven Core Architecture"
-    status: ready
+    status: in_progress
     total_story_points: 22
     notes: "Enhanced with scale-adaptive approach, Brian agent, multi-workflow sequencing"
     stories:
       - number: 1
-        status: ready
+        status: done
         name: "Create Brian Agent & Scale-Adaptive Workflow Selection"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.1.md"
         story_points: 5
