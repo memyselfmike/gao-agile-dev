@@ -132,15 +132,9 @@ class BenchmarkRunner:
         Raises:
             ValueError: If configuration is invalid
         """
-        # Generate unique run ID
-        run_id = self._generate_run_id()
-        self.logger.info(
-            "benchmark_run_started", run_id=run_id, config=self.config.name
-        )
-
-        # Initialize result
+        # Initialize result with temporary run_id (will be updated after project creation)
         result = BenchmarkResult(
-            run_id=run_id,
+            run_id="temp",
             config=self.config,
             status=BenchmarkStatus.PENDING,
             start_time=datetime.now(),
@@ -153,6 +147,15 @@ class BenchmarkRunner:
             # Initialize sandbox project
             result.status = BenchmarkStatus.RUNNING
             project = self._initialize_sandbox(result)
+
+            # Update run_id to match project name for consistency
+            # This ensures logs and metrics use the same naming as the project directory
+            run_id = project.name
+            result.run_id = run_id
+
+            self.logger.info(
+                "benchmark_run_started", run_id=run_id, config=self.config.name
+            )
 
             # Setup boilerplate
             self._setup_boilerplate(project, result)
@@ -169,12 +172,12 @@ class BenchmarkRunner:
 
             # Mark as completed
             result.status = BenchmarkStatus.COMPLETED
-            self.logger.info("benchmark_run_completed", run_id=run_id)
+            self.logger.info("benchmark_run_completed", run_id=result.run_id)
 
         except Exception as e:
             result.status = BenchmarkStatus.FAILED
             result.errors.append(str(e))
-            self.logger.error("benchmark_run_failed", run_id=run_id, error=str(e))
+            self.logger.error("benchmark_run_failed", run_id=result.run_id, error=str(e))
 
         finally:
             # Always set end time and duration
@@ -189,7 +192,16 @@ class BenchmarkRunner:
         return result
 
     def _generate_run_id(self) -> str:
-        """Generate unique run ID."""
+        """
+        Generate unique run ID.
+
+        DEPRECATED: This method is no longer used. The run_id is now set to
+        the project name (e.g., 'workflow-driven-todo-run-007') for consistency
+        between project directories and log/metrics files.
+
+        Returns:
+            Placeholder run_id (not actually used)
+        """
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         short_uuid = str(uuid.uuid4())[:8]
         return f"{self.config.name}-{timestamp}-{short_uuid}"
@@ -574,6 +586,7 @@ class BenchmarkRunner:
             execution_mode="agent",  # Use agent mode for autonomous execution
             api_key=self.api_key,  # Pass API key for agent spawning
             metrics_aggregator=metrics_aggregator,  # Pass metrics aggregator
+            run_id=result.run_id,  # Pass run_id for consistent naming in git commits
         )
 
         try:

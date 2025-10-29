@@ -36,9 +36,9 @@ def mock_sandbox_manager():
     """Create a mock sandbox manager."""
     manager = Mock()
     project = Mock()
-    project.project_path = Path("/tmp/test-project")
-    project.project_name = "test-project"
-    manager.init_project.return_value = project
+    project.name = "test-benchmark-run-001"  # Use .name attribute (not .project_name)
+    manager.create_project.return_value = project  # Use create_project (not init_project)
+    manager.get_project_path.return_value = Path("/tmp/test-project")
     return manager
 
 
@@ -233,10 +233,10 @@ class TestBenchmarkRunner:
 
         result = runner.run()
 
-        mock_sandbox_manager.init_project.assert_called_once()
-        call_args = mock_sandbox_manager.init_project.call_args
-        assert call_args[1]["name"] == "test-benchmark"
-        assert "benchmark_run_id" in call_args[1]["config"]
+        # Verify create_project was called with the correct benchmark name
+        mock_sandbox_manager.create_project.assert_called_once()
+        call_args = mock_sandbox_manager.create_project.call_args
+        assert call_args[1]["name"] == "test-benchmark"  # Should match config.name
 
     @patch("gao_dev.sandbox.git_cloner.GitCloner")
     def test_run_sets_up_boilerplate_from_url(
