@@ -1,7 +1,7 @@
-# Story 7.2.3: Refactor Benchmark to Use Core Workflows
+# Story 7.2.3: Refactor Benchmark for Scale-Adaptive Testing
 
 **Epic**: 7.2 - Workflow-Driven Core Architecture
-**Story Points**: 3
+**Story Points**: 4
 **Status**: Ready
 **Priority**: High
 
@@ -446,6 +446,19 @@ async def test_benchmark_evaluates_success_criteria():
 
 ---
 
+## Story Enhancement Notes
+
+**Original Story Points**: 3 points
+**Updated Story Points**: 4 points (+1 point)
+
+**Reason for Increase**:
+- Added scale level support in benchmark config
+- Added testing for workflow sequences (not just single workflows)
+- Added metrics for multi-workflow execution
+- Increased complexity to support scale-adaptive benchmarking
+
+---
+
 ## Out of Scope
 
 - Real-time progress streaming (future enhancement)
@@ -457,7 +470,8 @@ async def test_benchmark_evaluates_success_criteria():
 ## Notes
 
 - This completes the architectural refactor - GAO-Dev is now truly autonomous
-- Benchmark becomes simple: provide prompt, collect results
+- Benchmark becomes simple: provide prompt (with optional scale level), collect results
 - Focus on clean separation: benchmark TESTS, GAO-Dev WORKS
 - Keep metrics collection comprehensive for analysis
 - Backward compatibility important during transition
+- Scale-adaptive testing validates Brian's workflow selection

@@ -1,7 +1,7 @@
-# Story 7.2.2: Add Workflow Executor to Core
+# Story 7.2.2: Add Multi-Workflow Sequence Executor to Core
 
 **Epic**: 7.2 - Workflow-Driven Core Architecture
-**Story Points**: 5
+**Story Points**: 7
 **Status**: Ready
 **Priority**: High
 
@@ -9,28 +9,31 @@
 
 ## User Story
 
-As a **GAO-Dev system**, I want to **execute BMAD workflows autonomously from initial prompt to completion**, so that **I can independently orchestrate development work without external workflow orchestration**.
+As a **GAO-Dev system**, I want to **execute multi-workflow sequences autonomously across phases (Analysis → Planning → Solutioning → Implementation)**, so that **I can independently orchestrate complete development lifecycles from initial prompt to production-ready code**.
 
 ---
 
 ## Context
 
-Currently, the benchmark system orchestrates workflow execution (calling agents in sequence). This story moves that intelligence into GAO-Dev core, making GAO-Dev truly autonomous.
+Currently, the benchmark system orchestrates workflow execution. This story adds **multi-workflow sequence execution** to GAO-Dev core, enabling complete lifecycle orchestration across phases.
 
 **Problem**:
-- Workflow execution logic is in benchmark/orchestrator (wrong place)
-- GAO-Dev just spawns agents when told to
-- No autonomous workflow execution capability
-- BMAD workflows in `bmad/bmm/workflows/` aren't being executed
+- Can only execute single workflows, not sequences (PRD → Architecture → Stories)
+- No phase transition handling (Phase 2 → Phase 3 → Phase 4)
+- No Just-In-Time (JIT) tech-spec generation during implementation
+- Workflow execution logic scattered in benchmark system
+- Can't handle scale-adaptive workflow paths (Level 0-4 require different sequences)
 
 **Solution**:
-Add `execute_workflow()` method to GAODevOrchestrator that:
-1. Takes initial prompt
-2. Selects workflow (using Story 7.2.1)
-3. Executes workflow steps sequentially
-4. Calls appropriate agents based on workflow definition
-5. Manages state, creates artifacts, commits to git
-6. Returns comprehensive results
+Add `execute_workflow_sequence()` method to GAODevOrchestrator that:
+1. Takes initial prompt or uses Brian's selected workflow sequence (Story 7.2.1)
+2. Executes workflows in sequence across phases:
+   - Phase 1 (Analysis) → Phase 2 (Planning) → Phase 3 (Solutioning) → Phase 4 (Implementation)
+3. Handles phase transitions with state persistence
+4. Supports JIT tech-spec generation (one per epic during Phase 4)
+5. Calls appropriate agents per workflow step
+6. Manages state, creates artifacts, commits after each workflow
+7. Returns comprehensive multi-workflow results
 
 ---
 
@@ -555,6 +558,20 @@ async def test_full_workflow_execution():
 
 ---
 
+## Story Enhancement Notes
+
+**Original Story Points**: 5 points
+**Updated Story Points**: 7 points (+2 points)
+
+**Reason for Increase**:
+- Added multi-workflow sequence execution (not just single workflow)
+- Added phase transition handling (Phase 1 → 2 → 3 → 4)
+- Added Just-In-Time tech-spec generation during implementation
+- Added state persistence across workflows
+- Increased complexity to support scale-adaptive routing
+
+---
+
 ## Out of Scope
 
 - Clarification dialog (Story 7.2.4)
@@ -568,7 +585,8 @@ async def test_full_workflow_execution():
 ## Notes
 
 - This is the core autonomy feature - GAO-Dev decides and executes independently
+- Multi-workflow sequencing is critical for scale-adaptive approach
 - Focus on sequential execution first, parallel can come later
 - Fail-fast is important - stop on first error
 - Logging is critical for debugging workflow issues
-- Keep artifact parsing simple initially - Epic 7 has ArtifactParser to leverage
+- Phase transitions must persist state for next phase

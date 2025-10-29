@@ -253,27 +253,45 @@ epics:
   - epic_number: 7.2
     name: "Workflow-Driven Core Architecture"
     status: ready
+    total_story_points: 22
+    notes: "Enhanced with scale-adaptive approach, Brian agent, multi-workflow sequencing"
     stories:
       - number: 1
         status: ready
-        name: "Create Workflow Selector"
+        name: "Create Brian Agent & Scale-Adaptive Workflow Selection"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.1.md"
+        story_points: 5
+        notes: "Enhanced from 3 pts: Added Brian agent + scale-adaptive selection"
       - number: 2
         status: ready
-        name: "Add Workflow Executor to Core"
+        name: "Add Multi-Workflow Sequence Executor to Core"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.2.md"
+        story_points: 7
+        notes: "Enhanced from 5 pts: Added multi-workflow sequencing + phase transitions"
       - number: 3
         status: ready
-        name: "Refactor Benchmark to Use Core Workflows"
+        name: "Refactor Benchmark for Scale-Adaptive Testing"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.3.md"
+        story_points: 4
+        notes: "Enhanced from 3 pts: Added scale level support"
       - number: 4
         status: ready
         name: "Add Clarification Dialog"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.4.md"
+        story_points: 2
+        notes: "Unchanged"
       - number: 5
         status: ready
         name: "Integration Testing"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.5.md"
+        story_points: 2
+        notes: "Unchanged - now tests scale-adaptive routing"
+      - number: 6
+        status: ready
+        name: "Load Complete Workflow Registry (55+ Workflows)"
+        file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.6.md"
+        story_points: 2
+        notes: "NEW: Load all workflows from GAO-Dev"
 
   - epic_number: 8
     name: "Reference Todo Application"

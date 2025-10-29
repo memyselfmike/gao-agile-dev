@@ -1,7 +1,7 @@
-# Story 7.2.1: Create Workflow Selector
+# Story 7.2.1: Create Brian Agent & Scale-Adaptive Workflow Selection
 
 **Epic**: 7.2 - Workflow-Driven Core Architecture
-**Story Points**: 3
+**Story Points**: 5
 **Status**: Ready
 **Priority**: High
 
@@ -9,60 +9,91 @@
 
 ## User Story
 
-As a **GAO-Dev system**, I want to **intelligently select the appropriate workflow based on an initial prompt**, so that **I can autonomously determine how to approach each development task without external orchestration**.
+As a **GAO-Dev system**, I want **Brian (Workflow Orchestrator agent) to analyze project complexity and intelligently select scale-appropriate workflow sequences**, so that **I can autonomously determine the optimal development approach based on project scale (Level 0-4) without external orchestration**.
 
 ---
 
 ## Context
 
-Currently, workflows are defined and orchestrated by the benchmark system. GAO-Dev needs the ability to analyze an initial prompt, understand user intent, and select the most appropriate workflow from the BMAD registry.
+Currently, workflows are defined and orchestrated by the benchmark system. GAO-Dev needs **Brian**, the Workflow Orchestrator agent, to analyze prompts, assess project complexity using scale-adaptive principles (Level 0-4), and select appropriate workflow sequences.
 
 **Problem**:
-- Benchmark defines workflow phases and agent sequence
+- Benchmark defines workflow phases and agent sequence (wrong!)
 - GAO-Dev is passive, just executes what benchmark tells it
-- No intelligence in workflow selection
-- BMAD workflows in `bmad/bmm/workflows/` aren't used
+- No intelligence in workflow selection - no scale-level assessment
+- No Brian agent to orchestrate workflows
+- 55+ workflows in GAO-Dev (`bmad/bmm/workflows/`) aren't being intelligently selected
+- Scale-adaptive routing (BMAD's core innovation) not implemented
 
 **Solution**:
-Create a `WorkflowSelector` component that uses AI to analyze prompts and select appropriate workflows.
+Create **Brian agent** (Workflow Orchestrator) who:
+1. Analyzes initial prompts using AI
+2. Assesses project complexity and assigns scale level (0-4)
+3. Selects appropriate workflow sequences based on scale
+4. Routes based on project type (game/software) and context (greenfield/brownfield)
+5. Asks clarifying questions when scope is ambiguous
 
 ---
 
 ## Acceptance Criteria
 
-### AC1: WorkflowSelector Class Created
-- [ ] Create `gao_dev/orchestrator/workflow_selector.py`
-- [ ] `WorkflowSelector` class with `select_workflow()` method
-- [ ] Uses AI (Claude) to analyze prompts
-- [ ] Returns selected `Workflow` object or list of clarifying questions
+### AC1: Brian Agent Created
+- [ ] Create `gao_dev/agents/brian.md` agent definition (DONE - see brian.md)
+- [ ] Brian persona defined with scale-adaptive expertise
+- [ ] Agent registered in GAODevOrchestrator
 
-### AC2: Prompt Analysis
-- [ ] Analyzes initial prompt to understand:
-  - Project type (greenfield, enhancement, bug fix, maintenance)
-  - Scope (simple, medium, complex)
-  - Required phases (analysis, planning, architecture, implementation)
-  - Domain/technology hints
-- [ ] Uses structured prompt to Claude for analysis
+### AC2: Scale-Adaptive Workflow Selection Class
+- [ ] Create `gao_dev/orchestrator/brian_orchestrator.py`
+- [ ] `BrianOrchestrator` class implementing Brian agent logic
+- [ ] Uses AI (Claude) to analyze prompts and assess complexity
+- [ ] Returns scale level (0-4) and workflow sequence
 
-### AC3: Workflow Matching
-- [ ] Loads available workflows from workflow registry
-- [ ] Matches user intent to workflow capabilities
-- [ ] Returns best matching workflow
-- [ ] If ambiguous, returns clarifying questions
+### AC3: Scale Level Assessment
+- [ ] Analyzes initial prompt to determine:
+  - **Scale Level** (0: atomic change, 1: small feature, 2: medium, 3: large, 4: enterprise)
+  - Project type (game/software/mobile/backend/etc.)
+  - Context (greenfield vs brownfield)
+  - Domain complexity indicators
+  - Technical complexity indicators
+- [ ] Uses AI with structured prompt for scale assessment
 
-### AC4: Integration with GAODevOrchestrator
-- [ ] Add `workflow_selector` attribute to GAODevOrchestrator
-- [ ] Initialize WorkflowSelector with workflow registry
-- [ ] Add method: `select_workflow_for_prompt(prompt: str) -> Union[Workflow, List[str]]`
+### AC4: Workflow Sequence Building
+- [ ] Builds complete workflow sequences based on scale level:
+  - **Level 0**: [tech-spec, create-story, dev-story]
+  - **Level 1**: [tech-spec, create-story (x3), dev-story (x3)]
+  - **Level 2**: [prd, tech-spec, implementation loop]
+  - **Level 3-4**: [prd, architecture, JIT tech-specs, implementation loop]
+  - **Game projects**: [game-brief (optional), gdd, solutioning (if complex), implementation]
+  - **Brownfield**: [document-project (required first), then normal flow]
+- [ ] Returns list of Workflow objects in execution order
 
-### AC5: Logging and Observability
-- [ ] Log workflow selection decision and reasoning
-- [ ] Include confidence score or reasoning in logs
-- [ ] Structured logging for analysis
+### AC5: Integration with GAODevOrchestrator
+- [ ] Add `brian_orchestrator` attribute to GAODevOrchestrator
+- [ ] Initialize BrianOrchestrator with workflow registry
+- [ ] Add method: `assess_and_select_workflows(prompt: str) -> WorkflowSequence`
+- [ ] WorkflowSequence includes scale_level, workflows list, routing_rationale
 
-### AC6: Tests
-- [ ] Unit tests for WorkflowSelector
-- [ ] Test various prompt types (greenfield, enhancement, bug fix)
+### AC6: Clarification Questions
+- [ ] If scope ambiguous, returns clarifying questions
+- [ ] Questions focus on scale indicators (scope, timeline, complexity)
+- [ ] Can re-analyze with clarification answers
+
+### AC7: Logging and Observability
+- [ ] Log scale level assessment with reasoning
+- [ ] Log workflow sequence selection with rationale
+- [ ] Include confidence scores in logs
+- [ ] Structured logging for Brian's decisions
+
+### AC8: Tests
+- [ ] Unit tests for BrianOrchestrator
+- [ ] Test scale level assessment for various prompts
+  - Level 0: "Fix login bug"
+  - Level 1: "Add user profile page"
+  - Level 2: "Build todo app"
+  - Level 3: "Create CRM system with 3 modules"
+  - Level 4: "Enterprise ERP system"
+- [ ] Test game vs software routing
+- [ ] Test greenfield vs brownfield detection
 - [ ] Test ambiguous prompts that need clarification
 - [ ] >80% code coverage
 
@@ -370,16 +401,35 @@ async def test_ambiguous_prompt_asks_questions():
 
 ## Definition of Done
 
-- [ ] WorkflowSelector class created with select_workflow() method
-- [ ] Prompt analysis uses AI to understand user intent
-- [ ] Workflow matching returns best workflow or clarifying questions
-- [ ] Integrated with GAODevOrchestrator
-- [ ] Structured logging for selection decisions
+- [ ] Brian agent definition file created (`gao_dev/agents/brian.md`)
+- [ ] BrianOrchestrator class created with scale-adaptive logic
+- [ ] Scale level assessment (Level 0-4) working with AI
+- [ ] Workflow sequence building based on scale level
+- [ ] Integration with GAODevOrchestrator complete
+- [ ] Clarification questions for ambiguous prompts
+- [ ] Structured logging for Brian's decisions and reasoning
 - [ ] Unit tests written and passing (>80% coverage)
+  - Tests for each scale level (0-4)
+  - Tests for game vs software routing
+  - Tests for greenfield vs brownfield
 - [ ] Type hints complete (mypy passes)
 - [ ] Docstrings for all public methods
 - [ ] Code review completed
 - [ ] Story committed atomically to git
+
+---
+
+## Story Enhancement Notes
+
+**Original Story Points**: 3 points
+**Updated Story Points**: 5 points (+2 points)
+
+**Reason for Increase**:
+- Added Brian agent creation and persona definition
+- Added scale-adaptive complexity assessment (Level 0-4)
+- Added workflow sequence building (not just single workflow selection)
+- Added support for game projects, brownfield projects, multi-phase routing
+- Increased scope to match BMAD Method's scale-adaptive principles
 
 ---
 

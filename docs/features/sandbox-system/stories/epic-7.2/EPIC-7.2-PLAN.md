@@ -1,9 +1,16 @@
 # Epic 7.2: Workflow-Driven Core Architecture
 
 **Status**: Ready
-**Total Story Points**: 15
-**Stories**: 5
+**Total Story Points**: 22 (enhanced from initial 15)
+**Stories**: 6 (added Story 7.2.6)
 **Priority**: Critical - Fundamental architectural refactor
+
+**Enhancement Summary**: This epic was enhanced after deep analysis of BMAD workflows to include:
+- Scale-adaptive workflow selection (Level 0-4)
+- Brian agent as Workflow Orchestrator
+- Multi-workflow sequence execution
+- Complete workflow registry (55+ workflows)
+- Terminology updates (bmm workflows → GAO-Dev workflows)
 
 ---
 
@@ -113,35 +120,45 @@ Benchmark should:
 
 ## Epic Stories
 
-### Story 7.2.1: Create Workflow Selector (3 pts)
-Add AI-powered workflow selection to GAODevOrchestrator.
+### Story 7.2.1: Create Brian Agent & Scale-Adaptive Workflow Selection (5 pts, was 3)
+Create Brian (Workflow Orchestrator agent) with scale-adaptive workflow selection.
 
 **Key Deliverables:**
-- `WorkflowSelector` class with AI-powered analysis
-- Analyzes initial prompt to determine project type and required workflow
-- Returns selected workflow or list of clarifying questions
+- Brian agent definition file (`gao_dev/agents/brian.md`)
+- `BrianOrchestrator` class with scale-adaptive logic
+- Scale level assessment (Level 0-4) using AI
+- Workflow sequence building based on scale
 - Integration with workflow registry
+- Clarifying questions for ambiguous prompts
 
-### Story 7.2.2: Add Workflow Executor to Core (5 pts)
-Implement workflow execution in GAODevOrchestrator.
+**Enhancement**: +2 pts for Brian agent creation and scale-adaptive complexity assessment
 
-**Key Deliverables:**
-- `execute_workflow(initial_prompt)` method in GAODevOrchestrator
-- Executes workflow steps sequentially
-- Calls appropriate agents based on workflow definition
-- Manages state, creates artifacts, commits to git
-- Returns WorkflowResult with metrics
-
-### Story 7.2.3: Refactor Benchmark to Use Core Workflows (3 pts)
-Change benchmark system to be a passive test harness.
+### Story 7.2.2: Add Multi-Workflow Sequence Executor to Core (7 pts, was 5)
+Implement multi-workflow sequence execution across phases.
 
 **Key Deliverables:**
-- BenchmarkRunner calls `gao_dev.execute_workflow(prompt)`
-- Remove workflow orchestration from benchmark
-- Keep only metrics collection and performance measurement
-- Simplified benchmark config (just initial_prompt and success_criteria)
+- `execute_workflow_sequence()` method in GAODevOrchestrator
+- Multi-workflow execution (not just single workflows)
+- Phase transition handling (Phase 1 → 2 → 3 → 4)
+- JIT tech-spec generation during implementation
+- State persistence across workflows
+- Returns comprehensive multi-workflow results
 
-### Story 7.2.4: Add Clarification Dialog (2 pts)
+**Enhancement**: +2 pts for multi-workflow sequencing and phase transitions
+
+### Story 7.2.3: Refactor Benchmark for Scale-Adaptive Testing (4 pts, was 3)
+Change benchmark system to support scale-adaptive testing.
+
+**Key Deliverables:**
+- BenchmarkRunner calls `gao_dev.execute_workflow_sequence(prompt)`
+- Support scale level in benchmark config
+- Test workflow sequences (not just single workflows)
+- Metrics for multi-workflow execution
+- Simplified benchmark config with optional scale_level
+
+**Enhancement**: +1 pt for scale level support and workflow sequence testing
+
+### Story 7.2.4: Add Clarification Dialog (2 pts, unchanged)
 Allow GAO-Dev to ask clarifying questions when needed.
 
 **Key Deliverables:**
@@ -150,14 +167,25 @@ Allow GAO-Dev to ask clarifying questions when needed.
 - Benchmark mode uses sensible defaults
 - CLI mode prompts user interactively
 
-### Story 7.2.5: Integration Testing (2 pts)
-Test end-to-end workflow execution.
+### Story 7.2.5: Integration Testing (2 pts, unchanged)
+Test end-to-end workflow execution with scale-adaptive approach.
 
 **Key Deliverables:**
-- Integration tests for workflow selection
-- End-to-end tests with multiple workflow types
+- Integration tests for scale-adaptive workflow selection
+- Test each scale level (0-4)
+- End-to-end tests with workflow sequences
 - Benchmark tests using new architecture
 - Documentation of test results
+
+### Story 7.2.6: Load Complete Workflow Registry (2 pts, NEW)
+Load all 55+ workflows from GAO-Dev for Brian's selection.
+
+**Key Deliverables:**
+- Enhanced WorkflowRegistry with recursive loading
+- Load all 55+ workflows across all phases
+- Phase 1 (Analysis), Phase 2 (Planning), Phase 3 (Solutioning), Phase 4 (Implementation), Test Architecture, Helpers
+- Workflow discovery APIs (list, get, search)
+- Terminology updates (bmm workflows → GAO-Dev workflows)
 
 ---
 
