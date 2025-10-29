@@ -263,7 +263,7 @@ epics:
         story_points: 5
         notes: "Enhanced from 3 pts: Added Brian agent + scale-adaptive selection"
       - number: 2
-        status: ready
+        status: done
         name: "Add Multi-Workflow Sequence Executor to Core"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.2.md"
         story_points: 7
