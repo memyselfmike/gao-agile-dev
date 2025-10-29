@@ -252,7 +252,7 @@ epics:
 
   - epic_number: 7.2
     name: "Workflow-Driven Core Architecture"
-    status: in_progress
+    status: completed
     total_story_points: 22
     notes: "Enhanced with scale-adaptive approach, Brian agent, multi-workflow sequencing"
     stories:
@@ -269,25 +269,25 @@ epics:
         story_points: 7
         notes: "Enhanced from 5 pts: Added multi-workflow sequencing + phase transitions"
       - number: 3
-        status: ready
+        status: done
         name: "Refactor Benchmark for Scale-Adaptive Testing"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.3.md"
         story_points: 4
         notes: "Enhanced from 3 pts: Added scale level support"
       - number: 4
-        status: ready
+        status: done
         name: "Add Clarification Dialog"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.4.md"
         story_points: 2
         notes: "Unchanged"
       - number: 5
-        status: ready
+        status: done
         name: "Integration Testing"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.5.md"
         story_points: 2
-        notes: "Unchanged - now tests scale-adaptive routing"
+        notes: "41 integration tests - all passing"
       - number: 6
-        status: ready
+        status: done
         name: "Load Complete Workflow Registry (55+ Workflows)"
         file: "docs/features/sandbox-system/stories/epic-7.2/story-7.2.6.md"
         story_points: 2
