@@ -36,8 +36,6 @@
 
 
 - immediate bug fixes
-    - logs and metrics not working
-    - working sanbox folder doesnt align with metrics naming so confusing
     - not doign git commits < lets have a method for pulling a benchmarking branch then committing everything there and making comments along the way to give realt time observability in the remote repo
 
 once this is all sorted...

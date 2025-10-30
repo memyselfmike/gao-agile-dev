@@ -222,7 +222,13 @@ class ScaleLevelStrategy(IWorkflowBuildStrategy):
 
     def build_workflow_sequence(self, context: WorkflowContext) -> WorkflowSequence:
         """Build workflow sequence based on scale level."""
-        scale_level = context.scale_level
+        # Convert int scale_level to ScaleLevel enum
+        scale_level_value = context.scale_level
+        if isinstance(scale_level_value, int):
+            scale_level = ScaleLevel(scale_level_value)
+        else:
+            scale_level = scale_level_value
+
         workflows: List[WorkflowInfo] = []
         phase_breakdown: Dict[str, List[str]] = {}
         jit_tech_specs = False

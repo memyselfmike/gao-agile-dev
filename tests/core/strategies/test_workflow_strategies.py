@@ -171,11 +171,9 @@ class TestProjectTypeStrategy:
         """Test that strategy handles brownfield projects."""
         context = WorkflowContext(
             initial_prompt="test",
-            project_type=ProjectType.BROWNFIELD
+            project_type=ProjectType.BROWNFIELD,
+            metadata={"is_brownfield": True, "is_game_project": False}
         )
-        # Need to mock analysis for is_brownfield property
-        from gao_dev.orchestrator.brian_orchestrator import PromptAnalysis
-        context.analysis = Mock(is_brownfield=True, is_game_project=False)
 
         assert strategy.can_handle(context) is True
 
@@ -183,9 +181,9 @@ class TestProjectTypeStrategy:
         """Test that strategy handles game projects."""
         context = WorkflowContext(
             initial_prompt="test",
-            project_type=ProjectType.GAME
+            project_type=ProjectType.GAME,
+            metadata={"is_brownfield": False, "is_game_project": True}
         )
-        context.analysis = Mock(is_brownfield=False, is_game_project=True)
 
         assert strategy.can_handle(context) is True
 
@@ -201,9 +199,9 @@ class TestProjectTypeStrategy:
         """Test that strategy doesn't handle regular software projects."""
         context = WorkflowContext(
             initial_prompt="test",
-            project_type=ProjectType.SOFTWARE
+            project_type=ProjectType.SOFTWARE,
+            metadata={"is_brownfield": False, "is_game_project": False}
         )
-        context.analysis = Mock(is_brownfield=False, is_game_project=False)
 
         assert strategy.can_handle(context) is False
 
@@ -231,7 +229,7 @@ class TestScaleLevelStrategy:
         """Test that strategy handles contexts with scale level."""
         context = WorkflowContext(
             initial_prompt="test",
-            scale_level=ScaleLevel.LEVEL_2
+            metadata={"scale_level": ScaleLevel.LEVEL_2.value}
         )
         assert strategy.can_handle(context) is True
 
@@ -257,8 +255,8 @@ class TestScaleLevelStrategy:
         """Test that correct number of workflows built for each scale level."""
         context = WorkflowContext(
             initial_prompt="test",
-            scale_level=scale_level,
-            project_type=ProjectType.SOFTWARE
+            project_type=ProjectType.SOFTWARE,
+            metadata={"scale_level": scale_level.value}
         )
 
         sequence = strategy.build_workflow_sequence(context)
@@ -270,11 +268,11 @@ class TestScaleLevelStrategy:
         """Test that Level 3 and 4 set jit_tech_specs flag."""
         context_l3 = WorkflowContext(
             initial_prompt="test",
-            scale_level=ScaleLevel.LEVEL_3
+            metadata={"scale_level": ScaleLevel.LEVEL_3.value}
         )
         context_l4 = WorkflowContext(
             initial_prompt="test",
-            scale_level=ScaleLevel.LEVEL_4
+            metadata={"scale_level": ScaleLevel.LEVEL_4.value}
         )
 
         sequence_l3 = strategy.build_workflow_sequence(context_l3)
@@ -288,7 +286,7 @@ class TestScaleLevelStrategy:
         for level in [ScaleLevel.LEVEL_0, ScaleLevel.LEVEL_1, ScaleLevel.LEVEL_2]:
             context = WorkflowContext(
                 initial_prompt="test",
-                scale_level=level
+                metadata={"scale_level": level.value}
             )
             sequence = strategy.build_workflow_sequence(context)
             assert sequence.jit_tech_specs is False

@@ -226,9 +226,9 @@ epics:
     name: "Methodology Abstraction"
     status: in_progress
     total_story_points: 21
-    completed_story_points: 11
-    remaining_story_points: 10
-    notes: "Stories 5.1-5.2 completed (2025-10-30)"
+    completed_story_points: 19
+    remaining_story_points: 2
+    notes: "Stories 5.1-5.4 completed (2025-10-30)"
     stories:
       - number: 1
         status: done
@@ -247,15 +247,21 @@ epics:
         commit: "d19fc11"
         notes: "AdaptiveAgileMethodology with 5 scale levels, 52 tests passing"
       - number: 3
-        status: ready
+        status: done
         name: "Implement Methodology Registry"
         file: "docs/features/core-gao-dev-system-refactor/stories/epic-5/story-5.3.md"
         story_points: 3
+        completed_date: "2025-10-30"
+        commit: "5cbb1b3"
+        notes: "MethodologyRegistry singleton, 22 tests, thread-safe"
       - number: 4
-        status: ready
+        status: done
         name: "Decouple Core from BMAD Specifics"
         file: "docs/features/core-gao-dev-system-refactor/stories/epic-5/story-5.4.md"
         story_points: 5
+        completed_date: "2025-10-30"
+        commit: "140e62a"
+        notes: "Core decoupled from BMAD, orchestrator models extracted, 110+ tests passing"
       - number: 5
         status: ready
         name: "Create Example Alternative Methodology"
@@ -263,9 +269,9 @@ epics:
         story_points: 2
 
 current_epic: 5
-current_story: 2
+current_story: 4
 next_epic: 5
-next_story: 3
+next_story: 5
 
 progress:
   epic_1:
@@ -295,11 +301,11 @@ progress:
     points_percentage: 100
   epic_5:
     total_stories: 5
-    completed_stories: 2
-    completion_percentage: 40
+    completed_stories: 4
+    completion_percentage: 80
     total_points: 21
-    completed_points: 11
-    points_percentage: 52
+    completed_points: 19
+    points_percentage: 90
 
 notes: |
   Epic 1 COMPLETED - Foundation laid with interfaces, base classes, and testing infrastructure
@@ -333,7 +339,14 @@ notes: |
   Epic 5 Progress:
   - Story 5.1: IMethodology Interface (DONE) - Core interface, 5 models, 35 tests
   - Story 5.2: AdaptiveAgileMethodology (DONE) - 5 scale levels, 4 components, 52 tests
-  - Story 5.3: Methodology Registry (READY) - Next up
-  - Story 5.4: Decouple Core from BMAD (READY)
-  - Story 5.5: Example Alternative Methodology (READY)
-  - Progress: 11/21 story points (52%), 2/5 stories complete
+  - Story 5.3: Methodology Registry (DONE) - Singleton, thread-safe, 22 tests, 74 total passing
+  - Story 5.4: Core Decoupling (DONE) - orchestrator/models.py, WorkflowContext refactored, 110+ tests
+  - Story 5.5: Example Alternative Methodology (READY) - Next up, final story
+  - Progress: 19/21 story points (90%), 4/5 stories complete
+
+  Epic 5 Achievements:
+  - Core fully decoupled from BMAD specifics
+  - Generic ComplexityLevel throughout core
+  - MethodologyRegistry with auto-registration
+  - Orchestrator models extracted to shared module
+  - All tests passing: 27 core strategies + 74 methodologies + 10 orchestrator = 111+ tests
