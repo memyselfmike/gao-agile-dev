@@ -1,18 +1,21 @@
-"""Tests for BrianOrchestrator - Scale-Adaptive Workflow Selection."""
+"""Tests for BrianOrchestrator - Scale-Adaptive Workflow Selection.
+
+Story 5.4: Updated to use orchestrator.models for enums.
+"""
 
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from pathlib import Path
 
-from gao_dev.orchestrator.brian_orchestrator import (
-    BrianOrchestrator,
+from gao_dev.orchestrator.brian_orchestrator import BrianOrchestrator
+from gao_dev.orchestrator.models import (
     ScaleLevel,
     ProjectType,
     PromptAnalysis,
     WorkflowSequence,
 )
 from gao_dev.core.workflow_registry import WorkflowRegistry
-from gao_dev.core.models import WorkflowInfo
+from gao_dev.core.legacy_models import WorkflowInfo
 
 
 @pytest.fixture

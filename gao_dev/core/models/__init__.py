@@ -44,6 +44,16 @@ from .hook import (
     HookResults,
 )
 
+# Methodology models (Story 5.1)
+from .methodology import (
+    ComplexityLevel as MethodologyComplexityLevel,
+    ProjectType,
+    ComplexityAssessment,
+    WorkflowStep,
+    WorkflowSequence as MethodologyWorkflowSequence,
+    ValidationResult,
+)
+
 __all__ = [
     # Story
     "StoryIdentifier",
@@ -70,4 +80,11 @@ __all__ = [
     "HookHandler",
     "HookInfo",
     "HookResults",
+    # Methodology (Story 5.1)
+    "MethodologyComplexityLevel",
+    "ProjectType",
+    "ComplexityAssessment",
+    "WorkflowStep",
+    "MethodologyWorkflowSequence",
+    "ValidationResult",
 ]

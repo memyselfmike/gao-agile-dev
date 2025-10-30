@@ -1,6 +1,8 @@
 - move to uv not pip as a runner 
 - add rich cli interface formatting
 - build out and utilise core repos for quickstart/boilerplate e.g. full saas (plans, licensing, customer portal, support, billing) / marketing funnel etc
+    - this should be framework driven too -> some method for reusable assets retrieval/creation (if not exists create asset)
+
 - bmad story context creation step missing
 - autoscale prompting level (bmad scale level)
     -> chores > bugs > features > brownfield / greenfield < we need to know when the human or agentic product owner need to get involved to guide
@@ -36,8 +38,6 @@
 
 
 - immediate bug fixes
-    - logs and metrics not working
-    - working sanbox folder doesnt align with metrics naming so confusing
     - not doign git commits < lets have a method for pulling a benchmarking branch then committing everything there and making comments along the way to give realt time observability in the remote repo
 
 once this is all sorted...
