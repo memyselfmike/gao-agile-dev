@@ -12,12 +12,14 @@ Key Components:
 - PluginRegistry: Registers and manages loaded plugins
 """
 
-from .models import PluginMetadata, PluginType, AgentMetadata
+from .models import PluginMetadata, PluginType, AgentMetadata, WorkflowMetadata
 from .discovery import PluginDiscovery
 from .loader import PluginLoader
 from .base_plugin import BasePlugin
 from .agent_plugin import BaseAgentPlugin
 from .agent_plugin_manager import AgentPluginManager
+from .workflow_plugin import BaseWorkflowPlugin
+from .workflow_plugin_manager import WorkflowPluginManager
 from .exceptions import (
     PluginError,
     PluginValidationError,
@@ -30,11 +32,14 @@ __all__ = [
     'PluginMetadata',
     'PluginType',
     'AgentMetadata',
+    'WorkflowMetadata',
     'PluginDiscovery',
     'PluginLoader',
     'BasePlugin',
     'BaseAgentPlugin',
     'AgentPluginManager',
+    'BaseWorkflowPlugin',
+    'WorkflowPluginManager',
     'PluginError',
     'PluginValidationError',
     'PluginNotFoundError',

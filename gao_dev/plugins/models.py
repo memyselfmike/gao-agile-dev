@@ -208,3 +208,46 @@ class AgentMetadata:
             raise ValueError("Agent role is required")
         if not self.description:
             raise ValueError("Agent description is required")
+
+
+@dataclass
+class WorkflowMetadata:
+    """Metadata for a workflow plugin.
+
+    Describes the capabilities and configuration of a custom workflow
+    provided by a plugin.
+
+    Attributes:
+        name: Unique workflow name
+        description: Workflow description
+        phase: BMAD phase (1-4, or -1 for phase-independent)
+        tags: List of workflow tags
+        required_tools: List of required tools
+
+    Example:
+        ```python
+        from gao_dev.core.models.workflow import WorkflowIdentifier
+
+        metadata = WorkflowMetadata(
+            name="domain-analysis",
+            description="Analyze domain-specific requirements",
+            phase=1,
+            tags=["analysis", "domain"],
+            required_tools=["Read", "Grep", "WebFetch"]
+        )
+        ```
+    """
+    name: str
+    description: str
+    phase: int = -1  # -1 means phase-independent
+    tags: List[str] = field(default_factory=list)
+    required_tools: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        """Validate workflow metadata after initialization."""
+        if not self.name:
+            raise ValueError("Workflow name is required")
+        if not self.description:
+            raise ValueError("Workflow description is required")
+        if self.phase < -1 or self.phase > 4:
+            raise ValueError(f"Phase must be -1 to 4, got {self.phase}")
