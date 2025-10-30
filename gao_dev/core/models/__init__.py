@@ -21,6 +21,7 @@ from .project import (
 # Workflow models
 from .workflow import (
     WorkflowIdentifier,
+    WorkflowInfo,
     ComplexityLevel,
     WorkflowContext,
     WorkflowResult,
@@ -65,6 +66,7 @@ __all__ = [
     "Project",
     # Workflow
     "WorkflowIdentifier",
+    "WorkflowInfo",
     "ComplexityLevel",
     "WorkflowContext",
     "WorkflowResult",

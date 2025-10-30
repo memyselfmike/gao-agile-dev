@@ -8,7 +8,7 @@ from datetime import datetime
 from gao_dev.orchestrator import GAODevOrchestrator
 from gao_dev.orchestrator.models import WorkflowSequence, ScaleLevel, ProjectType
 from gao_dev.orchestrator.workflow_results import WorkflowResult, WorkflowStatus
-from gao_dev.core.legacy_models import WorkflowInfo
+from gao_dev.core.models.workflow import WorkflowInfo
 
 
 @pytest.fixture

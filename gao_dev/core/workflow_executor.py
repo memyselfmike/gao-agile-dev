@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 import re
 
-from .legacy_models import WorkflowInfo
+from .models.workflow import WorkflowInfo
 from .config_loader import ConfigLoader
 
 

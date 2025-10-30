@@ -17,7 +17,7 @@ import json
 from anthropic import Anthropic
 
 from ..core.workflow_registry import WorkflowRegistry
-from ..core.legacy_models import WorkflowInfo
+from ..core.models.workflow import WorkflowInfo
 from .models import (
     ScaleLevel,
     ProjectType,

@@ -13,7 +13,7 @@ import structlog
 
 from ..interfaces.workflow import IWorkflowBuildStrategy, IWorkflowRegistry
 from ..models.workflow_context import WorkflowContext
-from ..legacy_models import WorkflowInfo
+from ..models.workflow import WorkflowInfo
 from ...orchestrator.models import (
     ScaleLevel,
     ProjectType,

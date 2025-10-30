@@ -1,13 +1,10 @@
 """Core services and interfaces for GAO-Dev."""
 
-# Legacy models (from legacy_models.py - for backward compatibility)
-from .legacy_models import (
-    WorkflowInfo,
-    StoryStatus as LegacyStoryStatus,  # Renamed to avoid conflict
+# Health models (from health_check.py - no longer in legacy_models.py)
+from .health_check import (
     HealthStatus,
     CheckResult,
     HealthCheckResult,
-    AgentInfo,
 )
 
 # Core services
@@ -42,6 +39,7 @@ from .models import (
     ProjectPath,
     ProjectStatus,
     WorkflowIdentifier,
+    WorkflowInfo,  # Migrated from legacy_models.py
     ComplexityLevel,
     AgentCapability,
     AgentCapabilityType,
@@ -60,13 +58,11 @@ from .models import (
 )
 
 __all__ = [
-    # Legacy models (for backward compatibility)
+    # Migrated models (from legacy_models.py)
     "WorkflowInfo",
-    "LegacyStoryStatus",
     "HealthStatus",
     "CheckResult",
     "HealthCheckResult",
-    "AgentInfo",
     # Services
     "ConfigLoader",
     "WorkflowRegistry",
@@ -94,6 +90,7 @@ __all__ = [
     "ProjectPath",
     "ProjectStatus",
     "WorkflowIdentifier",
+    "WorkflowInfo",
     "ComplexityLevel",
     "AgentCapability",
     "AgentCapabilityType",

@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional, Dict, Any
 
-from ..core.legacy_models import WorkflowInfo
+from ..core.models.workflow import WorkflowInfo
 
 
 class ScaleLevel(Enum):

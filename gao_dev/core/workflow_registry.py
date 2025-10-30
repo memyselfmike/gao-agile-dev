@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 import yaml
 
-from .legacy_models import WorkflowInfo
+from .models.workflow import WorkflowInfo
 from .config_loader import ConfigLoader
 
 

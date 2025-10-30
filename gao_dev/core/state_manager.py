@@ -5,7 +5,6 @@ from typing import Optional, Dict, Any
 import re
 
 from .config_loader import ConfigLoader
-from .legacy_models import StoryStatus
 
 
 class StateManager:

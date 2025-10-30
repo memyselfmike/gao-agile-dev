@@ -327,3 +327,61 @@ class WorkflowSequence:
     def __getitem__(self, index: int) -> WorkflowIdentifier:
         """Get workflow by index."""
         return self.workflows[index]
+
+
+@dataclass
+class WorkflowInfo:
+    """Workflow metadata and configuration.
+
+    This is the primary model for workflow information used throughout GAO-Dev.
+    It contains all metadata needed to discover, load, and execute workflows.
+
+    Attributes:
+        name: Workflow name (e.g., "create-story", "prd")
+        description: Human-readable description
+        phase: BMAD phase (0-4) when applicable
+        installed_path: Path where workflow is installed
+        author: Optional author name
+        tags: List of classification tags
+        variables: Dictionary of workflow variables
+        required_tools: Tools required for execution
+        interactive: Whether workflow is interactive
+        autonomous: Whether workflow can run autonomously
+        iterative: Whether workflow is iterative
+        web_bundle: Whether workflow has web components
+        output_file: Optional output file path template
+        templates: Dictionary of template mappings
+    """
+
+    name: str
+    description: str
+    phase: int
+    installed_path: Path
+    author: Optional[str] = None
+    tags: List[str] = field(default_factory=list)
+    variables: Dict[str, Any] = field(default_factory=dict)
+    required_tools: List[str] = field(default_factory=list)
+    interactive: bool = True
+    autonomous: bool = True
+    iterative: bool = False
+    web_bundle: bool = False
+    output_file: Optional[str] = None
+    templates: Dict[str, str] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "phase": self.phase,
+            "author": self.author,
+            "tags": self.tags,
+            "variables": self.variables,
+            "required_tools": self.required_tools,
+            "interactive": self.interactive,
+            "autonomous": self.autonomous,
+            "iterative": self.iterative,
+            "web_bundle": self.web_bundle,
+            "output_file": self.output_file,
+            "templates": self.templates,
+        }

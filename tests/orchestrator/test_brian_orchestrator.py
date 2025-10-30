@@ -15,7 +15,7 @@ from gao_dev.orchestrator.models import (
     WorkflowSequence,
 )
 from gao_dev.core.workflow_registry import WorkflowRegistry
-from gao_dev.core.legacy_models import WorkflowInfo
+from gao_dev.core.models.workflow import WorkflowInfo
 
 
 @pytest.fixture

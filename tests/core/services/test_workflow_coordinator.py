@@ -7,7 +7,7 @@ from datetime import datetime
 
 from gao_dev.core.services.workflow_coordinator import WorkflowCoordinator
 from gao_dev.core.events.event_bus import EventBus, Event
-from gao_dev.core.legacy_models import WorkflowInfo
+from gao_dev.core.models.workflow import WorkflowInfo
 from gao_dev.orchestrator.models import WorkflowSequence, ScaleLevel, ProjectType
 from gao_dev.core.models.workflow_context import WorkflowContext
 
