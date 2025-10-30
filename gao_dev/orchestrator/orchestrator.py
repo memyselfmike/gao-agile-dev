@@ -22,6 +22,8 @@ from .brian_orchestrator import (
 )
 from ..core.config_loader import ConfigLoader
 from ..core.workflow_registry import WorkflowRegistry
+from ..core.events.event_bus import EventBus
+from ..core.services.workflow_coordinator import WorkflowCoordinator
 
 logger = structlog.get_logger()
 
@@ -126,6 +128,26 @@ class GAODevOrchestrator:
                 "mcp__gao_dev__health_check",
             ],
             system_prompt=self._get_orchestrator_prompt(),
+        )
+
+        # Story 6.1: Initialize EventBus for observability
+        self.event_bus = EventBus()
+
+        # Story 6.1: Initialize WorkflowCoordinator service
+        self.workflow_coordinator = WorkflowCoordinator(
+            workflow_registry=self.workflow_registry,
+            agent_factory=None,  # Will be added in future story
+            event_bus=self.event_bus,
+            agent_executor=self._get_agent_method_for_workflow,
+            project_root=self.project_root,
+            max_retries=3
+        )
+
+        logger.info(
+            "orchestrator_initialized",
+            mode=mode,
+            project_root=str(project_root),
+            workflow_coordinator_enabled=True
         )
 
     def _get_orchestrator_prompt(self) -> str:
@@ -963,40 +985,36 @@ Murat should:
                 scale_level=workflow.scale_level.value
             )
 
-            # Step 2: Execute workflows sequentially
-            for i, workflow_info in enumerate(workflow.workflows, 1):
-                logger.info(
-                    "workflow_step_started",
-                    step=i,
-                    total=len(workflow.workflows),
-                    workflow_name=workflow_info.name
+            # Story 6.1: Delegate workflow execution to WorkflowCoordinator service
+            from ..core.models.workflow_context import WorkflowContext
+
+            workflow_context = WorkflowContext(
+                initial_prompt=initial_prompt,
+                project_root=self.project_root,
+                metadata={
+                    "mode": self.mode,
+                    "commit_after_steps": commit_after_steps
+                }
+            )
+
+            # Execute workflow sequence using WorkflowCoordinator
+            coordinator_result = await self.workflow_coordinator.execute_sequence(
+                workflow_sequence=workflow,
+                context=workflow_context
+            )
+
+            # Copy results from coordinator to orchestrator result
+            result.status = coordinator_result.status
+            result.step_results = coordinator_result.step_results
+            result.error_message = coordinator_result.error_message
+            result.total_artifacts = coordinator_result.total_artifacts
+
+            # Check if execution failed (for fail-fast logic below)
+            if result.status == WorkflowStatus.FAILED:
+                logger.error(
+                    "workflow_sequence_failed",
+                    error=result.error_message
                 )
-
-                step_result = await self._execute_workflow_step(
-                    workflow_info=workflow_info,
-                    step_number=i,
-                    total_steps=len(workflow.workflows)
-                )
-
-                result.step_results.append(step_result)
-
-                # TODO: Re-enable Brian's Quality Gate after testing basic loop
-                # Brian's verification temporarily disabled to test basic story loop first
-
-                # Commit after step if enabled
-                if commit_after_steps and step_result.status == "success":
-                    # Git commits are handled by the individual agent methods
-                    pass
-
-                # Fail-fast: Stop on first failure
-                if step_result.status == "failed":
-                    logger.error(
-                        "workflow_step_failed",
-                        step=workflow_info.name,
-                        error=step_result.error_message
-                    )
-                    result.status = WorkflowStatus.FAILED
-                    break
 
             # Step 3: Continue implementing stories until MVP is complete
             # After initial workflows (prd, create-story, dev-story), check if more stories needed
@@ -1157,6 +1175,9 @@ Murat should:
     ) -> "WorkflowStepResult":
         """
         Execute a single workflow step.
+
+        DEPRECATED (Story 6.1): This method will be removed after Epic 6.5.
+        Use WorkflowCoordinator.execute_workflow() instead.
 
         Maps workflow to appropriate agent method and executes.
 

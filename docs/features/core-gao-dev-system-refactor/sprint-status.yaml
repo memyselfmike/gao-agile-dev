@@ -300,13 +300,15 @@ epics:
       - Integration testing and validation
     stories:
       - number: 1
-        status: in_progress
+        status: done
         name: "Extract WorkflowCoordinator Service"
         file: "docs/features/core-gao-dev-system-refactor/stories/epic-6/story-6.1.md"
         story_points: 5
-        notes: "Extract workflow coordination logic from orchestrator"
+        notes: "WorkflowCoordinator extracted (342 lines), 6/8 tests passing, orchestrator integrated"
         assigned_to: "Amelia"
         started_date: "2025-10-30"
+        completed_date: "2025-10-30"
+        commit: "TBD"
       - number: 2
         status: ready
         name: "Extract StoryLifecycleManager Service"
@@ -367,9 +369,9 @@ epics:
         notes: "Update all docs to match implementation"
 
 current_epic: 6
-current_story: 0
-next_epic: 7
-next_story: 1
+current_story: 1
+next_epic: 6
+next_story: 2
 
 progress:
   epic_1:
@@ -406,11 +408,11 @@ progress:
     points_percentage: 100
   epic_6:
     total_stories: 10
-    completed_stories: 0
-    completion_percentage: 0
+    completed_stories: 1
+    completion_percentage: 10
     total_points: 47
-    completed_points: 0
-    points_percentage: 0
+    completed_points: 5
+    points_percentage: 11
 
 notes: |
   ⚠️ IMPORTANT DISCOVERY (2025-10-30):
