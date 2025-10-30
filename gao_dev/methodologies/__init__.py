@@ -23,8 +23,23 @@ Example:
 """
 
 from .adaptive_agile import AdaptiveAgileMethodology, ScaleLevel
+from .exceptions import (
+    InvalidMethodologyError,
+    MethodologyAlreadyRegisteredError,
+    MethodologyError,
+    MethodologyNotFoundError,
+)
+from .registry import MethodologyRegistry
 
 __all__ = [
+    # Methodologies
     "AdaptiveAgileMethodology",
     "ScaleLevel",
+    # Registry
+    "MethodologyRegistry",
+    # Exceptions
+    "MethodologyError",
+    "MethodologyAlreadyRegisteredError",
+    "MethodologyNotFoundError",
+    "InvalidMethodologyError",
 ]
