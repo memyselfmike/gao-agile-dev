@@ -1,4 +1,4 @@
-"""Sandbox manager for project lifecycle operations."""
+"""Sandbox manager for project lifecycle operations - thin facade pattern."""
 
 import shutil
 from pathlib import Path
@@ -8,11 +8,7 @@ from datetime import datetime
 import structlog
 
 from .models import ProjectMetadata, ProjectStatus, BenchmarkRun
-from .exceptions import (
-    ProjectExistsError,
-    ProjectNotFoundError,
-    ProjectStateError,
-)
+from .exceptions import ProjectNotFoundError
 from .git_cloner import GitCloner
 from .services.project_lifecycle import ProjectLifecycleService
 from .services.project_state import ProjectStateService
@@ -47,28 +43,45 @@ class SandboxManager:
         benchmark_service: Service for benchmark tracking
     """
 
-    def __init__(self, sandbox_root: Path):
+    def __init__(
+        self,
+        sandbox_root: Path,
+        git_cloner: Optional[GitCloner] = None,
+        state_service: Optional[ProjectStateService] = None,
+        boilerplate_service: Optional[BoilerplateService] = None,
+        lifecycle_service: Optional[ProjectLifecycleService] = None,
+        benchmark_service: Optional[BenchmarkTrackingService] = None,
+    ):
         """
         Initialize sandbox manager.
 
         Args:
             sandbox_root: Root directory for sandbox projects
+            git_cloner: Optional GitCloner instance (creates default if not provided)
+            state_service: Optional ProjectStateService (creates default if not provided)
+            boilerplate_service: Optional BoilerplateService (creates default if not provided)
+            lifecycle_service: Optional ProjectLifecycleService (creates default if not provided)
+            benchmark_service: Optional BenchmarkTrackingService (creates default if not provided)
         """
         self.sandbox_root = Path(sandbox_root).resolve()
         self.projects_dir = self.sandbox_root / "projects"
         self.projects_dir.mkdir(parents=True, exist_ok=True)
 
-        # Initialize services with dependency injection
-        self._git_cloner = GitCloner()
+        # Initialize or use injected services
+        self._git_cloner = git_cloner or GitCloner()
 
-        self.state_service = ProjectStateService(sandbox_root=self.sandbox_root)
-        self.boilerplate_service = BoilerplateService(git_cloner=self._git_cloner)
-        self.lifecycle_service = ProjectLifecycleService(
+        self.state_service = state_service or ProjectStateService(
+            sandbox_root=self.sandbox_root
+        )
+        self.boilerplate_service = boilerplate_service or BoilerplateService(
+            git_cloner=self._git_cloner
+        )
+        self.lifecycle_service = lifecycle_service or ProjectLifecycleService(
             sandbox_root=self.sandbox_root,
             state_service=self.state_service,
             boilerplate_service=self.boilerplate_service,
         )
-        self.benchmark_service = BenchmarkTrackingService(
+        self.benchmark_service = benchmark_service or BenchmarkTrackingService(
             state_service=self.state_service
         )
 
@@ -206,139 +219,6 @@ class SandboxManager:
         # Delegate to lifecycle service
         return self.lifecycle_service.get_project_path(name)
 
-    def _merge_boilerplate_contents(self, source: Path, dest: Path) -> None:
-        """
-        Merge contents from boilerplate clone into project directory.
-
-        Moves all files and directories from source to dest, excluding .git.
-
-        Args:
-            source: Source directory (boilerplate clone)
-            dest: Destination directory (project root)
-        """
-        for item in source.iterdir():
-            # Skip .git directory
-            if item.name == ".git":
-                continue
-
-            dest_item = dest / item.name
-
-            if item.is_dir():
-                # Move directory
-                if dest_item.exists():
-                    # Merge if directory exists
-                    shutil.copytree(item, dest_item, dirs_exist_ok=True)
-                else:
-                    shutil.move(str(item), str(dest_item))
-            else:
-                # Move file
-                shutil.move(str(item), str(dest_item))
-
-    def _create_project_structure(self, project_dir: Path) -> None:
-        """
-        Create standard project directory structure.
-
-        Creates subdirectories for organizing project files.
-
-        Args:
-            project_dir: Project root directory
-        """
-        # Standard directories
-        directories = [
-            "docs",
-            "src",
-            "tests",
-            "benchmarks",
-            ".gao-dev",  # For GAO-Dev metadata
-        ]
-
-        for dir_name in directories:
-            (project_dir / dir_name).mkdir(parents=True, exist_ok=True)
-
-    def _load_metadata(self, project_dir: Path) -> ProjectMetadata:
-        """
-        Load project metadata from .sandbox.yaml file.
-
-        Args:
-            project_dir: Project directory containing metadata file
-
-        Returns:
-            ProjectMetadata object
-
-        Raises:
-            FileNotFoundError: If metadata file doesn't exist
-            ValueError: If metadata is invalid
-        """
-        metadata_file = project_dir / METADATA_FILENAME
-
-        if not metadata_file.exists():
-            raise FileNotFoundError(f"Metadata file not found: {metadata_file}")
-
-        with open(metadata_file, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-
-        if not data:
-            raise ValueError(f"Empty or invalid metadata file: {metadata_file}")
-
-        return ProjectMetadata.from_dict(data)
-
-    def _save_metadata(self, project_dir: Path, metadata: ProjectMetadata) -> None:
-        """
-        Save project metadata to .sandbox.yaml file.
-
-        Args:
-            project_dir: Project directory to save metadata in
-            metadata: ProjectMetadata object to save
-        """
-        metadata_file = project_dir / METADATA_FILENAME
-
-        with open(metadata_file, "w", encoding="utf-8") as f:
-            yaml.safe_dump(
-                metadata.to_dict(),
-                f,
-                default_flow_style=False,
-                sort_keys=False,
-                allow_unicode=True,
-            )
-
-    def _validate_project_name(self, name: str) -> None:
-        """
-        Validate project name meets requirements.
-
-        Project names must:
-        - Be 3-50 characters long
-        - Start and end with alphanumeric character
-        - Contain only lowercase letters, numbers, and hyphens
-        - Not contain consecutive hyphens
-
-        Args:
-            name: Project name to validate
-
-        Raises:
-            InvalidProjectNameError: If name doesn't meet requirements
-        """
-        # Check length
-        if len(name) < MIN_PROJECT_NAME_LENGTH:
-            raise InvalidProjectNameError(
-                name, f"Must be at least {MIN_PROJECT_NAME_LENGTH} characters long"
-            )
-
-        if len(name) > MAX_PROJECT_NAME_LENGTH:
-            raise InvalidProjectNameError(
-                name, f"Must be at most {MAX_PROJECT_NAME_LENGTH} characters long"
-            )
-
-        # Check pattern (lowercase alphanumeric and hyphens only)
-        if not PROJECT_NAME_PATTERN.match(name):
-            raise InvalidProjectNameError(
-                name,
-                "Must start and end with alphanumeric character, "
-                "and contain only lowercase letters, numbers, and hyphens",
-            )
-
-        # Check for consecutive hyphens
-        if "--" in name:
-            raise InvalidProjectNameError(name, "Cannot contain consecutive hyphens")
 
     def update_status(
         self,
@@ -548,43 +428,6 @@ class SandboxManager:
             lifecycle_service=self.lifecycle_service,
         )
 
-    def _is_valid_transition(
-        self, current_status: ProjectStatus, new_status: ProjectStatus
-    ) -> bool:
-        """
-        Check if status transition is valid.
-
-        Valid transitions:
-        - ACTIVE -> COMPLETED, FAILED, ARCHIVED
-        - COMPLETED -> ACTIVE, ARCHIVED
-        - FAILED -> ACTIVE, ARCHIVED
-        - ARCHIVED -> ACTIVE
-        - Any status -> Same status (no-op)
-
-        Args:
-            current_status: Current project status
-            new_status: Desired new status
-
-        Returns:
-            True if transition is valid, False otherwise
-        """
-        # Same status is always valid (no-op)
-        if current_status == new_status:
-            return True
-
-        # Define valid transitions
-        valid_transitions = {
-            ProjectStatus.ACTIVE: {
-                ProjectStatus.COMPLETED,
-                ProjectStatus.FAILED,
-                ProjectStatus.ARCHIVED,
-            },
-            ProjectStatus.COMPLETED: {ProjectStatus.ACTIVE, ProjectStatus.ARCHIVED},
-            ProjectStatus.FAILED: {ProjectStatus.ACTIVE, ProjectStatus.ARCHIVED},
-            ProjectStatus.ARCHIVED: {ProjectStatus.ACTIVE},
-        }
-
-        return new_status in valid_transitions.get(current_status, set())
 
     def clean_project(
         self,
