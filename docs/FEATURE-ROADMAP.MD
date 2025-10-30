@@ -32,7 +32,7 @@
 - ensure everything is multiple pass at review from different useful persepticves
 
 - see also 
-    D:\GAO Agile Dev\docs\CONTEXT-TRACKING-ROADMAP.md
+    D:\GAO Agile Dev\docs\CONTEXT-TRACKING-ROADMAP.md <- gao-wisdom? this ties in with document lifecycle management also>
 
 
 - immediate bug fixes
