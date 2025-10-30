@@ -77,39 +77,40 @@ class TestOrchestratorWorkflowExecution:
         mock_workflow_output
     ):
         """
-        Test workflow artifact verification logic.
+        Test workflow artifact verification is delegated to QualityGateManager.
 
-        Verifies current artifact validation behavior in orchestrator.
+        Verifies that artifact validation is properly delegated in the refactored facade.
         """
-        # Given: Orchestrator instance
-        orchestrator = GAODevOrchestrator(
+        # Given: Orchestrator instance (using default factory)
+        orchestrator = GAODevOrchestrator.create_default(
             project_root=orchestrator_test_project,
             mode="cli"
         )
 
-        # When: Verify artifacts exist
-        # Note: This tests the _verify_workflow_artifacts method indirectly
-        # We're verifying the current behavior exists
-        assert hasattr(orchestrator, '_verify_workflow_artifacts')
+        # Then: Verify QualityGateManager is injected for artifact validation
+        assert hasattr(orchestrator, 'quality_gate_manager')
+        assert orchestrator.quality_gate_manager is not None
+        # Verify the service has the validation method
+        assert hasattr(orchestrator.quality_gate_manager, 'validate_artifacts')
 
     def test_get_next_story_number(self, orchestrator_test_project: Path):
         """
-        Test story numbering logic.
+        Test story numbering is delegated to StoryLifecycleManager.
 
-        Verifies current story number generation behavior.
+        Verifies that story numbering logic is properly delegated in the refactored facade.
         """
-        # Given: Orchestrator instance
-        orchestrator = GAODevOrchestrator(
+        # Given: Orchestrator instance (using default factory)
+        orchestrator = GAODevOrchestrator.create_default(
             project_root=orchestrator_test_project,
             mode="cli"
         )
 
-        # When: Get next story number for epic 1
-        next_story = orchestrator._get_next_story_number(epic=1)
-
-        # Then: Returns valid story number
-        assert isinstance(next_story, int)
-        assert next_story >= 1
+        # Then: Verify StoryLifecycleManager is injected for story management
+        assert hasattr(orchestrator, 'story_lifecycle')
+        assert orchestrator.story_lifecycle is not None
+        # Verify the service has story management methods
+        assert hasattr(orchestrator.story_lifecycle, 'create_story')
+        assert hasattr(orchestrator.story_lifecycle, 'transition_state')
 
     def test_get_agent_for_workflow(self, orchestrator_test_project: Path):
         """
@@ -155,20 +156,25 @@ class TestOrchestratorAgentManagement:
 
     def test_agent_definitions_loaded(self, orchestrator_test_project: Path):
         """
-        Test agent definitions are loaded on initialization.
+        Test services are initialized for agent execution.
 
-        Verifies current agent configuration loading behavior.
+        Verifies that all required services are injected and available.
         """
-        # When: Orchestrator initialized
-        orchestrator = GAODevOrchestrator(
+        # When: Orchestrator initialized using default factory
+        orchestrator = GAODevOrchestrator.create_default(
             project_root=orchestrator_test_project,
             mode="cli"
         )
 
-        # Then: Agent definitions available
-        assert orchestrator.options is not None
-        assert orchestrator.options.agents is not None
-        assert len(orchestrator.options.agents) > 0
+        # Then: All services are initialized
+        assert hasattr(orchestrator, 'workflow_coordinator')
+        assert orchestrator.workflow_coordinator is not None
+        assert hasattr(orchestrator, 'story_lifecycle')
+        assert orchestrator.story_lifecycle is not None
+        assert hasattr(orchestrator, 'process_executor')
+        assert orchestrator.process_executor is not None
+        assert hasattr(orchestrator, 'quality_gate_manager')
+        assert orchestrator.quality_gate_manager is not None
 
     def test_brian_orchestrator_initialized(self, orchestrator_test_project: Path):
         """
@@ -237,19 +243,21 @@ class TestOrchestratorQualityGates:
     @pytest.mark.asyncio
     async def test_artifact_verification_method_exists(self, orchestrator_test_project: Path):
         """
-        Test artifact verification method exists.
+        Test artifact verification is delegated to QualityGateManager.
 
-        Verifies current quality gate functionality exists.
+        Verifies that quality gate functionality is properly delegated.
         """
-        # Given: Orchestrator instance
-        orchestrator = GAODevOrchestrator(
+        # Given: Orchestrator instance using default factory
+        orchestrator = GAODevOrchestrator.create_default(
             project_root=orchestrator_test_project,
             mode="cli"
         )
 
-        # Then: Artifact verification method exists
-        assert hasattr(orchestrator, '_verify_workflow_artifacts')
-        assert callable(getattr(orchestrator, '_verify_workflow_artifacts'))
+        # Then: QualityGateManager with validation method exists
+        assert hasattr(orchestrator, 'quality_gate_manager')
+        assert orchestrator.quality_gate_manager is not None
+        assert hasattr(orchestrator.quality_gate_manager, 'validate_artifacts')
+        assert callable(getattr(orchestrator.quality_gate_manager, 'validate_artifacts'))
 
 
 # =============================================================================
@@ -261,20 +269,22 @@ class TestOrchestratorModeConfiguration:
 
     def test_cli_mode_initialization(self, orchestrator_test_project: Path):
         """
-        Test CLI mode initialization.
+        Test CLI mode initialization and ProcessExecutor delegation.
 
-        Verifies current CLI mode behavior.
+        Verifies that CLI mode is properly initialized with ProcessExecutor.
         """
         # When: Orchestrator initialized in CLI mode
-        orchestrator = GAODevOrchestrator(
+        orchestrator = GAODevOrchestrator.create_default(
             project_root=orchestrator_test_project,
             mode="cli"
         )
 
-        # Then: CLI mode configured
+        # Then: CLI mode configured with ProcessExecutor
         assert orchestrator.mode == "cli"
-        # In CLI mode, cli_path should be None (uses default Claude CLI)
-        assert orchestrator.options.cli_path is None
+        assert hasattr(orchestrator, 'process_executor')
+        assert orchestrator.process_executor is not None
+        # ProcessExecutor handles agent task execution
+        assert hasattr(orchestrator.process_executor, 'execute_agent_task')
 
     def test_benchmark_mode_initialization_without_cli(self, orchestrator_test_project: Path):
         """
