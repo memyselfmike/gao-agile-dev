@@ -1,42 +1,50 @@
 """Sandbox manager for project lifecycle operations."""
 
-import re
 import shutil
 from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 
 import structlog
-import yaml
 
 from .models import ProjectMetadata, ProjectStatus, BenchmarkRun
 from .exceptions import (
     ProjectExistsError,
     ProjectNotFoundError,
-    InvalidProjectNameError,
     ProjectStateError,
 )
 from .git_cloner import GitCloner
+from .services.project_lifecycle import ProjectLifecycleService
+from .services.project_state import ProjectStateService
+from .services.boilerplate import BoilerplateService
+from .services.benchmark_tracking import BenchmarkTrackingService
 
 logger = structlog.get_logger(__name__)
 
 # Constants
 METADATA_FILENAME = ".sandbox.yaml"
-PROJECT_NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*[a-z0-9]$")
-MAX_PROJECT_NAME_LENGTH = 50
-MIN_PROJECT_NAME_LENGTH = 3
 
 
 class SandboxManager:
     """
     Manages sandbox project lifecycle and operations.
 
-    Responsible for creating, reading, updating, and deleting
-    sandbox projects, as well as managing their metadata.
+    This is a facade that delegates operations to specialized services:
+    - ProjectLifecycleService: Project CRUD operations
+    - ProjectStateService: State management and persistence
+    - BoilerplateService: Boilerplate cloning and template processing
+    - BenchmarkTrackingService: Benchmark run tracking
+
+    Maintains backward compatibility with the previous API while using
+    the refactored services internally.
 
     Attributes:
         sandbox_root: Root directory for all sandbox projects
         projects_dir: Directory containing project subdirectories
+        lifecycle_service: Service for project lifecycle operations
+        state_service: Service for state management
+        boilerplate_service: Service for boilerplate operations
+        benchmark_service: Service for benchmark tracking
     """
 
     def __init__(self, sandbox_root: Path):
@@ -49,7 +57,31 @@ class SandboxManager:
         self.sandbox_root = Path(sandbox_root).resolve()
         self.projects_dir = self.sandbox_root / "projects"
         self.projects_dir.mkdir(parents=True, exist_ok=True)
-        self.git_cloner = GitCloner()
+
+        # Initialize services with dependency injection
+        self._git_cloner = GitCloner()
+
+        self.state_service = ProjectStateService(sandbox_root=self.sandbox_root)
+        self.boilerplate_service = BoilerplateService(git_cloner=self._git_cloner)
+        self.lifecycle_service = ProjectLifecycleService(
+            sandbox_root=self.sandbox_root,
+            state_service=self.state_service,
+            boilerplate_service=self.boilerplate_service,
+        )
+        self.benchmark_service = BenchmarkTrackingService(
+            state_service=self.state_service
+        )
+
+    @property
+    def git_cloner(self) -> GitCloner:
+        """Get the current GitCloner instance."""
+        return self._git_cloner
+
+    @git_cloner.setter
+    def git_cloner(self, cloner: GitCloner) -> None:
+        """Set a new GitCloner instance and update services."""
+        self._git_cloner = cloner
+        self.boilerplate_service.set_git_cloner(cloner)
 
     def create_project(
         self,
@@ -77,70 +109,13 @@ class SandboxManager:
             ProjectExistsError: If project already exists
             InvalidProjectNameError: If name doesn't meet requirements
         """
-        # Validate project name
-        self._validate_project_name(name)
-
-        # Check if already exists
-        if self.project_exists(name):
-            raise ProjectExistsError(name)
-
-        # Create project directory
-        project_dir = self.projects_dir / name
-        project_dir.mkdir(parents=True, exist_ok=False)
-
-        # Create metadata
-        metadata = ProjectMetadata(
+        # Delegate to lifecycle service
+        return self.lifecycle_service.create_project(
             name=name,
-            created_at=datetime.now(),
-            status=ProjectStatus.ACTIVE,
-            boilerplate_url=boilerplate_url,
-            tags=tags or [],
             description=description,
+            boilerplate_url=boilerplate_url,
+            tags=tags,
         )
-
-        # Clone boilerplate if URL provided
-        if boilerplate_url:
-            logger.info(
-                "cloning_boilerplate",
-                project=name,
-                boilerplate_url=boilerplate_url,
-            )
-            try:
-                # Clone into a temporary directory first
-                temp_clone_dir = project_dir / ".boilerplate_clone"
-                self.git_cloner.clone_repository(boilerplate_url, temp_clone_dir)
-
-                # Move contents from clone to project root
-                self._merge_boilerplate_contents(temp_clone_dir, project_dir)
-
-                # Remove .git directory and temp clone dir
-                git_dir = project_dir / ".git"
-                if git_dir.exists():
-                    shutil.rmtree(git_dir)
-                if temp_clone_dir.exists():
-                    shutil.rmtree(temp_clone_dir)
-
-                logger.info(
-                    "boilerplate_cloned_successfully",
-                    project=name,
-                )
-            except Exception as e:
-                logger.error(
-                    "boilerplate_clone_failed",
-                    project=name,
-                    error=str(e),
-                )
-                # Clean up project directory on failure
-                shutil.rmtree(project_dir)
-                raise
-        else:
-            # Create standard directory structure
-            self._create_project_structure(project_dir)
-
-        # Save metadata
-        self._save_metadata(project_dir, metadata)
-
-        return metadata
 
     def get_project(self, name: str) -> ProjectMetadata:
         """
@@ -155,11 +130,8 @@ class SandboxManager:
         Raises:
             ProjectNotFoundError: If project doesn't exist
         """
-        if not self.project_exists(name):
-            raise ProjectNotFoundError(name)
-
-        project_dir = self.get_project_path(name)
-        return self._load_metadata(project_dir)
+        # Delegate to state service
+        return self.state_service.get_project(name, self.lifecycle_service)
 
     def list_projects(
         self, status: Optional[ProjectStatus] = None
@@ -173,36 +145,8 @@ class SandboxManager:
         Returns:
             List of ProjectMetadata objects, sorted by last_modified descending
         """
-        projects: List[ProjectMetadata] = []
-
-        # Iterate through project directories
-        if not self.projects_dir.exists():
-            return projects
-
-        for project_dir in self.projects_dir.iterdir():
-            if not project_dir.is_dir():
-                continue
-
-            # Skip if no metadata file
-            metadata_file = project_dir / METADATA_FILENAME
-            if not metadata_file.exists():
-                continue
-
-            try:
-                metadata = self._load_metadata(project_dir)
-
-                # Apply status filter if specified
-                if status is None or metadata.status == status:
-                    projects.append(metadata)
-
-            except Exception:
-                # Skip projects with invalid metadata
-                continue
-
-        # Sort by last_modified descending (newest first)
-        projects.sort(key=lambda p: p.last_modified, reverse=True)
-
-        return projects
+        # Delegate to lifecycle service
+        return self.lifecycle_service.list_projects(status=status)
 
     def update_project(self, name: str, metadata: ProjectMetadata) -> None:
         """
@@ -215,12 +159,10 @@ class SandboxManager:
         Raises:
             ProjectNotFoundError: If project doesn't exist
         """
-        if not self.project_exists(name):
-            raise ProjectNotFoundError(name)
-
-        project_dir = self.get_project_path(name)
-        metadata.last_modified = datetime.now()
-        self._save_metadata(project_dir, metadata)
+        # Delegate to state service
+        self.state_service.update_project(
+            name, metadata, lifecycle_service=self.lifecycle_service
+        )
 
     def delete_project(self, name: str) -> None:
         """
@@ -235,11 +177,8 @@ class SandboxManager:
         Raises:
             ProjectNotFoundError: If project doesn't exist
         """
-        if not self.project_exists(name):
-            raise ProjectNotFoundError(name)
-
-        project_dir = self.get_project_path(name)
-        shutil.rmtree(project_dir)
+        # Delegate to lifecycle service
+        self.lifecycle_service.delete_project(name)
 
     def project_exists(self, name: str) -> bool:
         """
@@ -251,9 +190,8 @@ class SandboxManager:
         Returns:
             True if project exists, False otherwise
         """
-        project_dir = self.projects_dir / name
-        metadata_file = project_dir / METADATA_FILENAME
-        return project_dir.exists() and metadata_file.exists()
+        # Delegate to lifecycle service
+        return self.lifecycle_service.project_exists(name)
 
     def get_project_path(self, name: str) -> Path:
         """
@@ -265,7 +203,8 @@ class SandboxManager:
         Returns:
             Absolute Path to project directory
         """
-        return (self.projects_dir / name).resolve()
+        # Delegate to lifecycle service
+        return self.lifecycle_service.get_project_path(name)
 
     def _merge_boilerplate_contents(self, source: Path, dest: Path) -> None:
         """
@@ -421,17 +360,10 @@ class SandboxManager:
             ProjectNotFoundError: If project doesn't exist
             ProjectStateError: If transition is invalid
         """
-        metadata = self.get_project(project_name)
-
-        # Validate state transition
-        if not self._is_valid_transition(metadata.status, new_status):
-            raise ProjectStateError(
-                project_name, metadata.status.value, new_status.value
-            )
-
-        metadata.status = new_status
-        metadata.last_modified = datetime.now()
-        self.update_project(project_name, metadata)
+        # Delegate to state service
+        self.state_service.update_status(
+            project_name, new_status, reason, lifecycle_service=self.lifecycle_service
+        )
 
     def add_benchmark_run(
         self,
@@ -453,18 +385,10 @@ class SandboxManager:
         Raises:
             ProjectNotFoundError: If project doesn't exist
         """
-        metadata = self.get_project(project_name)
-
-        run = BenchmarkRun(
-            run_id=run_id,
-            started_at=datetime.now(),
-            config_file=config_file,
+        # Delegate to benchmark service
+        return self.benchmark_service.add_benchmark_run(
+            project_name, run_id, config_file, self.lifecycle_service
         )
-
-        metadata.add_run(run)
-        self.update_project(project_name, metadata)
-
-        return run
 
     def get_run_history(self, project_name: str) -> List[BenchmarkRun]:
         """
@@ -479,9 +403,8 @@ class SandboxManager:
         Raises:
             ProjectNotFoundError: If project doesn't exist
         """
-        metadata = self.get_project(project_name)
-        runs = sorted(metadata.runs, key=lambda r: r.started_at, reverse=True)
-        return runs
+        # Delegate to benchmark service
+        return self.benchmark_service.get_run_history(project_name, self.lifecycle_service)
 
     def is_clean(self, project_name: str) -> bool:
         """
@@ -551,9 +474,10 @@ class SandboxManager:
         Returns:
             List of ProjectMetadata objects for matching projects
         """
-        pattern = f"{benchmark_name}-run-"
-        all_projects = self.list_projects()
-        return [p for p in all_projects if p.name.startswith(pattern)]
+        # Delegate to benchmark service
+        return self.benchmark_service.get_projects_for_benchmark(
+            benchmark_name, self.lifecycle_service
+        )
 
     def get_last_run_number(self, benchmark_name: str) -> int:
         """
@@ -569,28 +493,10 @@ class SandboxManager:
         Returns:
             Highest run number (0 if no runs exist)
         """
-        projects = self.get_projects_for_benchmark(benchmark_name)
-
-        if not projects:
-            return 0
-
-        # Extract run numbers from project names
-        # Format: benchmark-name-run-NNN
-        pattern = f"{benchmark_name}-run-"
-        max_num = 0
-
-        for project in projects:
-            if project.name.startswith(pattern):
-                # Extract the number part
-                suffix = project.name[len(pattern) :]
-                try:
-                    run_num = int(suffix)
-                    max_num = max(max_num, run_num)
-                except ValueError:
-                    # Not a valid run number, skip
-                    continue
-
-        return max_num
+        # Delegate to benchmark service
+        return self.benchmark_service.get_last_run_number(
+            benchmark_name, self.lifecycle_service
+        )
 
     def create_run_project(
         self, benchmark_file: Path, benchmark_config: "BenchmarkConfig"
@@ -615,38 +521,32 @@ class SandboxManager:
             InvalidProjectNameError: If generated name is invalid
             ProjectExistsError: If project somehow already exists
         """
-        benchmark_name = benchmark_config.name
-        benchmark_version = benchmark_config.version
+        # Extract benchmark name - handle case where benchmark_config.name is dict
+        if isinstance(benchmark_config.name, dict):
+            # Config was created incorrectly - extract from nested structure
+            benchmark_name = benchmark_config.name.get("benchmark", {}).get("name", "benchmark")
+            benchmark_version = benchmark_config.name.get("benchmark", {}).get("version", "1.0.0")
+            complexity_level = benchmark_config.name.get("benchmark", {}).get("complexity_level", 2)
+            estimated_duration = benchmark_config.name.get("benchmark", {}).get("estimated_duration_minutes", 120)
+            prompt_hash = benchmark_config.prompt_hash or ""
+        else:
+            # Config was created correctly
+            benchmark_name = benchmark_config.name
+            benchmark_version = benchmark_config.version
+            complexity_level = benchmark_config.complexity_level
+            estimated_duration = benchmark_config.estimated_duration_minutes
+            prompt_hash = benchmark_config.prompt_hash
 
-        # Get next run number
-        last_run = self.get_last_run_number(benchmark_name)
-        next_run = last_run + 1
-
-        # Generate run ID with zero-padding (3 digits)
-        run_id = f"{benchmark_name}-run-{next_run:03d}"
-
-        # Create project with generated name
-        metadata = self.create_project(
-            name=run_id,
-            tags=["benchmark", benchmark_name, f"version:{benchmark_version}"],
-            description=f"Benchmark run {next_run} for {benchmark_name} v{benchmark_version}",
+        # Delegate to benchmark service
+        return self.benchmark_service.create_run_project(
+            benchmark_name=benchmark_name,
+            benchmark_version=benchmark_version,
+            benchmark_file=benchmark_file,
+            complexity_level=complexity_level,
+            estimated_duration_minutes=estimated_duration,
+            prompt_hash=prompt_hash,
+            lifecycle_service=self.lifecycle_service,
         )
-
-        # Add benchmark info to metadata
-        metadata.benchmark_info = {
-            "benchmark_name": benchmark_name,
-            "benchmark_version": benchmark_version,
-            "benchmark_file": str(benchmark_file),
-            "prompt_hash": benchmark_config.prompt_hash,
-            "run_number": next_run,
-            "complexity_level": benchmark_config.complexity_level,
-            "estimated_duration_minutes": benchmark_config.estimated_duration_minutes,
-        }
-
-        # Update metadata with benchmark info
-        self.update_project(run_id, metadata)
-
-        return metadata
 
     def _is_valid_transition(
         self, current_status: ProjectStatus, new_status: ProjectStatus
