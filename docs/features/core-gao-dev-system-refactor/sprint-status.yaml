@@ -280,7 +280,7 @@ epics:
 
   - epic_number: 6
     name: "Legacy Cleanup & God Class Refactoring (Completing Epic 2)"
-    status: ready
+    status: in_progress
     total_story_points: 47
     completed_story_points: 0
     remaining_story_points: 47
@@ -320,11 +320,15 @@ epics:
         completed_date: "2025-10-30"
         commit: "TBD"
       - number: 3
-        status: ready
+        status: done
         name: "Extract ProcessExecutor Service"
         file: "docs/features/core-gao-dev-system-refactor/stories/epic-6/story-6.3.md"
         story_points: 3
-        notes: "Extract subprocess execution logic"
+        notes: "ProcessExecutor extracted (180 lines), 17/17 tests passing, orchestrator integrated"
+        assigned_to: "Amelia"
+        started_date: "2025-10-30"
+        completed_date: "2025-10-30"
+        commit: "TBD"
       - number: 4
         status: ready
         name: "Extract QualityGateManager Service"
@@ -373,7 +377,7 @@ epics:
         notes: "Update all docs to match implementation"
 
 current_epic: 6
-current_story: 2
+current_story: 3
 next_epic: 6
 next_story: 3
 
@@ -412,11 +416,11 @@ progress:
     points_percentage: 100
   epic_6:
     total_stories: 10
-    completed_stories: 2
-    completion_percentage: 20
+    completed_stories: 3
+    completion_percentage: 30
     total_points: 47
-    completed_points: 10
-    points_percentage: 21
+    completed_points: 13
+    points_percentage: 28
 
 notes: |
   ⚠️ IMPORTANT DISCOVERY (2025-10-30):

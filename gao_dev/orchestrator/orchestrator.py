@@ -25,6 +25,7 @@ from ..core.workflow_registry import WorkflowRegistry
 from ..core.events.event_bus import EventBus
 from ..core.services.workflow_coordinator import WorkflowCoordinator
 from ..core.services.story_lifecycle import StoryLifecycleManager
+from ..core.services.process_executor import ProcessExecutor
 
 logger = structlog.get_logger()
 
@@ -152,12 +153,20 @@ class GAODevOrchestrator:
             event_bus=self.event_bus
         )
 
+        # Story 6.3: Initialize ProcessExecutor service
+        self.process_executor = ProcessExecutor(
+            project_root=project_root,
+            cli_path=cli_path,
+            api_key=self.api_key
+        )
+
         logger.info(
             "orchestrator_initialized",
             mode=mode,
             project_root=str(project_root),
             workflow_coordinator_enabled=True,
-            story_lifecycle_enabled=True
+            story_lifecycle_enabled=True,
+            process_executor_enabled=True
         )
 
     def _get_orchestrator_prompt(self) -> str:
@@ -249,8 +258,8 @@ class GAODevOrchestrator:
             Message chunks from the agent
         """
         if self.mode == "benchmark":
-            # Story 4.8: Shell out to Claude CLI for benchmark execution
-            async for chunk in self._execute_task_subprocess(task):
+            # Story 6.3: Use ProcessExecutor service for subprocess execution
+            async for chunk in self.process_executor.execute_agent_task(task):
                 yield chunk
         else:
             # Interactive mode: use SDK client
@@ -268,6 +277,8 @@ class GAODevOrchestrator:
 
     async def _execute_task_subprocess(self, task: str) -> AsyncGenerator[str, None]:
         """
+        DEPRECATED (Story 6.3): Use ProcessExecutor.execute_agent_task() instead.
+
         Execute task by shelling out to Claude CLI (for benchmark mode).
 
         Args:
