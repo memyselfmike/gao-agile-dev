@@ -1,6 +1,7 @@
 """Service for managing project lifecycle operations."""
 
 import re
+import shutil
 from pathlib import Path
 from typing import List, Optional
 
@@ -126,13 +127,7 @@ class ProjectLifecycleService:
             return metadata
 
         except Exception as e:
-            logger.error(
-                "project_creation_failed",
-                project=name,
-                error=str(e),
-            )
-            # Clean up project directory on failure
-            import shutil
+            logger.error("project_creation_failed", project=name, error=str(e))
             if project_dir.exists():
                 shutil.rmtree(project_dir)
             raise
@@ -152,12 +147,8 @@ class ProjectLifecycleService:
         """
         if not self.project_exists(name):
             raise ProjectNotFoundError(name)
-
         project_dir = self.get_project_path(name)
-
-        import shutil
         shutil.rmtree(project_dir)
-
         logger.info("project_deleted", project=name)
 
     def list_projects(
@@ -237,63 +228,25 @@ class ProjectLifecycleService:
         return (self.projects_dir / name).resolve()
 
     def _validate_project_name(self, name: str) -> None:
-        """
-        Validate project name meets requirements.
-
-        Project names must:
-        - Be 3-50 characters long
-        - Start and end with alphanumeric character
-        - Contain only lowercase letters, numbers, and hyphens
-        - Not contain consecutive hyphens
-
-        Args:
-            name: Project name to validate
-
-        Raises:
-            InvalidProjectNameError: If name doesn't meet requirements
-        """
-        # Check length
+        """Validate project name (3-50 chars, alphanumeric + hyphens, no consecutive hyphens)."""
         if len(name) < MIN_PROJECT_NAME_LENGTH:
             raise InvalidProjectNameError(
                 name, f"Must be at least {MIN_PROJECT_NAME_LENGTH} characters long"
             )
-
         if len(name) > MAX_PROJECT_NAME_LENGTH:
             raise InvalidProjectNameError(
                 name, f"Must be at most {MAX_PROJECT_NAME_LENGTH} characters long"
             )
-
-        # Check pattern (lowercase alphanumeric and hyphens only)
         if not PROJECT_NAME_PATTERN.match(name):
             raise InvalidProjectNameError(
                 name,
-                "Must start and end with alphanumeric character, "
-                "and contain only lowercase letters, numbers, and hyphens",
+                "Must start/end with alphanumeric, contain only [a-z0-9-]",
             )
-
-        # Check for consecutive hyphens
         if "--" in name:
             raise InvalidProjectNameError(name, "Cannot contain consecutive hyphens")
 
     def _create_project_structure(self, project_dir: Path) -> None:
-        """
-        Create standard project directory structure.
-
-        Creates subdirectories for organizing project files.
-
-        Args:
-            project_dir: Project root directory
-        """
-        # Standard directories
-        directories = [
-            "docs",
-            "src",
-            "tests",
-            "benchmarks",
-            ".gao-dev",  # For GAO-Dev metadata
-        ]
-
-        for dir_name in directories:
+        """Create standard project directory structure (docs, src, tests, benchmarks, .gao-dev)."""
+        for dir_name in ["docs", "src", "tests", "benchmarks", ".gao-dev"]:
             (project_dir / dir_name).mkdir(parents=True, exist_ok=True)
-
         logger.info("project_structure_created", project_dir=str(project_dir))

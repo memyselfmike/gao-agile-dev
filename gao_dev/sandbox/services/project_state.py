@@ -90,27 +90,19 @@ class ProjectStateService:
             raise ValueError("lifecycle_service is required")
 
         metadata = self.get_project(project_name, lifecycle_service)
-
-        # Validate state transition
         if not self._is_valid_transition(metadata.status, new_status):
             raise ProjectStateError(
                 project_name, metadata.status.value, new_status.value
             )
-
+        old_status = metadata.status.value
         metadata.status = new_status
         metadata.last_modified = datetime.now()
-
         project_dir = lifecycle_service.get_project_path(project_name)
         self.save_metadata(project_dir, metadata)
-
         logger.info(
-            "project_status_updated",
-            project=project_name,
-            old_status=metadata.status.value,
-            new_status=new_status.value,
-            reason=reason,
+            "project_status_updated", project=project_name, old_status=old_status,
+            new_status=new_status.value, reason=reason
         )
-
         return metadata
 
     def update_project(
