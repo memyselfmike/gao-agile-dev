@@ -4,6 +4,8 @@ Unit tests for workflow build strategies.
 Tests the Strategy Pattern implementation for workflow selection,
 including ScaleLevelStrategy, ProjectTypeStrategy, CustomWorkflowStrategy,
 and WorkflowStrategyRegistry.
+
+Story 5.4: Updated to use orchestrator.models instead of brian_orchestrator.
 """
 
 import pytest
@@ -16,7 +18,7 @@ from gao_dev.core.strategies.workflow_strategies import (
     CustomWorkflowStrategy
 )
 from gao_dev.core.models.workflow_context import WorkflowContext
-from gao_dev.orchestrator.brian_orchestrator import ScaleLevel, ProjectType
+from gao_dev.orchestrator.models import ScaleLevel, ProjectType
 
 
 class TestWorkflowStrategyRegistry:
@@ -76,8 +78,8 @@ class TestWorkflowStrategyRegistry:
         # Context with custom workflows should match CustomStrategy (higher priority)
         context = WorkflowContext(
             initial_prompt="test",
-            scale_level=ScaleLevel.LEVEL_2,
-            custom_workflows=["workflow1", "workflow2"]
+            custom_workflows=["workflow1", "workflow2"],
+            metadata={"scale_level": ScaleLevel.LEVEL_2.value}
         )
 
         strategy = registry.get_strategy(context)

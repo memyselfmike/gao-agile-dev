@@ -4,6 +4,8 @@ Workflow build strategies implementing the Strategy Pattern.
 This module provides concrete implementations of IWorkflowBuildStrategy
 for different workflow selection scenarios: scale-level based, project-type
 based, and custom workflow sequences.
+
+Story 5.4: Updated to use orchestrator.models instead of brian_orchestrator.
 """
 
 from typing import List, Optional, Dict
@@ -12,7 +14,7 @@ import structlog
 from ..interfaces.workflow import IWorkflowBuildStrategy, IWorkflowRegistry
 from ..models.workflow_context import WorkflowContext
 from ..legacy_models import WorkflowInfo
-from ...orchestrator.brian_orchestrator import (
+from ...orchestrator.models import (
     ScaleLevel,
     ProjectType,
     WorkflowSequence
@@ -73,7 +75,7 @@ class WorkflowStrategyRegistry:
                 logger.info(
                     "workflow_strategy_selected",
                     strategy=strategy.__class__.__name__,
-                    scale_level=context.scale_level.value if context.scale_level else None,
+                    scale_level=context.scale_level,
                     project_type=context.project_type.value if context.project_type else None
                 )
                 return strategy
