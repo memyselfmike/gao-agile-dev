@@ -17,7 +17,7 @@ import json
 from anthropic import Anthropic
 
 from ..core.workflow_registry import WorkflowRegistry
-from ..core.models import WorkflowInfo
+from ..core.legacy_models import WorkflowInfo
 
 
 logger = structlog.get_logger()

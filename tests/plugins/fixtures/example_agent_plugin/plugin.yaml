@@ -1,0 +1,11 @@
+name: example-agent-plugin
+version: 1.0.0
+type: agent
+entry_point: example_agent_plugin.agent_plugin.ExampleAgentPlugin
+description: "Example agent plugin for testing and documentation"
+author: "GAO-Dev Test Suite"
+enabled: true
+permissions:
+  - file:read
+  - hook:register
+timeout_seconds: 30

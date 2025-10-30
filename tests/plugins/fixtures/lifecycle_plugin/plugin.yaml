@@ -1,0 +1,7 @@
+name: lifecycle-test-plugin
+version: 1.0.0
+type: tool
+entry_point: lifecycle_plugin.plugin.LifecycleTestPlugin
+description: "A test plugin with lifecycle hooks"
+author: "GAO-Dev Test Suite"
+enabled: true

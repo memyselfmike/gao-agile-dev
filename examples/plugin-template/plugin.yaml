@@ -1,0 +1,27 @@
+# GAO-Dev Plugin Configuration Template
+#
+# Replace placeholders with your plugin details:
+# - MY_PLUGIN_NAME: kebab-case name (my-custom-plugin)
+# - MY_ENTRY_POINT: Python path (my_plugin.plugin.MyPlugin)
+# - YOUR_NAME: Your name or organization
+
+name: MY_PLUGIN_NAME
+version: 1.0.0
+type: agent  # Options: agent, workflow, methodology, tool
+entry_point: MY_ENTRY_POINT
+description: "Brief description of what your plugin does"
+author: "YOUR_NAME"
+enabled: true
+
+# Declare required permissions
+permissions:
+  - file:read
+  # - file:write
+  # - network:request
+  # - subprocess:execute
+  # - hook:register
+  # - config:read
+  # - database:write
+
+# Plugin initialization timeout (seconds)
+timeout_seconds: 30

@@ -1,0 +1,7 @@
+name: failing-init-plugin
+version: 1.0.0
+type: tool
+entry_point: failing_init_plugin.plugin.FailingInitPlugin
+description: "A test plugin that fails initialization"
+author: "GAO-Dev Test Suite"
+enabled: true

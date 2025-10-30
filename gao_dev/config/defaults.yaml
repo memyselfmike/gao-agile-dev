@@ -33,3 +33,14 @@ log_format: "json"
 # Claude Settings
 claude_model: "claude-sonnet-4"
 claude_max_tokens: 8000
+
+# Plugin Settings
+plugins:
+  enabled: true
+  auto_discover: true
+  directories:
+    - ./plugins
+    - ~/.gao-dev/plugins
+  security:
+    sandboxing: true
+    allowed_modules: []

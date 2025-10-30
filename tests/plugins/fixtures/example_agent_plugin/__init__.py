@@ -1,0 +1,1 @@
+"""Example agent plugin package."""
