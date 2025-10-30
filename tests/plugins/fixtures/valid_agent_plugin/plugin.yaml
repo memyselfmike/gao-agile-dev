@@ -1,0 +1,9 @@
+name: test-agent-plugin
+version: 1.0.0
+type: agent
+entry_point: valid_agent_plugin.agent.TestAgent
+description: "A test agent plugin for unit tests"
+author: "GAO-Dev Test Suite"
+dependencies:
+  - pytest>=8.0.0
+enabled: true

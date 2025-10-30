@@ -53,6 +53,13 @@ from .orchestrator import (
     IOrchestrator,
 )
 
+# Plugin interfaces
+from .plugin import (
+    IPluginDiscovery,
+    IPluginLoader,
+    IPluginRegistry,
+)
+
 __all__ = [
     # Agent
     "IAgent",
@@ -72,4 +79,8 @@ __all__ = [
     "IMethodologyRegistry",
     # Orchestrator
     "IOrchestrator",
+    # Plugin
+    "IPluginDiscovery",
+    "IPluginLoader",
+    "IPluginRegistry",
 ]

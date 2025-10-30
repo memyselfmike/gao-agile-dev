@@ -1,0 +1,1 @@
+"""Valid test agent plugin."""
