@@ -24,6 +24,7 @@ from ..core.config_loader import ConfigLoader
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.events.event_bus import EventBus
 from ..core.services.workflow_coordinator import WorkflowCoordinator
+from ..core.services.story_lifecycle import StoryLifecycleManager
 
 logger = structlog.get_logger()
 
@@ -143,11 +144,20 @@ class GAODevOrchestrator:
             max_retries=3
         )
 
+        # Story 6.2: Initialize StoryLifecycleManager service
+        # Note: Story repository will be added in future story (Epic 6.6)
+        # For now, using None as placeholder
+        self.story_lifecycle = StoryLifecycleManager(
+            story_repository=None,  # TODO: Add in Story 6.6
+            event_bus=self.event_bus
+        )
+
         logger.info(
             "orchestrator_initialized",
             mode=mode,
             project_root=str(project_root),
-            workflow_coordinator_enabled=True
+            workflow_coordinator_enabled=True,
+            story_lifecycle_enabled=True
         )
 
     def _get_orchestrator_prompt(self) -> str:
@@ -525,6 +535,9 @@ Murat should:
         """
         Execute complete story lifecycle with QA validation.
 
+        DEPRECATED (Story 6.2): Story lifecycle logic will move to StoryLifecycleManager.
+        This method will be refactored in Story 6.5 to delegate to the service.
+
         This is the core agile workflow: Bob -> Amelia -> Murat -> Commit
 
         Workflow:
@@ -612,6 +625,9 @@ Murat should:
     ) -> EpicResult:
         """
         Execute all stories in an epic sequentially.
+
+        DEPRECATED (Story 6.2): Epic tracking logic will move to StoryLifecycleManager.
+        This method will be refactored in Story 6.5 to delegate to the service.
 
         Args:
             epic: Epic number

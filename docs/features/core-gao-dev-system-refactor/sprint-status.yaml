@@ -310,11 +310,15 @@ epics:
         completed_date: "2025-10-30"
         commit: "TBD"
       - number: 2
-        status: ready
+        status: done
         name: "Extract StoryLifecycleManager Service"
         file: "docs/features/core-gao-dev-system-refactor/stories/epic-6/story-6.2.md"
         story_points: 5
-        notes: "Extract story/epic lifecycle management"
+        notes: "StoryLifecycleManager extracted (172 lines), 18/18 tests passing, orchestrator integrated"
+        assigned_to: "Amelia"
+        started_date: "2025-10-30"
+        completed_date: "2025-10-30"
+        commit: "TBD"
       - number: 3
         status: ready
         name: "Extract ProcessExecutor Service"
@@ -369,9 +373,9 @@ epics:
         notes: "Update all docs to match implementation"
 
 current_epic: 6
-current_story: 1
+current_story: 2
 next_epic: 6
-next_story: 2
+next_story: 3
 
 progress:
   epic_1:
@@ -408,11 +412,11 @@ progress:
     points_percentage: 100
   epic_6:
     total_stories: 10
-    completed_stories: 1
-    completion_percentage: 10
+    completed_stories: 2
+    completion_percentage: 20
     total_points: 47
-    completed_points: 5
-    points_percentage: 11
+    completed_points: 10
+    points_percentage: 21
 
 notes: |
   ⚠️ IMPORTANT DISCOVERY (2025-10-30):
