@@ -25,7 +25,6 @@ class ProjectStateService:
     Responsible for:
     - Loading and saving project metadata
     - Managing project status transitions
-    - Updating project metadata
 
     Attributes:
         sandbox_root: Root directory for all sandbox projects
@@ -131,7 +130,6 @@ class ProjectStateService:
         project_dir = lifecycle_service.get_project_path(project_name)
         metadata.last_modified = datetime.now()
         self.save_metadata(project_dir, metadata)
-
         logger.info("project_metadata_updated", project=project_name)
 
     def load_metadata(self, project_dir: Path) -> ProjectMetadata:
@@ -152,14 +150,11 @@ class ProjectStateService:
 
         if not metadata_file.exists():
             raise FileNotFoundError(f"Metadata file not found: {metadata_file}")
-
         with open(metadata_file, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         if not data:
             raise ValueError(f"Empty or invalid metadata file: {metadata_file}")
-
-        logger.debug("metadata_loaded", project_dir=str(project_dir))
 
         return ProjectMetadata.from_dict(data)
 
@@ -213,7 +208,6 @@ class ProjectStateService:
         )
 
         logger.info("metadata_created", project=name)
-
         return metadata
 
     def _is_valid_transition(
@@ -236,11 +230,9 @@ class ProjectStateService:
         Returns:
             True if transition is valid, False otherwise
         """
-        # Same status is always valid (no-op)
         if current_status == new_status:
             return True
 
-        # Define valid transitions
         valid_transitions = {
             ProjectStatus.ACTIVE: {
                 ProjectStatus.COMPLETED,
