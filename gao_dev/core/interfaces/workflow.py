@@ -209,3 +209,67 @@ class IWorkflowRegistry(ABC):
             int: Number of workflows in registry
         """
         pass
+
+
+class IWorkflowBuildStrategy(ABC):
+    """
+    Strategy interface for building workflow sequences.
+
+    Implementations encapsulate different workflow building logic
+    based on scale level, project type, or other criteria. This enables
+    polymorphic workflow selection without if/else chains.
+
+    Example:
+        ```python
+        class ScaleLevelStrategy(IWorkflowBuildStrategy):
+            def can_handle(self, context: WorkflowContext) -> bool:
+                return context.scale_level is not None
+
+            def build_workflow_sequence(self, context):
+                # Build workflows based on scale level
+                return WorkflowSequence(...)
+        ```
+    """
+
+    @abstractmethod
+    def can_handle(self, context: 'WorkflowContext') -> bool:  # Forward reference
+        """
+        Check if this strategy can handle the given context.
+
+        Args:
+            context: Workflow execution context
+
+        Returns:
+            bool: True if strategy can handle this context
+        """
+        pass
+
+    @abstractmethod
+    def build_workflow_sequence(
+        self,
+        context: 'WorkflowContext'  # Forward reference
+    ) -> 'WorkflowSequence':  # Forward reference
+        """
+        Build workflow sequence for the given context.
+
+        Args:
+            context: Workflow execution context
+
+        Returns:
+            WorkflowSequence: Sequence of workflows to execute
+        """
+        pass
+
+    @abstractmethod
+    def get_priority(self) -> int:
+        """
+        Get strategy priority for selection.
+
+        Higher priority strategies are preferred when multiple
+        strategies can handle the same context. This allows
+        specific strategies to override general ones.
+
+        Returns:
+            int: Priority (higher is better, 0-100 range recommended)
+        """
+        pass
