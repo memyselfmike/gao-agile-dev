@@ -7,13 +7,17 @@ Key Components:
 - PluginDiscovery: Discovers plugins from configured directories
 - PluginLoader: Loads and manages plugin lifecycle
 - BasePlugin: Base class for plugins with lifecycle hooks
+- BaseAgentPlugin: Base class for agent plugins
+- AgentPluginManager: Manages agent plugins
 - PluginRegistry: Registers and manages loaded plugins
 """
 
-from .models import PluginMetadata, PluginType
+from .models import PluginMetadata, PluginType, AgentMetadata
 from .discovery import PluginDiscovery
 from .loader import PluginLoader
 from .base_plugin import BasePlugin
+from .agent_plugin import BaseAgentPlugin
+from .agent_plugin_manager import AgentPluginManager
 from .exceptions import (
     PluginError,
     PluginValidationError,
@@ -25,9 +29,12 @@ from .exceptions import (
 __all__ = [
     'PluginMetadata',
     'PluginType',
+    'AgentMetadata',
     'PluginDiscovery',
     'PluginLoader',
     'BasePlugin',
+    'BaseAgentPlugin',
+    'AgentPluginManager',
     'PluginError',
     'PluginValidationError',
     'PluginNotFoundError',

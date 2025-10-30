@@ -164,3 +164,47 @@ class PluginMetadata:
             f"PluginMetadata(name='{self.name}', version='{self.version}', "
             f"type={self.type.value}, enabled={self.enabled})"
         )
+
+
+@dataclass
+class AgentMetadata:
+    """Metadata for an agent plugin.
+
+    Describes the capabilities and configuration of a custom agent
+    provided by a plugin.
+
+    Attributes:
+        name: Unique agent name
+        role: Agent role/specialty
+        description: Agent description
+        capabilities: List of agent capabilities
+        tools: List of available tools
+        model: Claude model to use (default: claude-sonnet-4-5-20250929)
+
+    Example:
+        ```python
+        metadata = AgentMetadata(
+            name="DomainExpert",
+            role="Domain Expert",
+            description="Expert in specific domain knowledge",
+            capabilities=["analysis", "consultation"],
+            tools=["Read", "Grep", "WebFetch"],
+            model="claude-sonnet-4-5-20250929"
+        )
+        ```
+    """
+    name: str
+    role: str
+    description: str
+    capabilities: List[str] = field(default_factory=list)
+    tools: List[str] = field(default_factory=list)
+    model: str = "claude-sonnet-4-5-20250929"
+
+    def __post_init__(self):
+        """Validate agent metadata after initialization."""
+        if not self.name:
+            raise ValueError("Agent name is required")
+        if not self.role:
+            raise ValueError("Agent role is required")
+        if not self.description:
+            raise ValueError("Agent description is required")

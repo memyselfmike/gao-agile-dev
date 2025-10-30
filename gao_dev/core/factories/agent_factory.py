@@ -199,6 +199,51 @@ class AgentFactory(IAgentFactory):
             agent_class=agent_class.__name__
         )
 
+    def register_plugin_agent(
+        self,
+        agent_name: str,
+        agent_class: Type[IAgent]
+    ) -> None:
+        """
+        Register a plugin agent.
+
+        This is a specialized method for plugin agents that provides
+        additional validation and logging specific to plugins.
+
+        Args:
+            agent_name: Unique agent name (e.g., "DomainExpert")
+            agent_class: Agent class implementing IAgent
+
+        Raises:
+            RegistrationError: If agent_class doesn't implement IAgent
+            DuplicateRegistrationError: If agent name already registered
+        """
+        # Validate that class implements IAgent
+        if not issubclass(agent_class, IAgent):
+            raise RegistrationError(
+                f"Plugin agent class '{agent_class.__name__}' must implement IAgent interface"
+            )
+
+        agent_name_lower = agent_name.lower()
+
+        # Check for duplicates (with better error message for plugins)
+        if agent_name_lower in self._registry:
+            existing_class = self._registry[agent_name_lower]
+            raise DuplicateRegistrationError(
+                f"Agent '{agent_name}' is already registered as {existing_class.__name__}. "
+                f"Plugin agents must have unique names."
+            )
+
+        # Register
+        self._registry[agent_name_lower] = agent_class
+
+        logger.info(
+            "plugin_agent_registered",
+            agent_name=agent_name,
+            agent_class=agent_class.__name__,
+            total_agents=len(self._registry)
+        )
+
     def list_available_agents(self) -> List[str]:
         """
         List all registered agent types.
@@ -207,6 +252,15 @@ class AgentFactory(IAgentFactory):
             List of agent type identifiers (sorted alphabetically)
         """
         return sorted(self._registry.keys())
+
+    def list_agents(self) -> List[str]:
+        """
+        List all registered agent types (alias for list_available_agents).
+
+        Returns:
+            List of agent type identifiers (sorted alphabetically)
+        """
+        return self.list_available_agents()
 
     def agent_exists(self, agent_type: str) -> bool:
         """
