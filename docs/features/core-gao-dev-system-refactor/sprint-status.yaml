@@ -224,14 +224,48 @@ epics:
 
   - epic_number: 5
     name: "Methodology Abstraction"
-    status: ready
+    status: in_progress
     total_story_points: 21
-    notes: "Ready to begin - Epic 4 completed (2025-10-30)"
+    completed_story_points: 11
+    remaining_story_points: 10
+    notes: "Stories 5.1-5.2 completed (2025-10-30)"
+    stories:
+      - number: 1
+        status: done
+        name: "Create IMethodology Interface and Models"
+        file: "docs/features/core-gao-dev-system-refactor/stories/epic-5/story-5.1.md"
+        story_points: 3
+        completed_date: "2025-10-30"
+        commit: "6fbeb3c"
+        notes: "IMethodology interface, 5 models, 35 tests passing"
+      - number: 2
+        status: done
+        name: "Extract Adaptive Agile Methodology Implementation"
+        file: "docs/features/core-gao-dev-system-refactor/stories/epic-5/story-5.2.md"
+        story_points: 8
+        completed_date: "2025-10-30"
+        commit: "d19fc11"
+        notes: "AdaptiveAgileMethodology with 5 scale levels, 52 tests passing"
+      - number: 3
+        status: ready
+        name: "Implement Methodology Registry"
+        file: "docs/features/core-gao-dev-system-refactor/stories/epic-5/story-5.3.md"
+        story_points: 3
+      - number: 4
+        status: ready
+        name: "Decouple Core from BMAD Specifics"
+        file: "docs/features/core-gao-dev-system-refactor/stories/epic-5/story-5.4.md"
+        story_points: 5
+      - number: 5
+        status: ready
+        name: "Create Example Alternative Methodology"
+        file: "docs/features/core-gao-dev-system-refactor/stories/epic-5/story-5.5.md"
+        story_points: 2
 
-current_epic: 4
-current_story: 7
+current_epic: 5
+current_story: 2
 next_epic: 5
-next_story: 1
+next_story: 3
 
 progress:
   epic_1:
@@ -259,6 +293,13 @@ progress:
     total_points: 34
     completed_points: 34
     points_percentage: 100
+  epic_5:
+    total_stories: 5
+    completed_stories: 2
+    completion_percentage: 40
+    total_points: 21
+    completed_points: 11
+    points_percentage: 52
 
 notes: |
   Epic 1 COMPLETED - Foundation laid with interfaces, base classes, and testing infrastructure
@@ -287,4 +328,12 @@ notes: |
   - Total: 34/34 story points complete, 6 test modules
   - Deliverables: Complete plugin system with discovery, loading, security, hooks, and docs
 
-  Ready for Epic 5: Methodology Abstraction
+  Epic 5 IN PROGRESS - Methodology Abstraction (2025-10-30)
+
+  Epic 5 Progress:
+  - Story 5.1: IMethodology Interface (DONE) - Core interface, 5 models, 35 tests
+  - Story 5.2: AdaptiveAgileMethodology (DONE) - 5 scale levels, 4 components, 52 tests
+  - Story 5.3: Methodology Registry (READY) - Next up
+  - Story 5.4: Decouple Core from BMAD (READY)
+  - Story 5.5: Example Alternative Methodology (READY)
+  - Progress: 11/21 story points (52%), 2/5 stories complete
