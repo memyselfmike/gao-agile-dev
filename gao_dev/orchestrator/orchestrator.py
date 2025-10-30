@@ -26,6 +26,7 @@ from ..core.events.event_bus import EventBus
 from ..core.services.workflow_coordinator import WorkflowCoordinator
 from ..core.services.story_lifecycle import StoryLifecycleManager
 from ..core.services.process_executor import ProcessExecutor
+from ..core.services.quality_gate import QualityGateManager
 
 logger = structlog.get_logger()
 
@@ -160,13 +161,20 @@ class GAODevOrchestrator:
             api_key=self.api_key
         )
 
+        # Story 6.4: Initialize QualityGateManager service
+        self.quality_gate_manager = QualityGateManager(
+            project_root=project_root,
+            event_bus=self.event_bus
+        )
+
         logger.info(
             "orchestrator_initialized",
             mode=mode,
             project_root=str(project_root),
             workflow_coordinator_enabled=True,
             story_lifecycle_enabled=True,
-            process_executor_enabled=True
+            process_executor_enabled=True,
+            quality_gate_manager_enabled=True
         )
 
     def _get_orchestrator_prompt(self) -> str:
@@ -819,10 +827,15 @@ Murat should:
         step_result: "WorkflowStepResult"
     ) -> Dict[str, Any]:
         """
+        DEPRECATED (Story 6.4): Use QualityGateManager.validate_artifacts() instead.
+
         Brian's Quality Gate: Verify workflow produced expected artifacts.
 
         After each workflow executes, Brian checks if the expected files/outputs were created.
         If something's missing, Brian decides whether to retry or adapt.
+
+        This method is deprecated. Use QualityGateManager service instead for quality gate validation.
+        See: self.quality_gate_manager.validate_artifacts()
 
         Args:
             workflow_info: Workflow that was executed

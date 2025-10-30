@@ -3,8 +3,8 @@
 **Feature**: Core System Refactoring
 **Related PRD**: PRD.md
 **Related Architecture**: ARCHITECTURE.md
-**Total Epics**: 5
-**Timeline**: 10 weeks (+ 2 week buffer)
+**Total Epics**: 6
+**Timeline**: 13 weeks (+ 2 week buffer)
 
 ---
 
@@ -14,16 +14,19 @@ This document breaks down the core system refactoring into 5 epics, each represe
 
 **Epic Dependencies**:
 ```
-Epic 1 (Foundation)
+Epic 1 (Foundation)                ← COMPLETE
     ↓
-Epic 2 (God Class Refactoring)
+Epic 3 (Design Patterns)           ← COMPLETE
     ↓
-Epic 3 (Design Patterns)
+Epic 4 (Plugin Architecture)       ← COMPLETE
     ↓
-Epic 4 (Plugin Architecture)
+Epic 5 (Methodology Abstraction)   ← COMPLETE
     ↓
-Epic 5 (Methodology Abstraction)
+Epic 6 (Legacy Cleanup & God Class Refactoring)  ← IN PROGRESS
+    (Completes Epic 2 which was skipped)
 ```
+
+**Note**: Epic 2 was originally planned but never implemented. Epic 6 completes that work along with legacy code cleanup.
 
 ---
 
@@ -378,6 +381,186 @@ Decouple the core system from BMAD Method specifics by creating a methodology ab
 
 ---
 
+## Epic 6: Legacy Cleanup & God Class Refactoring
+
+**Timeline**: Week 11-13 (Sprint 6)
+**Priority**: P0 (Critical - Completing Incomplete Work)
+**Risk**: Medium (refactoring existing code)
+**Story Points**: 47
+
+### Description
+
+**CRITICAL**: Epic 2 (God Class Refactoring) was never implemented. Epic 6 completes that essential work plus removes legacy code that accumulated during development. This epic is required before moving to production.
+
+After implementing Epics 1, 3, 4, and 5, we have excellent foundational architecture (interfaces, plugins, methodology abstraction) but the **old monolithic God Classes are still running everything**. This epic completes the refactoring by:
+1. Extracting services from the 1,327-line orchestrator
+2. Extracting services from the 781-line sandbox manager
+3. Removing `legacy_models.py` and migrating all imports
+4. Validating the complete architecture works end-to-end
+
+### Goals
+
+1. Complete original Epic 2: Extract services from God Classes
+2. Refactor orchestrator and manager as thin facades
+3. Remove all legacy model duplicates
+4. Achieve "no class > 300 lines" success criterion
+5. Validate complete architecture with integration tests
+
+### Success Criteria
+
+- [ ] `orchestrator.py` reduced from 1,327 to < 200 lines
+- [ ] `sandbox/manager.py` reduced from 781 to < 150 lines
+- [ ] All 4 orchestrator services extracted and tested
+- [ ] All 3 sandbox services extracted and tested
+- [ ] `legacy_models.py` deleted
+- [ ] All 8 files migrated from legacy imports
+- [ ] Zero regressions (all existing tests pass)
+- [ ] Integration tests validate end-to-end workflows
+
+### Stories
+
+| Story | Title | Points | Type |
+|-------|-------|--------|------|
+| 6.1 | Extract WorkflowCoordinator Service | 5 | Refactoring |
+| 6.2 | Extract StoryLifecycleManager Service | 5 | Refactoring |
+| 6.3 | Extract ProcessExecutor Service | 3 | Refactoring |
+| 6.4 | Extract QualityGateManager Service | 3 | Refactoring |
+| 6.5 | Refactor GAODevOrchestrator as Thin Facade | 5 | Refactoring |
+| 6.6 | Extract Services from SandboxManager | 8 | Refactoring |
+| 6.7 | Refactor SandboxManager as Thin Facade | 3 | Refactoring |
+| 6.8 | Migrate from Legacy Models | 5 | Refactoring |
+| 6.9 | Integration Testing & Validation | 8 | Testing |
+| 6.10 | Update Documentation & Architecture | 2 | Documentation |
+
+### Epic Dependencies
+
+**Prerequisites**:
+- Epic 1: Foundation (COMPLETE - interfaces exist)
+- Epic 3: Design Patterns (COMPLETE - patterns available)
+- Epic 4: Plugin Architecture (COMPLETE)
+- Epic 5: Methodology Abstraction (COMPLETE)
+
+**Enables**:
+- Production readiness (all architecture goals met)
+- Clean codebase for future development
+- Simplified onboarding for new developers
+
+### Risks
+
+- **Medium Risk**: Refactoring critical classes could introduce bugs
+- **Medium Risk**: Service boundaries might be wrong, requiring iteration
+- **Mitigation**:
+  - Comprehensive regression test suite BEFORE starting
+  - Extract one service at a time with tests
+  - Feature flags for gradual rollout
+  - Parallel implementation (keep old code temporarily)
+  - Code review after each service extraction
+  - Integration tests after each story
+
+### Background: Why Epic 6 is Necessary
+
+During the refactoring sprint (Epics 1-5), the following occurred:
+
+**What Was Completed** ✅:
+- Epic 1: Core interfaces, models, base classes
+- Epic 3: Design patterns (Factory, Strategy, Repository, Observer)
+- Epic 4: Plugin architecture with examples
+- Epic 5: Methodology abstraction (BMAD → AdaptiveAgile)
+
+**What Was Skipped** ❌:
+- **Epic 2: God Class Refactoring** - The most critical epic was never implemented
+- The `core/services/` directory exists but is **EMPTY**
+- God Classes remain: orchestrator.py (1,327 lines), manager.py (781 lines)
+
+**The Problem**:
+We have beautiful new architecture (interfaces, plugins, patterns) but the old monolithic code is still running everything. This creates:
+- Confusion for developers (two parallel systems)
+- SOLID violations (God Classes)
+- Unmet success criteria (classes > 300 lines)
+- Technical debt blocking production
+
+**The Solution**:
+Epic 6 completes the work that should have been Epic 2, plus cleans up the legacy code that accumulated.
+
+### Acceptance Criteria
+
+#### Orchestrator Refactoring
+1. `WorkflowCoordinator` extracted (< 200 lines)
+   - Responsibility: Execute workflow sequences
+   - Uses: WorkflowRegistry, AgentFactory, EventBus
+   - 80%+ test coverage
+
+2. `StoryLifecycleManager` extracted (< 200 lines)
+   - Responsibility: Manage story state transitions
+   - Uses: StoryRepository, EventBus
+   - 80%+ test coverage
+
+3. `ProcessExecutor` extracted (< 150 lines)
+   - Responsibility: Execute subprocesses (Claude CLI)
+   - Isolated subprocess logic
+   - 80%+ test coverage
+
+4. `QualityGateManager` extracted (< 150 lines)
+   - Responsibility: Validate workflow outputs
+   - Artifact verification logic
+   - 80%+ test coverage
+
+5. `GAODevOrchestrator` refactored (< 200 lines)
+   - Thin facade delegating to services
+   - Uses dependency injection
+   - All existing functionality preserved
+
+#### Sandbox Refactoring
+6. Services extracted from `SandboxManager`:
+   - `ProjectRepository` (data access, < 200 lines)
+   - `ProjectLifecycle` (state machine, < 150 lines)
+   - `BenchmarkTracker` (run tracking, < 100 lines)
+
+7. `SandboxManager` refactored (< 150 lines)
+   - Thin facade delegating to services
+   - All existing functionality preserved
+
+#### Legacy Model Migration
+8. Health models moved to `health_check.py`:
+   - `HealthStatus`, `CheckResult`, `HealthCheckResult`
+   - No longer in `legacy_models.py`
+
+9. All duplicate models removed:
+   - `WorkflowInfo` - use `core/models/workflow.py` version
+   - `StoryStatus` - use `core/models/story.py` version
+   - `AgentInfo` - use `core/models/agent.py` version
+
+10. All imports updated (8 files):
+    - `orchestrator/models.py`
+    - `orchestrator/brian_orchestrator.py`
+    - `core/state_manager.py`
+    - `core/health_check.py`
+    - `core/workflow_registry.py`
+    - `core/workflow_executor.py`
+    - `core/strategies/workflow_strategies.py`
+    - `core/__init__.py`
+
+11. `legacy_models.py` deleted
+
+#### Testing & Validation
+12. All existing tests pass (100%)
+13. New service tests created (80%+ coverage each)
+14. Integration tests for complete workflows:
+    - create-prd workflow
+    - create-story workflow
+    - dev-story workflow
+    - Sandbox init/run workflow
+15. Performance benchmarks show < 5% variance
+16. E2E validation: Full project creation works
+
+#### Documentation
+17. Architecture document updated with actual structure
+18. Component diagrams show new services
+19. Migration notes for developers
+20. Code comments explain service boundaries
+
+---
+
 ## Cross-Epic Concerns
 
 ### Testing Strategy
@@ -429,42 +612,51 @@ Decouple the core system from BMAD Method specifics by creating a methodology ab
 | Epic | Risk Level | Key Risk | Mitigation |
 |------|-----------|----------|------------|
 | 1 | Low | None (additive) | - |
-| 2 | Medium | Breaking existing functionality | Comprehensive regression tests |
+| 2 | N/A | (Skipped - moved to Epic 6) | - |
 | 3 | Medium | Performance degradation | Benchmarking before/after |
 | 4 | High | Security vulnerabilities | Security audit, sandboxing |
 | 5 | Medium | Incomplete BMAD extraction | Thorough code audit |
+| 6 | Medium | Breaking existing functionality | Comprehensive regression tests |
 
 ### Mitigation Strategies
 
-1. **Regression Testing**: Comprehensive test suite before starting Epic 2
+1. **Regression Testing**: Comprehensive test suite before starting Epic 6
 2. **Feature Flags**: Gradual rollout of refactored components
 3. **Parallel Implementation**: Keep old code during transition
 4. **Security Audit**: External review of plugin system
 5. **Performance Monitoring**: Continuous benchmarking
+6. **Incremental Extraction**: Extract one service at a time in Epic 6
 
 ---
 
 ## Timeline Overview
 
+**ACTUAL EXECUTION** (as of 2025-10-30):
+
 ```
-Week 1-2:  Epic 1 - Foundation
+Week 1-2:  Epic 1 - Foundation ✅ COMPLETE
            [Interfaces, Base Classes, Testing Infrastructure]
 
-Week 3-4:  Epic 2 - God Class Refactoring
-           [Extract Components, Refactor Facades]
+Week 3-4:  Epic 2 - God Class Refactoring ❌ SKIPPED
+           [Should have extracted components, refactored facades]
 
-Week 5-6:  Epic 3 - Design Patterns
+Week 5-6:  Epic 3 - Design Patterns ✅ COMPLETE
            [Factory, Strategy, Repository, Observer]
 
-Week 7-8:  Epic 4 - Plugin Architecture
+Week 7-8:  Epic 4 - Plugin Architecture ✅ COMPLETE
            [Discovery, Loading, API, Security, Examples]
 
-Week 9-10: Epic 5 - Methodology Abstraction
-           [IMethodology, BMAD Extraction, Registry, Example]
+Week 9-10: Epic 5 - Methodology Abstraction ✅ COMPLETE
+           [IMethodology, Adaptive Agile Extraction, Registry, Simple Example]
 
-Week 11-12: BUFFER
-           [Overruns, Polish, Documentation, Final Testing]
+Week 11-13: Epic 6 - Legacy Cleanup & God Class Refactoring 🔄 IN PROGRESS
+           [Complete Epic 2 work, Remove legacy code, Integration testing]
+
+Week 14-15: BUFFER
+           [Final testing, Documentation, Performance validation]
 ```
+
+**Status**: 4 of 6 epics complete (Epics 1, 3, 4, 5). Epic 6 in progress to complete Epic 2 work.
 
 ---
 
@@ -472,65 +664,78 @@ Week 11-12: BUFFER
 
 ### Overall Project Success
 
-| Metric | Current | Target | Epic |
-|--------|---------|--------|------|
-| Largest class size | 1,328 lines | < 300 lines | 2 |
-| SOLID violations | ~15 classes | 0 | 2, 3 |
-| Test coverage | Unknown | 80%+ | 1-5 |
-| Design patterns | 0 | 4+ | 3 |
-| Hard-coded agents | 8 | 0 (pluggable) | 4 |
-| Methodologies | 1 (BMAD only) | Multiple | 5 |
-| Plugin system | No | Yes | 4 |
+| Metric | Current (Oct 2025) | Target | Epic | Status |
+|--------|---------|--------|------|--------|
+| Largest class size | 1,327 lines | < 300 lines | 6 (was 2) | ❌ Not Met |
+| SOLID violations | ~15 classes | 0 | 6 (was 2), 3 | ⚠️ Partial |
+| Test coverage | ~60% | 80%+ | 1-6 | ⚠️ Partial |
+| Design patterns | 4 | 4+ | 3 | ✅ Met |
+| Hard-coded agents | 0 (in code) | 0 (pluggable) | 4 | ✅ Met |
+| Methodologies | 2+ (Adaptive Agile, Simple) | Multiple | 5 | ✅ Met |
+| Plugin system | Yes | Yes | 4 | ✅ Met |
 
 ### Per-Epic Metrics
 
-**Epic 1**:
-- Interfaces defined: 6+
-- Base classes created: 3+
-- Test infrastructure: Complete
+**Epic 1** ✅:
+- Interfaces defined: 6+ ✅
+- Base classes created: 3+ ✅
+- Test infrastructure: Complete ✅
 
-**Epic 2**:
-- God classes eliminated: 2
-- Components extracted: 8
-- Average class size: < 200 lines
+**Epic 2** ❌:
+- God classes eliminated: 0 (SKIPPED) ❌
+- Components extracted: 0 (SKIPPED) ❌
+- Average class size: Still > 1,000 lines ❌
 
-**Epic 3**:
-- Patterns implemented: 4
-- If/else chains removed: 3
-- Dependency injection: 100%
+**Epic 3** ✅:
+- Patterns implemented: 4 ✅
+- If/else chains removed: 3 ✅
+- Dependency injection: Partial ⚠️
 
-**Epic 4**:
-- Plugin API complete: Yes
-- Example plugins: 2+
-- Security audit: Pass
+**Epic 4** ✅:
+- Plugin API complete: Yes ✅
+- Example plugins: 2+ ✅
+- Security audit: Pass ✅
 
-**Epic 5**:
-- Methodologies supported: 2+
-- BMAD decoupled: 100%
-- Alternative methodology: Works
+**Epic 5** ✅:
+- Methodologies supported: 2+ ✅
+- BMAD → Adaptive Agile decoupled: 100% ✅
+- Alternative methodology: Works ✅
+
+**Epic 6** 🔄 (IN PROGRESS):
+- God classes eliminated: 0 of 2 ❌
+- Components extracted: 0 of 7 ❌
+- Legacy models removed: No ❌
+- Integration tests: Not yet ❌
 
 ---
 
 ## Post-Epic Roadmap
 
-### Future Enhancements (Beyond 10 weeks)
+### Core Work Remaining
 
-1. **Epic 6**: Advanced Plugin Features
+**Epic 6: Legacy Cleanup & God Class Refactoring** (IN PROGRESS)
+- Complete the skipped Epic 2 work
+- Remove legacy code
+- Required before production
+
+### Future Enhancements (Beyond 13 weeks)
+
+1. **Epic 7**: Advanced Plugin Features
    - Plugin marketplace
    - Plugin versioning
    - Plugin dependencies
 
-2. **Epic 7**: Performance Optimization
+2. **Epic 8**: Performance Optimization
    - Caching layer
    - Parallel workflow execution
    - Resource pooling
 
-3. **Epic 8**: Enterprise Features
+3. **Epic 9**: Enterprise Features
    - Multi-tenancy
    - Role-based access control
    - Audit logging
 
-4. **Epic 9**: Cloud Integration
+4. **Epic 10**: Cloud Integration
    - Remote orchestrators
    - Distributed execution
    - Cloud storage backends
