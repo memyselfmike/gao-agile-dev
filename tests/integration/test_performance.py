@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from gao_dev.orchestrator import GAODevOrchestrator
 from gao_dev.orchestrator.models import WorkflowSequence, ScaleLevel, ProjectType
-from gao_dev.core.legacy_models import WorkflowInfo
+from gao_dev.core.models.workflow import WorkflowInfo
 
 
 @pytest.fixture

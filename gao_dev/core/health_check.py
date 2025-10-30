@@ -1,11 +1,61 @@
 """System health check."""
 
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Dict, Any
 
 from .config_loader import ConfigLoader
-from .legacy_models import HealthStatus, CheckResult, HealthCheckResult
 from .workflow_registry import WorkflowRegistry
+
+
+class HealthStatus(Enum):
+    """Health check status."""
+
+    HEALTHY = "healthy"
+    WARNING = "warning"
+    CRITICAL = "critical"
+
+
+@dataclass
+class CheckResult:
+    """Individual health check result."""
+
+    name: str
+    status: HealthStatus
+    message: str
+    details: Optional[Dict[str, Any]] = None
+    remediation: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "name": self.name,
+            "status": self.status.value,
+            "message": self.message,
+            "details": self.details or {},
+            "remediation": self.remediation,
+        }
+
+
+@dataclass
+class HealthCheckResult:
+    """Overall health check result."""
+
+    status: HealthStatus
+    checks: List[CheckResult]
+    summary: str
+    timestamp: datetime = field(default_factory=datetime.now)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "status": self.status.value,
+            "checks": [c.to_dict() for c in self.checks],
+            "summary": self.summary,
+            "timestamp": self.timestamp.isoformat(),
+        }
 
 
 class HealthCheck:

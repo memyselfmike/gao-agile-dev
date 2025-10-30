@@ -8,7 +8,7 @@ from datetime import datetime
 from gao_dev.orchestrator import GAODevOrchestrator
 from gao_dev.orchestrator.workflow_results import WorkflowStatus, WorkflowResult
 from gao_dev.orchestrator.models import WorkflowSequence, ScaleLevel, ProjectType
-from gao_dev.core.legacy_models import WorkflowInfo
+from gao_dev.core.models.workflow import WorkflowInfo
 
 
 @pytest.fixture
@@ -20,14 +20,56 @@ def mock_project_root(tmp_path):
 @pytest.fixture
 def mock_orchestrator(mock_project_root):
     """Create orchestrator with mocked dependencies."""
-    with patch('gao_dev.orchestrator.orchestrator.ConfigLoader'):
-        with patch('gao_dev.orchestrator.orchestrator.WorkflowRegistry'):
-            with patch('gao_dev.orchestrator.orchestrator.BrianOrchestrator'):
-                orchestrator = GAODevOrchestrator(
-                    project_root=mock_project_root,
-                    api_key="test-key"
-                )
-                return orchestrator
+    from gao_dev.orchestrator.workflow_results import WorkflowStepResult
+
+    # Create mocked services with AsyncMock for async methods
+    mock_workflow_coordinator = Mock()
+
+    # Default coordinator result with step results
+    def create_default_result():
+        coordinator_result = Mock()
+        coordinator_result.status = WorkflowStatus.COMPLETED
+        coordinator_result.step_results = [
+            WorkflowStepResult(
+                step_name="step1",
+                agent="John",
+                status="success",
+                start_time=datetime.now(),
+                end_time=datetime.now()
+            ),
+            WorkflowStepResult(
+                step_name="step2",
+                agent="Winston",
+                status="success",
+                start_time=datetime.now(),
+                end_time=datetime.now()
+            ),
+        ]
+        coordinator_result.error_message = None
+        coordinator_result.total_artifacts = 0
+        return coordinator_result
+
+    mock_workflow_coordinator.execute_sequence = AsyncMock(
+        side_effect=lambda **kwargs: create_default_result()
+    )
+
+    mock_story_lifecycle = Mock()
+    mock_process_executor = Mock()
+    mock_quality_gate_manager = Mock()
+    mock_brian_orchestrator = Mock()
+    mock_brian_orchestrator.assess_and_select_workflows = AsyncMock()
+
+    # Create orchestrator with injected mocks
+    orchestrator = GAODevOrchestrator(
+        project_root=mock_project_root,
+        api_key="test-key",
+        workflow_coordinator=mock_workflow_coordinator,
+        story_lifecycle=mock_story_lifecycle,
+        process_executor=mock_process_executor,
+        quality_gate_manager=mock_quality_gate_manager,
+        brian_orchestrator=mock_brian_orchestrator
+    )
+    return orchestrator
 
 
 @pytest.fixture
@@ -115,12 +157,27 @@ async def test_execute_workflow_auto_select(mock_orchestrator, sample_workflow_s
 @pytest.mark.asyncio
 async def test_execute_workflow_step_failure(mock_orchestrator, sample_workflow_sequence):
     """Test workflow stops on step failure (fail-fast)."""
-    # Mock first step to fail
-    async def mock_create_prd_fail():
-        raise Exception("PRD failed")
-        yield
+    from gao_dev.orchestrator.workflow_results import WorkflowStepResult
 
-    mock_orchestrator.create_prd = mock_create_prd_fail
+    # Mock coordinator to return a failure result
+    failure_result = Mock()
+    failure_result.status = WorkflowStatus.FAILED
+    failure_result.step_results = [
+        WorkflowStepResult(
+            step_name="step1",
+            agent="John",
+            status="failed",
+            start_time=datetime.now(),
+            end_time=datetime.now(),
+            error_message="PRD failed"
+        ),
+    ]
+    failure_result.error_message = "PRD failed"
+    failure_result.total_artifacts = 0
+
+    mock_orchestrator.workflow_coordinator.execute_sequence = AsyncMock(
+        return_value=failure_result
+    )
 
     # Execute workflow
     result = await mock_orchestrator.execute_workflow(
@@ -137,6 +194,17 @@ async def test_execute_workflow_step_failure(mock_orchestrator, sample_workflow_
 @pytest.mark.asyncio
 async def test_execute_workflow_empty_sequence(mock_orchestrator):
     """Test workflow handles empty sequence gracefully."""
+    # Mock coordinator to return empty result
+    empty_result = Mock()
+    empty_result.status = WorkflowStatus.COMPLETED
+    empty_result.step_results = []
+    empty_result.error_message = None
+    empty_result.total_artifacts = 0
+
+    mock_orchestrator.workflow_coordinator.execute_sequence = AsyncMock(
+        return_value=empty_result
+    )
+
     empty_sequence = WorkflowSequence(
         scale_level=ScaleLevel.LEVEL_0,
         workflows=[],
