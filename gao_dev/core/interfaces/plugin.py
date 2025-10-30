@@ -1,9 +1,11 @@
 """Plugin system interfaces."""
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, TYPE_CHECKING
 from pathlib import Path
-from ...plugins.models import PluginMetadata
+
+if TYPE_CHECKING:
+    from ...plugins.models import PluginMetadata
 
 
 class IPluginDiscovery(ABC):
@@ -15,7 +17,7 @@ class IPluginDiscovery(ABC):
     """
 
     @abstractmethod
-    def discover_plugins(self, plugin_dirs: List[Path]) -> List[PluginMetadata]:
+    def discover_plugins(self, plugin_dirs: List[Path]) -> List["PluginMetadata"]:
         """Discover all valid plugins in given directories.
 
         Args:
@@ -42,7 +44,7 @@ class IPluginDiscovery(ABC):
         pass
 
     @abstractmethod
-    def load_plugin_metadata(self, plugin_path: Path) -> PluginMetadata:
+    def load_plugin_metadata(self, plugin_path: Path) -> "PluginMetadata":
         """Load metadata from plugin directory.
 
         Args:
@@ -78,7 +80,7 @@ class IPluginLoader(ABC):
     """
 
     @abstractmethod
-    def load_plugin(self, metadata: PluginMetadata):
+    def load_plugin(self, metadata: "PluginMetadata"):
         """Load a plugin from its metadata.
 
         Args:
@@ -151,7 +153,7 @@ class IPluginRegistry(ABC):
     """
 
     @abstractmethod
-    def register(self, metadata: PluginMetadata):
+    def register(self, metadata: "PluginMetadata"):
         """Register a plugin.
 
         Args:
@@ -175,7 +177,7 @@ class IPluginRegistry(ABC):
         pass
 
     @abstractmethod
-    def get_plugin(self, plugin_name: str) -> PluginMetadata:
+    def get_plugin(self, plugin_name: str) -> "PluginMetadata":
         """Get plugin metadata by name.
 
         Args:
@@ -190,7 +192,7 @@ class IPluginRegistry(ABC):
         pass
 
     @abstractmethod
-    def list_plugins(self, plugin_type: str = None) -> List[PluginMetadata]:
+    def list_plugins(self, plugin_type: str = None) -> List["PluginMetadata"]:
         """List registered plugins.
 
         Args:

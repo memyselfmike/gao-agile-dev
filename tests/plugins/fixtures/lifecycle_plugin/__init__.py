@@ -1,0 +1,1 @@
+"""Lifecycle test plugin package."""
