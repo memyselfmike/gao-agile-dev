@@ -16,6 +16,61 @@ class PluginType(Enum):
     TOOL = "tool"
 
 
+class PluginPermission(Enum):
+    """Permissions that plugins can request.
+
+    Plugins must declare required permissions in plugin.yaml. The permission
+    system enforces access control at runtime.
+
+    Example plugin.yaml:
+        permissions:
+          - file:read
+          - file:write
+          - hook:register
+    """
+
+    FILE_READ = "file:read"
+    FILE_WRITE = "file:write"
+    FILE_DELETE = "file:delete"
+    NETWORK_REQUEST = "network:request"
+    SUBPROCESS_EXECUTE = "subprocess:execute"
+    HOOK_REGISTER = "hook:register"
+    CONFIG_READ = "config:read"
+    CONFIG_WRITE = "config:write"
+    DATABASE_READ = "database:read"
+    DATABASE_WRITE = "database:write"
+
+
+@dataclass
+class ValidationResult:
+    """Result of plugin validation.
+
+    Attributes:
+        valid: Whether plugin passed validation
+        errors: List of error messages (validation failures)
+        warnings: List of warning messages (suspicious but not fatal)
+    """
+
+    valid: bool
+    errors: List[str] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
+
+
+@dataclass
+class ResourceUsage:
+    """Resource usage metrics for a plugin.
+
+    Attributes:
+        cpu_percent: CPU usage as percentage (0-100)
+        memory_mb: Memory usage in megabytes
+        start_time: Timestamp when monitoring started
+    """
+
+    cpu_percent: float = 0.0
+    memory_mb: float = 0.0
+    start_time: float = 0.0
+
+
 @dataclass
 class PluginMetadata:
     """Metadata describing a plugin.
@@ -30,6 +85,8 @@ class PluginMetadata:
         author: Optional plugin author name
         dependencies: Optional list of Python package dependencies
         enabled: Whether plugin is enabled (default: True)
+        permissions: List of requested permissions (default: empty)
+        timeout_seconds: Plugin initialization timeout in seconds (default: 30)
     """
 
     name: str
@@ -41,6 +98,8 @@ class PluginMetadata:
     author: Optional[str] = None
     dependencies: List[str] = field(default_factory=list)
     enabled: bool = True
+    permissions: List[str] = field(default_factory=list)
+    timeout_seconds: int = 30
 
     def __post_init__(self):
         """Validate metadata after initialization."""

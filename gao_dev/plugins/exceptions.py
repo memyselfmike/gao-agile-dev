@@ -80,3 +80,40 @@ class DuplicatePluginError(PluginError):
     """
 
     pass
+
+
+class PermissionDeniedError(PluginSecurityError):
+    """Raised when plugin attempts operation without permission.
+
+    This occurs when:
+    - Plugin accesses file system without file:read/write permission
+    - Plugin makes network request without network:request permission
+    - Plugin executes subprocess without subprocess:execute permission
+    - Plugin registers hook without hook:register permission
+    """
+
+    pass
+
+
+class PluginTimeoutError(PluginError):
+    """Raised when plugin operation exceeds timeout.
+
+    This occurs when:
+    - Plugin initialization takes too long
+    - Hook execution exceeds timeout
+    - Workflow/agent execution exceeds timeout
+    """
+
+    pass
+
+
+class ResourceLimitError(PluginSecurityError):
+    """Raised when plugin exceeds resource limits.
+
+    This occurs when:
+    - Memory usage exceeds configured limit
+    - CPU usage sustained above configured limit
+    - File size exceeds configured limit
+    """
+
+    pass

@@ -192,7 +192,9 @@ class PluginDiscovery(IPluginDiscovery):
                 description=data.get('description'),
                 author=data.get('author'),
                 dependencies=data.get('dependencies', []),
-                enabled=data.get('enabled', True)
+                enabled=data.get('enabled', True),
+                permissions=data.get('permissions', []),
+                timeout_seconds=data.get('timeout_seconds', 30),
             )
 
             return metadata
