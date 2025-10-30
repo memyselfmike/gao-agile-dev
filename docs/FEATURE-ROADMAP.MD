@@ -1,6 +1,8 @@
 - move to uv not pip as a runner 
 - add rich cli interface formatting
 - build out and utilise core repos for quickstart/boilerplate e.g. full saas (plans, licensing, customer portal, support, billing) / marketing funnel etc
+    - this should be framework driven too -> some method for reusable assets retrieval/creation (if not exists create asset)
+
 - bmad story context creation step missing
 - autoscale prompting level (bmad scale level)
     -> chores > bugs > features > brownfield / greenfield < we need to know when the human or agentic product owner need to get involved to guide

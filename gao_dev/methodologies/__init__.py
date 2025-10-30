@@ -10,6 +10,7 @@ Available Methodologies:
 Example:
     ```python
     from gao_dev.methodologies.adaptive_agile import AdaptiveAgileMethodology
+    from gao_dev.methodologies.simple import SimpleMethodology
     from gao_dev.methodologies.registry import MethodologyRegistry
 
     # Get registry and methodology
@@ -19,10 +20,15 @@ Example:
     # Use methodology
     assessment = await methodology.assess_complexity("Build a todo app")
     sequence = methodology.build_workflow_sequence(assessment)
+
+    # Or use SimpleMethodology
+    simple = registry.get_methodology("simple")
+    assessment = await simple.assess_complexity("Fix a bug")
     ```
 """
 
 from .adaptive_agile import AdaptiveAgileMethodology, ScaleLevel
+from .simple import SimpleMethodology
 from .exceptions import (
     InvalidMethodologyError,
     MethodologyAlreadyRegisteredError,
@@ -34,6 +40,7 @@ from .registry import MethodologyRegistry
 __all__ = [
     # Methodologies
     "AdaptiveAgileMethodology",
+    "SimpleMethodology",
     "ScaleLevel",
     # Registry
     "MethodologyRegistry",
