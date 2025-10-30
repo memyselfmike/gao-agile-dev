@@ -20,14 +20,24 @@ def mock_project_root(tmp_path):
 @pytest.fixture
 def mock_orchestrator(mock_project_root):
     """Create orchestrator with mocked dependencies."""
-    with patch('gao_dev.orchestrator.orchestrator.ConfigLoader'):
-        with patch('gao_dev.orchestrator.orchestrator.WorkflowRegistry'):
-            with patch('gao_dev.orchestrator.orchestrator.BrianOrchestrator'):
-                orchestrator = GAODevOrchestrator(
-                    project_root=mock_project_root,
-                    api_key="test-key"
-                )
-                return orchestrator
+    # Create mocked services
+    mock_workflow_coordinator = Mock()
+    mock_story_lifecycle = Mock()
+    mock_process_executor = Mock()
+    mock_quality_gate_manager = Mock()
+    mock_brian_orchestrator = Mock()
+
+    # Create orchestrator with injected mocks
+    orchestrator = GAODevOrchestrator(
+        project_root=mock_project_root,
+        api_key="test-key",
+        workflow_coordinator=mock_workflow_coordinator,
+        story_lifecycle=mock_story_lifecycle,
+        process_executor=mock_process_executor,
+        quality_gate_manager=mock_quality_gate_manager,
+        brian_orchestrator=mock_brian_orchestrator
+    )
+    return orchestrator
 
 
 @pytest.fixture
