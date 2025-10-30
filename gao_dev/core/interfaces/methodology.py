@@ -1,198 +1,215 @@
-"""
-Methodology interfaces for development process abstraction.
+"""Methodology interface for development process abstraction.
 
-This module defines the interface for development methodologies,
-enabling GAO-Dev to support multiple development processes
-(BMAD, Scrum, Kanban, custom methodologies).
+This module defines the IMethodology interface that all development methodologies
+must implement. This abstraction allows GAO-Dev to support multiple methodologies
+(BMAD, Scrum, Kanban, custom) interchangeably.
+
+Story 5.1: IMethodology Interface (Epic 5 - Methodology Abstraction)
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
+from gao_dev.core.models.methodology import (
+    ComplexityAssessment,
+    ValidationResult,
+    WorkflowSequence,
+)
 
 
 class IMethodology(ABC):
-    """
-    Interface for development methodologies.
+    """Interface for development methodologies.
 
-    A methodology defines how to assess project complexity and
-    build appropriate workflow sequences. This abstraction allows
-    GAO-Dev to support multiple development processes beyond BMAD.
+    Methodologies define how GAO-Dev analyzes complexity, selects workflows,
+    and recommends agents. This abstraction allows supporting BMAD, Scrum,
+    Kanban, or custom methodologies without core code changes.
+
+    A methodology implementation provides:
+    - Complexity assessment logic (analyze user prompts)
+    - Workflow sequence generation (select appropriate workflows)
+    - Agent recommendations (which agents for which tasks)
+    - Configuration validation (methodology-specific settings)
 
     Example:
         ```python
-        class BMADMethodology(IMethodology):
+        class MyMethodology(IMethodology):
             @property
             def name(self) -> str:
-                return "BMAD Method"
+                return "my-methodology"
 
-            async def assess_complexity(self, prompt: str):
-                # Analyze prompt using Claude
-                return ComplexityAssessment(level=3, ...)
+            @property
+            def description(self) -> str:
+                return "My custom development methodology"
 
-            def build_workflow_sequence(self, assessment):
-                # Build workflow based on scale level
-                return WorkflowSequence([...])
+            @property
+            def version(self) -> str:
+                return "1.0.0"
+
+            async def assess_complexity(
+                self,
+                prompt: str,
+                context: Optional[Dict[str, Any]] = None
+            ) -> ComplexityAssessment:
+                # Analyze prompt and return assessment
+                return ComplexityAssessment(
+                    complexity_level=ComplexityLevel.MEDIUM,
+                    reasoning="Detected API project with authentication"
+                )
+
+            def build_workflow_sequence(
+                self,
+                assessment: ComplexityAssessment
+            ) -> WorkflowSequence:
+                # Return workflows based on complexity
+                return WorkflowSequence(
+                    workflows=[
+                        WorkflowStep("create-prd", "planning"),
+                        WorkflowStep("implement", "implementation")
+                    ]
+                )
+
+            def get_recommended_agents(
+                self,
+                task: str,
+                context: Optional[Dict[str, Any]] = None
+            ) -> List[str]:
+                # Recommend agents for task
+                return ["Developer", "Tester"]
+
+            def validate_config(
+                self,
+                config: Dict[str, Any]
+            ) -> ValidationResult:
+                # Validate methodology-specific config
+                return ValidationResult(valid=True)
         ```
+
+    Attributes:
+        name: Unique methodology identifier (e.g., "bmad", "scrum")
+        description: Human-readable description
+        version: Methodology version (semantic versioning)
+        supports_scale_levels: Whether uses scale levels concept (BMAD-specific)
     """
 
     @property
     @abstractmethod
     def name(self) -> str:
-        """
-        Methodology name.
+        """Unique methodology identifier.
+
+        Must be lowercase kebab-case (e.g., "bmad", "scrum", "my-methodology").
+        Used for configuration and registry lookup.
 
         Returns:
-            str: Human-readable methodology name (e.g., "BMAD Method", "Scrum")
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def version(self) -> str:
-        """
-        Methodology version.
-
-        Returns:
-            str: Version string (e.g., "6.0", "1.0")
+            Lowercase kebab-case name
         """
         pass
 
     @property
     @abstractmethod
     def description(self) -> str:
-        """
-        Methodology description.
+        """Human-readable methodology description.
+
+        Brief description of the methodology's approach and use cases.
 
         Returns:
-            str: Brief description of the methodology
+            Description string (1-2 sentences)
         """
         pass
 
+    @property
     @abstractmethod
-    async def assess_complexity(
-        self,
-        prompt: str,
-        context: Optional[Dict[str, Any]] = None
-    ) -> 'ComplexityAssessment':  # Forward reference
-        """
-        Assess project complexity from user prompt.
-
-        Different methodologies may use different complexity models:
-        - BMAD: Scale levels 0-4
-        - Simple: Small/Medium/Large
-        - Custom: Domain-specific complexity metrics
-
-        Args:
-            prompt: User's project description/request
-            context: Optional additional context
+    def version(self) -> str:
+        """Methodology version using semantic versioning.
 
         Returns:
-            ComplexityAssessment: Assessment result with complexity level
+            Version string (e.g., "1.0.0", "2.1.0-beta")
+        """
+        pass
 
-        Raises:
-            AssessmentError: If complexity assessment fails
+    @property
+    def supports_scale_levels(self) -> bool:
+        """Whether methodology uses scale levels concept.
+
+        BMAD uses scale levels (0-4) for granular complexity classification.
+        Other methodologies may use simpler categorization.
+
+        Default: False
+
+        Returns:
+            True if methodology uses scale levels, False otherwise
+        """
+        return False
+
+    @abstractmethod
+    async def assess_complexity(
+        self, prompt: str, context: Optional[Dict[str, Any]] = None
+    ) -> ComplexityAssessment:
+        """Analyze user prompt to determine project complexity.
+
+        Methodologies analyze the initial prompt to understand project scope,
+        complexity, and type. This assessment drives workflow selection.
+
+        Args:
+            prompt: User's initial request/prompt
+            context: Optional context (project history, files, preferences, etc.)
+
+        Returns:
+            ComplexityAssessment with level, type, estimates, reasoning, metadata
         """
         pass
 
     @abstractmethod
     def build_workflow_sequence(
-        self,
-        assessment: 'ComplexityAssessment'  # Forward reference
-    ) -> 'WorkflowSequence':  # Forward reference
-        """
-        Build workflow sequence based on complexity assessment.
+        self, assessment: ComplexityAssessment
+    ) -> WorkflowSequence:
+        """Build workflow sequence based on complexity assessment.
 
-        The methodology determines which workflows to run and in what order
-        based on the project's assessed complexity.
+        Takes the complexity assessment and generates an ordered sequence
+        of workflows to execute.
 
         Args:
-            assessment: Complexity assessment result
+            assessment: ComplexityAssessment from assess_complexity()
 
         Returns:
-            WorkflowSequence: Ordered sequence of workflows to execute
-
-        Raises:
-            WorkflowBuildError: If workflow sequence cannot be built
+            WorkflowSequence with ordered WorkflowSteps
         """
         pass
 
     @abstractmethod
     def get_recommended_agents(
-        self,
-        assessment: 'ComplexityAssessment'  # Forward reference
+        self, task: str, context: Optional[Dict[str, Any]] = None
     ) -> List[str]:
-        """
-        Get recommended agent types for the project.
+        """Recommend agents for a specific task.
 
-        Different complexity levels may require different agent combinations:
-        - Simple projects: Just developer + QA
-        - Complex projects: Full team (PM, Architect, Dev, QA, etc.)
+        Methodologies recommend which agents should work on specific tasks
+        based on the task type, workflow phase, and context.
 
         Args:
-            assessment: Complexity assessment result
+            task: Task description or workflow name
+            context: Optional context (phase, workflow, project_type, etc.)
 
         Returns:
-            List of recommended agent type identifiers
+            List of agent names to assign to task
         """
         pass
 
     @abstractmethod
-    def get_phases(self) -> List['MethodologyPhase']:  # Forward reference
-        """
-        Get methodology phases.
+    def validate_config(self, config: Dict[str, Any]) -> ValidationResult:
+        """Validate methodology-specific configuration.
 
-        Phases represent major stages in the methodology:
-        - BMAD: Analysis, Planning, Solutioning, Implementation
-        - Scrum: Sprint Planning, Daily Scrum, Review, Retrospective
-        - Custom: Methodology-specific phases
-
-        Returns:
-            List of methodology phases
-        """
-        pass
-
-    @abstractmethod
-    def validate_workflow_sequence(
-        self,
-        sequence: 'WorkflowSequence'  # Forward reference
-    ) -> bool:
-        """
-        Validate that a workflow sequence is valid for this methodology.
-
-        Ensures workflow order follows methodology rules:
-        - Required workflows present
-        - Dependencies satisfied
-        - Phase ordering correct
+        Each methodology can have custom configuration options. This method
+        validates those options and returns structured results.
 
         Args:
-            sequence: Workflow sequence to validate
+            config: Configuration dictionary with methodology-specific settings
 
         Returns:
-            bool: True if sequence is valid, False otherwise
-        """
-        pass
-
-    @abstractmethod
-    def get_quality_gates(
-        self,
-        assessment: 'ComplexityAssessment'  # Forward reference
-    ) -> List['QualityGate']:  # Forward reference
-        """
-        Get quality gates for the project based on complexity.
-
-        Quality gates are checkpoints that must pass before proceeding:
-        - Simple: Basic tests passing
-        - Complex: Architecture review, security scan, performance tests
-
-        Args:
-            assessment: Complexity assessment result
-
-        Returns:
-            List of quality gates to enforce
+            ValidationResult with valid flag, errors, and warnings
         """
         pass
 
 
+# IMethodologyRegistry moved to Story 5.3
 class IMethodologyRegistry(ABC):
     """
     Registry interface for methodology discovery and management.
