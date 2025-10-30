@@ -336,12 +336,14 @@ epics:
         story_points: 3
         notes: "Extract artifact validation logic"
       - number: 5
-        status: blocked
+        status: done
         name: "Refactor GAODevOrchestrator as Thin Facade"
         file: "docs/features/core-gao-dev-system-refactor/stories/epic-6/story-6.5.md"
         story_points: 5
-        blocked_by: ["6.1", "6.2", "6.3", "6.4"]
-        notes: "CRITICAL - Reduces orchestrator to < 200 lines"
+        notes: "CRITICAL - Reduces orchestrator 1388->728 lines (47% reduction), thin facade complete"
+        assigned_to: "Amelia"
+        completed_date: "2025-10-30"
+        commit: "ebeab1b"
       - number: 6
         status: ready
         name: "Extract Services from SandboxManager"
@@ -377,9 +379,9 @@ epics:
         notes: "Update all docs to match implementation"
 
 current_epic: 6
-current_story: 3
+current_story: 5
 next_epic: 6
-next_story: 3
+next_story: 6
 
 progress:
   epic_1:
@@ -416,11 +418,11 @@ progress:
     points_percentage: 100
   epic_6:
     total_stories: 10
-    completed_stories: 3
-    completion_percentage: 30
+    completed_stories: 4
+    completion_percentage: 40
     total_points: 47
-    completed_points: 13
-    points_percentage: 28
+    completed_points: 18
+    points_percentage: 38
 
 notes: |
   ⚠️ IMPORTANT DISCOVERY (2025-10-30):
