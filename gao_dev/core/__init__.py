@@ -17,6 +17,7 @@ from .workflow_executor import WorkflowExecutor
 from .state_manager import StateManager
 from .git_manager import GitManager
 from .health_check import HealthCheck
+from .hook_manager import HookManager
 
 # New interfaces (Epic 1 - Foundation)
 from .interfaces import (
@@ -52,6 +53,10 @@ from .models import (
     WorkflowSequence,
     AgentContext,
     AgentConfig,
+    HookEventType,
+    HookHandler,
+    HookInfo,
+    HookResults,
 )
 
 __all__ = [
@@ -69,6 +74,7 @@ __all__ = [
     "StateManager",
     "GitManager",
     "HealthCheck",
+    "HookManager",
     # Interfaces
     "IAgent",
     "IAgentFactory",
@@ -99,4 +105,9 @@ __all__ = [
     "WorkflowSequence",
     "AgentContext",
     "AgentConfig",
+    # Hook System
+    "HookEventType",
+    "HookHandler",
+    "HookInfo",
+    "HookResults",
 ]

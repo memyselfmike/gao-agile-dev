@@ -36,6 +36,14 @@ from .agent import (
     AgentConfig,
 )
 
+# Hook models
+from .hook import (
+    HookEventType,
+    HookHandler,
+    HookInfo,
+    HookResults,
+)
+
 __all__ = [
     # Story
     "StoryIdentifier",
@@ -57,4 +65,9 @@ __all__ = [
     "CommonCapabilities",
     "AgentContext",
     "AgentConfig",
+    # Hook
+    "HookEventType",
+    "HookHandler",
+    "HookInfo",
+    "HookResults",
 ]
