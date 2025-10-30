@@ -63,7 +63,24 @@ entry_point: my_agent_plugin.agent_plugin.MyAgentPlugin
 description: "My custom agent"
 author: "Your Name"
 enabled: true
+permissions:
+  - file:read
+  - file:write
+  - hook:register
+timeout_seconds: 30
 ```
+
+#### Available Permissions:
+- `file:read` - Read files
+- `file:write` - Write files
+- `file:delete` - Delete files
+- `network:request` - Make network requests
+- `subprocess:execute` - Execute subprocesses
+- `hook:register` - Register lifecycle hooks
+- `config:read` - Read configuration
+- `config:write` - Write configuration
+- `database:read` - Read from database
+- `database:write` - Write to database
 
 ### 4. Install Plugin
 
