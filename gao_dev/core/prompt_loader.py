@@ -11,6 +11,7 @@ import structlog
 
 from .models.prompt_template import PromptTemplate
 from .config_loader import ConfigLoader
+from .schema_validator import SchemaValidator, SchemaValidationError
 
 
 logger = structlog.get_logger()
@@ -64,7 +65,8 @@ class PromptLoader:
         self,
         prompts_dir: Path,
         config_loader: Optional[ConfigLoader] = None,
-        cache_enabled: bool = True
+        cache_enabled: bool = True,
+        validator: Optional[SchemaValidator] = None
     ):
         """
         Initialize prompt loader.
@@ -73,10 +75,12 @@ class PromptLoader:
             prompts_dir: Directory containing prompt YAML files
             config_loader: Optional config loader for @config: references
             cache_enabled: Whether to cache loaded prompts
+            validator: Optional SchemaValidator for prompt validation
         """
         self.prompts_dir = prompts_dir
         self.config_loader = config_loader
         self.cache_enabled = cache_enabled
+        self.validator = validator
         self._cache: Dict[str, PromptTemplate] = {}
 
     def load_prompt(self, prompt_name: str, use_cache: bool = True) -> PromptTemplate:
@@ -109,7 +113,34 @@ class PromptLoader:
         # Load template
         logger.debug("loading_prompt", prompt_name=prompt_name, path=str(prompt_file))
         try:
+            # Load YAML first for validation
+            import yaml
+            with open(prompt_file, "r", encoding="utf-8") as f:
+                prompt_data = yaml.safe_load(f)
+
+            # Validate against schema if validator provided
+            if self.validator and prompt_data:
+                try:
+                    self.validator.validate_or_raise(
+                        prompt_data,
+                        "prompt",
+                        context=str(prompt_file.name)
+                    )
+                except SchemaValidationError as e:
+                    logger.error(
+                        "prompt_schema_validation_failed",
+                        prompt_name=prompt_name,
+                        path=str(prompt_file),
+                        errors=e.result.errors
+                    )
+                    raise PromptLoaderError(
+                        f"Prompt validation failed for '{prompt_name}':\n{e}"
+                    ) from e
+
+            # Create template from validated data
             template = PromptTemplate.from_yaml(prompt_file)
+        except PromptLoaderError:
+            raise
         except Exception as e:
             logger.error("prompt_load_failed", prompt_name=prompt_name, error=str(e))
             raise

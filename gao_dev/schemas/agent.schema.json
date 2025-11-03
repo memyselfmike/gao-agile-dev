@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Configuration",
+  "description": "JSON Schema for GAO-Dev agent configuration files",
+  "type": "object",
+  "required": ["agent"],
+  "properties": {
+    "agent": {
+      "type": "object",
+      "required": ["metadata", "tools"],
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "required": ["name", "role"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Agent display name (e.g., 'Amelia', 'John')"
+            },
+            "role": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Agent role description (e.g., 'Software Developer', 'Product Manager')"
+            },
+            "icon": {
+              "type": "string",
+              "description": "Optional emoji or icon for the agent"
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Agent version in semver format (e.g., '1.0.0')"
+            }
+          },
+          "additionalProperties": false
+        },
+        "persona_file": {
+          "type": "string",
+          "description": "Path to persona markdown file (e.g., './amelia.md')"
+        },
+        "persona": {
+          "type": "string",
+          "description": "Inline persona text (alternative to persona_file)"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "List of tool names this agent can use (e.g., ['Read', 'Write', 'Edit'])"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "description": "List of agent capabilities (e.g., ['implementation', 'code-review'])"
+        },
+        "model": {
+          "type": "string",
+          "description": "Claude model identifier (e.g., 'claude-sonnet-4-5-20250929')"
+        },
+        "workflows": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "description": "List of workflows this agent can execute"
+        }
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        { "required": ["persona_file"] },
+        { "required": ["persona"] }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

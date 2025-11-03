@@ -9,10 +9,11 @@ markdown files.
 
 import yaml
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import structlog
 
 from .models.agent_config import AgentConfig
+from .schema_validator import SchemaValidator, SchemaValidationError
 
 logger = structlog.get_logger()
 
@@ -44,14 +45,16 @@ class AgentConfigLoader:
         ```
     """
 
-    def __init__(self, agents_dir: Path):
+    def __init__(self, agents_dir: Path, validator: Optional[SchemaValidator] = None):
         """
         Initialize agent configuration loader.
 
         Args:
             agents_dir: Path to directory containing agent YAML and .md files
+            validator: Optional SchemaValidator for config validation
         """
         self.agents_dir = Path(agents_dir)
+        self.validator = validator
 
         if not self.agents_dir.exists():
             logger.warning(
@@ -117,6 +120,25 @@ class AgentConfigLoader:
                 f"Invalid agent YAML structure in {yaml_path}. "
                 f"Must have top-level 'agent' key."
             )
+
+        # Validate against schema if validator provided
+        if self.validator:
+            try:
+                self.validator.validate_or_raise(
+                    data,
+                    "agent",
+                    context=f"{agent_name}.agent.yaml"
+                )
+            except SchemaValidationError as e:
+                logger.error(
+                    "agent_schema_validation_failed",
+                    agent_name=agent_name,
+                    yaml_path=str(yaml_path),
+                    errors=e.result.errors
+                )
+                raise ValueError(
+                    f"Agent config validation failed for '{agent_name}':\n{e}"
+                ) from e
 
         # Load persona
         persona = self._load_persona(agent_name, data["agent"])

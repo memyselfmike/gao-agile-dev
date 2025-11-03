@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Prompt Template",
+  "description": "JSON Schema for GAO-Dev prompt template files",
+  "type": "object",
+  "required": ["name", "description", "user_prompt"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for the prompt template"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable description of the prompt's purpose"
+    },
+    "system_prompt": {
+      "type": "string",
+      "description": "Optional system-level prompt for context and role definition"
+    },
+    "user_prompt": {
+      "type": "string",
+      "minLength": 1,
+      "description": "User-level prompt with {{variable}} placeholders"
+    },
+    "variables": {
+      "type": "object",
+      "description": "Dictionary of variable definitions with default values",
+      "additionalProperties": true
+    },
+    "response": {
+      "type": "object",
+      "description": "Response configuration for LLM",
+      "properties": {
+        "schema": {
+          "type": "object",
+          "description": "Optional JSON schema for structured responses"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200000,
+          "description": "Maximum tokens for response (default: 4000)"
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "LLM temperature setting (default: 0.7)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata for categorization and organization",
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "Category of the prompt (e.g., 'planning', 'implementation')"
+        },
+        "phase": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "description": "BMAD phase (1-4)"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags for searching and filtering"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

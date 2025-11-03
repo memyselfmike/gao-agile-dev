@@ -8,6 +8,8 @@ from typing import List, Optional, Dict, Any
 
 from .config_loader import ConfigLoader
 from .workflow_registry import WorkflowRegistry
+from .schema_validator import SchemaValidator
+from .agent_config_loader import AgentConfigLoader
 
 
 class HealthStatus(Enum):
@@ -85,6 +87,7 @@ class HealthCheck:
         checks.append(self.check_workflows())
         checks.append(self.check_git())
         checks.append(self.check_configuration())
+        checks.append(self.check_schemas())
 
         # Determine overall status
         statuses = [c.status for c in checks]
@@ -194,4 +197,83 @@ class HealthCheck:
                 status=HealthStatus.CRITICAL,
                 message="Configuration failed to load",
                 remediation="Check gao-dev.yaml syntax"
+            )
+
+    def check_schemas(self) -> CheckResult:
+        """Check schema validation for agent configs."""
+        # Locate schemas directory
+        schemas_dir = self.project_root / "gao_dev" / "schemas"
+
+        # Check if schemas directory exists
+        if not schemas_dir.exists():
+            return CheckResult(
+                name="Schema Validation",
+                status=HealthStatus.WARNING,
+                message="Schemas directory not found",
+                remediation="Schemas may not be installed correctly"
+            )
+
+        # Initialize validator
+        validator = SchemaValidator(schemas_dir)
+        available_schemas = validator.list_schemas()
+
+        if not available_schemas:
+            return CheckResult(
+                name="Schema Validation",
+                status=HealthStatus.WARNING,
+                message="No schema files found",
+                remediation="Check that schema files are installed"
+            )
+
+        # Validate agent configs
+        agents_dir = self.project_root / "gao_dev" / "agents"
+        if not agents_dir.exists():
+            return CheckResult(
+                name="Schema Validation",
+                status=HealthStatus.WARNING,
+                message="Agents directory not found",
+                remediation="Agents may not be installed correctly"
+            )
+
+        loader = AgentConfigLoader(agents_dir, validator=validator)
+        agent_names = loader.discover_agents()
+
+        validation_errors = []
+        validated_count = 0
+
+        for agent_name in agent_names:
+            try:
+                loader.load_agent(agent_name)
+                validated_count += 1
+            except Exception as e:
+                validation_errors.append(f"{agent_name}: {str(e)[:100]}")
+
+        if validation_errors:
+            return CheckResult(
+                name="Schema Validation",
+                status=HealthStatus.CRITICAL,
+                message=f"{len(validation_errors)} agent config(s) failed validation",
+                details={
+                    "validated": validated_count,
+                    "failed": len(validation_errors),
+                    "errors": validation_errors[:3]  # Show first 3 errors
+                },
+                remediation="Fix agent configuration files to match schema"
+            )
+        elif validated_count > 0:
+            return CheckResult(
+                name="Schema Validation",
+                status=HealthStatus.HEALTHY,
+                message=f"All {validated_count} agent configs validated successfully",
+                details={
+                    "validated": validated_count,
+                    "schemas_available": available_schemas
+                }
+            )
+        else:
+            return CheckResult(
+                name="Schema Validation",
+                status=HealthStatus.WARNING,
+                message="No agent configs found to validate",
+                remediation="Check that agent configs are installed"
             )
