@@ -324,59 +324,68 @@ epics:
 
   - epic_number: 10
     name: "Prompt & Agent Configuration Abstraction"
-    status: ready
+    status: completed
     total_story_points: 37
     feature_doc: "docs/features/prompt-abstraction/"
-    notes: "Transform GAO-Dev into methodology-agnostic framework by abstracting prompts and agents"
+    notes: "Transform GAO-Dev into methodology-agnostic framework by abstracting prompts and agents - COMPLETE"
+    completion_date: "2025-11-03"
     stories:
       - number: 1
-        status: ready
+        status: done
         name: "Agent Configuration Unification"
         file: "docs/features/prompt-abstraction/stories/epic-10/story-10.1.md"
         story_points: 5
         dependencies: []
+        notes: "All 8 agents in YAML format"
       - number: 2
-        status: ready
+        status: done
         name: "Prompt Extraction - Brian"
         file: "docs/features/prompt-abstraction/stories/epic-10/story-10.2.md"
         story_points: 3
         dependencies: ["10.5"]
+        notes: "Brian complexity analysis prompts extracted"
       - number: 3
-        status: ready
+        status: done
         name: "Prompt Extraction - Story Orchestrator"
         file: "docs/features/prompt-abstraction/stories/epic-10/story-10.3.md"
         story_points: 5
         dependencies: ["10.5"]
+        notes: "All 3 phases extracted (170 lines)"
       - number: 4
-        status: ready
+        status: done
         name: "Prompt Extraction - Task Prompts"
         file: "docs/features/prompt-abstraction/stories/epic-10/story-10.4.md"
         story_points: 3
         dependencies: ["10.5"]
+        notes: "Task prompts from orchestrator extracted"
       - number: 5
-        status: ready
+        status: done
         name: "Prompt Management System"
         file: "docs/features/prompt-abstraction/stories/epic-10/story-10.5.md"
         story_points: 8
         dependencies: []
+        notes: "PromptLoader and PromptRegistry with @file: and @config: support"
       - number: 6
-        status: ready
+        status: done
         name: "Schema Validation"
         file: "docs/features/prompt-abstraction/stories/epic-10/story-10.6.md"
         story_points: 5
         dependencies: ["10.1", "10.5"]
+        notes: "JSON Schema validation for all configs"
       - number: 7
-        status: ready
+        status: done
         name: "Plugin System Enhancement"
         file: "docs/features/prompt-abstraction/stories/epic-10/story-10.7.md"
         story_points: 5
         dependencies: ["10.1", "10.5", "10.6"]
+        notes: "Enhanced plugin support for custom agents/prompts"
       - number: 8
-        status: ready
+        status: done
         name: "Migration & Cleanup"
         file: "docs/features/prompt-abstraction/stories/epic-10/story-10.8.md"
         story_points: 3
         dependencies: ["10.1", "10.2", "10.3", "10.4", "10.5", "10.6", "10.7"]
+        notes: "All hardcoded prompts removed, 100% backwards compatible"
 
-current_epic: 7.2
-current_story: 6
+current_epic: 10
+current_story: 8

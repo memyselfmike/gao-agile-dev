@@ -77,8 +77,10 @@ This document helps you (Claude) quickly understand the GAO-Dev project, its str
 ### What's Next
 
 1. **Real-world testing** - Run workflow-driven benchmarks to build complete applications
-2. **Epic 9: Continuous Improvement** - Optimize based on benchmark learnings
-3. **Production deployment** - Core architecture is complete and tested
+2. **Domain-specific teams** - Create gao-ops, gao-legal, gao-research using new abstraction
+3. **Prompt optimization** - A/B test prompt variations using YAML templates
+4. **Epic 9: Continuous Improvement** - Optimize based on benchmark learnings
+5. **Production deployment** - Core architecture is complete and tested
 
 ---
 
@@ -208,15 +210,24 @@ gao-agile-dev/
 │   │   ├── 3-solutioning/
 │   │   └── 4-implementation/
 │   │
-│   ├── prompts/                   # Prompt templates (NEW in Epic 10)
-│   │   ├── agents/                # Agent-specific prompts
-│   │   ├── tasks/                 # Task prompts (create_prd, etc.)
-│   │   ├── story_phases/          # Story lifecycle prompts
-│   │   └── common/                # Shared prompt components
-│   │
 │   ├── checklists/                # Quality checklists
-│   └── config/                    # Default configs
-│       └── defaults.yaml
+│   │
+│   └── config/                    # Configuration (ENHANCED in Epic 10)
+│       ├── agents/                # Agent YAML configurations
+│       │   ├── amelia.yaml, bob.yaml, john.yaml
+│       │   ├── winston.yaml, sally.yaml, murat.yaml
+│       │   ├── brian.yaml, mary.yaml
+│       │
+│       ├── prompts/               # Prompt templates
+│       │   ├── brian/             # Brian's prompts
+│       │   ├── story_orchestrator/ # Story phase prompts
+│       │   └── tasks/             # Task prompts
+│       │
+│       ├── schemas/               # JSON Schema validation
+│       │   ├── agent_schema.json
+│       │   └── prompt_schema.json
+│       │
+│       └── defaults.yaml          # Default settings
 │
 ├── sandbox/                       # Sandbox WORKSPACE
 │   ├── benchmarks/                # Benchmark configs
@@ -232,6 +243,7 @@ gao-agile-dev/
 │   ├── plugin-development-guide.md
 │   └── features/                  # Feature development docs
 │       ├── sandbox-system/        # Sandbox feature (Epics 1-7.2)
+│       ├── prompt-abstraction/    # Prompt abstraction (Epic 10)
 │       └── core-gao-dev-system-refactor/  # Refactoring (Epic 6)
 │
 ├── bmad/                          # BMAD Method reference
@@ -279,11 +291,11 @@ GAO-Dev uses a YAML-based abstraction system for all prompts and agent configura
 
 All prompts are externalized to YAML files with variable substitution:
 
-**Location**: `gao_dev/prompts/`
+**Location**: `gao_dev/config/prompts/`
 - `tasks/` - Task prompts (create_prd, implement_story, etc.)
-- `agents/` - Agent-specific prompts
-- `story_phases/` - Story lifecycle prompts
-- `common/` - Shared components
+- `brian/` - Brian's prompts (complexity analysis)
+- `story_orchestrator/` - Story lifecycle prompts
+- (More can be added via plugins)
 
 **Example Prompt Template**:
 ```yaml
@@ -312,7 +324,7 @@ response:
 ```python
 from gao_dev.core.prompt_loader import PromptLoader
 
-loader = PromptLoader(prompts_dir=Path("gao_dev/prompts"))
+loader = PromptLoader(prompts_dir=Path("gao_dev/config/prompts"))
 template = loader.load_prompt("tasks/create_prd")
 rendered = loader.render_prompt(template, {"project_name": "MyApp"})
 ```
@@ -337,7 +349,12 @@ variables:
 
 All agent definitions are in YAML format:
 
-**Location**: `gao_dev/agents/*.agent.yaml`
+**Location**: `gao_dev/config/agents/*.yaml`
+
+All 8 agents now configured in YAML:
+- `amelia.yaml`, `bob.yaml`, `john.yaml`
+- `winston.yaml`, `sally.yaml`, `murat.yaml`
+- `brian.yaml`, `mary.yaml`
 
 **Example Agent Config**:
 ```yaml

@@ -318,14 +318,33 @@ class TestAgentFactoryErrorHandling:
         # Should not raise error on initialization
         factory = AgentFactory(invalid_dir)
 
-        # But should handle missing persona files gracefully
-        agent = factory.create_agent("amelia")
-        assert agent.persona == ""  # Empty if directory doesn't exist
+        # Should have no agents registered
+        assert len(factory.list_available_agents()) == 0
 
     def test_factory_handles_persona_read_error(self, tmp_path, monkeypatch):
         """Test that factory handles errors reading persona files."""
         agents_dir = tmp_path / "agents"
         agents_dir.mkdir()
+
+        # Create minimal YAML config for amelia
+        yaml_data = {
+            "agent": {
+                "metadata": {
+                    "name": "Amelia",
+                    "role": "Software Developer",
+                    "version": "1.0.0",
+                },
+                "persona_file": "./amelia.md",
+                "tools": ["Read", "Write"],
+                "capabilities": ["implementation"],
+                "model": "claude-sonnet-4-5-20250929",
+            }
+        }
+        yaml_path = agents_dir / "amelia.agent.yaml"
+        with open(yaml_path, "w", encoding="utf-8") as f:
+            yaml.dump(yaml_data, f)
+
+        # Create persona file
         persona_file = agents_dir / "amelia.md"
         persona_file.write_text("Test persona")
 
@@ -346,9 +365,53 @@ class TestAgentFactoryBuiltinAgents:
     """Test suite for built-in agent configurations."""
 
     @pytest.fixture
-    def factory(self, tmp_path):
-        """Create factory with temp directory."""
-        return AgentFactory(tmp_path / "agents")
+    def agents_dir(self, tmp_path):
+        """Create temporary agents directory with persona files and YAML configs."""
+        agents_dir = tmp_path / "agents"
+        agents_dir.mkdir()
+
+        # Define all 8 agents with their configurations
+        agents = {
+            "mary": {"name": "Mary", "role": "Business Analyst", "tools": ["Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch"], "capabilities": ["analysis"]},
+            "john": {"name": "John", "role": "Product Manager", "tools": ["Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch"], "capabilities": ["planning", "project-management"]},
+            "winston": {"name": "Winston", "role": "Technical Architect", "tools": ["Read", "Write", "Edit", "Grep", "Glob", "WebSearch", "WebFetch"], "capabilities": ["architecture"]},
+            "sally": {"name": "Sally", "role": "UX Designer", "tools": ["Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch"], "capabilities": ["ux-design"]},
+            "bob": {"name": "Bob", "role": "Scrum Master", "tools": ["Read", "Write", "Grep", "Glob", "TodoWrite"], "capabilities": ["scrum-master", "project-management"]},
+            "amelia": {"name": "Amelia", "role": "Software Developer", "tools": ["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoWrite", "WebSearch", "WebFetch"], "capabilities": ["implementation", "code-review"]},
+            "murat": {"name": "Murat", "role": "Test Architect", "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "TodoWrite"], "capabilities": ["testing"]},
+            "brian": {"name": "Brian", "role": "Workflow Coordinator", "tools": ["Read", "Grep", "Glob", "WebSearch", "WebFetch"], "capabilities": ["project-management", "planning"]},
+        }
+
+        # Create YAML and persona files for each agent
+        for agent_name, agent_data in agents.items():
+            # Create YAML config file
+            yaml_data = {
+                "agent": {
+                    "metadata": {
+                        "name": agent_data["name"],
+                        "role": agent_data["role"],
+                        "version": "1.0.0",
+                    },
+                    "persona_file": f"./{agent_name}.md",
+                    "tools": agent_data["tools"],
+                    "capabilities": agent_data["capabilities"],
+                    "model": "claude-sonnet-4-5-20250929",
+                }
+            }
+            yaml_path = agents_dir / f"{agent_name}.agent.yaml"
+            with open(yaml_path, "w", encoding="utf-8") as f:
+                yaml.dump(yaml_data, f)
+
+            # Create persona file
+            persona_text = f"You are {agent_data['name']}, a {agent_data['role'].lower()}."
+            (agents_dir / f"{agent_name}.md").write_text(persona_text)
+
+        return agents_dir
+
+    @pytest.fixture
+    def factory(self, agents_dir):
+        """Create factory with agents directory."""
+        return AgentFactory(agents_dir)
 
     @pytest.mark.parametrize("agent_type,expected_role", [
         ("mary", "Business Analyst"),

@@ -75,7 +75,7 @@ When developing a new feature:
 ## Current Features
 
 ### Sandbox & Benchmarking System
-**Status**: Planning complete, ready for implementation
+**Status**: COMPLETE (Epics 1-7.2)
 **Location**: `features/sandbox-system/`
 **Purpose**: Test and measure GAO-Dev's autonomous capabilities
 
@@ -83,7 +83,25 @@ When developing a new feature:
 - [PRD](features/sandbox-system/PRD.md)
 - [Architecture](features/sandbox-system/ARCHITECTURE.md)
 - [Epics](features/sandbox-system/epics.md)
-- [Story 1.1](features/sandbox-system/stories/epic-1/story-1.1.md)
+
+### Prompt & Agent Configuration Abstraction
+**Status**: COMPLETE (Epic 10)
+**Location**: `features/prompt-abstraction/`
+**Purpose**: Transform GAO-Dev into methodology-agnostic framework
+
+**Key Features**:
+- All 8 agents in structured YAML configuration files
+- Zero hardcoded prompts (200+ lines extracted to templates)
+- PromptLoader with @file: and @config: reference resolution
+- Enhanced plugin system for custom agents and prompts
+- JSON Schema validation for all configurations
+- Foundation for domain-specific teams (gao-ops, gao-legal, gao-research)
+
+**Key Documents**:
+- [PRD](features/prompt-abstraction/PRD.md)
+- [Architecture](features/prompt-abstraction/ARCHITECTURE.md)
+- [Epics](features/prompt-abstraction/epics.md)
+- [README](features/prompt-abstraction/README.md)
 
 ## Finding Information
 
@@ -96,6 +114,12 @@ Autonomous benchmark guide | [sandbox-autonomous-benchmark-guide.md](sandbox-aut
 Sandbox system requirements | `features/sandbox-system/PRD.md`
 Sandbox architecture | `features/sandbox-system/ARCHITECTURE.md`
 Sandbox stories | `features/sandbox-system/stories/`
+**Prompt & Agent Abstraction** |
+Prompt abstraction overview | `features/prompt-abstraction/README.md`
+Prompt abstraction requirements | `features/prompt-abstraction/PRD.md`
+Prompt abstraction architecture | `features/prompt-abstraction/ARCHITECTURE.md`
+Agent configuration format | `features/prompt-abstraction/ARCHITECTURE.md#agent-configuration`
+Prompt template format | `features/prompt-abstraction/ARCHITECTURE.md#prompt-templates`
 **Workspace & Projects** |
 Sandbox test projects | `../sandbox/projects/`
 Benchmark configs | `../sandbox/benchmarks/`
