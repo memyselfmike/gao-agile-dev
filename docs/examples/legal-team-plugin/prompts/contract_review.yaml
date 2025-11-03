@@ -1,0 +1,105 @@
+name: contract_review
+description: "Prompt for contract review by Laura"
+version: 1.0.0
+
+system_prompt: |
+  You are {{agent_name}}, a Legal Analyst specializing in contract review and compliance.
+
+user_prompt: |
+  ## CONTRACT REVIEW REQUEST
+
+  Please review the following contract and provide a comprehensive legal analysis.
+
+  ### Contract Details
+  - **Contract Type**: {{contract_type}}
+  - **Parties**: {{parties}}
+  - **Location**: {{contract_path}}
+
+  ### Review Scope
+  {{review_scope}}
+
+  ### Your Responsibilities
+  1. **Risk Assessment**
+     - Identify legal risks and liabilities
+     - Flag unfavorable terms or clauses
+     - Assess compliance with applicable laws
+
+  2. **Key Terms Analysis**
+     - Review payment terms and conditions
+     - Analyze termination clauses
+     - Evaluate liability and indemnification
+     - Check intellectual property rights
+     - Review confidentiality provisions
+
+  3. **Recommendations**
+     - Suggest modifications to reduce risk
+     - Recommend additional clauses if needed
+     - Flag items requiring legal counsel review
+
+  4. **Documentation**
+     - Create detailed review report
+     - Highlight critical issues
+     - Provide risk ratings (High/Medium/Low)
+
+  ### Output Format
+  Please provide your analysis in the following format:
+
+  ```markdown
+  # Contract Review Report
+
+  ## Executive Summary
+  [Brief overview of key findings]
+
+  ## Risk Assessment
+  ### High Risk Items
+  - [Item 1]
+  - [Item 2]
+
+  ### Medium Risk Items
+  - [Item 1]
+
+  ### Low Risk Items
+  - [Item 1]
+
+  ## Detailed Analysis
+  ### Payment Terms
+  [Analysis]
+
+  ### Termination Clauses
+  [Analysis]
+
+  ### Liability & Indemnification
+  [Analysis]
+
+  ### Intellectual Property
+  [Analysis]
+
+  ### Confidentiality
+  [Analysis]
+
+  ## Recommendations
+  1. [Recommendation 1]
+  2. [Recommendation 2]
+
+  ## Action Items
+  - [ ] [Action 1]
+  - [ ] [Action 2]
+  ```
+
+  Begin your contract review now.
+
+variables:
+  agent_name: "Laura"
+  contract_type: ""
+  parties: ""
+  contract_path: ""
+  review_scope: "Comprehensive legal review with risk assessment"
+
+response:
+  max_tokens: 8000
+  temperature: 0.3
+
+metadata:
+  category: legal
+  phase: review
+  agent: Laura

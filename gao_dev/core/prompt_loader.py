@@ -19,16 +19,19 @@ logger = structlog.get_logger()
 
 class PromptLoaderError(Exception):
     """Base exception for prompt loader errors."""
+
     pass
 
 
 class PromptNotFoundError(PromptLoaderError):
     """Raised when a prompt template cannot be found."""
+
     pass
 
 
 class ReferenceResolutionError(PromptLoaderError):
     """Raised when a reference (@file: or @config:) cannot be resolved."""
+
     pass
 
 
@@ -66,7 +69,7 @@ class PromptLoader:
         prompts_dir: Path,
         config_loader: Optional[ConfigLoader] = None,
         cache_enabled: bool = True,
-        validator: Optional[SchemaValidator] = None
+        validator: Optional[SchemaValidator] = None,
     ):
         """
         Initialize prompt loader.
@@ -106,15 +109,14 @@ class PromptLoader:
         # Find prompt file
         prompt_file = self._find_prompt_file(prompt_name)
         if not prompt_file:
-            raise PromptNotFoundError(
-                f"Prompt '{prompt_name}' not found in {self.prompts_dir}"
-            )
+            raise PromptNotFoundError(f"Prompt '{prompt_name}' not found in {self.prompts_dir}")
 
         # Load template
         logger.debug("loading_prompt", prompt_name=prompt_name, path=str(prompt_file))
         try:
             # Load YAML first for validation
             import yaml
+
             with open(prompt_file, "r", encoding="utf-8") as f:
                 prompt_data = yaml.safe_load(f)
 
@@ -122,16 +124,14 @@ class PromptLoader:
             if self.validator and prompt_data:
                 try:
                     self.validator.validate_or_raise(
-                        prompt_data,
-                        "prompt",
-                        context=str(prompt_file.name)
+                        prompt_data, "prompt", context=str(prompt_file.name)
                     )
                 except SchemaValidationError as e:
                     logger.error(
                         "prompt_schema_validation_failed",
                         prompt_name=prompt_name,
                         path=str(prompt_file),
-                        errors=e.result.errors
+                        errors=e.result.errors,
                     )
                     raise PromptLoaderError(
                         f"Prompt validation failed for '{prompt_name}':\n{e}"
@@ -151,11 +151,7 @@ class PromptLoader:
 
         return template
 
-    def render_prompt(
-        self,
-        template: PromptTemplate,
-        variables: Dict[str, Any]
-    ) -> str:
+    def render_prompt(self, template: PromptTemplate, variables: Dict[str, Any]) -> str:
         """
         Render prompt template with variable substitution and reference resolution.
 
@@ -182,9 +178,7 @@ class PromptLoader:
         return template.render(resolved)
 
     def render_system_prompt(
-        self,
-        template: PromptTemplate,
-        variables: Dict[str, Any]
+        self, template: PromptTemplate, variables: Dict[str, Any]
     ) -> Optional[str]:
         """
         Render system prompt with variable substitution and reference resolution.
@@ -243,9 +237,7 @@ class PromptLoader:
         return None
 
     def _resolve_references(
-        self,
-        template_vars: Dict[str, Any],
-        user_vars: Dict[str, Any]
+        self, template_vars: Dict[str, Any], user_vars: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Resolve @file: and @config: references.
@@ -301,9 +293,7 @@ class PromptLoader:
             try:
                 return path.read_text(encoding="utf-8")
             except Exception as e:
-                raise ReferenceResolutionError(
-                    f"Failed to read file {path}: {e}"
-                )
+                raise ReferenceResolutionError(f"Failed to read file {path}: {e}")
 
         # Try relative to prompts directory
         prompts_relative = self.prompts_dir / path
@@ -311,9 +301,7 @@ class PromptLoader:
             try:
                 return prompts_relative.read_text(encoding="utf-8")
             except Exception as e:
-                raise ReferenceResolutionError(
-                    f"Failed to read file {prompts_relative}: {e}"
-                )
+                raise ReferenceResolutionError(f"Failed to read file {prompts_relative}: {e}")
 
         # Try relative to config loader's project root
         if self.config_loader:
@@ -322,9 +310,7 @@ class PromptLoader:
                 try:
                     return project_relative.read_text(encoding="utf-8")
                 except Exception as e:
-                    raise ReferenceResolutionError(
-                        f"Failed to read file {project_relative}: {e}"
-                    )
+                    raise ReferenceResolutionError(f"Failed to read file {project_relative}: {e}")
 
         raise ReferenceResolutionError(
             f"File not found: {file_path} "
@@ -352,8 +338,6 @@ class PromptLoader:
 
         value = self.config_loader.get(config_key)
         if value is None:
-            raise ReferenceResolutionError(
-                f"Config key not found: {config_key}"
-            )
+            raise ReferenceResolutionError(f"Config key not found: {config_key}")
 
         return value

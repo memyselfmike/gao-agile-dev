@@ -31,6 +31,15 @@ This document helps you (Claude) quickly understand the GAO-Dev project, its str
 
 ### Latest Achievements
 
+✅ **Epic 10: Prompt & Agent Configuration Abstraction** - COMPLETE
+  - All prompts externalized to YAML templates
+  - Agent configurations in structured YAML files
+  - PromptLoader with reference resolution (@file:, @config:)
+  - Enhanced plugin system for custom agents and prompts
+  - 5 task prompt templates created
+  - Example legal team plugin demonstrating extensibility
+  - Migration guide for upgrading
+
 ✅ **Epic 7.2: Workflow-Driven Core Architecture** - COMPLETE
   - Brian agent for intelligent workflow selection
   - Scale-adaptive routing (Levels 0-4)
@@ -61,6 +70,9 @@ This document helps you (Claude) quickly understand the GAO-Dev project, its str
 - Track comprehensive metrics
 - Generate detailed HTML reports
 - Validate results against success criteria
+- Load prompts and agent configs from YAML files
+- Support custom agents and prompts via plugins
+- Resolve references to files and configuration values
 
 ### What's Next
 
@@ -196,6 +208,12 @@ gao-agile-dev/
 │   │   ├── 3-solutioning/
 │   │   └── 4-implementation/
 │   │
+│   ├── prompts/                   # Prompt templates (NEW in Epic 10)
+│   │   ├── agents/                # Agent-specific prompts
+│   │   ├── tasks/                 # Task prompts (create_prd, etc.)
+│   │   ├── story_phases/          # Story lifecycle prompts
+│   │   └── common/                # Shared prompt components
+│   │
 │   ├── checklists/                # Quality checklists
 │   └── config/                    # Default configs
 │       └── defaults.yaml
@@ -250,6 +268,130 @@ GAO-Dev intelligently adapts its approach based on project scale (via Brian agen
 **Level 4: Greenfield Application** (40+ stories, 2-6 months)
 - Comprehensive methodology with discovery
 - Examples: New product, complete rewrite
+
+---
+
+## Prompt & Configuration System (Epic 10)
+
+GAO-Dev uses a YAML-based abstraction system for all prompts and agent configurations:
+
+### Prompt Templates
+
+All prompts are externalized to YAML files with variable substitution:
+
+**Location**: `gao_dev/prompts/`
+- `tasks/` - Task prompts (create_prd, implement_story, etc.)
+- `agents/` - Agent-specific prompts
+- `story_phases/` - Story lifecycle prompts
+- `common/` - Shared components
+
+**Example Prompt Template**:
+```yaml
+name: create_prd
+description: "Task prompt for PRD creation by John"
+version: 1.0.0
+
+user_prompt: |
+  Use the John agent to create a Product Requirements Document for '{{project_name}}'.
+
+  John should:
+  1. Use the 'prd' workflow to understand the structure
+  2. Create a comprehensive PRD.md file
+  ...
+
+variables:
+  project_name: ""
+  agent: "John"
+
+response:
+  max_tokens: 8000
+  temperature: 0.7
+```
+
+**Loading and Rendering Prompts**:
+```python
+from gao_dev.core.prompt_loader import PromptLoader
+
+loader = PromptLoader(prompts_dir=Path("gao_dev/prompts"))
+template = loader.load_prompt("tasks/create_prd")
+rendered = loader.render_prompt(template, {"project_name": "MyApp"})
+```
+
+### Reference Resolution
+
+The PromptLoader supports dynamic references:
+
+**File References** - Load content from files:
+```yaml
+variables:
+  responsibilities: "@file:common/responsibilities/developer.md"
+```
+
+**Config References** - Load from configuration:
+```yaml
+variables:
+  model: "@config:claude_model"
+```
+
+### Agent Configurations
+
+All agent definitions are in YAML format:
+
+**Location**: `gao_dev/agents/*.agent.yaml`
+
+**Example Agent Config**:
+```yaml
+agent:
+  metadata:
+    name: Mary
+    role: Engineering Manager
+    version: 1.0.0
+
+  persona:
+    background: |
+      You are Mary, an Engineering Manager...
+
+    responsibilities:
+      - Coordinate development teams
+      - Review technical decisions
+
+  tools:
+    - Read
+    - Write
+    - Grep
+
+  configuration:
+    model: "claude-sonnet-4-5-20250929"
+    max_tokens: 4000
+    temperature: 0.7
+```
+
+### Plugin System Extensions
+
+Plugins can provide custom agents and prompts:
+
+```python
+from gao_dev.plugins.agent_plugin import BaseAgentPlugin
+
+class MyPlugin(BaseAgentPlugin):
+    def get_agent_definitions(self) -> List[AgentConfig]:
+        """Return custom agent definitions from YAML."""
+        return [AgentConfig.from_yaml(Path("agents/custom.agent.yaml"))]
+
+    def get_prompt_templates(self) -> List[PromptTemplate]:
+        """Return custom prompt templates from YAML."""
+        return [PromptTemplate.from_yaml(Path("prompts/custom.yaml"))]
+```
+
+**Benefits**:
+- No code changes needed to update prompts
+- Easy customization and versioning
+- Plugin ecosystem for domain-specific extensions
+- Separation of concerns (logic vs. content)
+
+**See Also**:
+- [Migration Guide](docs/MIGRATION_GUIDE_EPIC_10.md)
+- [Plugin Example](docs/examples/legal-team-plugin/)
 
 ---
 

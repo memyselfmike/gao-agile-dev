@@ -1,0 +1,16 @@
+name: legal-team-plugin
+version: 1.0.0
+type: agent
+description: "Legal team plugin providing Laura (Legal Analyst) and contract review prompts"
+author: "GAO-Dev Team"
+enabled: true
+
+dependencies:
+  gao_dev: ">=0.2.0"
+
+metadata:
+  category: domain-specific
+  tags:
+    - legal
+    - contracts
+    - compliance

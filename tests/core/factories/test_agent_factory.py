@@ -145,11 +145,12 @@ class TestAgentFactory:
 
     def test_create_agent_handles_missing_persona_file(self, factory, agents_dir):
         """Test that agent creation works even if persona file is missing."""
-        # Brian doesn't have a persona file in our test setup
+        # Brian has persona from YAML config (no longer from .md file)
         agent = factory.create_agent("brian")
 
         assert isinstance(agent, IAgent)
-        assert agent.persona == ""  # Empty if file doesn't exist
+        # Brian has persona from brian.agent.yaml
+        assert agent.persona == "You are Brian, a workflow coordinator."
 
     # ========================================================================
     # Error Handling Tests

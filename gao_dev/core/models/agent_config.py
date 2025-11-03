@@ -110,7 +110,7 @@ class AgentConfig:
             icon=data["metadata"].get("icon"),
             version=data["metadata"].get("version", "1.0.0"),
             metadata=data.get("config", {}),
-            persona_file=data.get("persona_file")
+            persona_file=data.get("persona_file"),
         )
 
     def to_dict(self) -> Dict[str, Any]:
