@@ -8,6 +8,8 @@ from typing import List, Dict, Any, Optional
 import structlog
 
 from .config import StoryConfig, EpicConfig
+from ...core.prompt_loader import PromptLoader
+from ...core.config_loader import ConfigLoader
 
 logger = structlog.get_logger()
 
@@ -132,6 +134,7 @@ class StoryOrchestrator:
         api_key: Optional[str] = None,
         git_manager: Optional[Any] = None,
         metrics_aggregator: Optional[Any] = None,
+        prompt_loader: Optional[PromptLoader] = None,
     ):
         """
         Initialize story orchestrator.
@@ -141,6 +144,7 @@ class StoryOrchestrator:
             api_key: Anthropic API key for agent spawning
             git_manager: GitManager instance for commits
             metrics_aggregator: MetricsAggregator for tracking
+            prompt_loader: PromptLoader for loading story phase prompts
         """
         self.project_path = Path(project_path)
         self.api_key = api_key
@@ -149,6 +153,15 @@ class StoryOrchestrator:
         self.logger = logger.bind(
             component="StoryOrchestrator", project=str(project_path)
         )
+
+        # Initialize prompt loader
+        if prompt_loader:
+            self.prompt_loader = prompt_loader
+        else:
+            # Create default prompt loader
+            prompts_dir = Path(__file__).parent.parent.parent / "prompts"
+            config_loader = ConfigLoader(project_path)
+            self.prompt_loader = PromptLoader(prompts_dir, config_loader)
 
         # DEPRECATED (Epic 7.1.2): AgentSpawner removed
         # Story workflows now use GAODevOrchestrator.execute_story_workflow()
@@ -586,47 +599,30 @@ class StoryOrchestrator:
         - Clear acceptance criteria
         - No epic-level planning (just this story)
         """
-        return f"""You are Bob, the Scrum Master for GAO-Dev.
+        # Load story creation template
+        template = self.prompt_loader.load_prompt("story_phases/story_creation")
 
-## YOUR TASK: Create Specification for ONE Story
-
-**IMPORTANT**: Focus ONLY on this ONE story. Do not create other stories or plan the epic.
-
-### Story Overview
-- **Epic**: {result.epic_name}
+        # Format story overview
+        story_overview = f"""- **Epic**: {result.epic_name}
 - **Story Name**: {story.name}
 - **Story Points**: {story.story_points}
 - **Agent Responsible**: {story.agent}
-- **Description**: {story.description}
+- **Description**: {story.description}"""
 
-### Predefined Acceptance Criteria
-{chr(10).join(f"- {criterion}" for criterion in story.acceptance_criteria)}
+        # Format acceptance criteria
+        acceptance_criteria = "\n".join(
+            f"- {criterion}" for criterion in story.acceptance_criteria
+        )
 
-### Your Responsibilities
-
-1. **Review the Story**: Understand what needs to be built for THIS ONE story
-2. **Enhance Acceptance Criteria**: Add any technical acceptance criteria needed
-3. **Identify Dependencies**: List any files or components this story depends on
-4. **Define Technical Requirements**: Specify implementation details
-5. **Create Story Document**: Document this ONE story for Amelia to implement
-
-### Output Required
-
-Create a detailed story specification document that includes:
-- Clear, testable acceptance criteria
-- Technical implementation notes
-- Dependencies and prerequisites
-- Definition of done
-- Estimated complexity
-
-### Context
-- **Project Path**: {self.project_path}
-- **Working on**: ONE story at a time (incremental agile workflow)
-- **Next Step**: Amelia will implement this story based on your specification
-
-**Remember**: Focus on THIS ONE story. Amelia will use your specification to implement it.
-
-Begin creating the story specification now."""
+        # Render prompt with variables
+        return self.prompt_loader.render_prompt(
+            template,
+            variables={
+                "story_overview": story_overview,
+                "acceptance_criteria": acceptance_criteria,
+                "project_path": str(self.project_path),
+            },
+        )
 
     def _create_story_implementation_prompt(
         self, story: StoryConfig, result: StoryResult
@@ -639,57 +635,35 @@ Begin creating the story specification now."""
         - Following acceptance criteria
         - Writing tests for this story only
         """
-        # Get context from creation phase
-        creation_output = result.metadata.get("creation_output", "")
+        # Load story implementation template
+        template = self.prompt_loader.load_prompt("story_phases/story_implementation")
 
-        return f"""You are Amelia, the Software Developer for GAO-Dev.
-
-## YOUR TASK: Implement ONE Story
-
-**IMPORTANT**: Implement ONLY this ONE story. Do not implement other stories.
-
-### Story Details
-- **Epic**: {result.epic_name}
+        # Format story details
+        story_details = f"""- **Epic**: {result.epic_name}
 - **Story Name**: {story.name}
 - **Story Points**: {story.story_points}
-- **Description**: {story.description}
+- **Description**: {story.description}"""
 
-### Acceptance Criteria (Must All Be Met)
-{chr(10).join(f"- {criterion}" for criterion in story.acceptance_criteria)}
+        # Format acceptance criteria
+        acceptance_criteria = "\n".join(
+            f"- {criterion}" for criterion in story.acceptance_criteria
+        )
 
-### Context from Story Creation Phase
-{creation_output if creation_output else "No additional context from Bob"}
+        # Get context from creation phase
+        creation_context = result.metadata.get("creation_output", "")
+        if not creation_context:
+            creation_context = "No additional context from Bob"
 
-### Your Responsibilities
-
-1. **Implement THIS Story**: Write code to meet all acceptance criteria
-2. **Write Tests**: Create unit tests that verify acceptance criteria
-3. **Follow Standards**: Use TypeScript, proper typing, clean code
-4. **Document Code**: Add docstrings and comments as needed
-5. **Verify Locally**: Ensure tests pass before marking complete
-
-### Implementation Guidelines
-- **Focus**: ONE story at a time (not the whole epic)
-- **Quality**: Production-ready code with 80%+ test coverage
-- **Tests**: Write tests that verify each acceptance criterion
-- **Types**: Full TypeScript type safety, no 'any' types
-- **Style**: Follow project conventions and best practices
-
-### Context
-- **Project Path**: {self.project_path}
-- **Working on**: ONE story (incremental workflow)
-- **Next Step**: Murat will validate your implementation
-
-### Output Format
-Provide:
-- Summary of files created/modified
-- Test results showing acceptance criteria met
-- Any issues or blockers encountered
-- Confirmation that all acceptance criteria are satisfied
-
-**Remember**: Implement THIS ONE story completely. Murat will validate it next.
-
-Begin implementing the story now."""
+        # Render prompt with variables
+        return self.prompt_loader.render_prompt(
+            template,
+            variables={
+                "story_details": story_details,
+                "acceptance_criteria": acceptance_criteria,
+                "creation_context": creation_context,
+                "project_path": str(self.project_path),
+            },
+        )
 
     def _create_story_validation_prompt(
         self, story: StoryConfig, result: StoryResult
@@ -702,56 +676,32 @@ Begin implementing the story now."""
         - Checking all acceptance criteria
         - Running tests for this story only
         """
-        # Get context from implementation phase
-        implementation_output = result.metadata.get("implementation_output", "")
+        # Load story validation template
+        template = self.prompt_loader.load_prompt("story_phases/story_validation")
 
-        return f"""You are Murat, the Test Architect and QA Engineer for GAO-Dev.
-
-## YOUR TASK: Validate ONE Story
-
-**IMPORTANT**: Validate ONLY this ONE story. Do not test other stories.
-
-### Story Details
-- **Epic**: {result.epic_name}
+        # Format story details
+        story_details = f"""- **Epic**: {result.epic_name}
 - **Story Name**: {story.name}
 - **Story Points**: {story.story_points}
-- **Description**: {story.description}
+- **Description**: {story.description}"""
 
-### Acceptance Criteria to Verify
-{chr(10).join(f"- {criterion}" for criterion in story.acceptance_criteria)}
+        # Format acceptance criteria
+        acceptance_criteria = "\n".join(
+            f"- {criterion}" for criterion in story.acceptance_criteria
+        )
 
-### Context from Implementation Phase
-{implementation_output if implementation_output else "No context from Amelia"}
+        # Get context from implementation phase
+        implementation_context = result.metadata.get("implementation_output", "")
+        if not implementation_context:
+            implementation_context = "No context from Amelia"
 
-### Your Responsibilities
-
-1. **Run Tests**: Execute all tests related to THIS story
-2. **Verify Acceptance Criteria**: Confirm each criterion is met
-3. **Check Code Quality**: Verify type safety, linting, coverage
-4. **Validate Functionality**: Manual testing if needed
-5. **Report Results**: Clear pass/fail for each criterion
-
-### Validation Checklist
-- [ ] All tests passing for this story
-- [ ] Test coverage >= 80% for new code
-- [ ] No TypeScript errors
-- [ ] No linting errors
-- [ ] All acceptance criteria verified
-- [ ] Code follows project standards
-
-### Context
-- **Project Path**: {self.project_path}
-- **Working on**: ONE story (incremental validation)
-- **Next Step**: If passing, story will be committed
-
-### Output Format
-Provide:
-- Test results (passing/failing counts)
-- Acceptance criteria verification (checked/unchecked)
-- Code quality metrics (coverage, linting, types)
-- Overall verdict: PASS or FAIL
-- If FAIL: Specific issues that need fixing
-
-**Remember**: Validate THIS ONE story. If it passes, it will be committed atomically.
-
-Begin validating the story now."""
+        # Render prompt with variables
+        return self.prompt_loader.render_prompt(
+            template,
+            variables={
+                "story_details": story_details,
+                "acceptance_criteria": acceptance_criteria,
+                "implementation_context": implementation_context,
+                "project_path": str(self.project_path),
+            },
+        )
