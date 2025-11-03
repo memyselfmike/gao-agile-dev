@@ -1,0 +1,6 @@
+Scale Levels (BMAD Method):
+- Level 0: Single atomic change (1 story) - bug fix, small tweak
+- Level 1: Small feature (2-10 stories, 1 epic) - single focused feature
+- Level 2: Medium project (5-15 stories, 1-2 epics) - feature set, small app
+- Level 3: Large project (12-40 stories, 2-5 epics) - complex app, system
+- Level 4: Enterprise system (40+ stories, 5+ epics) - enterprise platform

@@ -18,6 +18,8 @@ from anthropic import Anthropic
 
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.models.workflow import WorkflowInfo
+from ..core.prompt_loader import PromptLoader
+from ..core.config_loader import ConfigLoader
 from .models import (
     ScaleLevel,
     ProjectType,
@@ -41,7 +43,8 @@ class BrianOrchestrator:
         self,
         workflow_registry: WorkflowRegistry,
         api_key: Optional[str] = None,
-        brian_persona_path: Optional[Path] = None
+        brian_persona_path: Optional[Path] = None,
+        project_root: Optional[Path] = None
     ):
         """
         Initialize Brian Orchestrator.
@@ -50,11 +53,25 @@ class BrianOrchestrator:
             workflow_registry: Registry of available workflows
             api_key: Anthropic API key (uses env var if not provided)
             brian_persona_path: Path to Brian's agent definition
+            project_root: Project root for PromptLoader (defaults to gao_dev parent)
         """
         self.workflow_registry = workflow_registry
         self.anthropic = Anthropic(api_key=api_key) if api_key else Anthropic()
         self.brian_persona_path = brian_persona_path
         self.logger = logger.bind(component="brian_orchestrator", agent="Brian")
+
+        # Initialize PromptLoader
+        if project_root is None:
+            project_root = Path(__file__).parent.parent.parent
+        self.project_root = project_root
+
+        # Setup config and prompt loaders
+        self.config_loader = ConfigLoader(project_root)
+        prompts_dir = Path(__file__).parent.parent / "prompts"
+        self.prompt_loader = PromptLoader(
+            prompts_dir=prompts_dir,
+            config_loader=self.config_loader
+        )
 
     async def assess_and_select_workflows(
         self,
@@ -145,59 +162,22 @@ class BrianOrchestrator:
         if self.brian_persona_path and self.brian_persona_path.exists():
             brian_context = self.brian_persona_path.read_text(encoding="utf-8")
 
-        # Create analysis prompt for Claude
-        analysis_prompt = f"""You are Brian Thompson, a Senior Engineering Manager with 20 years of battle-tested experience analyzing software projects.
+        # Load and render prompt template
+        try:
+            template = self.prompt_loader.load_prompt("agents/brian_analysis")
 
-{brian_context[:500] if brian_context else ""}
-
-Analyze this software development request and assess its scale level using the BMAD scale-adaptive approach:
-
-User Request:
-{prompt}
-
-Scale Levels (BMAD Method):
-- Level 0: Single atomic change (1 story) - bug fix, small tweak
-- Level 1: Small feature (2-10 stories, 1 epic) - single focused feature
-- Level 2: Medium project (5-15 stories, 1-2 epics) - feature set, small app
-- Level 3: Large project (12-40 stories, 2-5 epics) - complex app, system
-- Level 4: Enterprise system (40+ stories, 5+ epics) - enterprise platform
-
-Assess the following:
-1. Scale Level (0-4): Based on estimated story count
-2. Project Type: greenfield, brownfield, game, software, bug_fix, enhancement
-3. Is Greenfield: Building from scratch?
-4. Is Brownfield: Enhancing existing code?
-5. Is Game Project: Game development?
-6. Estimated Stories: How many stories would this take?
-7. Estimated Epics: How many epics?
-8. Technical Complexity: low, medium, high
-9. Domain Complexity: low, medium, high
-10. Timeline Hint: hours, days, weeks, months (or null)
-11. Confidence: 0.0-1.0 (how confident are you?)
-12. Reasoning: Your expert assessment (1-2 sentences)
-13. Needs Clarification: true/false - Is the scope too ambiguous?
-14. Clarifying Questions: If ambiguous, what should we ask? (list)
-
-Return ONLY a JSON object with these exact keys:
-{{
-    "scale_level": 0-4,
-    "project_type": "greenfield|brownfield|game|software|bug_fix|enhancement",
-    "is_greenfield": true|false,
-    "is_brownfield": true|false,
-    "is_game_project": true|false,
-    "estimated_stories": number,
-    "estimated_epics": number,
-    "technical_complexity": "low|medium|high",
-    "domain_complexity": "low|medium|high",
-    "timeline_hint": "hours|days|weeks|months" or null,
-    "confidence": 0.85,
-    "reasoning": "Your expert assessment...",
-    "needs_clarification": true|false,
-    "clarifying_questions": ["Question 1?", "Question 2?"]
-}}
-
-Use your seasoned judgment to right-size the project accurately.
-"""
+            # Render the prompt with variables
+            analysis_prompt = self.prompt_loader.render_prompt(
+                template,
+                variables={
+                    "user_request": prompt,
+                    "brian_persona": brian_context[:500] if brian_context else "",
+                }
+            )
+        except Exception as e:
+            self.logger.error("failed_to_load_prompt_template", error=str(e))
+            # Fallback to inline prompt if template loading fails
+            analysis_prompt = self._get_fallback_prompt(prompt, brian_context)
 
         # Call Claude for analysis
         try:
@@ -456,3 +436,67 @@ Use your seasoned judgment to right-size the project accurately.
             ScaleLevel.LEVEL_4: "Enterprise system (40+ stories, 5+ epics) - enterprise platform or large system"
         }
         return descriptions.get(scale_level, "Unknown scale level")
+
+    def _get_fallback_prompt(self, prompt: str, brian_context: str) -> str:
+        """
+        Get fallback prompt if template loading fails.
+
+        Args:
+            prompt: User request
+            brian_context: Brian's persona context
+
+        Returns:
+            Fallback analysis prompt
+        """
+        return f"""You are Brian Thompson, a Senior Engineering Manager with 20 years of battle-tested experience analyzing software projects.
+
+{brian_context[:500] if brian_context else ""}
+
+Analyze this software development request and assess its scale level using the BMAD scale-adaptive approach:
+
+User Request:
+{prompt}
+
+Scale Levels (BMAD Method):
+- Level 0: Single atomic change (1 story) - bug fix, small tweak
+- Level 1: Small feature (2-10 stories, 1 epic) - single focused feature
+- Level 2: Medium project (5-15 stories, 1-2 epics) - feature set, small app
+- Level 3: Large project (12-40 stories, 2-5 epics) - complex app, system
+- Level 4: Enterprise system (40+ stories, 5+ epics) - enterprise platform
+
+Assess the following:
+1. Scale Level (0-4): Based on estimated story count
+2. Project Type: greenfield, brownfield, game, software, bug_fix, enhancement
+3. Is Greenfield: Building from scratch?
+4. Is Brownfield: Enhancing existing code?
+5. Is Game Project: Game development?
+6. Estimated Stories: How many stories would this take?
+7. Estimated Epics: How many epics?
+8. Technical Complexity: low, medium, high
+9. Domain Complexity: low, medium, high
+10. Timeline Hint: hours, days, weeks, months (or null)
+11. Confidence: 0.0-1.0 (how confident are you?)
+12. Reasoning: Your expert assessment (1-2 sentences)
+13. Needs Clarification: true/false - Is the scope too ambiguous?
+14. Clarifying Questions: If ambiguous, what should we ask? (list)
+
+Return ONLY a JSON object with these exact keys:
+{{
+    "scale_level": 0-4,
+    "project_type": "greenfield|brownfield|game|software|bug_fix|enhancement",
+    "is_greenfield": true|false,
+    "is_brownfield": true|false,
+    "is_game_project": true|false,
+    "estimated_stories": number,
+    "estimated_epics": number,
+    "technical_complexity": "low|medium|high",
+    "domain_complexity": "low|medium|high",
+    "timeline_hint": "hours|days|weeks|months" or null,
+    "confidence": 0.85,
+    "reasoning": "Your expert assessment...",
+    "needs_clarification": true|false,
+    "clarifying_questions": ["Question 1?", "Question 2?"]
+}}
+
+Use your seasoned judgment to right-size the project accurately.
+"""
