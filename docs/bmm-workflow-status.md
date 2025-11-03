@@ -1,9 +1,9 @@
 ---
-last_updated: 2025-10-29
+last_updated: 2025-11-03
 phase: 4-implementation
 scale_level: 3
 project_type: software
-project_name: GAO-Dev Sandbox & Benchmarking System
+project_name: GAO-Dev - Complete System
 ---
 
 # BMM Workflow Status
@@ -11,10 +11,10 @@ project_name: GAO-Dev Sandbox & Benchmarking System
 ## Current State
 
 **Phase**: 4 - Implementation
-**Scale Level**: 3 (Level 3: 12-40 stories, 2-5 epics - we have 8 epics)
+**Scale Level**: 3 (Level 3: 12-40 stories, 2-5 epics - we have 10 epics)
 **Project Type**: Software - Python Development Framework
-**Current Epic**: Epic 7.2 - Workflow-Driven Core Architecture
-**Status**: Epic 7.2 COMPLETE - 6 of 6 stories done (100% done)
+**Current Epic**: Epic 10 - Prompt & Agent Configuration Abstraction
+**Status**: Documentation COMPLETE - Ready to implement (8 stories, 37 story points)
 
 ## Project Overview
 
@@ -255,19 +255,50 @@ This is THE core functionality of GAO-Dev. Epic 7 transforms GAO-Dev from a chat
 **Achievement**:
 GAO-Dev now intelligently selects workflows based on project type, scale level, and context. It can execute multi-workflow sequences and handle complex development scenarios autonomously.
 
-## Current Focus: Core Architecture Complete
+## Current Epic: Epic 10 - Prompt & Agent Configuration Abstraction 🔄 READY
 
-All core infrastructure and workflow orchestration complete! The system now has:
-- ✅ Intelligent workflow selection (Brian agent)
-- ✅ Scale-adaptive routing (Levels 0-4)
-- ✅ Multi-workflow sequencing
-- ✅ Comprehensive integration tests (41 tests)
-- ✅ Full BMAD workflow registry (55+ workflows)
+**Goal**: Transform GAO-Dev into a methodology-agnostic, domain-flexible framework by abstracting all hardcoded prompts and agent configurations into declarative YAML files.
 
-Ready for:
-1. **Real-world testing** - GAO-Dev autonomously building applications
-2. **Production deployment** - System architecture complete
-3. **Continuous improvement** (Epic 9) based on benchmark learnings
+**Status**: Documentation COMPLETE - Ready to implement
+
+**Key Documents**:
+- PRD: `docs/features/prompt-abstraction/PRD.md` (18KB)
+- Architecture: `docs/features/prompt-abstraction/ARCHITECTURE.md` (27KB)
+- Epics: `docs/features/prompt-abstraction/epics.md` (11KB)
+
+**Success Criteria**:
+- ✅ Documentation complete (PRD, Architecture, 8 stories)
+- ⏳ All 8 agents in YAML format
+- ⏳ Zero hardcoded prompts in Python (extract 200+ lines)
+- ⏳ PromptLoader and PromptRegistry implemented
+- ⏳ JSON Schema validation for all configs
+- ⏳ Plugin system supports custom agents/prompts
+- ⏳ Performance overhead <5%
+
+**Stories** (37 story points total):
+1. ⏳ Story 10.1: Agent Configuration Unification (5 points) - READY
+2. ⏳ Story 10.2: Prompt Extraction - Brian (3 points) - depends on 10.5
+3. ⏳ Story 10.3: Prompt Extraction - Story Orchestrator (5 points) - depends on 10.5
+4. ⏳ Story 10.4: Prompt Extraction - Task Prompts (3 points) - depends on 10.5
+5. ⏳ Story 10.5: Prompt Management System (8 points) - READY
+6. ⏳ Story 10.6: Schema Validation (5 points) - depends on 10.1, 10.5
+7. ⏳ Story 10.7: Plugin System Enhancement (5 points) - depends on 10.1, 10.5, 10.6
+8. ⏳ Story 10.8: Migration & Cleanup (3 points) - depends on all others
+
+**Timeline**: ~14 weeks (7 sprints)
+
+**Phase Plan**:
+- Phase 1 (Sprints 1-2): Stories 10.1 + 10.5 (Foundation)
+- Phase 2 (Sprints 3-4): Stories 10.2, 10.3, 10.4 (Prompt Migration)
+- Phase 3 (Sprints 5-6): Stories 10.6, 10.7 (Quality & Extensions)
+- Phase 4 (Sprint 7): Story 10.8 (Cleanup)
+
+**Benefits After Completion**:
+- Add agents: <30 min (vs 2+ hours)
+- Modify prompts: <5 min (vs 20+ min)
+- Create domain teams (gao-ops, gao-legal, gao-research)
+- 90% reduction in config errors
+- True methodology-agnostic framework
 
 ## Epic 8: Reference Todo Application - CANCELLED
 
@@ -299,28 +330,49 @@ This tests the ACTUAL autonomous development capability, not just comparison to 
 
 ## Next Actions
 
-1. **RUN WORKFLOW-DRIVEN BENCHMARKS** - Test GAO-Dev's autonomous capabilities
-   - Use: `sandbox/benchmarks/workflow-driven-todo.yaml`
-   - Requires: ANTHROPIC_API_KEY
-   - Command: `gao-dev sandbox run sandbox/benchmarks/workflow-driven-todo.yaml`
-   - Expected: Complete todo app autonomously created
+### Immediate: Start Epic 10 Implementation
 
-2. **TEST AT DIFFERENT SCALE LEVELS**
-   - Level 0: Chore (fix typo, update docs)
-   - Level 1: Bug fix (single file change)
-   - Level 2: Small feature (3-8 stories) ← tested with todo app
-   - Level 3: Medium feature (12-20 stories)
-   - Level 4: Greenfield application (40+ stories)
+**Recommended Start**: Story 10.5 (Prompt Management System) and Story 10.1 (Agent Configuration) in parallel
 
-3. **OPTIONAL: Story 4.8** - Implement Standalone Execution Mode (requires anthropic SDK)
+**Story 10.5: Prompt Management System** (8 points) - NO DEPENDENCIES
+- Implement PromptLoader class
+- Implement PromptRegistry class
+- Implement PromptTemplate data model
+- Add variable substitution ({{var}} syntax)
+- Add reference resolution (@file:, @config:)
+- Add caching for performance
+- Comprehensive tests (80%+ coverage)
 
-4. **EPIC 9: Continuous Improvement** - Based on real benchmark results
-   - Create stories for gaps identified
-   - Optimize workflow selection
-   - Improve agent prompts
-   - Enhance error handling
+**Story 10.1: Agent Configuration Unification** (5 points) - NO DEPENDENCIES
+- Create AgentConfig data model
+- Implement AgentConfigLoader
+- Create 8 agent YAML files (amelia, bob, john, mary, winston, sally, murat, brian)
+- Refactor AgentFactory to use loader
+- Remove hardcoded agent configs
 
-5. **Continue BMAD Process** - Follow implementation workflows
+**After Foundation Complete**:
+- Story 10.2, 10.3, 10.4: Extract prompts (depends on 10.5)
+- Story 10.6: Schema validation (depends on 10.1, 10.5)
+- Story 10.7: Plugin enhancement (depends on 10.1, 10.5, 10.6)
+- Story 10.8: Cleanup (depends on all)
+
+### Parallel Work Possible
+
+**While Epic 10 in progress**:
+1. **RUN WORKFLOW-DRIVEN BENCHMARKS** - Test existing capabilities
+   - `gao-dev sandbox run sandbox/benchmarks/workflow-driven-todo.yaml`
+   - Test GAO-Dev building real applications
+   - Identify gaps for Epic 9 (Continuous Improvement)
+
+2. **OPTIONAL: Story 4.8** - Standalone Execution Mode (if anthropic SDK available)
+
+### After Epic 10 Complete
+
+**Epic 9: Continuous Improvement** - Based on benchmark learnings
+- Optimize prompts using new abstraction system
+- A/B test prompt variations
+- Create domain-specific agent teams (gao-ops, gao-legal)
+- Enhance error handling and recovery
 
 ## Update History
 
@@ -345,6 +397,11 @@ This tests the ACTUAL autonomous development capability, not just comparison to 
 - **2025-10-29**: Core workflow-driven architecture complete and validated
 - **2025-10-29**: Epic 8 CANCELLED - Obsolete due to architectural shift in Epic 7.2 (GAO-Dev should BUILD the reference app, not us!)
 - **2025-10-29**: Created workflow-driven-todo.yaml benchmark - Tests autonomous app creation
+- **2025-11-03**: Epic 10 DOCUMENTED - Prompt & Agent Configuration Abstraction (37 story points, 8 stories)
+- **2025-11-03**: Created comprehensive documentation: PRD (18KB), Architecture (27KB), epics.md (11KB), 8 story files
+- **2025-11-03**: Epic 10 READY TO IMPLEMENT - Foundation stories (10.1, 10.5) can start immediately
+- **2025-11-03**: Feature branch created: feature/epic-8-prompt-agent-abstraction
+- **2025-11-03**: Goal: Transform GAO-Dev into methodology-agnostic framework, enable gao-ops, gao-legal, gao-research teams
 
 ---
 
