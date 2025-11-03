@@ -1,0 +1,25 @@
+agent:
+  metadata:
+    name: Bob
+    role: Scrum Master
+    icon: 🏃
+    version: 1.0.0
+
+  persona_file: ./bob.md
+
+  tools:
+    - Read
+    - Write
+    - Grep
+    - Glob
+    - TodoWrite
+
+  capabilities:
+    - scrum-master
+    - project-management
+
+  model: claude-sonnet-4-5-20250929
+
+  workflows:
+    - create-story
+    - implement-story

@@ -12,6 +12,8 @@ import structlog
 
 from ..interfaces.agent import IAgent, IAgentFactory
 from ..models.agent import AgentConfig, AgentCapability, CommonCapabilities
+from ..agent_config_loader import AgentConfigLoader
+from ..models.agent_config import AgentConfig as YAMLAgentConfig
 from ...agents.claude_agent import ClaudeAgent
 from ...agents.exceptions import (
     AgentNotFoundError,
@@ -54,6 +56,7 @@ class AgentFactory(IAgentFactory):
         self._registry: Dict[str, Type[IAgent]] = {}
         self._agents_dir = Path(agents_dir)
         self._agent_configs: Dict[str, Dict] = {}
+        self._yaml_agent_configs: Dict[str, YAMLAgentConfig] = {}
 
         # Register built-in agent class
         self._register_builtin_agents()
@@ -96,35 +99,71 @@ class AgentFactory(IAgentFactory):
         # Get agent class from registry
         agent_class = self._registry[agent_type_lower]
 
+        # Get YAML config if available, otherwise fall back to old config
+        yaml_config = self._yaml_agent_configs.get(agent_type_lower)
+
         # Get built-in config if not provided
-        if config is None and agent_type_lower in self._agent_configs:
-            builtin_config = self._agent_configs[agent_type_lower]
-            config = AgentConfig(
-                name=builtin_config["name"],
-                role=builtin_config["role"],
-                persona_file=builtin_config.get("persona_file"),
-                tools=builtin_config.get("tools", []),
-            )
+        if config is None:
+            if yaml_config:
+                # Use YAML config
+                config = AgentConfig(
+                    name=yaml_config.name,
+                    role=yaml_config.role,
+                    persona_file=self._agents_dir / f"{agent_type_lower}.md",
+                    tools=yaml_config.tools,
+                )
+            elif agent_type_lower in self._agent_configs:
+                # Use legacy config
+                builtin_config = self._agent_configs[agent_type_lower]
+                config = AgentConfig(
+                    name=builtin_config["name"],
+                    role=builtin_config["role"],
+                    persona_file=builtin_config.get("persona_file"),
+                    tools=builtin_config.get("tools", []),
+                )
 
         try:
-            # Load persona from file if it exists
-            persona_file = self._agents_dir / f"{agent_type_lower}.md"
-            persona = ""
+            # Use persona from YAML config if available
+            if yaml_config:
+                persona = yaml_config.persona
+                persona_file = self._agents_dir / f"{agent_type_lower}.md"
+            else:
+                # Load persona from file if it exists (legacy path)
+                persona_file = self._agents_dir / f"{agent_type_lower}.md"
+                persona = ""
 
-            if persona_file.exists():
-                try:
-                    persona = persona_file.read_text(encoding="utf-8")
-                except Exception as e:
-                    logger.warning(
-                        "failed_to_load_persona",
-                        agent_type=agent_type,
-                        persona_file=str(persona_file),
-                        error=str(e)
-                    )
+                if persona_file.exists():
+                    try:
+                        persona = persona_file.read_text(encoding="utf-8")
+                    except Exception as e:
+                        logger.warning(
+                            "failed_to_load_persona",
+                            agent_type=agent_type,
+                            persona_file=str(persona_file),
+                            error=str(e)
+                        )
 
-            # Get capabilities from builtin config
+            # Get capabilities from YAML config or legacy config
             capabilities = None
-            if agent_type_lower in self._agent_configs:
+            if yaml_config:
+                # Convert string capabilities to AgentCapability objects
+                capabilities = []
+                for cap_str in yaml_config.capabilities:
+                    # Map string capability to CommonCapabilities
+                    cap_map = {
+                        "analysis": CommonCapabilities.ANALYSIS,
+                        "planning": CommonCapabilities.PLANNING,
+                        "architecture": CommonCapabilities.ARCHITECTURE,
+                        "ux-design": CommonCapabilities.UX_DESIGN,
+                        "implementation": CommonCapabilities.IMPLEMENTATION,
+                        "code-review": CommonCapabilities.CODE_REVIEW,
+                        "testing": CommonCapabilities.TESTING,
+                        "project-management": CommonCapabilities.PROJECT_MANAGEMENT,
+                        "scrum-master": CommonCapabilities.SCRUM_MASTER,
+                    }
+                    if cap_str in cap_map:
+                        capabilities.append(cap_map[cap_str])
+            elif agent_type_lower in self._agent_configs:
                 capabilities = self._agent_configs[agent_type_lower].get("capabilities", [])
 
             # Create agent instance
@@ -133,7 +172,7 @@ class AgentFactory(IAgentFactory):
                 role=config.role if config else "",
                 persona=persona,
                 tools=config.tools if config else [],
-                model="claude-sonnet-4-5-20250929",
+                model=yaml_config.model if yaml_config else "claude-sonnet-4-5-20250929",
                 persona_file=persona_file if persona_file.exists() else None,
                 capabilities=capabilities
             )
@@ -278,70 +317,61 @@ class AgentFactory(IAgentFactory):
         """
         Register all built-in GAO-Dev agents.
 
-        This method registers all 8 core agents: Mary, John, Winston,
-        Sally, Bob, Amelia, Murat, and Brian.
+        This method loads agent configurations from YAML files using
+        AgentConfigLoader. It discovers all .agent.yaml files in the
+        agents directory and registers them.
+
+        All 8 core agents (Mary, John, Winston, Sally, Bob, Amelia,
+        Murat, and Brian) are loaded from their respective YAML files.
         """
-        # Define built-in agent configurations
-        builtin_agents = {
-            "mary": {
-                "name": "Mary",
-                "role": "Business Analyst",
-                "tools": ["Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch"],
-                "capabilities": [CommonCapabilities.ANALYSIS]
-            },
-            "john": {
-                "name": "John",
-                "role": "Product Manager",
-                "tools": ["Read", "Write", "Grep", "Glob"],
-                "capabilities": [CommonCapabilities.PLANNING, CommonCapabilities.PROJECT_MANAGEMENT]
-            },
-            "winston": {
-                "name": "Winston",
-                "role": "Technical Architect",
-                "tools": ["Read", "Write", "Edit", "Grep", "Glob"],
-                "capabilities": [CommonCapabilities.ARCHITECTURE]
-            },
-            "sally": {
-                "name": "Sally",
-                "role": "UX Designer",
-                "tools": ["Read", "Write", "Grep", "Glob"],
-                "capabilities": [CommonCapabilities.UX_DESIGN]
-            },
-            "bob": {
-                "name": "Bob",
-                "role": "Scrum Master",
-                "tools": ["Read", "Write", "Grep", "Glob"],
-                "capabilities": [CommonCapabilities.SCRUM_MASTER, CommonCapabilities.PROJECT_MANAGEMENT]
-            },
-            "amelia": {
-                "name": "Amelia",
-                "role": "Software Developer",
-                "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
-                "capabilities": [CommonCapabilities.IMPLEMENTATION, CommonCapabilities.CODE_REVIEW]
-            },
-            "murat": {
-                "name": "Murat",
-                "role": "Test Architect",
-                "tools": ["Read", "Write", "Edit", "Bash", "Grep", "Glob"],
-                "capabilities": [CommonCapabilities.TESTING]
-            },
-            "brian": {
-                "name": "Brian",
-                "role": "Workflow Coordinator",
-                "tools": ["Read", "Write", "Grep", "Glob"],
-                "capabilities": [CommonCapabilities.PROJECT_MANAGEMENT, CommonCapabilities.PLANNING]
-            }
-        }
+        try:
+            # Initialize loader
+            loader = AgentConfigLoader(self._agents_dir)
 
-        # Store configurations
-        self._agent_configs = builtin_agents
+            # Discover and load all agents
+            agent_names = loader.discover_agents()
 
-        # Register ClaudeAgent class for all built-in agents
-        for agent_type in builtin_agents.keys():
-            self._registry[agent_type] = ClaudeAgent
+            if not agent_names:
+                logger.warning(
+                    "no_agent_yaml_files_found",
+                    agents_dir=str(self._agents_dir)
+                )
+                return
 
-        logger.info(
-            "builtin_agents_registered",
-            count=len(builtin_agents),
-            agents=list(builtin_agents.keys())
-        )
+            # Load each agent configuration
+            for agent_name in agent_names:
+                try:
+                    yaml_config = loader.load_agent(agent_name)
+                    self._yaml_agent_configs[agent_name] = yaml_config
+
+                    # Register ClaudeAgent class for this agent
+                    self._registry[agent_name] = ClaudeAgent
+
+                    logger.debug(
+                        "agent_registered_from_yaml",
+                        agent_name=agent_name,
+                        name=yaml_config.name,
+                        role=yaml_config.role
+                    )
+
+                except Exception as e:
+                    logger.error(
+                        "failed_to_load_agent_yaml",
+                        agent_name=agent_name,
+                        error=str(e)
+                    )
+                    # Continue loading other agents even if one fails
+
+            logger.info(
+                "builtin_agents_registered",
+                count=len(self._yaml_agent_configs),
+                agents=list(self._yaml_agent_configs.keys())
+            )
+
+        except Exception as e:
+            logger.error(
+                "failed_to_register_builtin_agents",
+                error=str(e)
+            )
+            # Fall back to empty registry - agents can still be registered manually
+            pass

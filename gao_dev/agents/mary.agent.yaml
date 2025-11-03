@@ -1,0 +1,26 @@
+agent:
+  metadata:
+    name: Mary
+    role: Business Analyst
+    icon: 📊
+    version: 1.0.0
+
+  persona_file: ./mary.md
+
+  tools:
+    - Read
+    - Write
+    - Grep
+    - Glob
+    - WebSearch
+    - WebFetch
+
+  capabilities:
+    - analysis
+
+  model: claude-sonnet-4-5-20250929
+
+  workflows:
+    - product-brief
+    - research
+    - brainstorm
