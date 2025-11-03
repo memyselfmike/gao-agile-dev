@@ -1,9 +1,9 @@
-# Story 8.7: Plugin System Enhancement
+# Story 10.7: Plugin System Enhancement
 
-**Epic**: 8 - Prompt & Agent Abstraction
+**Epic**: 10 - Prompt & Agent Abstraction
 **Story Points**: 5
 **Priority**: Low
-**Dependencies**: Story 8.1, 8.5, 8.6
+**Dependencies**: Story 10.1, 10.5, 10.6
 
 ---
 

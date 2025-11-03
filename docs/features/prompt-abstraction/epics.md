@@ -2,7 +2,7 @@
 ## Prompt & Agent Configuration Abstraction System
 
 **Feature**: Prompt & Agent Abstraction
-**Epic 8**: Complete Abstraction System
+**Epic 10**: Complete Abstraction System
 **Total Story Points**: 37
 **Estimated Duration**: 7 sprints (~14 weeks)
 
@@ -10,7 +10,7 @@
 
 ## Overview
 
-Epic 8 transforms GAO-Dev from a hardcoded, domain-specific framework into a flexible, methodology-agnostic platform by:
+Epic 10 transforms GAO-Dev from a hardcoded, domain-specific framework into a flexible, methodology-agnostic platform by:
 1. Extracting 200+ lines of hardcoded prompts to YAML templates
 2. Unifying all agent definitions under a single declarative schema
 3. Building infrastructure for prompt loading, validation, and rendering
@@ -22,14 +22,14 @@ Epic 8 transforms GAO-Dev from a hardcoded, domain-specific framework into a fle
 
 | Story | Name | Points | Priority | Dependencies |
 |-------|------|--------|----------|--------------|
-| 8.1 | Agent Configuration Unification | 5 | High | None |
-| 8.2 | Prompt Extraction - Brian | 3 | High | 8.5 |
-| 8.3 | Prompt Extraction - Story Orchestrator | 5 | High | 8.5 |
-| 8.4 | Prompt Extraction - Task Prompts | 3 | Medium | 8.5 |
-| 8.5 | Prompt Management System | 8 | High | None |
-| 8.6 | Schema Validation | 5 | Medium | 8.1, 8.5 |
-| 8.7 | Plugin System Enhancement | 5 | Low | 8.1, 8.5, 8.6 |
-| 8.8 | Migration & Cleanup | 3 | Medium | 8.1-8.7 |
+| 10.1 | Agent Configuration Unification | 5 | High | None |
+| 10.2 | Prompt Extraction - Brian | 3 | High | 10.5 |
+| 10.3 | Prompt Extraction - Story Orchestrator | 5 | High | 10.5 |
+| 10.4 | Prompt Extraction - Task Prompts | 3 | Medium | 10.5 |
+| 10.5 | Prompt Management System | 8 | High | None |
+| 10.6 | Schema Validation | 5 | Medium | 10.1, 10.5 |
+| 10.7 | Plugin System Enhancement | 5 | Low | 10.1, 10.5, 10.6 |
+| 10.8 | Migration & Cleanup | 3 | Medium | 10.1-10.7 |
 
 **Total**: 37 story points
 
@@ -38,7 +38,7 @@ Epic 8 transforms GAO-Dev from a hardcoded, domain-specific framework into a fle
 ## Epic Phases
 
 ### Phase 1: Foundation (2 sprints)
-**Stories**: 8.1, 8.5
+**Stories**: 10.1, 10.5
 **Goal**: Build core infrastructure
 
 **Deliverables**:
@@ -54,7 +54,7 @@ Epic 8 transforms GAO-Dev from a hardcoded, domain-specific framework into a fle
 - Zero regressions
 
 ### Phase 2: Prompt Migration (2 sprints)
-**Stories**: 8.2, 8.3, 8.4
+**Stories**: 10.2, 10.3, 10.4
 **Goal**: Extract all hardcoded prompts
 
 **Deliverables**:
@@ -70,7 +70,7 @@ Epic 8 transforms GAO-Dev from a hardcoded, domain-specific framework into a fle
 - All tests updated and passing
 
 ### Phase 3: Quality & Extensions (2 sprints)
-**Stories**: 8.6, 8.7
+**Stories**: 10.6, 10.7
 **Goal**: Add robustness and extensibility
 
 **Deliverables**:
@@ -87,7 +87,7 @@ Epic 8 transforms GAO-Dev from a hardcoded, domain-specific framework into a fle
 - <5% performance overhead
 
 ### Phase 4: Cleanup (1 sprint)
-**Stories**: 8.8
+**Stories**: 10.8
 **Goal**: Remove legacy code and finalize
 
 **Deliverables**:
@@ -107,7 +107,7 @@ Epic 8 transforms GAO-Dev from a hardcoded, domain-specific framework into a fle
 
 ## Story Details
 
-### Story 8.1: Agent Configuration Unification
+### Story 10.1: Agent Configuration Unification
 **Points**: 5 | **Priority**: High | **Dependencies**: None
 
 **Description**:
@@ -131,12 +131,12 @@ Migrate all 8 GAO-Dev agents from hardcoded Python dictionaries to declarative Y
 - Migrate agents one-by-one (start with Amelia as proof of concept)
 - Update tests to verify same functionality
 
-**File**: `stories/epic-8/story-8.1.md`
+**File**: `stories/epic-10/story-10.1.md`
 
 ---
 
-### Story 8.2: Prompt Extraction - Brian
-**Points**: 3 | **Priority**: High | **Dependencies**: 8.5
+### Story 10.2: Prompt Extraction - Brian
+**Points**: 3 | **Priority**: High | **Dependencies**: 10.5
 
 **Description**:
 Extract Brian's 50-line complexity analysis prompt from `brian_orchestrator.py` to YAML template file.
@@ -158,12 +158,12 @@ Extract Brian's 50-line complexity analysis prompt from `brian_orchestrator.py` 
 - Verify same JSON schema response format
 - Update integration tests
 
-**File**: `stories/epic-8/story-8.2.md`
+**File**: `stories/epic-10/story-10.2.md`
 
 ---
 
-### Story 8.3: Prompt Extraction - Story Orchestrator
-**Points**: 5 | **Priority**: High | **Dependencies**: 8.5
+### Story 10.3: Prompt Extraction - Story Orchestrator
+**Points**: 5 | **Priority**: High | **Dependencies**: 10.5
 
 **Description**:
 Extract 170 lines of hardcoded prompts from `story_orchestrator.py` (story creation, implementation, validation) to YAML templates.
@@ -187,12 +187,12 @@ Extract 170 lines of hardcoded prompts from `story_orchestrator.py` (story creat
 - Use `@file:` references in main prompts
 - Verify story workflow still works end-to-end
 
-**File**: `stories/epic-8/story-8.3.md`
+**File**: `stories/epic-10/story-10.3.md`
 
 ---
 
-### Story 8.4: Prompt Extraction - Task Prompts
-**Points**: 3 | **Priority**: Medium | **Dependencies**: 8.5
+### Story 10.4: Prompt Extraction - Task Prompts
+**Points**: 3 | **Priority**: Medium | **Dependencies**: 10.5
 
 **Description**:
 Extract 5+ task prompts from `orchestrator.py` (PRD creation, story creation, implementation, validation, architecture) to YAML templates.
@@ -216,11 +216,11 @@ Extract 5+ task prompts from `orchestrator.py` (PRD creation, story creation, im
 - Update orchestrator methods
 - Verify autonomous workflow selection works
 
-**File**: `stories/epic-8/story-8.4.md`
+**File**: `stories/epic-10/story-10.4.md`
 
 ---
 
-### Story 8.5: Prompt Management System
+### Story 10.5: Prompt Management System
 **Points**: 8 | **Priority**: High | **Dependencies**: None
 
 **Description**:
@@ -247,12 +247,12 @@ Build core infrastructure for loading, rendering, and managing prompts: PromptLo
 - Implement caching with lazy loading
 - Comprehensive unit tests
 
-**File**: `stories/epic-8/story-8.5.md`
+**File**: `stories/epic-10/story-10.5.md`
 
 ---
 
-### Story 8.6: Schema Validation
-**Points**: 5 | **Priority**: Medium | **Dependencies**: 8.1, 8.5
+### Story 10.6: Schema Validation
+**Points**: 5 | **Priority**: Medium | **Dependencies**: 10.1, 10.5
 
 **Description**:
 Add JSON Schema validation for agent configurations and prompt templates to catch errors early and provide clear error messages.
@@ -278,12 +278,12 @@ Add JSON Schema validation for agent configurations and prompt templates to catc
 - Format error messages for clarity
 - Add schema validation tests
 
-**File**: `stories/epic-8/story-8.6.md`
+**File**: `stories/epic-10/story-10.6.md`
 
 ---
 
-### Story 8.7: Plugin System Enhancement
-**Points**: 5 | **Priority**: Low | **Dependencies**: 8.1, 8.5, 8.6
+### Story 10.7: Plugin System Enhancement
+**Points**: 5 | **Priority**: Low | **Dependencies**: 10.1, 10.5, 10.6
 
 **Description**:
 Extend plugin system to support registering custom agents and prompts, enabling easy creation of domain-specific teams (legal, ops, research, etc.).
@@ -308,12 +308,12 @@ Extend plugin system to support registering custom agents and prompts, enabling 
 - Support prompt overrides (plugins override defaults)
 - Create documentation and examples
 
-**File**: `stories/epic-8/story-8.7.md`
+**File**: `stories/epic-10/story-10.7.md`
 
 ---
 
-### Story 8.8: Migration & Cleanup
-**Points**: 3 | **Priority**: Medium | **Dependencies**: 8.1-8.7
+### Story 10.8: Migration & Cleanup
+**Points**: 3 | **Priority**: Medium | **Dependencies**: 10.1-10.7
 
 **Description**:
 Remove all legacy hardcoded configurations, update documentation, provide migration guide, and ensure clean, production-ready codebase.
@@ -339,7 +339,7 @@ Remove all legacy hardcoded configurations, update documentation, provide migrat
 - Write migration guide with examples
 - Final comprehensive testing
 
-**File**: `stories/epic-8/story-8.8.md`
+**File**: `stories/epic-10/story-10.8.md`
 
 ---
 
@@ -347,7 +347,7 @@ Remove all legacy hardcoded configurations, update documentation, provide migrat
 
 ```
 ┌─────────┐     ┌─────────┐
-│  8.1    │     │  8.5    │
+│  10.1   │     │  10.5   │
 │ Agents  │     │ Prompts │
 └────┬────┘     └────┬────┘
      │               │
@@ -355,55 +355,55 @@ Remove all legacy hardcoded configurations, update documentation, provide migrat
      │    │          │
      ▼    ▼          ▼
   ┌──────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐
-  │   8.6    │  │  8.2    │  │  8.3    │  │  8.4    │
+  │  10.6    │  │  10.2   │  │  10.3   │  │  10.4   │
   │ Schemas  │  │ Brian   │  │ Story   │  │ Tasks   │
   └────┬─────┘  └─────────┘  └─────────┘  └─────────┘
        │
        ▼
   ┌─────────┐
-  │   8.7   │
+  │  10.7   │
   │ Plugins │
   └────┬────┘
        │
        ▼
   ┌─────────┐
-  │   8.8   │
+  │  10.8   │
   │ Cleanup │
   └─────────┘
 ```
 
-**Critical Path**: 8.5 (Prompt Management) is required for all prompt extraction stories
+**Critical Path**: 10.5 (Prompt Management) is required for all prompt extraction stories
 
 **Parallel Work**:
-- 8.1 (Agents) can be done in parallel with 8.5 (Prompts)
-- 8.2, 8.3, 8.4 can be done in parallel after 8.5 completes
-- 8.6 and 8.7 can overlap once 8.1 and 8.5 are done
+- 10.1 (Agents) can be done in parallel with 10.5 (Prompts)
+- 10.2, 10.3, 10.4 can be done in parallel after 10.5 completes
+- 10.6 and 10.7 can overlap once 10.1 and 10.5 are done
 
 ---
 
 ## Timeline
 
 ### Sprint 1-2: Foundation
-- **Week 1-2**: Story 8.5 (Prompt Management System) - 8 points
-- **Week 3-4**: Story 8.1 (Agent Configuration) - 5 points
+- **Week 1-2**: Story 10.5 (Prompt Management System) - 8 points
+- **Week 3-4**: Story 10.1 (Agent Configuration) - 5 points
 
 **Milestone 1**: Infrastructure complete, can load agents/prompts from YAML
 
 ### Sprint 3-4: Prompt Migration
-- **Week 5**: Story 8.2 (Brian prompts) - 3 points
-- **Week 6**: Story 8.3 (Story Orchestrator prompts) - 5 points
-- **Week 7-8**: Story 8.4 (Task prompts) - 3 points
+- **Week 5**: Story 10.2 (Brian prompts) - 3 points
+- **Week 6**: Story 10.3 (Story Orchestrator prompts) - 5 points
+- **Week 7-8**: Story 10.4 (Task prompts) - 3 points
 
 **Milestone 2**: All prompts in YAML, zero hardcoded prompts
 
 ### Sprint 5-6: Quality & Extensions
-- **Week 9-10**: Story 8.6 (Schema Validation) - 5 points
-- **Week 11-12**: Story 8.7 (Plugin Enhancement) - 5 points
+- **Week 9-10**: Story 10.6 (Schema Validation) - 5 points
+- **Week 11-12**: Story 10.7 (Plugin Enhancement) - 5 points
 
 **Milestone 3**: Robust validation, plugin-ready
 
 ### Sprint 7: Cleanup
-- **Week 13-14**: Story 8.8 (Migration & Cleanup) - 3 points
+- **Week 13-14**: Story 10.8 (Migration & Cleanup) - 3 points
 
 **Milestone 4**: Production-ready, clean codebase
 
@@ -508,7 +508,7 @@ Remove all legacy hardcoded configurations, update documentation, provide migrat
 
 - **PRD**: `PRD.md` - Product requirements and user stories
 - **Architecture**: `ARCHITECTURE.md` - Technical design and components
-- **Stories**: `stories/epic-8/story-8.{1-8}.md` - Detailed story specifications
+- **Stories**: `stories/epic-10/story-10.{1-8}.md` - Detailed story specifications
 - **BMAD Reference**: `bmad/bmm/agents/` - Example YAML agent format
 - **Plugin Guide**: `docs/plugin-development-guide.md` - Plugin API documentation
 

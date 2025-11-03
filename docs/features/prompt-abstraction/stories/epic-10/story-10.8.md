@@ -1,9 +1,9 @@
-# Story 8.8: Migration & Cleanup
+# Story 10.8: Migration & Cleanup
 
-**Epic**: 8 - Prompt & Agent Abstraction
+**Epic**: 10 - Prompt & Agent Abstraction
 **Story Points**: 3
 **Priority**: Medium
-**Dependencies**: All stories 8.1-8.7
+**Dependencies**: All stories 10.1-10.7
 
 ---
 

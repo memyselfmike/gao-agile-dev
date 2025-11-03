@@ -1,10 +1,10 @@
-# Story 8.2: Prompt Extraction - Brian's Complexity Analysis
+# Story 10.2: Prompt Extraction - Brian's Complexity Analysis
 
-**Epic**: 8 - Prompt & Agent Abstraction
+**Epic**: 10 - Prompt & Agent Abstraction
 **Story Points**: 3
 **Priority**: High
 **Status**: Pending
-**Dependencies**: Story 8.5 (Prompt Management System)
+**Dependencies**: Story 10.5 (Prompt Management System)
 
 ---
 
@@ -220,5 +220,5 @@ def test_brian_analysis_same_results():
 ## References
 
 - **Current Code**: `gao_dev/orchestrator/brian_orchestrator.py:149-200`
-- **PromptLoader**: Story 8.5
+- **PromptLoader**: Story 10.5
 - **Architecture**: `docs/features/prompt-abstraction/ARCHITECTURE.md#promptloader`

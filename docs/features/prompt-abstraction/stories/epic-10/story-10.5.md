@@ -1,6 +1,6 @@
-# Story 8.5: Prompt Management System
+# Story 10.5: Prompt Management System
 
-**Epic**: 8 - Prompt & Agent Abstraction
+**Epic**: 10 - Prompt & Agent Abstraction
 **Story Points**: 8
 **Priority**: High
 **Dependencies**: None (Foundation story)

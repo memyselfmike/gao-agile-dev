@@ -1,9 +1,9 @@
-# Story 8.6: Schema Validation
+# Story 10.6: Schema Validation
 
-**Epic**: 8 - Prompt & Agent Abstraction
+**Epic**: 10 - Prompt & Agent Abstraction
 **Story Points**: 5
 **Priority**: Medium
-**Dependencies**: Story 8.1, 8.5
+**Dependencies**: Story 10.1, 10.5
 
 ---
 

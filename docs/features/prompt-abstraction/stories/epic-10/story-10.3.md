@@ -1,10 +1,10 @@
-# Story 8.3: Prompt Extraction - Story Orchestrator
+# Story 10.3: Prompt Extraction - Story Orchestrator
 
-**Epic**: 8 - Prompt & Agent Abstraction
+**Epic**: 10 - Prompt & Agent Abstraction
 **Story Points**: 5
 **Priority**: High
 **Status**: Pending
-**Dependencies**: Story 8.5 (Prompt Management System)
+**Dependencies**: Story 10.5 (Prompt Management System)
 
 ---
 
@@ -184,4 +184,4 @@ def test_story_workflow_end_to_end():
 ## References
 
 - **Current Code**: `gao_dev/sandbox/benchmark/story_orchestrator.py:578-757`
-- **Story**: Story 8.5 (PromptLoader)
+- **Story**: Story 10.5 (PromptLoader)

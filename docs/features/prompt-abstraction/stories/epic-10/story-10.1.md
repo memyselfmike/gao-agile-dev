@@ -1,6 +1,6 @@
-# Story 8.1: Agent Configuration Unification
+# Story 10.1: Agent Configuration Unification
 
-**Epic**: 8 - Prompt & Agent Abstraction
+**Epic**: 10 - Prompt & Agent Abstraction
 **Story Points**: 5
 **Priority**: High
 **Status**: Pending
@@ -395,8 +395,8 @@ def test_same_functionality_as_before():
 **None** - This is a foundation story
 
 **Blocks**:
-- Story 8.6 (Schema Validation)
-- Story 8.7 (Plugin System Enhancement)
+- Story 10.6 (Schema Validation)
+- Story 10.7 (Plugin System Enhancement)
 
 ---
 

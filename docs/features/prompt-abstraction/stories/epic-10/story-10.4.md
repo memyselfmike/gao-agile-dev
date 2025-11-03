@@ -1,9 +1,9 @@
-# Story 8.4: Prompt Extraction - Task Prompts
+# Story 10.4: Prompt Extraction - Task Prompts
 
-**Epic**: 8 - Prompt & Agent Abstraction
+**Epic**: 10 - Prompt & Agent Abstraction
 **Story Points**: 3
 **Priority**: Medium
-**Dependencies**: Story 8.5
+**Dependencies**: Story 10.5
 
 ---
 

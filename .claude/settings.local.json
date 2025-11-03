@@ -45,7 +45,10 @@
       "Bash(python -m py_compile:*)",
       "Bash(gh auth status:*)",
       "Bash(winget install:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(for file in story-8.*.md)",
+      "Bash(do mv \"$file\" \"$file//story-8./story-10.\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []
