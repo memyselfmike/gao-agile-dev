@@ -6,6 +6,11 @@ import click
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
+import os
+
+# Fix Windows console encoding issues
+if sys.platform == "win32":
+    os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
 
 
 @click.group()

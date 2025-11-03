@@ -354,7 +354,7 @@ class BenchmarkRunner:
             project_path = self.sandbox_root / "projects" / project.name
 
             # Initialize GAO-Dev orchestrator in benchmark mode (Story 7.2.4)
-            orchestrator = GAODevOrchestrator(
+            orchestrator = GAODevOrchestrator.create_default(
                 project_root=project_path,
                 api_key=self.api_key,
                 mode="benchmark"
