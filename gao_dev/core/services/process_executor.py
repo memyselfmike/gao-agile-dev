@@ -149,12 +149,16 @@ class ProcessExecutor:
 
         try:
             # Execute Claude CLI as subprocess
+            # IMPORTANT: encoding='utf-8' is required for Windows compatibility
+            # Windows defaults to 'charmap' which doesn't support Unicode characters
             process = subprocess.Popen(
                 cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                encoding='utf-8',
+                errors='replace',  # Replace unencodable characters instead of failing
                 env=env,
                 cwd=str(self.project_root)
             )

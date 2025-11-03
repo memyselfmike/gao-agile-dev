@@ -107,7 +107,9 @@ class BrianOrchestrator:
                 project_type=analysis.project_type,
                 routing_rationale=f"Clarification needed: {analysis.reasoning}",
                 phase_breakdown={},
-                jit_tech_specs=False
+                jit_tech_specs=False,
+                estimated_stories=analysis.estimated_stories,
+                estimated_epics=analysis.estimated_epics
             )
 
         # Phase 2: Build workflow sequence based on scale
@@ -275,9 +277,9 @@ Use your seasoned judgment to right-size the project accurately.
         Build workflow sequence based on scale-adaptive routing.
 
         This implements BMAD Method's scale-adaptive principles:
-        - Level 0-1: tech-spec → story → implementation
-        - Level 2: PRD → tech-spec → implementation
-        - Level 3-4: PRD → architecture → JIT tech-specs → implementation
+        - Level 0-1: tech-spec -> story -> implementation
+        - Level 2: PRD -> tech-spec -> implementation
+        - Level 3-4: PRD -> architecture -> JIT tech-specs -> implementation
 
         Args:
             analysis: Prompt analysis results
@@ -304,7 +306,7 @@ Use your seasoned judgment to right-size the project accurately.
         # Scale-adaptive routing for software projects
         if analysis.scale_level == ScaleLevel.LEVEL_0:
             # Level 0: Single atomic change
-            # tech-spec → create-story → dev-story → story-done
+            # tech-spec -> create-story -> dev-story -> story-done
             workflows.extend(self._get_workflows_by_names([
                 "tech-spec",
                 "create-story",
@@ -313,11 +315,11 @@ Use your seasoned judgment to right-size the project accurately.
             ]))
             phase_breakdown["Phase 2: Planning"] = ["tech-spec"]
             phase_breakdown["Phase 4: Implementation"] = ["create-story", "dev-story", "story-done"]
-            routing_rationale = "Level 0 (atomic change): Fast path with tech-spec → single story → implementation"
+            routing_rationale = "Level 0 (atomic change): Fast path with tech-spec -> single story -> implementation"
 
         elif analysis.scale_level == ScaleLevel.LEVEL_1:
             # Level 1: Small feature (2-10 stories)
-            # tech-spec → multiple stories
+            # tech-spec -> multiple stories
             workflows.extend(self._get_workflows_by_names([
                 "tech-spec",
                 "create-story",  # Will be called multiple times
@@ -326,11 +328,11 @@ Use your seasoned judgment to right-size the project accurately.
             ]))
             phase_breakdown["Phase 2: Planning"] = ["tech-spec"]
             phase_breakdown["Phase 4: Implementation"] = ["create-story", "dev-story", "story-done"]
-            routing_rationale = f"Level 1 (small feature): Tech-spec → {analysis.estimated_stories} stories → implementation"
+            routing_rationale = f"Level 1 (small feature): Tech-spec -> {analysis.estimated_stories} stories -> implementation"
 
         elif analysis.scale_level == ScaleLevel.LEVEL_2:
             # Level 2: Medium project (5-15 stories, 1-2 epics)
-            # PRD → epics → tech-spec → implementation
+            # PRD -> epics -> tech-spec -> implementation
             workflows.extend(self._get_workflows_by_names([
                 "prd",
                 "tech-spec",
@@ -340,11 +342,11 @@ Use your seasoned judgment to right-size the project accurately.
             ]))
             phase_breakdown["Phase 2: Planning"] = ["prd", "tech-spec"]
             phase_breakdown["Phase 4: Implementation"] = ["create-story", "dev-story", "story-done"]
-            routing_rationale = f"Level 2 (medium project): PRD → epics → tech-spec → {analysis.estimated_epics} epics, {analysis.estimated_stories} stories"
+            routing_rationale = f"Level 2 (medium project): PRD -> epics -> tech-spec -> {analysis.estimated_epics} epics, {analysis.estimated_stories} stories"
 
         else:  # Level 3-4: Large/Enterprise
             # Level 3-4: Large project or enterprise
-            # PRD → epics → architecture → JIT tech-specs (per epic) → implementation
+            # PRD -> epics -> architecture -> JIT tech-specs (per epic) -> implementation
             workflows.extend(self._get_workflows_by_names([
                 "prd",
                 "architecture",
@@ -357,7 +359,7 @@ Use your seasoned judgment to right-size the project accurately.
             phase_breakdown["Phase 3: Solutioning"] = ["architecture"]
             phase_breakdown["Phase 4: Implementation"] = ["tech-spec (JIT per epic)", "create-story", "dev-story", "story-done"]
             jit_tech_specs = True
-            routing_rationale = f"Level {analysis.scale_level.value} ({'large' if analysis.scale_level == ScaleLevel.LEVEL_3 else 'enterprise'}): PRD → architecture → JIT tech-specs (per epic) → {analysis.estimated_epics} epics, {analysis.estimated_stories} stories"
+            routing_rationale = f"Level {analysis.scale_level.value} ({'large' if analysis.scale_level == ScaleLevel.LEVEL_3 else 'enterprise'}): PRD -> architecture -> JIT tech-specs (per epic) -> {analysis.estimated_epics} epics, {analysis.estimated_stories} stories"
 
         return WorkflowSequence(
             scale_level=analysis.scale_level,
@@ -365,7 +367,9 @@ Use your seasoned judgment to right-size the project accurately.
             project_type=analysis.project_type,
             routing_rationale=routing_rationale,
             phase_breakdown=phase_breakdown,
-            jit_tech_specs=jit_tech_specs
+            jit_tech_specs=jit_tech_specs,
+            estimated_stories=analysis.estimated_stories,
+            estimated_epics=analysis.estimated_epics
         )
 
     def _build_game_workflow_sequence(self, analysis: PromptAnalysis) -> WorkflowSequence:
@@ -373,7 +377,7 @@ Use your seasoned judgment to right-size the project accurately.
         Build workflow sequence for game projects.
 
         Game projects follow different workflow:
-        - game-brief (optional) → gdd → solutioning (if complex) → implementation
+        - game-brief (optional) -> gdd -> solutioning (if complex) -> implementation
 
         Args:
             analysis: Prompt analysis results
@@ -401,7 +405,7 @@ Use your seasoned judgment to right-size the project accurately.
             phase_breakdown["Phase 3: Solutioning"] = ["architecture"]
         phase_breakdown["Phase 4: Implementation"] = ["create-story", "dev-story", "story-done"]
 
-        routing_rationale = f"Game Project (Level {analysis.scale_level.value}): game-brief → gdd → {'architecture → ' if analysis.scale_level.value >= 3 else ''}implementation"
+        routing_rationale = f"Game Project (Level {analysis.scale_level.value}): game-brief -> gdd -> {'architecture -> ' if analysis.scale_level.value >= 3 else ''}implementation"
 
         return WorkflowSequence(
             scale_level=analysis.scale_level,
@@ -409,7 +413,9 @@ Use your seasoned judgment to right-size the project accurately.
             project_type=ProjectType.GAME,
             routing_rationale=routing_rationale,
             phase_breakdown=phase_breakdown,
-            jit_tech_specs=False
+            jit_tech_specs=False,
+            estimated_stories=analysis.estimated_stories,
+            estimated_epics=analysis.estimated_epics
         )
 
     def _get_workflows_by_names(self, workflow_names: List[str]) -> List[Optional[WorkflowInfo]]:

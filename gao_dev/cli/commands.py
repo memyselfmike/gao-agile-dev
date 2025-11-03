@@ -4,6 +4,25 @@ import click
 from pathlib import Path
 import sys
 import asyncio
+import io
+
+# CRITICAL FIX: Configure stdout/stderr for UTF-8 on Windows
+# Windows defaults to 'charmap' encoding which doesn't support Unicode
+# This fixes: 'charmap' codec can't encode characters error
+if sys.platform == 'win32':
+    # Reconfigure stdout and stderr to use UTF-8 encoding with error handling
+    sys.stdout = io.TextIOWrapper(
+        sys.stdout.buffer,
+        encoding='utf-8',
+        errors='replace',  # Replace unencodable characters instead of crashing
+        line_buffering=True
+    )
+    sys.stderr = io.TextIOWrapper(
+        sys.stderr.buffer,
+        encoding='utf-8',
+        errors='replace',
+        line_buffering=True
+    )
 
 from ..core import (
     ConfigLoader,

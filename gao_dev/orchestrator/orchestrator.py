@@ -83,30 +83,33 @@ class GAODevOrchestrator:
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.mode = mode
 
-        # Use injected services or create defaults
-        if workflow_coordinator is not None:
-            self.workflow_coordinator = workflow_coordinator
-        if story_lifecycle is not None:
-            self.story_lifecycle = story_lifecycle
-        if process_executor is not None:
-            self.process_executor = process_executor
-        if quality_gate_manager is not None:
-            self.quality_gate_manager = quality_gate_manager
-        if brian_orchestrator is not None:
-            self.brian_orchestrator = brian_orchestrator
+        # CRITICAL FIX: Initialize missing services automatically
+        # Check if any services are missing - if so, initialize all of them
+        any_service_missing = (
+            workflow_coordinator is None
+            or story_lifecycle is None
+            or process_executor is None
+            or quality_gate_manager is None
+            or brian_orchestrator is None
+        )
 
-        # Initialize configuration if services not fully injected
-        if not hasattr(self, "brian_orchestrator"):
-            self.config_loader = ConfigLoader(project_root)
-            self.workflow_registry = WorkflowRegistry(self.config_loader)
-            self.workflow_registry.index_workflows()
-
-            brian_persona_path = self.config_loader.get_agents_path() / "brian.md"
-            self.brian_orchestrator = BrianOrchestrator(
-                workflow_registry=self.workflow_registry,
-                api_key=self.api_key,
-                brian_persona_path=brian_persona_path if brian_persona_path.exists() else None,
+        if any_service_missing:
+            # Initialize all services using the same logic as create_default()
+            # This ensures benchmarks can call GAODevOrchestrator() directly
+            self._initialize_default_services(
+                workflow_coordinator,
+                story_lifecycle,
+                process_executor,
+                quality_gate_manager,
+                brian_orchestrator
             )
+        else:
+            # All services provided, use them directly
+            self.workflow_coordinator = workflow_coordinator
+            self.story_lifecycle = story_lifecycle
+            self.process_executor = process_executor
+            self.quality_gate_manager = quality_gate_manager
+            self.brian_orchestrator = brian_orchestrator
 
         logger.info(
             "orchestrator_initialized",
@@ -118,6 +121,83 @@ class GAODevOrchestrator:
                 hasattr(self, "process_executor"),
                 hasattr(self, "quality_gate_manager"),
             ]),
+        )
+
+    def _initialize_default_services(
+        self,
+        workflow_coordinator: Optional[WorkflowCoordinator],
+        story_lifecycle: Optional[StoryLifecycleManager],
+        process_executor: Optional[ProcessExecutor],
+        quality_gate_manager: Optional[QualityGateManager],
+        brian_orchestrator: Optional[BrianOrchestrator],
+    ) -> None:
+        """
+        Initialize default service instances for any missing services.
+
+        This is called by __init__ when services are not fully injected,
+        allowing benchmarks and tests to use GAODevOrchestrator() directly.
+
+        Args:
+            workflow_coordinator: Optional injected coordinator
+            story_lifecycle: Optional injected lifecycle manager
+            process_executor: Optional injected executor
+            quality_gate_manager: Optional injected quality manager
+            brian_orchestrator: Optional injected Brian orchestrator
+        """
+        # Initialize configuration (needed by all services)
+        self.config_loader = ConfigLoader(self.project_root)
+        self.workflow_registry = WorkflowRegistry(self.config_loader)
+        self.workflow_registry.index_workflows()
+
+        # Find Claude CLI if needed
+        from ..core.cli_detector import find_claude_cli
+        cli_path = find_claude_cli()
+
+        if self.mode == "benchmark" and not cli_path:
+            raise ValueError(
+                "Claude CLI not found. Install Claude Code or set cli_path. "
+                "Cannot run in benchmark mode without Claude CLI."
+            )
+
+        if cli_path:
+            logger.info("claude_cli_detected", path=str(cli_path), mode=self.mode)
+
+        # Initialize event bus for service communication
+        event_bus = EventBus()
+
+        # Initialize ProcessExecutor first (needed before WorkflowCoordinator)
+        self.process_executor = process_executor or ProcessExecutor(
+            project_root=self.project_root,
+            cli_path=cli_path,
+            api_key=self.api_key,
+        )
+
+        # Initialize or use provided services
+        self.workflow_coordinator = workflow_coordinator or WorkflowCoordinator(
+            workflow_registry=self.workflow_registry,
+            agent_factory=None,
+            event_bus=event_bus,
+            agent_executor=self._execute_agent_task_static,  # Now self.process_executor exists
+            project_root=self.project_root,
+            max_retries=3,
+        )
+
+        self.story_lifecycle = story_lifecycle or StoryLifecycleManager(
+            story_repository=None,
+            event_bus=event_bus,
+        )
+
+        self.quality_gate_manager = quality_gate_manager or QualityGateManager(
+            project_root=self.project_root,
+            event_bus=event_bus,
+        )
+
+        # Initialize Brian orchestrator
+        brian_persona_path = self.config_loader.get_agents_path() / "brian.md"
+        self.brian_orchestrator = brian_orchestrator or BrianOrchestrator(
+            workflow_registry=self.workflow_registry,
+            api_key=self.api_key,
+            brian_persona_path=brian_persona_path if brian_persona_path.exists() else None,
         )
 
     @classmethod
@@ -166,12 +246,61 @@ class GAODevOrchestrator:
         # Initialize event bus for service communication
         event_bus = EventBus()
 
+        # Initialize ProcessExecutor first (needed by agent_executor closure)
+        process_executor = ProcessExecutor(
+            project_root=project_root,
+            cli_path=cli_path,
+            api_key=api_key,
+        )
+
+        # Create agent executor closure that captures process_executor
+        # This will be used by WorkflowCoordinator to execute agent tasks
+        async def agent_executor_closure(
+            workflow_info: "WorkflowInfo",
+            epic: int = 1,
+            story: int = 1
+        ) -> AsyncGenerator[str, None]:
+            """Closure that executes agent tasks via ProcessExecutor."""
+            # Load workflow instructions from instructions.md
+            instructions_file = workflow_info.installed_path / "instructions.md"
+            if instructions_file.exists():
+                task_prompt = instructions_file.read_text(encoding="utf-8")
+            else:
+                # Fallback to workflow description if no instructions.md
+                task_prompt = workflow_info.description
+                logger.warning(
+                    "workflow_missing_instructions",
+                    workflow=workflow_info.name,
+                    path=str(instructions_file)
+                )
+
+            # Replace placeholders for story workflows
+            if "{epic}" in task_prompt:
+                task_prompt = task_prompt.replace("{epic}", str(epic))
+            if "{story}" in task_prompt:
+                task_prompt = task_prompt.replace("{story}", str(story))
+
+            logger.info(
+                "executing_workflow_via_closure",
+                workflow=workflow_info.name,
+                epic=epic,
+                story=story,
+                prompt_length=len(task_prompt)
+            )
+
+            # Execute via ProcessExecutor
+            async for output in process_executor.execute_agent_task(
+                task=task_prompt,
+                timeout=None
+            ):
+                yield output
+
         # Initialize services
         workflow_coordinator = WorkflowCoordinator(
             workflow_registry=workflow_registry,
             agent_factory=None,
             event_bus=event_bus,
-            agent_executor=cls._execute_agent_task_static,
+            agent_executor=agent_executor_closure,
             project_root=project_root,
             max_retries=3,
         )
@@ -179,12 +308,6 @@ class GAODevOrchestrator:
         story_lifecycle = StoryLifecycleManager(
             story_repository=None,  # TODO: Add in Story 6.6
             event_bus=event_bus,
-        )
-
-        process_executor = ProcessExecutor(
-            project_root=project_root,
-            cli_path=cli_path,
-            api_key=api_key,
         )
 
         quality_gate_manager = QualityGateManager(
@@ -293,7 +416,7 @@ Bob should:
 
     async def implement_story(self, epic: int, story: int) -> AsyncGenerator[str, None]:
         """
-        Implement a story using the full workflow (Bob → Amelia → Bob).
+        Implement a story using the full workflow (Bob -> Amelia -> Bob).
 
         Args:
             epic: Epic number
@@ -571,7 +694,12 @@ Murat should:
                 project_root=self.project_root,
                 metadata={
                     "mode": self.mode,
-                    "commit_after_steps": commit_after_steps
+                    "commit_after_steps": commit_after_steps,
+                    "scale_level": workflow.scale_level.value,
+                    "project_type": workflow.project_type.value,
+                    "estimated_stories": workflow.estimated_stories,
+                    "estimated_epics": workflow.estimated_epics,
+                    "routing_rationale": workflow.routing_rationale
                 }
             )
 
@@ -593,6 +721,9 @@ Murat should:
                     "workflow_sequence_failed",
                     error=result.error_message
                 )
+
+            # Note: Story loop logic is now handled by WorkflowCoordinator._execute_story_loop()
+            # during execute_sequence(). No additional logic needed here.
 
             # Mark as completed if all steps succeeded
             if result.status != WorkflowStatus.FAILED:
@@ -659,28 +790,33 @@ Murat should:
         return result
 
     # ========================================================================
-    # Static Helper Methods
+    # Agent Execution Bridge
     # ========================================================================
 
-    @staticmethod
     async def _execute_agent_task_static(
+        self,
         workflow_info: "WorkflowInfo",
         epic: int = 1,
         story: int = 1
     ) -> AsyncGenerator[str, None]:
         """
-        Static helper for executing agent tasks (used by WorkflowCoordinator).
+        Execute agent task via ProcessExecutor (used by WorkflowCoordinator).
 
-        This is a placeholder for actual agent execution logic.
-        In practice, this would be replaced with the actual agent executor.
+        This method bridges the WorkflowCoordinator's agent_executor callback
+        to the ProcessExecutor service. It loads the workflow instructions from
+        instructions.md and delegates execution to ProcessExecutor.
 
         Args:
-            workflow_info: Workflow metadata
+            workflow_info: Workflow metadata containing path to instructions
             epic: Epic number for story workflows
             story: Story number for story workflows
 
         Yields:
-            Output from agent execution
+            Output from agent execution via Claude CLI
+
+        Raises:
+            ProcessExecutionError: If Claude CLI execution fails
+            ValueError: If Claude CLI not found
         """
         logger.debug(
             "executing_agent_task",
@@ -688,9 +824,49 @@ Murat should:
             epic=epic,
             story=story
         )
-        # Actual implementation would execute the appropriate agent
-        # For now, this is a placeholder
-        yield "Task execution would happen here"
+
+        # Load workflow instructions from instructions.md
+        instructions_file = workflow_info.installed_path / "instructions.md"
+        if instructions_file.exists():
+            task_prompt = instructions_file.read_text(encoding="utf-8")
+        else:
+            # Fallback to workflow description if no instructions.md
+            task_prompt = workflow_info.description
+            logger.warning(
+                "workflow_missing_instructions",
+                workflow=workflow_info.name,
+                path=str(instructions_file)
+            )
+
+        # Replace placeholders if this is a story workflow
+        # Support both single {epic} and double {{epic_num}} brace formats
+        replacements = {
+            "{epic}": str(epic),
+            "{story}": str(story),
+            "{{epic_num}}": str(epic),
+            "{{story_num}}": str(story),
+            "{{dev_story_location}}": "docs/stories"  # Default story location
+        }
+
+        for placeholder, value in replacements.items():
+            if placeholder in task_prompt:
+                task_prompt = task_prompt.replace(placeholder, value)
+
+        logger.info(
+            "executing_workflow_via_process_executor",
+            workflow=workflow_info.name,
+            agent=self._get_agent_for_workflow(workflow_info),
+            epic=epic,
+            story=story,
+            prompt_length=len(task_prompt)
+        )
+
+        # Execute via ProcessExecutor
+        async for output in self.process_executor.execute_agent_task(
+            task=task_prompt,
+            timeout=None  # Use default timeout from ProcessExecutor
+        ):
+            yield output
 
     def _get_agent_for_workflow(self, workflow_info: "WorkflowInfo") -> str:
         """

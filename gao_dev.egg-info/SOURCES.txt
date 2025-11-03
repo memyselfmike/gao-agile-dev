@@ -8,9 +8,13 @@ gao_dev.egg-info/dependency_links.txt
 gao_dev.egg-info/entry_points.txt
 gao_dev.egg-info/requires.txt
 gao_dev.egg-info/top_level.txt
+gao_dev/agents/__init__.py
 gao_dev/agents/amelia.md
+gao_dev/agents/base.py
 gao_dev/agents/bob.md
 gao_dev/agents/brian.md
+gao_dev/agents/claude_agent.py
+gao_dev/agents/exceptions.py
 gao_dev/agents/john.md
 gao_dev/agents/mary.md
 gao_dev/agents/murat.md
@@ -28,6 +32,9 @@ gao_dev/sandbox/reporting/templates/partials/chart_container.html.j2
 gao_dev/sandbox/reporting/templates/partials/metrics_table.html.j2
 gao_dev/sandbox/reporting/templates/partials/status_badge.html.j2
 gao_dev/sandbox/reporting/templates/partials/timeline.html.j2
+gao_dev/workflows/__init__.py
+gao_dev/workflows/base.py
+gao_dev/workflows/exceptions.py
 gao_dev/workflows/2-plan/prd/instructions.md
 gao_dev/workflows/2-plan/prd/template.md
 gao_dev/workflows/2-plan/prd/workflow.yaml
@@ -36,3 +43,4 @@ gao_dev/workflows/4-implementation/create-story/template.md
 gao_dev/workflows/4-implementation/create-story/workflow.yaml
 gao_dev/workflows/4-implementation/dev-story/instructions.md
 gao_dev/workflows/4-implementation/dev-story/workflow.yaml
+tests/test_example.py

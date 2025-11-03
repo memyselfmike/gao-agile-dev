@@ -112,6 +112,10 @@ class WorkflowCoordinator:
         Coordinates execution of multiple workflows in order, managing context
         passing, error handling, and event publishing.
 
+        CRITICAL: For story-based workflows (create-story, dev-story, story-done),
+        this method implements a proper story loop based on Brian's assessment of
+        estimated epics and stories, rather than executing each workflow just once.
+
         Args:
             workflow_sequence: Sequence of workflows to execute
             context: Execution context with project info and parameters
@@ -126,6 +130,7 @@ class WorkflowCoordinator:
             WorkflowResult,
             WorkflowStatus
         )
+        from ...orchestrator.models import PromptAnalysis
 
         # Initialize result
         result = WorkflowResult(
@@ -163,28 +168,48 @@ class WorkflowCoordinator:
             logger.info(
                 "workflow_sequence_started",
                 sequence_id=sequence_id,
-                workflow_count=len(workflow_sequence.workflows)
+                workflow_count=len(workflow_sequence.workflows),
+                scale_level=workflow_sequence.scale_level.value if workflow_sequence.scale_level else None
             )
 
-            # Execute workflows step by step
-            for i, workflow_info in enumerate(workflow_sequence.workflows, 1):
+            # Separate workflows into setup phase and story phase
+            setup_workflows = []
+            story_workflows = []
+
+            for workflow_info in workflow_sequence.workflows:
+                workflow_name = workflow_info.name.lower()
+                if workflow_name in ["create-story", "dev-story", "story-done"]:
+                    story_workflows.append(workflow_info)
+                else:
+                    setup_workflows.append(workflow_info)
+
+            step_number = 1
+
+            # Phase 1: Execute setup workflows (PRD, architecture, tech-spec)
+            logger.info(
+                "setup_phase_starting",
+                setup_workflows=len(setup_workflows)
+            )
+
+            for workflow_info in setup_workflows:
                 logger.info(
                     "workflow_step_starting",
-                    step=i,
-                    total=len(workflow_sequence.workflows),
-                    workflow=workflow_info.name
+                    step=step_number,
+                    workflow=workflow_info.name,
+                    phase="setup"
                 )
 
                 # Execute single workflow step
                 step_result = await self.execute_workflow(
                     workflow_id=workflow_info.name,
                     workflow_info=workflow_info,
-                    step_number=i,
-                    total_steps=len(workflow_sequence.workflows),
+                    step_number=step_number,
+                    total_steps=len(workflow_sequence.workflows),  # Total includes all loops
                     context=context
                 )
 
                 result.step_results.append(step_result)
+                step_number += 1
 
                 # Check for failure
                 if step_result.status == "failed":
@@ -194,18 +219,31 @@ class WorkflowCoordinator:
                         error=step_result.error_message
                     )
                     result.status = WorkflowStatus.FAILED
-                    result.error_message = f"Step {i} failed: {step_result.error_message}"
+                    result.error_message = f"Setup phase failed at {workflow_info.name}: {step_result.error_message}"
 
                     # Publish sequence failed event
                     self.event_bus.publish(Event(
                         type="WorkflowSequenceFailed",
                         data={
                             "sequence_id": sequence_id,
-                            "failed_at_step": i,
+                            "failed_at_step": step_number - 1,
                             "error": step_result.error_message
                         }
                     ))
-                    break
+                    return result
+
+            logger.info("setup_phase_completed", workflows_executed=len(setup_workflows))
+
+            # Phase 2: Execute story loop (if story workflows exist)
+            if story_workflows:
+                await self._execute_story_loop(
+                    story_workflows=story_workflows,
+                    workflow_sequence=workflow_sequence,
+                    context=context,
+                    result=result,
+                    sequence_id=sequence_id,
+                    starting_step_number=step_number
+                )
 
             # Mark as completed if all steps succeeded
             if result.status != WorkflowStatus.FAILED:
@@ -387,6 +425,187 @@ class WorkflowCoordinator:
             ).total_seconds()
 
         return step_result
+
+    async def _execute_story_loop(
+        self,
+        story_workflows: list,
+        workflow_sequence: 'WorkflowSequence',
+        context: 'WorkflowContext',
+        result: 'WorkflowResult',
+        sequence_id: str,
+        starting_step_number: int
+    ) -> None:
+        """
+        Execute story loop: create and implement stories until MVP is complete.
+
+        This implements the story loop pattern that existed before Epic 6 refactor.
+        After setup phase (PRD, architecture, tech-spec), we loop through creating
+        and implementing stories based on Brian's assessment.
+
+        Args:
+            story_workflows: List of story workflows (create-story, dev-story, story-done)
+            workflow_sequence: Full workflow sequence with scale level and estimated stories
+            context: Execution context
+            result: WorkflowResult to update with story loop results
+            sequence_id: Sequence ID for event tracking
+            starting_step_number: Step number to start from (after setup phase)
+        """
+        from ...orchestrator.workflow_results import WorkflowStatus
+
+        logger.info(
+            "story_loop_starting",
+            message="Executing story loop - will create and implement stories until MVP complete"
+        )
+
+        # Find specific story workflows
+        create_story_wf = next((w for w in story_workflows if w.name == "create-story"), None)
+        dev_story_wf = next((w for w in story_workflows if w.name == "dev-story"), None)
+        story_done_wf = next((w for w in story_workflows if w.name == "story-done"), None)
+
+        if not create_story_wf or not dev_story_wf:
+            logger.warning(
+                "story_loop_skipped",
+                reason="Missing create-story or dev-story workflow"
+            )
+            return
+
+        # Get estimated story count from workflow sequence
+        estimated_stories = getattr(workflow_sequence, 'estimated_stories', 20)
+        max_stories = min(estimated_stories, 100)  # Safety limit
+
+        logger.info(
+            "story_loop_plan",
+            estimated_stories=estimated_stories,
+            max_stories=max_stories
+        )
+
+        # Execute first story (part of initial sequence)
+        step_number = starting_step_number
+        current_epic = 1
+        story_num = 1
+
+        # Execute initial story workflows (create-story, dev-story, story-done for story 1)
+        for workflow_info in story_workflows:
+            logger.info(
+                "story_loop_iteration",
+                iteration=story_num,
+                workflow=workflow_info.name,
+                epic=current_epic,
+                story=story_num
+            )
+
+            step_result = await self.execute_workflow(
+                workflow_id=workflow_info.name,
+                workflow_info=workflow_info,
+                step_number=step_number,
+                total_steps=max_stories * 3,  # Rough estimate: 3 workflows per story
+                context=context,
+                epic=current_epic,
+                story=story_num
+            )
+
+            result.step_results.append(step_result)
+            step_number += 1
+
+            # Check for failure
+            if step_result.status == "failed":
+                logger.error(
+                    "story_loop_failed",
+                    story=story_num,
+                    workflow=workflow_info.name,
+                    error=step_result.error_message
+                )
+                result.status = WorkflowStatus.FAILED
+                result.error_message = f"Story loop failed at story {story_num}, workflow {workflow_info.name}: {step_result.error_message}"
+                return
+
+        logger.info(
+            "story_loop_initial_story_complete",
+            story=story_num,
+            next_story=story_num + 1
+        )
+
+        # Continue with remaining stories (story 2 through max_stories)
+        for story_num in range(2, max_stories + 1):
+            logger.info(
+                "story_loop_next_story",
+                story=story_num,
+                epic=current_epic,
+                total_stories=max_stories
+            )
+
+            # Execute create-story workflow
+            step_result = await self.execute_workflow(
+                workflow_id=create_story_wf.name,
+                workflow_info=create_story_wf,
+                step_number=step_number,
+                total_steps=max_stories * 3,
+                context=context,
+                epic=current_epic,
+                story=story_num
+            )
+            result.step_results.append(step_result)
+            step_number += 1
+
+            if step_result.status == "failed":
+                logger.error("story_creation_failed", story=story_num)
+                result.status = WorkflowStatus.FAILED
+                result.error_message = f"Failed to create story {story_num}"
+                return
+
+            # Execute dev-story workflow
+            step_result = await self.execute_workflow(
+                workflow_id=dev_story_wf.name,
+                workflow_info=dev_story_wf,
+                step_number=step_number,
+                total_steps=max_stories * 3,
+                context=context,
+                epic=current_epic,
+                story=story_num
+            )
+            result.step_results.append(step_result)
+            step_number += 1
+
+            if step_result.status == "failed":
+                logger.error("story_development_failed", story=story_num)
+                result.status = WorkflowStatus.FAILED
+                result.error_message = f"Failed to develop story {story_num}"
+                return
+
+            # Execute story-done workflow (if available)
+            if story_done_wf:
+                step_result = await self.execute_workflow(
+                    workflow_id=story_done_wf.name,
+                    workflow_info=story_done_wf,
+                    step_number=step_number,
+                    total_steps=max_stories * 3,
+                    context=context,
+                    epic=current_epic,
+                    story=story_num
+                )
+                result.step_results.append(step_result)
+                step_number += 1
+
+                if step_result.status == "failed":
+                    logger.warning(
+                        "story_done_failed",
+                        story=story_num,
+                        message="Story-done failed but continuing"
+                    )
+                    # Don't fail the entire loop if story-done fails
+
+            logger.info(
+                "story_loop_story_complete",
+                story=story_num,
+                epic=current_epic,
+                remaining_stories=max_stories - story_num
+            )
+
+        logger.info(
+            "story_loop_completed",
+            total_stories_implemented=max_stories,
+            total_steps=step_number - starting_step_number
+        )
 
     def _get_agent_for_workflow(self, workflow_info: 'WorkflowInfo') -> str:
         """

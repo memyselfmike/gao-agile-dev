@@ -77,3 +77,5 @@ class WorkflowSequence:
     routing_rationale: str
     phase_breakdown: Dict[str, List[str]]  # Phase name -> workflow names
     jit_tech_specs: bool = False  # Just-in-time tech specs (Level 3-4)
+    estimated_stories: int = 20  # From Brian's assessment
+    estimated_epics: int = 2  # From Brian's assessment
