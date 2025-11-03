@@ -322,5 +322,61 @@ epics:
     notes: "Continuous improvement based on real-world usage and benchmark learnings"
     stories: []
 
+  - epic_number: 10
+    name: "Prompt & Agent Configuration Abstraction"
+    status: ready
+    total_story_points: 37
+    feature_doc: "docs/features/prompt-abstraction/"
+    notes: "Transform GAO-Dev into methodology-agnostic framework by abstracting prompts and agents"
+    stories:
+      - number: 1
+        status: ready
+        name: "Agent Configuration Unification"
+        file: "docs/features/prompt-abstraction/stories/epic-8/story-8.1.md"
+        story_points: 5
+        dependencies: []
+      - number: 2
+        status: ready
+        name: "Prompt Extraction - Brian"
+        file: "docs/features/prompt-abstraction/stories/epic-8/story-8.2.md"
+        story_points: 3
+        dependencies: ["10.5"]
+      - number: 3
+        status: ready
+        name: "Prompt Extraction - Story Orchestrator"
+        file: "docs/features/prompt-abstraction/stories/epic-8/story-8.3.md"
+        story_points: 5
+        dependencies: ["10.5"]
+      - number: 4
+        status: ready
+        name: "Prompt Extraction - Task Prompts"
+        file: "docs/features/prompt-abstraction/stories/epic-8/story-8.4.md"
+        story_points: 3
+        dependencies: ["10.5"]
+      - number: 5
+        status: ready
+        name: "Prompt Management System"
+        file: "docs/features/prompt-abstraction/stories/epic-8/story-8.5.md"
+        story_points: 8
+        dependencies: []
+      - number: 6
+        status: ready
+        name: "Schema Validation"
+        file: "docs/features/prompt-abstraction/stories/epic-8/story-8.6.md"
+        story_points: 5
+        dependencies: ["10.1", "10.5"]
+      - number: 7
+        status: ready
+        name: "Plugin System Enhancement"
+        file: "docs/features/prompt-abstraction/stories/epic-8/story-8.7.md"
+        story_points: 5
+        dependencies: ["10.1", "10.5", "10.6"]
+      - number: 8
+        status: ready
+        name: "Migration & Cleanup"
+        file: "docs/features/prompt-abstraction/stories/epic-8/story-8.8.md"
+        story_points: 3
+        dependencies: ["10.1", "10.2", "10.3", "10.4", "10.5", "10.6", "10.7"]
+
 current_epic: 7.2
 current_story: 6
