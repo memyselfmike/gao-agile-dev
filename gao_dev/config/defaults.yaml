@@ -34,6 +34,124 @@ log_format: "json"
 claude_model: "claude-sonnet-4"
 claude_max_tokens: 8000
 
+# Feature Flags
+features:
+  # Provider abstraction system (Epic 11)
+  # Set to true after Phase 1 validation complete
+  provider_abstraction_enabled: false
+
+# Provider Configuration (Epic 11)
+providers:
+  # Default provider for all agents (can be overridden per-agent)
+  default: "claude-code"
+
+  # Auto-detection settings
+  auto_detect: true
+  auto_fallback: true
+
+  # Fallback chain if primary provider fails
+  fallback_chain:
+    - "claude-code"
+    - "opencode"
+    - "direct-api"
+
+  # Selection strategy: "auto", "performance", "cost", "availability", "composite"
+  selection:
+    strategy: "auto"
+
+    # Composite strategy weights (if strategy: "composite")
+    composite_weights:
+      performance: 0.6
+      cost: 0.3
+      availability: 0.1
+
+    # Performance tracker settings
+    performance:
+      enabled: true
+      cache_duration: 3600  # 1 hour
+
+    # Health check settings
+    health:
+      enabled: true
+      cache_duration: 300   # 5 minutes
+      check_interval: 60    # Check every minute
+
+  # Provider-specific configuration
+  claude-code:
+    cli_path: null  # Auto-detect if null
+    api_key_env: "ANTHROPIC_API_KEY"
+    default_model: "sonnet-4.5"
+    timeout: 3600
+
+  opencode:
+    cli_path: null  # Auto-detect if null
+    ai_provider: "anthropic"  # anthropic, openai, google
+    api_key_env: "ANTHROPIC_API_KEY"
+    default_model: "sonnet-4.5"
+    timeout: 3600
+
+  direct-api:
+    provider: "anthropic"  # anthropic, openai, google
+    api_key_env: "ANTHROPIC_API_KEY"
+    base_url: null  # Optional override
+    default_model: "sonnet-4.5"
+    timeout: 3600
+    max_retries: 3
+    retry_delay: 1.0
+
+# Model Name Registry
+# Defines canonical model names and their provider-specific translations
+models:
+  registry:
+    # Claude models
+    - canonical: "sonnet-4.5"
+      description: "Claude Sonnet 4.5 (Latest, most capable)"
+      providers:
+        claude-code: "claude-sonnet-4-5-20250929"
+        opencode: "anthropic/claude-sonnet-4.5"
+        direct-api: "claude-sonnet-4-5-20250929"
+
+    - canonical: "sonnet-3.5"
+      description: "Claude Sonnet 3.5"
+      providers:
+        claude-code: "claude-sonnet-3-5-20241022"
+        opencode: "anthropic/claude-sonnet-3.5"
+        direct-api: "claude-sonnet-3-5-20241022"
+
+    - canonical: "opus-3"
+      description: "Claude Opus 3 (Most capable, expensive)"
+      providers:
+        claude-code: "claude-opus-3-20250219"
+        opencode: "anthropic/claude-opus-3"
+        direct-api: "claude-opus-3-20250219"
+
+    - canonical: "haiku-3"
+      description: "Claude Haiku 3 (Fast, cost-effective)"
+      providers:
+        claude-code: "claude-haiku-3-20250219"
+        opencode: "anthropic/claude-haiku-3"
+        direct-api: "claude-haiku-3-20250219"
+
+    # OpenAI models (OpenCode and Direct API only)
+    - canonical: "gpt-4"
+      description: "OpenAI GPT-4"
+      providers:
+        opencode: "openai/gpt-4"
+        direct-api: "gpt-4-0125-preview"
+
+    - canonical: "gpt-4-turbo"
+      description: "OpenAI GPT-4 Turbo"
+      providers:
+        opencode: "openai/gpt-4-turbo-preview"
+        direct-api: "gpt-4-turbo-preview"
+
+    # Google models (OpenCode and Direct API only)
+    - canonical: "gemini-pro"
+      description: "Google Gemini Pro"
+      providers:
+        opencode: "google/gemini-pro"
+        direct-api: "models/gemini-pro"
+
 # Plugin Settings
 plugins:
   enabled: true
