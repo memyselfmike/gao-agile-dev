@@ -88,3 +88,7 @@ def validate_claude_cli(cli_path: Path) -> bool:
             return False
 
     return True
+
+
+# Alias for backward compatibility and consistency with naming conventions
+detect_claude_cli = find_claude_cli
