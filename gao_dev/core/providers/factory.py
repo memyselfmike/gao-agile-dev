@@ -6,6 +6,7 @@ import structlog
 
 from .base import IAgentProvider
 from .claude_code import ClaudeCodeProvider
+from .opencode import OpenCodeProvider
 from .exceptions import (
     ProviderNotFoundError,
     ProviderCreationError,
@@ -244,7 +245,8 @@ class ProviderFactory:
         """Register all built-in providers."""
         builtin_providers = {
             "claude-code": ClaudeCodeProvider,
-            # Future: add opencode, direct-api when implemented
+            "opencode": OpenCodeProvider,
+            # Future: add direct-api when implemented
         }
 
         for name, provider_class in builtin_providers.items():
