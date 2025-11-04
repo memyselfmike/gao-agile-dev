@@ -75,6 +75,9 @@ from .exceptions import (
 )
 from .models import AgentContext
 from .factory import ProviderFactory
+from .direct_api import DirectAPIProvider
+from .claude_code import ClaudeCodeProvider
+from .opencode import OpenCodeProvider
 
 __all__ = [
     # Core interface
@@ -82,6 +85,11 @@ __all__ = [
 
     # Factory
     "ProviderFactory",
+
+    # Built-in providers
+    "DirectAPIProvider",
+    "ClaudeCodeProvider",
+    "OpenCodeProvider",
 
     # Models
     "AgentContext",

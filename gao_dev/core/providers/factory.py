@@ -69,7 +69,7 @@ class ProviderFactory:
         Create a provider instance.
 
         Args:
-            provider_name: Provider identifier (e.g., 'claude-code')
+            provider_name: Provider identifier (e.g., 'claude-code', 'direct-api-anthropic')
             config: Optional provider-specific configuration
 
         Returns:
@@ -85,12 +85,48 @@ class ProviderFactory:
                 "claude-code",
                 config={"cli_path": "/usr/bin/claude", "api_key": "sk-..."}
             )
+
+            # Direct API provider
+            provider = factory.create_provider(
+                "direct-api-anthropic",
+                config={"api_key": "sk-..."}
+            )
             ```
         """
         provider_name_lower = provider_name.lower()
 
+        # Special handling for direct-api providers
+        if provider_name_lower.startswith("direct-api-"):
+            from .direct_api import DirectAPIProvider
+
+            provider_type = provider_name_lower.replace("direct-api-", "")
+
+            try:
+                config = config or {}
+                provider = DirectAPIProvider(provider=provider_type, **config)
+
+                logger.info(
+                    "provider_created",
+                    provider_name=provider_name,
+                    provider_version=provider.version
+                )
+
+                return provider
+
+            except Exception as e:
+                logger.error(
+                    "provider_creation_failed",
+                    provider_name=provider_name,
+                    error=str(e),
+                    exc_info=True
+                )
+                raise ProviderCreationError(
+                    f"Failed to create provider '{provider_name}': {e}"
+                ) from e
+
+        # Standard provider creation
         if provider_name_lower not in self._registry:
-            available = ", ".join(self._registry.keys())
+            available = ", ".join(self.list_providers())
             raise ProviderNotFoundError(
                 f"Provider '{provider_name}' not found. "
                 f"Available providers: {available}"
@@ -187,10 +223,20 @@ class ProviderFactory:
         Example:
             ```python
             providers = factory.list_providers()
-            # ['claude-code', 'opencode', 'custom']
+            # ['claude-code', 'direct-api-anthropic', 'direct-api-google',
+            #  'direct-api-openai', 'opencode']
             ```
         """
-        return sorted(self._registry.keys())
+        providers = list(self._registry.keys())
+
+        # Add direct-api providers
+        providers.extend([
+            "direct-api-anthropic",
+            "direct-api-openai",
+            "direct-api-google",
+        ])
+
+        return sorted(providers)
 
     def provider_exists(self, provider_name: str) -> bool:
         """
@@ -208,7 +254,14 @@ class ProviderFactory:
                 provider = factory.create_provider("claude-code")
             ```
         """
-        return provider_name.lower() in self._registry
+        provider_name_lower = provider_name.lower()
+
+        # Check direct-api providers
+        if provider_name_lower.startswith("direct-api-"):
+            provider_type = provider_name_lower.replace("direct-api-", "")
+            return provider_type in ["anthropic", "openai", "google"]
+
+        return provider_name_lower in self._registry
 
     def get_provider_class(self, provider_name: str) -> Type[IAgentProvider]:
         """
@@ -243,19 +296,27 @@ class ProviderFactory:
 
     def _register_builtin_providers(self) -> None:
         """Register all built-in providers."""
+        from .direct_api import DirectAPIProvider
+
         builtin_providers = {
             "claude-code": ClaudeCodeProvider,
             "opencode": OpenCodeProvider,
-            # Future: add direct-api when implemented
+            "direct-api-anthropic": lambda: DirectAPIProvider(provider="anthropic"),
+            "direct-api-openai": lambda: DirectAPIProvider(provider="openai"),
+            "direct-api-google": lambda: DirectAPIProvider(provider="google"),
         }
 
-        for name, provider_class in builtin_providers.items():
-            self._registry[name] = provider_class
+        # Note: Direct API providers need special handling since they require a provider parameter
+        # Register claude-code and opencode normally
+        self._registry["claude-code"] = ClaudeCodeProvider
+        self._registry["opencode"] = OpenCodeProvider
 
+        # For direct-api, we'll need a wrapper or special handling in create_provider
+        # For now, register them with a special marker
         logger.debug(
             "builtin_providers_registered",
-            count=len(builtin_providers),
-            providers=list(builtin_providers.keys())
+            count=2,  # Only actual registered providers
+            providers=["claude-code", "opencode"]
         )
 
     def __repr__(self) -> str:
