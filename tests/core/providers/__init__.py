@@ -1,1 +1,1 @@
-"""Tests for provider abstraction module."""
+"""Tests for provider abstraction system."""

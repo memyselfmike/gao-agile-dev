@@ -69,14 +69,19 @@ from .exceptions import (
     ProviderConfigurationError,
     ProviderInitializationError,
     ProviderRegistrationError,
+    ProviderCreationError,
     DuplicateProviderError,
     ModelNotSupportedError,
 )
 from .models import AgentContext
+from .factory import ProviderFactory
 
 __all__ = [
     # Core interface
     "IAgentProvider",
+
+    # Factory
+    "ProviderFactory",
 
     # Models
     "AgentContext",
@@ -100,6 +105,7 @@ __all__ = [
     "ProviderConfigurationError",
     "ProviderInitializationError",
     "ProviderRegistrationError",
+    "ProviderCreationError",
     "DuplicateProviderError",
     "ModelNotSupportedError",
 ]

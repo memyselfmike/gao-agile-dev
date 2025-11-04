@@ -647,6 +647,47 @@ class DuplicateProviderError(ProviderRegistrationError):
     pass
 
 
+class ProviderCreationError(ProviderError):
+    """
+    Raised when provider instantiation fails.
+
+    Maps to CONFIGURATION_ERROR as creation failures are typically
+    due to configuration issues or missing dependencies.
+
+    Example:
+        ```python
+        raise ProviderCreationError(
+            message="Failed to create provider: missing required dependency",
+            provider_name="custom-provider"
+        )
+        ```
+    """
+
+    def __init__(
+        self,
+        message: str,
+        provider_name: Optional[str] = None,
+        original_error: Optional[Exception] = None,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Initialize provider creation error.
+
+        Args:
+            message: Error message
+            provider_name: Name of provider (if known)
+            original_error: Original exception (if any)
+            context: Additional context
+        """
+        super().__init__(
+            error_type=ProviderErrorType.CONFIGURATION_ERROR,
+            message=message,
+            provider_name=provider_name or "unknown",
+            original_error=original_error,
+            context=context
+        )
+
+
 class ModelNotSupportedError(ModelNotFoundError):
     """
     Raised when model not supported by provider.
