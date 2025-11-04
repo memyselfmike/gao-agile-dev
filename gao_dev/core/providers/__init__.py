@@ -78,6 +78,18 @@ from .factory import ProviderFactory
 from .direct_api import DirectAPIProvider
 from .claude_code import ClaudeCodeProvider
 from .opencode import OpenCodeProvider
+from .selection import (
+    IProviderSelectionStrategy,
+    AutoDetectStrategy,
+    PerformanceBasedStrategy,
+    CostBasedStrategy,
+    AvailabilityBasedStrategy,
+    CompositeStrategy,
+    ProviderSelectionError,
+)
+from .selector import ProviderSelector
+from .performance_tracker import ProviderPerformanceTracker
+from .health_check import ProviderHealthChecker
 
 __all__ = [
     # Core interface
@@ -90,6 +102,20 @@ __all__ = [
     "DirectAPIProvider",
     "ClaudeCodeProvider",
     "OpenCodeProvider",
+
+    # Selection strategies
+    "IProviderSelectionStrategy",
+    "AutoDetectStrategy",
+    "PerformanceBasedStrategy",
+    "CostBasedStrategy",
+    "AvailabilityBasedStrategy",
+    "CompositeStrategy",
+    "ProviderSelectionError",
+
+    # Provider selection
+    "ProviderSelector",
+    "ProviderPerformanceTracker",
+    "ProviderHealthChecker",
 
     # Models
     "AgentContext",
