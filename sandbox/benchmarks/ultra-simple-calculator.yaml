@@ -1,0 +1,65 @@
+# Ultra-Simple Calculator Benchmark
+#
+# Absolute minimal test case - just a Python module with functions
+# Tests basic autonomous capabilities with virtually no complexity
+
+benchmark:
+  name: "ultra-simple-calculator"
+  description: "Ultra-minimal test case - single Python module"
+  version: "1.0.0"
+
+  # Ultra-simple prompt
+  initial_prompt: |
+    Create a simple Python calculator module.
+
+    Requirements:
+    - Single file: calculator.py
+    - Functions: add(a, b), subtract(a, b), multiply(a, b), divide(a, b)
+    - Type hints on all functions
+    - Docstrings for each function
+    - Handle division by zero with proper exception
+    - Test file: test_calculator.py with tests for all functions
+    - Simple README.md with usage examples
+
+    That's it! Keep it minimal and focused.
+
+    SUCCESS CRITERIA: A working calculator module with passing tests.
+
+  # Should be Level 0 or Level 1
+  scale_level: 1
+
+  # Very quick expected duration
+  expected_duration_minutes: 15
+
+  # Timeout after 30 minutes
+  timeout_seconds: 1800
+
+  # Success criteria (very relaxed)
+  success_criteria:
+    min_test_coverage: 80.0
+    max_manual_interventions: 0
+    max_errors: 3
+
+    required_features:
+      - "calculator.py"
+      - "test_*.py OR *_test.py"
+      - "README.md"
+
+    quality_gates:
+      tests_must_pass: true
+      build_must_succeed: false
+      min_commits: 1
+
+  # Metadata
+  metadata:
+    project_type: "greenfield"
+    complexity: "simple"
+    language: "python"
+    epic: "10"
+    test_mode: "smoke"
+
+    tags:
+      - epic-10
+      - ultra-simple
+      - calculator
+      - smoke-test

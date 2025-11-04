@@ -90,6 +90,7 @@ from .selection import (
 from .selector import ProviderSelector
 from .performance_tracker import ProviderPerformanceTracker
 from .health_check import ProviderHealthChecker
+from .cache import ProviderCache, hash_config
 
 __all__ = [
     # Core interface
@@ -116,6 +117,10 @@ __all__ = [
     "ProviderSelector",
     "ProviderPerformanceTracker",
     "ProviderHealthChecker",
+
+    # Performance optimization
+    "ProviderCache",
+    "hash_config",
 
     # Models
     "AgentContext",

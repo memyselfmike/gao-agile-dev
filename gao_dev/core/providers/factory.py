@@ -7,6 +7,7 @@ import structlog
 from .base import IAgentProvider
 from .claude_code import ClaudeCodeProvider
 from .opencode import OpenCodeProvider
+from .cache import ProviderCache, hash_config
 from .exceptions import (
     ProviderNotFoundError,
     ProviderCreationError,
@@ -55,6 +56,12 @@ class ProviderFactory:
         self._registry: Dict[str, Type[IAgentProvider]] = {}
         self._register_builtin_providers()
 
+        # Provider instance cache for performance
+        self._cache = ProviderCache(max_size=10, ttl_seconds=3600)
+
+        # Model name translation cache (immutable)
+        self._model_cache: Dict[str, str] = {}
+
         logger.info(
             "provider_factory_initialized",
             providers=list(self._registry.keys())
@@ -63,17 +70,19 @@ class ProviderFactory:
     def create_provider(
         self,
         provider_name: str,
-        config: Optional[Dict] = None
+        config: Optional[Dict] = None,
+        use_cache: bool = True
     ) -> IAgentProvider:
         """
-        Create a provider instance.
+        Create a provider instance with caching.
 
         Args:
             provider_name: Provider identifier (e.g., 'claude-code', 'direct-api-anthropic')
             config: Optional provider-specific configuration
+            use_cache: Whether to use cached provider if available (default: True)
 
         Returns:
-            Configured provider instance
+            Configured provider instance (may be cached)
 
         Raises:
             ProviderNotFoundError: If provider not registered
@@ -95,6 +104,18 @@ class ProviderFactory:
         """
         provider_name_lower = provider_name.lower()
 
+        # Check cache first (if enabled)
+        if use_cache:
+            config_hash = hash_config(config)
+            cached = self._cache.get(provider_name_lower, config_hash)
+
+            if cached is not None:
+                logger.debug(
+                    "provider_factory_cache_hit",
+                    provider=provider_name_lower,
+                )
+                return cached
+
         # Special handling for direct-api providers
         if provider_name_lower.startswith("direct-api-"):
             from .direct_api import DirectAPIProvider
@@ -104,6 +125,11 @@ class ProviderFactory:
             try:
                 config = config or {}
                 provider = DirectAPIProvider(provider=provider_type, **config)
+
+                # Cache the provider
+                if use_cache:
+                    config_hash = hash_config(config)
+                    self._cache.put(provider_name_lower, config_hash, provider)
 
                 logger.info(
                     "provider_created",
@@ -140,6 +166,11 @@ class ProviderFactory:
                 provider = provider_class(**config)
             else:
                 provider = provider_class()
+
+            # Cache the provider
+            if use_cache:
+                config_hash = hash_config(config)
+                self._cache.put(provider_name_lower, config_hash, provider)
 
             logger.info(
                 "provider_created",
@@ -318,6 +349,92 @@ class ProviderFactory:
             count=2,  # Only actual registered providers
             providers=["claude-code", "opencode"]
         )
+
+    def translate_model_name(
+        self,
+        provider_name: str,
+        canonical_name: str
+    ) -> str:
+        """
+        Translate model name with caching.
+
+        Translates canonical model names (e.g., 'sonnet-4.5') to
+        provider-specific identifiers. Results are cached for performance.
+
+        Args:
+            provider_name: Provider identifier
+            canonical_name: Canonical model name
+
+        Returns:
+            Provider-specific model ID
+
+        Raises:
+            ProviderNotFoundError: If provider not found
+
+        Example:
+            ```python
+            model_id = factory.translate_model_name("claude-code", "sonnet-4.5")
+            # "claude-sonnet-4-5-20250929"
+            ```
+        """
+        # Check cache
+        cache_key = f"{provider_name}:{canonical_name}"
+        if cache_key in self._model_cache:
+            logger.debug(
+                "model_translation_cache_hit",
+                provider=provider_name,
+                canonical=canonical_name,
+            )
+            return self._model_cache[cache_key]
+
+        # Cache miss - translate
+        provider = self.create_provider(provider_name)
+        translated = provider.translate_model_name(canonical_name)
+
+        # Cache result (model mappings don't change)
+        self._model_cache[cache_key] = translated
+
+        logger.debug(
+            "model_translation_cached",
+            provider=provider_name,
+            canonical=canonical_name,
+            translated=translated,
+        )
+
+        return translated
+
+    def clear_cache(self) -> None:
+        """
+        Clear all caches.
+
+        Useful for testing or when configuration changes.
+
+        Example:
+            ```python
+            factory.clear_cache()
+            ```
+        """
+        self._cache.clear()
+        self._model_cache.clear()
+        logger.info("factory_cache_cleared")
+
+    def get_cache_stats(self) -> Dict[str, int]:
+        """
+        Get cache statistics.
+
+        Returns:
+            Dict with cache sizes
+
+        Example:
+            ```python
+            stats = factory.get_cache_stats()
+            # {"provider_cache_size": 3, "model_cache_size": 12}
+            ```
+        """
+        return {
+            "provider_cache_size": self._cache.size(),
+            "model_cache_size": len(self._model_cache),
+        }
 
     def __repr__(self) -> str:
         """String representation."""
