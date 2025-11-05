@@ -20,6 +20,7 @@ from ..core import (
 )
 from ..orchestrator import GAODevOrchestrator
 from .sandbox_commands import sandbox
+from .lifecycle_commands import lifecycle
 
 
 @click.group()
@@ -476,6 +477,13 @@ def metrics_export(format, output, run_id, project, benchmark, since, until, lim
 
 # Register sandbox command group
 cli.add_command(sandbox)
+
+# ============================================================================
+# LIFECYCLE COMMANDS
+# ============================================================================
+
+# Register lifecycle command group
+cli.add_command(lifecycle)
 
 
 if __name__ == "__main__":

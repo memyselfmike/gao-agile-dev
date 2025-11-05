@@ -1,0 +1,288 @@
+---
+{{ frontmatter_yaml }}
+---
+
+# System Architecture: {{ subject }}
+
+**Author:** {{ author }}
+**Date:** {{ created_date }}
+**Status:** Draft
+**Version:** {{ version }}
+
+---
+
+## Overview
+
+<!-- High-level architectural overview (2-3 paragraphs) -->
+
+### System Context
+
+<!-- Where does this system fit in the broader landscape? -->
+
+### Design Principles
+
+- **Principle 1:** <!-- e.g., "Microservices architecture" -->
+- **Principle 2:** <!-- e.g., "API-first design" -->
+- **Principle 3:** <!-- e.g., "Event-driven communication" -->
+
+---
+
+## Architecture Diagram
+
+```
+<!-- Add ASCII diagram or link to diagram file -->
++------------------+       +------------------+
+|   Frontend       | ----> |   API Gateway    |
++------------------+       +------------------+
+                                   |
+                    +--------------+--------------+
+                    |                             |
+            +-------v--------+            +-------v--------+
+            |   Service A    |            |   Service B    |
+            +----------------+            +----------------+
+```
+
+---
+
+## Components
+
+### Component 1: [Component Name]
+
+**Purpose:** <!-- What does this component do? -->
+
+**Responsibilities:**
+- Responsibility 1
+- Responsibility 2
+
+**Technology Stack:**
+- Language/Framework: <!-- e.g., "Python 3.11 + FastAPI" -->
+- Database: <!-- e.g., "PostgreSQL 15" -->
+- Other: <!-- e.g., "Redis for caching" -->
+
+**APIs/Interfaces:**
+- **API 1:** <!-- Endpoint or interface description -->
+- **API 2:** <!-- Endpoint or interface description -->
+
+**Dependencies:**
+- Component X
+- External Service Y
+
+### Component 2: [Component Name]
+
+**Purpose:** <!-- What does this component do? -->
+
+**Responsibilities:**
+- Responsibility 1
+- Responsibility 2
+
+**Technology Stack:**
+- Language/Framework: <!-- Technology used -->
+- Database: <!-- Database type -->
+
+---
+
+## Data Architecture
+
+### Data Model
+
+<!-- High-level data model overview -->
+
+**Key Entities:**
+- **Entity 1:** <!-- Brief description -->
+- **Entity 2:** <!-- Brief description -->
+
+### Data Flow
+
+1. **Step 1:** <!-- How data flows through the system -->
+2. **Step 2:** <!-- How data flows through the system -->
+
+### Data Storage
+
+- **Primary Database:** <!-- e.g., "PostgreSQL for transactional data" -->
+- **Cache Layer:** <!-- e.g., "Redis for session data" -->
+- **Analytics:** <!-- e.g., "ClickHouse for analytics" -->
+
+---
+
+## API Design
+
+### REST API
+
+**Base URL:** `https://api.example.com/v1`
+
+**Key Endpoints:**
+
+#### GET /resource
+- **Description:** <!-- What does this endpoint do? -->
+- **Authentication:** Required | Optional | None
+- **Response:** `200 OK`
+
+#### POST /resource
+- **Description:** <!-- What does this endpoint do? -->
+- **Authentication:** Required | Optional | None
+- **Request Body:** `{ "field": "value" }`
+- **Response:** `201 Created`
+
+### Event-Driven Communication
+
+**Event Bus:** <!-- e.g., "Kafka" -->
+
+**Key Events:**
+- **Event 1:** `resource.created` - <!-- Description -->
+- **Event 2:** `resource.updated` - <!-- Description -->
+
+---
+
+## Security Architecture
+
+### Authentication & Authorization
+
+- **Authentication:** <!-- e.g., "JWT tokens via OAuth 2.0" -->
+- **Authorization:** <!-- e.g., "Role-based access control (RBAC)" -->
+
+### Data Protection
+
+- **At Rest:** <!-- e.g., "AES-256 encryption" -->
+- **In Transit:** <!-- e.g., "TLS 1.3" -->
+- **Secrets Management:** <!-- e.g., "HashiCorp Vault" -->
+
+### Security Measures
+
+- [ ] Input validation and sanitization
+- [ ] Rate limiting and throttling
+- [ ] DDoS protection
+- [ ] Regular security audits
+
+---
+
+## Scalability & Performance
+
+### Horizontal Scaling
+
+<!-- How does the system scale horizontally? -->
+
+- **Load Balancing:** <!-- e.g., "NGINX + Round Robin" -->
+- **Auto-scaling:** <!-- e.g., "Kubernetes HPA based on CPU/memory" -->
+
+### Performance Targets
+
+- **API Latency:** < 200ms (p95)
+- **Throughput:** 10,000 requests/second
+- **Concurrent Users:** 100,000
+
+### Caching Strategy
+
+- **Layer 1:** <!-- e.g., "Browser cache (static assets)" -->
+- **Layer 2:** <!-- e.g., "CDN (CloudFront)" -->
+- **Layer 3:** <!-- e.g., "Application cache (Redis)" -->
+
+---
+
+## Reliability & Monitoring
+
+### High Availability
+
+- **Target Uptime:** 99.9% (43 minutes downtime/month)
+- **Redundancy:** <!-- e.g., "Multi-region deployment" -->
+- **Failover:** <!-- e.g., "Automated failover to standby region" -->
+
+### Monitoring & Observability
+
+- **Metrics:** <!-- e.g., "Prometheus + Grafana" -->
+- **Logs:** <!-- e.g., "ELK Stack (Elasticsearch, Logstash, Kibana)" -->
+- **Tracing:** <!-- e.g., "Jaeger for distributed tracing" -->
+- **Alerting:** <!-- e.g., "PagerDuty integration" -->
+
+### Disaster Recovery
+
+- **Backup Strategy:** <!-- e.g., "Daily backups with 30-day retention" -->
+- **Recovery Time Objective (RTO):** <!-- e.g., "< 1 hour" -->
+- **Recovery Point Objective (RPO):** <!-- e.g., "< 5 minutes" -->
+
+---
+
+## Deployment Architecture
+
+### Infrastructure
+
+- **Cloud Provider:** <!-- e.g., "AWS" -->
+- **Container Orchestration:** <!-- e.g., "Kubernetes (EKS)" -->
+- **CI/CD:** <!-- e.g., "GitHub Actions + ArgoCD" -->
+
+### Environments
+
+- **Development:** <!-- Configuration -->
+- **Staging:** <!-- Configuration -->
+- **Production:** <!-- Configuration -->
+
+### Deployment Strategy
+
+- **Strategy:** <!-- e.g., "Blue-Green deployment" -->
+- **Rollback Plan:** <!-- How to rollback if issues occur -->
+
+---
+
+## Technology Stack Summary
+
+| Layer | Technology | Justification |
+|-------|-----------|---------------|
+| Frontend | <!-- e.g., "React + TypeScript" --> | <!-- Why chosen? --> |
+| Backend | <!-- e.g., "Python + FastAPI" --> | <!-- Why chosen? --> |
+| Database | <!-- e.g., "PostgreSQL" --> | <!-- Why chosen? --> |
+| Cache | <!-- e.g., "Redis" --> | <!-- Why chosen? --> |
+| Message Queue | <!-- e.g., "RabbitMQ" --> | <!-- Why chosen? --> |
+| Monitoring | <!-- e.g., "Prometheus" --> | <!-- Why chosen? --> |
+
+---
+
+## Risks & Limitations
+
+### Risk 1: [Risk Description]
+**Impact:** High | Medium | Low
+**Mitigation:** <!-- How will we address this? -->
+
+### Risk 2: [Risk Description]
+**Impact:** High | Medium | Low
+**Mitigation:** <!-- How will we address this? -->
+
+### Known Limitations
+
+- **Limitation 1:** <!-- What are the system constraints? -->
+- **Limitation 2:** <!-- What are the system constraints? -->
+
+---
+
+## Future Considerations
+
+<!-- What might we add or change in the future? -->
+
+- Consideration 1
+- Consideration 2
+
+---
+
+## Related Documents
+
+{% if related_docs %}
+{% for doc in related_docs %}
+- [{{ doc }}]({{ doc }})
+{% endfor %}
+{% else %}
+<!-- Add links to related documents here -->
+{% endif %}
+
+---
+
+## Appendix
+
+### Glossary
+- **Term 1:** Definition
+- **Term 2:** Definition
+
+### References
+- Reference 1
+- Reference 2
+
+---
+
+*Generated from template on {{ created_date }}*

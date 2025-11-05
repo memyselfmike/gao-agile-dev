@@ -1,0 +1,392 @@
+---
+{{ frontmatter_yaml }}
+---
+
+# Runbook: {{ subject }}
+
+**Author:** {{ author }}
+**Date:** {{ created_date }}
+**Version:** {{ version }}
+**Last Updated:** {{ created_date }}
+
+**On-Call Escalation:** <!-- Who to contact if issues? -->
+
+---
+
+## Overview
+
+<!-- Brief description of what this runbook covers (1-2 paragraphs) -->
+
+### Purpose
+
+<!-- What is this runbook for? When should it be used? -->
+
+### Scope
+
+<!-- What systems/services does this cover? -->
+
+---
+
+## Prerequisites
+
+### Required Access
+
+- [ ] Access 1 (e.g., "AWS Console access")
+- [ ] Access 2 (e.g., "Kubernetes cluster admin")
+- [ ] Access 3 (e.g., "Database credentials")
+
+### Required Tools
+
+- Tool 1 (e.g., "kubectl CLI")
+- Tool 2 (e.g., "psql client")
+- Tool 3 (e.g., "curl or httpie")
+
+### Knowledge Requirements
+
+- Knowledge 1 (e.g., "Understanding of Kubernetes")
+- Knowledge 2 (e.g., "Basic SQL knowledge")
+
+---
+
+## System Architecture
+
+<!-- Brief architecture diagram or description -->
+
+```
++------------------+       +------------------+
+|   Component A    | ----> |   Component B    |
++------------------+       +------------------+
+```
+
+**Key Components:**
+- **Component 1:** Purpose
+- **Component 2:** Purpose
+
+---
+
+## Common Operations
+
+### Operation 1: [Operation Name]
+
+**When to Use:** <!-- When do you perform this operation? -->
+
+**Steps:**
+1. Step 1
+   ```bash
+   # Command example
+   kubectl get pods -n namespace
+   ```
+
+2. Step 2
+   ```bash
+   # Command example
+   kubectl describe pod <pod-name> -n namespace
+   ```
+
+3. Step 3
+   <!-- Additional steps -->
+
+**Expected Outcome:** <!-- What should happen? -->
+
+**Verification:**
+```bash
+# How to verify it worked
+kubectl logs <pod-name> -n namespace
+```
+
+---
+
+### Operation 2: [Operation Name]
+
+**When to Use:** <!-- When do you perform this operation? -->
+
+**Steps:**
+1. Step 1
+2. Step 2
+3. Step 3
+
+**Expected Outcome:** <!-- What should happen? -->
+
+---
+
+## Troubleshooting
+
+### Issue 1: [Issue Description]
+
+**Symptoms:**
+- Symptom 1
+- Symptom 2
+
+**Diagnosis:**
+```bash
+# Commands to diagnose
+command1
+command2
+```
+
+**Resolution:**
+1. Step 1
+2. Step 2
+3. Step 3
+
+**Prevention:** <!-- How to prevent this in the future? -->
+
+---
+
+### Issue 2: [Issue Description]
+
+**Symptoms:**
+- Symptom 1
+- Symptom 2
+
+**Diagnosis:**
+```bash
+# Commands to diagnose
+command1
+```
+
+**Resolution:**
+1. Step 1
+2. Step 2
+
+---
+
+## Monitoring & Alerts
+
+### Key Metrics
+
+| Metric | Normal Range | Alert Threshold | Action |
+|--------|--------------|-----------------|--------|
+| Metric 1 | Value | Value | What to do |
+| Metric 2 | Value | Value | What to do |
+
+### Dashboards
+
+- **Dashboard 1:** [URL] - <!-- What it shows -->
+- **Dashboard 2:** [URL] - <!-- What it shows -->
+
+### Log Locations
+
+- **Application Logs:** Location/path
+- **System Logs:** Location/path
+- **Error Logs:** Location/path
+
+---
+
+## Incident Response
+
+### Severity Levels
+
+| Severity | Description | Response Time | Escalation |
+|----------|-------------|---------------|------------|
+| P0 | Critical outage | Immediate | Escalate immediately |
+| P1 | Major degradation | < 15 minutes | Escalate if not resolved in 30 min |
+| P2 | Minor issue | < 1 hour | Escalate if not resolved in 4 hours |
+| P3 | Low priority | < 1 day | Normal process |
+
+### Incident Workflow
+
+1. **Detect:** How to detect the issue
+2. **Assess:** Determine severity
+3. **Notify:** Who to notify
+4. **Investigate:** Diagnosis steps
+5. **Resolve:** Resolution steps
+6. **Communicate:** Status updates
+7. **Document:** Create postmortem if P0/P1
+
+---
+
+## Deployment Procedures
+
+### Pre-Deployment Checklist
+
+- [ ] Backup current state
+- [ ] Review deployment plan
+- [ ] Notify stakeholders
+- [ ] Schedule maintenance window (if needed)
+
+### Deployment Steps
+
+1. **Step 1:** Preparation
+   ```bash
+   # Commands
+   ```
+
+2. **Step 2:** Deployment
+   ```bash
+   # Commands
+   ```
+
+3. **Step 3:** Verification
+   ```bash
+   # Commands
+   ```
+
+### Rollback Procedure
+
+**When to Rollback:** <!-- What triggers a rollback? -->
+
+**Steps:**
+1. Rollback step 1
+   ```bash
+   # Commands
+   ```
+
+2. Rollback step 2
+   ```bash
+   # Commands
+   ```
+
+---
+
+## Maintenance Tasks
+
+### Daily Tasks
+
+- [ ] **Task 1:** Description
+  - **Command:** `command here`
+  - **Expected Result:** What should happen
+
+### Weekly Tasks
+
+- [ ] **Task 1:** Description
+  - **Command:** `command here`
+  - **Verification:** How to verify
+
+### Monthly Tasks
+
+- [ ] **Task 1:** Description
+  - **Time Required:** Duration
+  - **Impact:** User impact (if any)
+
+---
+
+## Recovery Procedures
+
+### Backup & Restore
+
+**Backup Location:** <!-- Where are backups stored? -->
+
+**Restore Procedure:**
+1. Step 1
+   ```bash
+   # Commands
+   ```
+
+2. Step 2
+   ```bash
+   # Commands
+   ```
+
+**Recovery Time Objective (RTO):** <!-- Target time to restore -->
+**Recovery Point Objective (RPO):** <!-- Max acceptable data loss -->
+
+---
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Purpose | Example Value |
+|----------|---------|---------------|
+| VAR_1 | Description | `value` |
+| VAR_2 | Description | `value` |
+
+### Configuration Files
+
+- **File 1:** `/path/to/config.yaml`
+  - Purpose: What it configures
+  - Key Settings: Important settings
+
+---
+
+## Security
+
+### Access Control
+
+- Who has access
+- How to request access
+- Access review process
+
+### Secrets Management
+
+- Where secrets are stored
+- How to rotate secrets
+- Emergency access procedures
+
+### Compliance
+
+- Compliance requirements (if any)
+- Audit logging
+- Data retention
+
+---
+
+## Contacts & Escalation
+
+### Primary Contacts
+
+- **On-Call Engineer:** [Contact method]
+- **Team Lead:** [Contact method]
+- **Engineering Manager:** [Contact method]
+
+### Escalation Path
+
+1. **Level 1:** On-call engineer
+2. **Level 2:** Team lead (after 30 minutes)
+3. **Level 3:** Engineering manager (after 1 hour)
+4. **Level 4:** VP Engineering (critical only)
+
+### External Dependencies
+
+- **Vendor 1:** Contact information
+- **Vendor 2:** Contact information
+
+---
+
+## Related Documents
+
+{% if related_docs %}
+{% for doc in related_docs %}
+- [{{ doc }}]({{ doc }})
+{% endfor %}
+{% else %}
+<!-- Add links to related documents here:
+     - Architecture docs
+     - ADRs
+     - Other runbooks
+     - Postmortems
+-->
+{% endif %}
+
+---
+
+## Change Log
+
+| Date | Author | Change |
+|------|--------|--------|
+| {{ created_date }} | {{ author }} | Initial version |
+
+---
+
+## Appendix
+
+### Glossary
+- **Term 1:** Definition
+- **Term 2:** Definition
+
+### Useful Commands
+
+```bash
+# Command 1: Description
+command1
+
+# Command 2: Description
+command2
+```
+
+---
+
+*This runbook should be reviewed and updated quarterly to ensure accuracy.*
+
+*Generated from template on {{ created_date }}*

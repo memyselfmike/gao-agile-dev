@@ -1,0 +1,187 @@
+---
+{{ frontmatter_yaml }}
+---
+
+# Epic: {{ subject }}
+
+**Author:** {{ author }}
+**Date:** {{ created_date }}
+**Status:** Draft
+**Version:** {{ version }}
+{% if feature %}**Feature:** {{ feature }}{% endif %}
+
+---
+
+## Epic Overview
+
+<!-- High-level description of the epic (2-3 paragraphs) -->
+
+### Business Value
+
+<!-- What business value does this epic deliver? -->
+
+### User Impact
+
+<!-- Who benefits from this epic and how? -->
+
+---
+
+## Goals & Objectives
+
+### Primary Goals
+
+1. **Goal 1:** <!-- What is the main goal? -->
+2. **Goal 2:** <!-- Supporting goal -->
+
+### Success Criteria
+
+- [ ] **Criterion 1:** <!-- Measurable success metric -->
+- [ ] **Criterion 2:** <!-- Measurable success metric -->
+- [ ] **Criterion 3:** <!-- Measurable success metric -->
+
+---
+
+## User Stories
+
+### High-Level User Stories
+
+**US-1: As a [user type], I want [goal] so that [benefit]**
+
+<!-- This will be broken down into detailed stories -->
+
+**US-2: As a [user type], I want [goal] so that [benefit]**
+
+<!-- Add more high-level user stories as needed -->
+
+---
+
+## Scope
+
+### In Scope
+
+- Item 1
+- Item 2
+- Item 3
+
+### Out of Scope
+
+- Item 1
+- Item 2
+
+---
+
+## Stories
+
+<!-- List of stories that implement this epic -->
+
+### Story Breakdown
+
+- [ ] **Story 1:** [Story title] - [Brief description]
+- [ ] **Story 2:** [Story title] - [Brief description]
+- [ ] **Story 3:** [Story title] - [Brief description]
+
+**Total Story Points:** TBD
+
+---
+
+## Technical Approach
+
+### Architecture Components
+
+- **Component 1:** <!-- What needs to be built? -->
+- **Component 2:** <!-- What needs to be built? -->
+
+### Technology Stack
+
+- **Language/Framework:** <!-- Technology used -->
+- **Database:** <!-- Database type if needed -->
+- **APIs/Services:** <!-- External dependencies -->
+
+### Technical Risks
+
+- **Risk 1:** <!-- Technical challenge -->
+  - **Mitigation:** <!-- How to address -->
+
+---
+
+## Dependencies
+
+### Internal Dependencies
+
+- **Dependency 1:** <!-- e.g., "Epic 5 must be completed first" -->
+- **Dependency 2:** <!-- e.g., "Auth system must be available" -->
+
+### External Dependencies
+
+- **Dependency 1:** <!-- e.g., "Third-party API integration" -->
+- **Dependency 2:** <!-- e.g., "Infrastructure provisioning" -->
+
+---
+
+## Acceptance Criteria
+
+### Epic-Level Acceptance Criteria
+
+- [ ] All stories completed and tested
+- [ ] Documentation updated
+- [ ] Performance targets met
+- [ ] Security review passed
+- [ ] Production deployment successful
+
+---
+
+## Timeline
+
+**Target Start Date:** YYYY-MM-DD
+**Target End Date:** YYYY-MM-DD
+**Estimated Duration:** X weeks
+
+### Milestones
+
+| Milestone | Target Date | Status |
+|-----------|------------|--------|
+| Planning Complete | YYYY-MM-DD | Pending |
+| Development Start | YYYY-MM-DD | Pending |
+| Development Complete | YYYY-MM-DD | Pending |
+| Testing Complete | YYYY-MM-DD | Pending |
+| Production Deploy | YYYY-MM-DD | Pending |
+
+---
+
+## Risks & Mitigations
+
+### Risk 1: [Risk Description]
+**Severity:** High | Medium | Low
+**Probability:** High | Medium | Low
+**Mitigation:** <!-- How will we mitigate this risk? -->
+
+### Risk 2: [Risk Description]
+**Severity:** High | Medium | Low
+**Probability:** High | Medium | Low
+**Mitigation:** <!-- How will we mitigate this risk? -->
+
+---
+
+## Related Documents
+
+{% if related_docs %}
+{% for doc in related_docs %}
+- [{{ doc }}]({{ doc }})
+{% endfor %}
+{% else %}
+<!-- Add links to related documents here:
+     - PRD
+     - Architecture
+     - Related epics
+-->
+{% endif %}
+
+---
+
+## Notes
+
+<!-- Additional notes, considerations, or discussion points -->
+
+---
+
+*Generated from template on {{ created_date }}*

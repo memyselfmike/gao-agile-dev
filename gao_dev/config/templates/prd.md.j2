@@ -1,0 +1,185 @@
+---
+{{ frontmatter_yaml }}
+---
+
+# Product Requirements Document: {{ subject }}
+
+**Author:** {{ author }}
+**Date:** {{ created_date }}
+**Status:** Draft
+**Version:** {{ version }}
+
+---
+
+## Executive Summary
+
+<!-- Provide a brief overview of the product/feature (2-3 paragraphs) -->
+
+### Vision
+
+<!-- What is the long-term vision for this product/feature? -->
+
+### The Problem
+
+<!-- What problem does this solve? Who experiences this problem? -->
+
+### The Solution
+
+<!-- High-level solution description. How does it solve the problem? -->
+
+---
+
+## Goals & Success Criteria
+
+### Goals
+
+1. **Primary Goal:** <!-- What is the main goal? -->
+2. **Secondary Goal:** <!-- Supporting goals -->
+3. **Stretch Goal:** <!-- Nice-to-have outcomes -->
+
+### Success Criteria
+
+- [ ] **Criterion 1:** <!-- Measurable success metric -->
+- [ ] **Criterion 2:** <!-- Measurable success metric -->
+- [ ] **Criterion 3:** <!-- Measurable success metric -->
+
+### Key Performance Indicators (KPIs)
+
+- **KPI 1:** <!-- How will we measure success? -->
+- **KPI 2:** <!-- How will we measure success? -->
+
+---
+
+## User Stories
+
+### Primary User Stories
+
+**US-1: As a [user type], I want [goal] so that [benefit]**
+
+**Acceptance Criteria:**
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+<!-- Add more user stories as needed -->
+
+---
+
+## Features & Requirements
+
+### Feature 1: [Feature Name]
+
+**Priority:** P0 | P1 | P2 | P3
+
+**Description:** <!-- Brief description of the feature -->
+
+**Requirements:**
+- **REQ-1.1:** <!-- Functional requirement -->
+- **REQ-1.2:** <!-- Functional requirement -->
+
+**User Impact:** <!-- Who benefits? How? -->
+
+### Feature 2: [Feature Name]
+
+**Priority:** P0 | P1 | P2 | P3
+
+**Description:** <!-- Brief description of the feature -->
+
+**Requirements:**
+- **REQ-2.1:** <!-- Functional requirement -->
+
+---
+
+## Non-Functional Requirements
+
+### Performance
+- **Requirement:** <!-- e.g., "API response time < 200ms for 95th percentile" -->
+- **Requirement:** <!-- e.g., "Support 10,000 concurrent users" -->
+
+### Security
+- **Requirement:** <!-- e.g., "All data encrypted at rest and in transit" -->
+- **Requirement:** <!-- e.g., "Role-based access control (RBAC)" -->
+
+### Usability
+- **Requirement:** <!-- e.g., "Mobile-responsive design" -->
+- **Requirement:** <!-- e.g., "Accessibility WCAG 2.1 AA compliant" -->
+
+### Scalability
+- **Requirement:** <!-- e.g., "Horizontal scaling to handle 10x growth" -->
+
+### Reliability
+- **Requirement:** <!-- e.g., "99.9% uptime SLA" -->
+
+---
+
+## Dependencies
+
+### Internal Dependencies
+- **Dependency 1:** <!-- e.g., "Requires Auth System (Epic 5)" -->
+- **Dependency 2:** <!-- e.g., "Depends on User Profile Service" -->
+
+### External Dependencies
+- **Dependency 1:** <!-- e.g., "Third-party payment gateway integration" -->
+- **Dependency 2:** <!-- e.g., "External API availability" -->
+
+---
+
+## Risks & Mitigations
+
+### Risk 1: [Risk Description]
+**Severity:** High | Medium | Low
+**Probability:** High | Medium | Low
+**Mitigation:** <!-- How will we mitigate or avoid this risk? -->
+
+### Risk 2: [Risk Description]
+**Severity:** High | Medium | Low
+**Probability:** High | Medium | Low
+**Mitigation:** <!-- How will we mitigate or avoid this risk? -->
+
+---
+
+## Timeline & Milestones
+
+| Milestone | Target Date | Status |
+|-----------|------------|--------|
+| Requirements Review | YYYY-MM-DD | Planned |
+| Design Complete | YYYY-MM-DD | Planned |
+| Development Complete | YYYY-MM-DD | Planned |
+| Testing Complete | YYYY-MM-DD | Planned |
+| Launch | YYYY-MM-DD | Planned |
+
+---
+
+## Out of Scope
+
+<!-- What is explicitly NOT included in this PRD? -->
+
+- Item 1
+- Item 2
+
+---
+
+## Related Documents
+
+{% if related_docs %}
+{% for doc in related_docs %}
+- [{{ doc }}]({{ doc }})
+{% endfor %}
+{% else %}
+<!-- Add links to related documents here -->
+{% endif %}
+
+---
+
+## Appendix
+
+### Glossary
+- **Term 1:** Definition
+- **Term 2:** Definition
+
+### References
+- Reference 1
+- Reference 2
+
+---
+
+*Generated from template on {{ created_date }}*

@@ -1,0 +1,203 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gao-dev.com/schemas/frontmatter-v1.json",
+  "title": "Document Frontmatter Schema",
+  "description": "JSON Schema for YAML frontmatter in GAO-Dev documents. Defines required and optional metadata fields for all document types.",
+  "type": "object",
+  "required": ["title", "doc_type", "status", "owner"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Document title (human-readable)",
+      "minLength": 1,
+      "examples": ["User Authentication PRD", "System Architecture", "Epic 12 - Document Lifecycle"]
+    },
+    "doc_type": {
+      "type": "string",
+      "description": "Document type classification",
+      "enum": [
+        "PRD",
+        "ARCHITECTURE",
+        "EPIC",
+        "STORY",
+        "ADR",
+        "POSTMORTEM",
+        "RUNBOOK",
+        "QA_REPORT",
+        "TEST_REPORT"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "description": "Current document lifecycle state",
+      "enum": ["draft", "active", "obsolete", "archived"],
+      "default": "draft"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Document owner - RACI Accountable person responsible for content",
+      "minLength": 1,
+      "examples": ["John", "Winston", "Amelia", "john@example.com"]
+    },
+    "reviewer": {
+      "type": "string",
+      "description": "Document reviewer - RACI Consulted person who reviews and approves",
+      "examples": ["Winston", "Mary", "winston@example.com"]
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date document was created (YYYY-MM-DD)",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "examples": ["2024-11-05"]
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date",
+      "description": "Date document was last updated (YYYY-MM-DD)",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "examples": ["2024-11-05"]
+    },
+    "version": {
+      "type": "string",
+      "description": "Document version in semantic versioning format",
+      "pattern": "^\\d+\\.\\d+$",
+      "examples": ["1.0", "2.1", "3.0"]
+    },
+    "review_due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Next review due date based on governance cadence (YYYY-MM-DD)",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "examples": ["2024-12-05"]
+    },
+    "related_docs": {
+      "type": "array",
+      "description": "List of related document paths or identifiers",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "examples": [
+        ["docs/features/auth/PRD.md", "docs/features/auth/ARCHITECTURE.md"]
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "description": "Classification tags for categorization and search",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$"
+      },
+      "uniqueItems": true,
+      "examples": [
+        ["authentication", "security", "user-management"]
+      ]
+    },
+    "retention_policy": {
+      "type": "string",
+      "description": "Retention policy identifier (e.g., 'archive_after_30_days_obsolete')",
+      "examples": [
+        "archive_after_30_days_obsolete",
+        "archive_after_1_year",
+        "retain_indefinitely"
+      ]
+    },
+    "feature": {
+      "type": "string",
+      "description": "Feature name this document belongs to",
+      "examples": ["user-authentication", "document-lifecycle", "sandbox-system"]
+    },
+    "epic": {
+      "type": "integer",
+      "description": "Epic number if document is part of an epic",
+      "minimum": 1,
+      "examples": [1, 12, 42]
+    },
+    "story": {
+      "type": "string",
+      "description": "Story identifier if document is part of a story (e.g., '12.1', '12.2')",
+      "pattern": "^\\d+\\.\\d+$",
+      "examples": ["12.1", "12.2", "1.1"]
+    },
+    "author": {
+      "type": "string",
+      "description": "Original document author",
+      "examples": ["John", "Claude", "john@example.com"]
+    },
+    "priority": {
+      "type": "string",
+      "description": "Document priority level",
+      "enum": ["P0", "P1", "P2", "P3"],
+      "examples": ["P0"]
+    },
+    "complexity": {
+      "type": "string",
+      "description": "Document or feature complexity assessment",
+      "enum": ["low", "medium", "high", "critical"],
+      "examples": ["medium"]
+    },
+    "estimated_effort": {
+      "type": "string",
+      "description": "Estimated effort (for stories/epics)",
+      "examples": ["3 days", "2 weeks", "5 story points"]
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "List of dependency document paths or identifiers",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "examples": [
+        ["docs/features/auth/ARCHITECTURE.md"]
+      ]
+    },
+    "stakeholders": {
+      "type": "array",
+      "description": "List of stakeholders (RACI: Informed)",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "examples": [
+        ["Mary", "Bob", "team@example.com"]
+      ]
+    }
+  },
+  "additionalProperties": true,
+  "examples": [
+    {
+      "title": "User Authentication PRD",
+      "doc_type": "PRD",
+      "status": "active",
+      "owner": "John",
+      "reviewer": "Winston",
+      "created_date": "2024-11-05",
+      "version": "1.0",
+      "feature": "user-authentication",
+      "tags": ["authentication", "security"]
+    },
+    {
+      "title": "Story 12.1 - Document Registry Database Schema",
+      "doc_type": "STORY",
+      "status": "draft",
+      "owner": "Amelia",
+      "reviewer": "Mary",
+      "created_date": "2024-11-05",
+      "epic": 12,
+      "story": "12.1",
+      "feature": "document-lifecycle",
+      "tags": ["database", "schema", "lifecycle"],
+      "priority": "P0"
+    },
+    {
+      "title": "ADR-001: Database Choice - SQLite vs PostgreSQL",
+      "doc_type": "ADR",
+      "status": "active",
+      "owner": "Winston",
+      "created_date": "2024-09-01",
+      "tags": ["architecture", "database"]
+    }
+  ]
+}

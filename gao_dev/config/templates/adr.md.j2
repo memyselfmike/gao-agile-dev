@@ -1,0 +1,185 @@
+---
+{{ frontmatter_yaml }}
+---
+
+# ADR-{% if adr_number %}{{ "%03d"|format(adr_number) }}{% else %}NNN{% endif %}: {{ subject }}
+
+**Author:** {{ author }}
+**Date:** {{ created_date }}
+**Status:** {{ status|default("Proposed") }}
+
+**Decision Makers:** <!-- Who is involved in this decision? -->
+
+---
+
+## Context
+
+<!-- What is the issue we're trying to solve? -->
+
+### Background
+
+<!-- Provide background information and context -->
+
+### Problem Statement
+
+<!-- Clearly state the problem that needs a decision -->
+
+---
+
+## Decision
+
+<!-- What is the decision we're making? -->
+
+**We will:** {{ decision|default("<!-- State the decision clearly -->") }}
+
+---
+
+## Rationale
+
+<!-- Why did we make this decision? -->
+
+### Key Factors
+
+1. **Factor 1:** <!-- What influenced this decision? -->
+2. **Factor 2:** <!-- What influenced this decision? -->
+3. **Factor 3:** <!-- What influenced this decision? -->
+
+### Trade-offs
+
+**Pros:**
+- Pro 1
+- Pro 2
+- Pro 3
+
+**Cons:**
+- Con 1
+- Con 2
+
+---
+
+## Alternatives Considered
+
+### Alternative 1: [Name]
+
+**Description:** <!-- What is this alternative? -->
+
+**Pros:**
+- Pro 1
+- Pro 2
+
+**Cons:**
+- Con 1
+- Con 2
+
+**Why Not Chosen:** <!-- Why did we reject this? -->
+
+### Alternative 2: [Name]
+
+**Description:** <!-- What is this alternative? -->
+
+**Pros:**
+- Pro 1
+- Pro 2
+
+**Cons:**
+- Con 1
+- Con 2
+
+**Why Not Chosen:** <!-- Why did we reject this? -->
+
+---
+
+## Consequences
+
+### Positive Consequences
+
+- Consequence 1
+- Consequence 2
+
+### Negative Consequences
+
+- Consequence 1
+- Consequence 2
+
+### Risks & Mitigations
+
+- **Risk 1:** <!-- What could go wrong? -->
+  - **Mitigation:** <!-- How to address -->
+
+---
+
+## Implementation
+
+### Action Items
+
+- [ ] Action item 1
+- [ ] Action item 2
+- [ ] Action item 3
+
+### Timeline
+
+**Implementation Start:** YYYY-MM-DD
+**Expected Completion:** YYYY-MM-DD
+
+### Affected Systems
+
+- System 1
+- System 2
+
+---
+
+## Validation
+
+### Success Criteria
+
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+### Review Date
+
+**Review After:** <!-- Date or duration (e.g., "6 months") -->
+
+---
+
+## References
+
+<!-- Supporting documents, research, or external resources -->
+
+- Reference 1
+- Reference 2
+
+---
+
+## Related Documents
+
+{% if related_docs %}
+{% for doc in related_docs %}
+- [{{ doc }}]({{ doc }})
+{% endfor %}
+{% else %}
+<!-- Add links to related documents here:
+     - Related ADRs
+     - Architecture docs
+     - PRDs
+-->
+{% endif %}
+
+---
+
+## Change Log
+
+| Date | Author | Change |
+|------|--------|--------|
+| {{ created_date }} | {{ author }} | Initial version |
+
+---
+
+## Notes
+
+<!-- Additional notes or discussion points -->
+
+---
+
+*This ADR is immutable once approved. Any changes require a new ADR superseding this one.*
+
+*Generated from template on {{ created_date }}*

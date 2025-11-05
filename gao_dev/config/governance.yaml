@@ -1,0 +1,177 @@
+# Document Governance Configuration
+#
+# This configuration defines the RACI matrix (Responsible, Accountable, Consulted, Informed)
+# for each document type, along with review cadences and permissions.
+#
+# RACI Definitions:
+# - created_by (Responsible): Who creates the document
+# - approved_by (Accountable): Who owns and approves the document
+# - reviewed_by (Consulted): Who reviews the document for quality
+# - informed: Who should be notified of changes
+#
+# Review Cadence: Days between mandatory reviews (-1 = never review, immutable)
+
+document_governance:
+  ownership:
+    prd:
+      created_by: "John"      # Product Manager creates PRDs
+      approved_by: "Mary"     # Engineering Manager approves
+      reviewed_by: "Winston"  # Technical Architect reviews for feasibility
+      informed: ["Team"]
+
+    architecture:
+      created_by: "Winston"   # Technical Architect creates architecture docs
+      approved_by: "Mary"     # Engineering Manager approves
+      reviewed_by: "John"     # Product Manager reviews for business alignment
+      informed: ["Team"]
+
+    epic:
+      created_by: "Bob"       # Scrum Master creates epics from PRD
+      approved_by: "John"     # Product Manager approves
+      reviewed_by: "Winston"  # Technical Architect reviews scope
+      informed: ["Team"]
+
+    story:
+      created_by: "Bob"       # Scrum Master creates stories
+      approved_by: "John"     # Product Manager approves acceptance criteria
+      reviewed_by: "Amelia"   # Developer reviews for technical feasibility
+      informed: ["Team"]
+
+    adr:
+      created_by: "Winston"   # Technical Architect creates ADRs
+      approved_by: "Mary"     # Engineering Manager approves
+      reviewed_by: "Amelia"   # Developer reviews implementation impact
+      informed: ["Team", "Stakeholders"]
+
+    postmortem:
+      created_by: "Incident Owner"  # Whoever handled the incident
+      approved_by: "Mary"           # Engineering Manager approves
+      reviewed_by: "Team"           # Team reviews for learning
+      informed: ["Leadership", "Stakeholders"]
+
+    runbook:
+      created_by: "Amelia"    # Developer creates runbooks
+      approved_by: "Mary"     # Engineering Manager approves
+      reviewed_by: "Murat"    # Test Architect reviews for operational readiness
+      informed: ["Team"]
+
+    qa_report:
+      created_by: "Murat"     # Test Architect creates QA reports
+      approved_by: "Mary"     # Engineering Manager approves
+      reviewed_by: "John"     # Product Manager reviews against requirements
+      informed: ["Team", "Stakeholders"]
+
+    test_report:
+      created_by: "Murat"     # Test Architect creates test reports
+      approved_by: "Amelia"   # Developer approves
+      reviewed_by: "Bob"      # Scrum Master reviews for story completion
+      informed: ["Team"]
+
+  review_cadence:  # Days between reviews
+    prd: 90              # Quarterly review - product strategy evolves slowly
+    architecture: 60     # Bi-monthly review - architecture decisions need regular validation
+    epic: 60             # Bi-monthly review - align with sprint planning
+    story: 30            # Monthly review - ensure stories stay relevant
+    adr: -1              # Never review - ADRs are immutable records
+    postmortem: 365      # Annual review - verify action items completed
+    runbook: 90          # Quarterly review - ensure operational procedures current
+    qa_report: -1        # Never review - point-in-time snapshot
+    test_report: -1      # Never review - point-in-time snapshot
+
+  permissions:
+    # Who can archive documents (move from ACTIVE to OBSOLETE)
+    archive:
+      allowed_roles:
+        - "owner"
+        - "engineering_manager"
+
+    # Who can delete documents (hard delete from database)
+    delete:
+      allowed_roles:
+        - "engineering_manager"  # Only EM can delete (with confirmation)
+      requires_confirmation: true
+
+    # Who can transition from DRAFT to ACTIVE
+    transition_to_active:
+      allowed_roles:
+        - "owner"
+        - "approver"
+
+    # Who can mark documents as reviewed
+    mark_reviewed:
+      allowed_roles:
+        - "owner"
+        - "reviewer"
+        - "engineering_manager"
+
+  # Governance rules for compliance
+  rules:
+    # Require owner assignment on creation
+    require_owner_on_creation: true
+
+    # Flag documents without owner in health checks
+    flag_unowned_documents: true
+
+    # Automatically assign owner/reviewer based on RACI matrix
+    auto_assign_ownership: true
+
+    # Send notifications when review is due (integration point for future)
+    enable_review_notifications: false
+
+    # Number of days before review due to send reminder
+    review_reminder_days: 7
+
+    # Escalate overdue reviews to engineering manager after N days
+    escalate_overdue_after_days: 14
+
+  # Priority definitions for sorting overdue reviews
+  priority_mapping:
+    P0: 1  # Critical - highest priority
+    P1: 2  # High
+    P2: 3  # Medium
+    P3: 4  # Low
+    default: 5  # No priority set
+
+# Role definitions for governance
+roles:
+  engineering_manager:
+    name: "Mary"
+    responsibilities:
+      - "Approve all architectural decisions"
+      - "Final authority on document archival"
+      - "Escalation point for overdue reviews"
+
+  product_manager:
+    name: "John"
+    responsibilities:
+      - "Define product requirements"
+      - "Approve stories and epics"
+      - "Business alignment reviews"
+
+  technical_architect:
+    name: "Winston"
+    responsibilities:
+      - "Design system architecture"
+      - "Create ADRs"
+      - "Technical feasibility reviews"
+
+  scrum_master:
+    name: "Bob"
+    responsibilities:
+      - "Create stories and epics"
+      - "Coordinate team activities"
+      - "Track story completion"
+
+  developer:
+    name: "Amelia"
+    responsibilities:
+      - "Implement features"
+      - "Technical reviews"
+      - "Create runbooks"
+
+  test_architect:
+    name: "Murat"
+    responsibilities:
+      - "Quality assurance"
+      - "Create test reports"
+      - "Operational readiness reviews"

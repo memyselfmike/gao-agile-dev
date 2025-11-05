@@ -1,0 +1,135 @@
+# Document Retention Policies Configuration
+#
+# This file defines retention policies for document lifecycle management.
+# Each document type has configurable rules for archival and deletion.
+#
+# Policy Fields:
+#   archive_to_obsolete: Days before ACTIVE->OBSOLETE (-1 = never)
+#   obsolete_to_archive: Days before OBSOLETE->ARCHIVED (-1 = never)
+#   archive_retention: Days to retain in archive before eligible for deletion (-1 = forever)
+#   delete_after_archive: Whether document can be deleted after retention expires (boolean)
+#   compliance_tags: List of tags that prevent deletion (compliance protection)
+#
+# Special Cases:
+#   - Documents with compliance tags are NEVER deleted, only archived
+#   - retention = -1 means keep forever (never delete)
+#   - Postmortems are never deleted (learning retention)
+#   - QA reports retained 5 years minimum (compliance requirement)
+
+retention_policies:
+  # Product Requirements Documents
+  # PRDs are critical product decisions and should be preserved
+  prd:
+    archive_to_obsolete: 30     # Mark obsolete after 30 days inactive
+    obsolete_to_archive: 90     # Archive after 90 days obsolete
+    archive_retention: 730      # Keep in archive for 2 years
+    delete_after_archive: false # NEVER delete PRDs (product history)
+    compliance_tags:
+      - "product-decisions"
+      - "requirements"
+      - "compliance"
+
+  # Architecture Documents
+  # Architecture decisions need long-term retention for system understanding
+  architecture:
+    archive_to_obsolete: 45     # Mark obsolete after 45 days inactive
+    obsolete_to_archive: 60     # Archive after 60 days obsolete
+    archive_retention: 730      # Keep in archive for 2 years
+    delete_after_archive: false # NEVER delete (architectural history)
+    compliance_tags:
+      - "architecture-decisions"
+      - "technical-decisions"
+      - "compliance"
+
+  # Epic Documents
+  # Epics represent major initiatives and should be preserved
+  epic:
+    archive_to_obsolete: 30     # Mark obsolete after 30 days inactive
+    obsolete_to_archive: 90     # Archive after 90 days obsolete
+    archive_retention: 730      # Keep in archive for 2 years
+    delete_after_archive: false # NEVER delete (project history)
+    compliance_tags:
+      - "project-history"
+      - "initiative-tracking"
+
+  # Story Documents
+  # Stories can be deleted after retention period
+  story:
+    archive_to_obsolete: 30     # Mark obsolete after 30 days inactive
+    obsolete_to_archive: 90     # Archive after 90 days obsolete
+    archive_retention: 365      # Keep in archive for 1 year
+    delete_after_archive: true  # Can delete after 1 year in archive
+    compliance_tags: []         # No compliance protection by default
+
+  # QA Reports
+  # QA reports have compliance requirements for 5-year retention
+  qa_report:
+    archive_to_obsolete: 30     # Mark obsolete after 30 days
+    obsolete_to_archive: 30     # Archive quickly (after 30 days obsolete)
+    archive_retention: 1825     # 5 years retention (compliance requirement)
+    delete_after_archive: false # NEVER delete (compliance)
+    compliance_tags:
+      - "quality-audit"
+      - "compliance"
+      - "regulatory"
+
+  # Test Reports
+  # Test reports can be cleaned up more aggressively
+  test_report:
+    archive_to_obsolete: 14     # Mark obsolete after 14 days
+    obsolete_to_archive: 30     # Archive after 30 days obsolete
+    archive_retention: 365      # Keep in archive for 1 year
+    delete_after_archive: true  # Can delete after retention
+    compliance_tags: []
+
+  # Postmortems
+  # Postmortems are critical learning documents - NEVER delete
+  postmortem:
+    archive_to_obsolete: -1     # Never becomes obsolete
+    obsolete_to_archive: -1     # Never archived automatically
+    archive_retention: -1       # Keep forever if manually archived
+    delete_after_archive: false # NEVER delete (learning retention)
+    compliance_tags:
+      - "incidents"
+      - "learning"
+      - "compliance"
+      - "organizational-knowledge"
+
+  # ADR (Architecture Decision Records)
+  # ADRs document important technical decisions - preserve long-term
+  adr:
+    archive_to_obsolete: 90     # Mark obsolete after 90 days inactive
+    obsolete_to_archive: 60     # Archive after 60 days obsolete
+    archive_retention: 1095     # Keep in archive for 3 years
+    delete_after_archive: false # NEVER delete (decision history)
+    compliance_tags:
+      - "architecture-decisions"
+      - "technical-decisions"
+
+  # Runbooks
+  # Runbooks are operational procedures - preserve for reference
+  runbook:
+    archive_to_obsolete: 60     # Mark obsolete after 60 days inactive
+    obsolete_to_archive: 90     # Archive after 90 days obsolete
+    archive_retention: 730      # Keep in archive for 2 years
+    delete_after_archive: false # NEVER delete (operational history)
+    compliance_tags:
+      - "operations"
+      - "procedures"
+
+  # Draft Documents
+  # Drafts can be cleaned up aggressively
+  draft:
+    archive_to_obsolete: 7      # Mark obsolete after 7 days inactive
+    obsolete_to_archive: 7      # Archive quickly (after 7 days obsolete)
+    archive_retention: 30       # Keep in archive for 30 days only
+    delete_after_archive: true  # Can delete drafts after retention
+    compliance_tags: []         # No compliance protection
+
+# Notes:
+# - All retention periods are in days
+# - Use -1 to disable automatic transitions or deletions
+# - Compliance tags apply to individual documents, not all documents of that type
+# - Documents with ANY compliance tag from the policy list are protected from deletion
+# - Archive operations are atomic and safe (copy then delete)
+# - All operations support dry-run mode for safe testing

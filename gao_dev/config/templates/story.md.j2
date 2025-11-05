@@ -1,0 +1,185 @@
+---
+{{ frontmatter_yaml }}
+---
+
+# Story: {{ subject }}
+
+**Author:** {{ author }}
+**Date:** {{ created_date }}
+**Status:** Draft
+**Epic:** {{ epic }}
+{% if feature %}**Feature:** {{ feature }}{% endif %}
+**Story Points:** TBD
+**Priority:** P0 | P1 | P2 | P3
+
+---
+
+## User Story
+
+**As a** [user type]
+**I want** [goal]
+**So that** [benefit]
+
+---
+
+## Description
+
+<!-- Detailed description of what needs to be implemented (2-3 paragraphs) -->
+
+### Context
+
+<!-- Background information and context for this story -->
+
+---
+
+## Acceptance Criteria
+
+### Functional Requirements
+
+- [ ] **AC-1:** <!-- Specific, measurable criterion -->
+- [ ] **AC-2:** <!-- Specific, measurable criterion -->
+- [ ] **AC-3:** <!-- Specific, measurable criterion -->
+
+### Non-Functional Requirements
+
+- [ ] **Performance:** <!-- e.g., "Response time < 200ms" -->
+- [ ] **Security:** <!-- e.g., "Input validation implemented" -->
+- [ ] **Usability:** <!-- e.g., "Mobile responsive" -->
+
+---
+
+## Technical Approach
+
+### Implementation Details
+
+<!-- How will this be implemented? -->
+
+**Files to Create:**
+- `file1.py` - <!-- Purpose -->
+- `file2.py` - <!-- Purpose -->
+
+**Files to Modify:**
+- `existing_file.py` - <!-- What changes? -->
+
+**APIs/Interfaces:**
+- <!-- What APIs need to be created or modified? -->
+
+### Database Changes
+
+<!-- Any database schema changes? -->
+
+**Tables:**
+- `table_name` - <!-- New table or modifications -->
+
+**Migrations:**
+- Migration script needed: Yes | No
+
+---
+
+## Testing Requirements
+
+### Unit Tests
+
+- [ ] Test case 1
+- [ ] Test case 2
+- [ ] Test case 3
+
+### Integration Tests
+
+- [ ] Integration test 1
+- [ ] Integration test 2
+
+### Manual Testing
+
+- [ ] Manual test scenario 1
+- [ ] Manual test scenario 2
+
+**Test Coverage Target:** >80%
+
+---
+
+## Dependencies
+
+### Blocked By
+
+- [ ] Dependency 1 - <!-- What must be done first? -->
+- [ ] Dependency 2 - <!-- What must be done first? -->
+
+### Blocks
+
+- [ ] Story X - <!-- What is waiting on this story? -->
+
+---
+
+## Design & Wireframes
+
+<!-- Link to design mockups, wireframes, or UI specifications -->
+
+---
+
+## Definition of Done
+
+- [ ] All acceptance criteria met
+- [ ] Unit tests written and passing (>80% coverage)
+- [ ] Integration tests written and passing
+- [ ] Code reviewed and approved
+- [ ] Documentation updated
+- [ ] No critical or high-severity bugs
+- [ ] Deployed to staging and validated
+- [ ] Product owner acceptance
+
+---
+
+## Risks & Considerations
+
+### Technical Risks
+
+- **Risk 1:** <!-- What could go wrong technically? -->
+  - **Mitigation:** <!-- How to address -->
+
+### Business Risks
+
+- **Risk 1:** <!-- What are the business implications? -->
+  - **Mitigation:** <!-- How to address -->
+
+---
+
+## Notes
+
+<!-- Additional notes, questions, or discussion points -->
+
+---
+
+## Related Documents
+
+{% if related_docs %}
+{% for doc in related_docs %}
+- [{{ doc }}]({{ doc }})
+{% endfor %}
+{% else %}
+<!-- Add links to related documents here:
+     - Epic
+     - PRD
+     - Architecture
+     - Design docs
+-->
+{% endif %}
+
+---
+
+## Implementation Log
+
+<!-- Track implementation progress -->
+
+**Started:** YYYY-MM-DD
+**Completed:** YYYY-MM-DD
+**Developer:** [Name]
+
+### Changes Made
+
+- Change 1
+- Change 2
+
+---
+
+*Generated from template on {{ created_date }}*
