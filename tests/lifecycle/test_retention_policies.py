@@ -253,36 +253,42 @@ class TestPolicyLoading:
         db_path = temp_dir / "test.db"
         archive_dir = temp_dir / ".archive"
         registry = DocumentRegistry(db_path)
-        doc_manager = DocumentLifecycleManager(registry, archive_dir)
+        try:
+            doc_manager = DocumentLifecycleManager(registry, archive_dir)
 
-        # Load production policies
-        archival_manager = ArchivalManager(doc_manager, production_policies_path)
+            # Load production policies
+            archival_manager = ArchivalManager(doc_manager, production_policies_path)
 
-        # Verify policies loaded
-        policies = archival_manager.list_policies()
-        assert len(policies) >= 10, "Should have at least 10 document type policies"
+            # Verify policies loaded
+            policies = archival_manager.list_policies()
+            assert len(policies) >= 10, "Should have at least 10 document type policies"
+        finally:
+            registry.close()
 
     def test_get_specific_policies(self, production_policies_path, temp_dir):
         """Test getting specific policies from loaded config."""
         db_path = temp_dir / "test.db"
         archive_dir = temp_dir / ".archive"
         registry = DocumentRegistry(db_path)
-        doc_manager = DocumentLifecycleManager(registry, archive_dir)
+        try:
+            doc_manager = DocumentLifecycleManager(registry, archive_dir)
 
-        archival_manager = ArchivalManager(doc_manager, production_policies_path)
+            archival_manager = ArchivalManager(doc_manager, production_policies_path)
 
-        # Test getting specific policies
-        prd_policy = archival_manager.get_policy("prd")
-        assert prd_policy is not None
-        assert prd_policy.doc_type == "prd"
+            # Test getting specific policies
+            prd_policy = archival_manager.get_policy("prd")
+            assert prd_policy is not None
+            assert prd_policy.doc_type == "prd"
 
-        story_policy = archival_manager.get_policy("story")
-        assert story_policy is not None
-        assert story_policy.doc_type == "story"
+            story_policy = archival_manager.get_policy("story")
+            assert story_policy is not None
+            assert story_policy.doc_type == "story"
 
-        postmortem_policy = archival_manager.get_policy("postmortem")
-        assert postmortem_policy is not None
-        assert postmortem_policy.archive_retention == -1
+            postmortem_policy = archival_manager.get_policy("postmortem")
+            assert postmortem_policy is not None
+            assert postmortem_policy.archive_retention == -1
+        finally:
+            registry.close()
 
 
 class TestPolicyDocumentation:
@@ -365,16 +371,19 @@ class TestEdgeCasePolicies:
         db_path = temp_dir / "test.db"
         archive_dir = temp_dir / ".archive"
         registry = DocumentRegistry(db_path)
-        doc_manager = DocumentLifecycleManager(registry, archive_dir)
+        try:
+            doc_manager = DocumentLifecycleManager(registry, archive_dir)
 
-        archival_manager = ArchivalManager(doc_manager, production_policies_path)
+            archival_manager = ArchivalManager(doc_manager, production_policies_path)
 
-        postmortem_policy = archival_manager.get_policy("postmortem")
+            postmortem_policy = archival_manager.get_policy("postmortem")
 
-        # All three fields should be -1 for postmortems
-        assert postmortem_policy.archive_to_obsolete == -1
-        assert postmortem_policy.obsolete_to_archive == -1
-        assert postmortem_policy.archive_retention == -1
+            # All three fields should be -1 for postmortems
+            assert postmortem_policy.archive_to_obsolete == -1
+            assert postmortem_policy.obsolete_to_archive == -1
+            assert postmortem_policy.archive_retention == -1
+        finally:
+            registry.close()
 
     def test_zero_is_not_valid_retention(self, production_policies_path):
         """Test that zero is not used for retention periods."""

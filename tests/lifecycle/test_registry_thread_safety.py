@@ -74,6 +74,9 @@ class TestConcurrentReads:
                 results.append(doc)
             except Exception as e:
                 errors.append(e)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create threads to read documents concurrently
         threads = []
@@ -130,6 +133,9 @@ class TestConcurrentReads:
                 results.append((doc_type, len(docs)))
             except Exception as e:
                 errors.append(e)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create threads to query concurrently
         threads = []
@@ -179,6 +185,9 @@ class TestConcurrentWrites:
                 created_docs.append(doc)
             except Exception as e:
                 errors.append(e)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create threads to write documents concurrently
         threads = []
@@ -223,6 +232,9 @@ class TestConcurrentWrites:
                 successes.append(doc)
             except DocumentAlreadyExistsError as e:
                 errors.append(e)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create threads to write same document concurrently
         threads = []
@@ -262,6 +274,9 @@ class TestConcurrentWrites:
                     update_count[0] += 1
             except Exception as e:
                 errors.append(e)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create threads to update document concurrently
         threads = []
@@ -310,6 +325,9 @@ class TestConcurrentMixedOperations:
                 read_results.append(len(docs))
             except Exception as e:
                 errors.append(e)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         def write_document(doc_id: int):
             """Write document in thread."""
@@ -320,6 +338,9 @@ class TestConcurrentMixedOperations:
                 write_results.append(doc)
             except Exception as e:
                 errors.append(e)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create mixed threads
         threads = []
@@ -385,6 +406,9 @@ class TestConcurrentRelationships:
                 successes.append(rel)
             except Exception as e:
                 errors.append(e)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create threads to add relationships concurrently
         threads = []
@@ -454,6 +478,9 @@ class TestStressTest:
 
             except Exception as e:
                 errors.append(e)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create many threads
         threads = []
@@ -499,11 +526,15 @@ class TestConnectionIsolation:
 
         def get_connection_id():
             """Get connection ID in thread."""
-            # Access thread-local connection
-            with registry._get_connection() as conn:
-                conn_id = id(conn)
-                with lock:
-                    connection_ids.append(conn_id)
+            try:
+                # Access thread-local connection
+                with registry._get_connection() as conn:
+                    conn_id = id(conn)
+                    with lock:
+                        connection_ids.append(conn_id)
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create threads
         threads = []
@@ -547,6 +578,9 @@ class TestConnectionIsolation:
             except Exception:
                 with lock:
                     failure_count[0] += 1
+            finally:
+                # Close thread-local connection
+                registry.close()
 
         # Create threads
         threads = []
