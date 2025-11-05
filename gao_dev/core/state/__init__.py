@@ -10,7 +10,30 @@ This module provides a comprehensive SQLite-based state tracking system for:
 
 from pathlib import Path
 
-__all__ = ["SCHEMA_VERSION", "get_schema_path"]
+from .models import Story, Epic, Sprint, WorkflowExecution
+from .exceptions import (
+    StateTrackerError,
+    RecordNotFoundError,
+    ValidationError,
+    DatabaseConnectionError,
+    TransactionError,
+)
+from .state_tracker import StateTracker
+
+__all__ = [
+    "SCHEMA_VERSION",
+    "get_schema_path",
+    "StateTracker",
+    "Story",
+    "Epic",
+    "Sprint",
+    "WorkflowExecution",
+    "StateTrackerError",
+    "RecordNotFoundError",
+    "ValidationError",
+    "DatabaseConnectionError",
+    "TransactionError",
+]
 
 SCHEMA_VERSION = 1
 
