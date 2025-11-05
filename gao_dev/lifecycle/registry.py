@@ -100,6 +100,7 @@ class DocumentRegistry:
             ("001_create_schema.py", "migration_001"),
             ("002_add_transitions_table.py", "migration_002"),
             ("003_add_reviews_table.py", "migration_003"),
+            ("004_create_fts5.py", "migration_004"),
         ]
 
         with self._get_connection() as conn:

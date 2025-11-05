@@ -15,6 +15,8 @@ from gao_dev.lifecycle.archival import ArchivalManager
 from gao_dev.lifecycle.governance import DocumentGovernance
 from gao_dev.lifecycle.template_manager import DocumentTemplateManager
 from gao_dev.lifecycle.naming_convention import DocumentNamingConvention
+from gao_dev.lifecycle.search import DocumentSearch
+from gao_dev.lifecycle.models import DocumentState
 
 
 def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager, DocumentGovernance]:
@@ -79,6 +81,34 @@ def _get_template_manager() -> DocumentTemplateManager:
 
     except Exception as e:
         raise click.ClickException(f"Failed to initialize template manager: {e}")
+
+
+def _get_search_manager() -> DocumentSearch:
+    """
+    Initialize and return search manager.
+
+    Returns:
+        DocumentSearch instance
+
+    Raises:
+        click.ClickException: If initialization fails
+    """
+    try:
+        # Use default paths relative to project root
+        project_root = Path.cwd()
+        db_path = project_root / ".gao-dev" / "documents.db"
+
+        # Ensure directory exists
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Initialize registry and search
+        registry = DocumentRegistry(db_path)
+        search_manager = DocumentSearch(registry)
+
+        return search_manager
+
+    except Exception as e:
+        raise click.ClickException(f"Failed to initialize search manager: {e}")
 
 
 @click.group()
@@ -697,6 +727,187 @@ def list_templates():
         raise
     except Exception as e:
         raise click.ClickException(f"Failed to list templates: {e}")
+
+
+@lifecycle.command()
+@click.argument("query")
+@click.option("--type", "doc_type", help="Filter by document type (prd, architecture, etc.)")
+@click.option(
+    "--state",
+    type=click.Choice(["draft", "active", "obsolete", "archived"], case_sensitive=False),
+    help="Filter by document state",
+)
+@click.option("--tags", multiple=True, help="Filter by tags (can be specified multiple times)")
+@click.option("--limit", type=int, default=50, help="Max results to return (default: 50)")
+@click.option("--with-content", is_flag=True, help="Search file content (slower but more accurate)")
+def search(query: str, doc_type: str, state: str, tags: tuple, limit: int, with_content: bool):
+    """
+    Full-text search for documents.
+
+    Search across document paths, content, and metadata using FTS5.
+    Results are ranked by relevance.
+
+    Examples:
+        gao-dev lifecycle search "authentication security"
+        gao-dev lifecycle search "api design" --type architecture --state active
+        gao-dev lifecycle search "testing" --tags epic-3 --tags unit-tests
+        gao-dev lifecycle search "user authentication" --with-content
+    """
+    try:
+        search_manager = _get_search_manager()
+
+        click.echo(f">> Searching for: {query}")
+
+        # Convert state string to enum if provided
+        state_enum = DocumentState(state) if state else None
+
+        # Perform search
+        if with_content:
+            results = search_manager.search_with_content(
+                query=query,
+                doc_type=doc_type,
+                state=state_enum,
+                tags=list(tags) if tags else None,
+                limit=limit,
+            )
+        else:
+            results = search_manager.search(
+                query=query,
+                doc_type=doc_type,
+                state=state_enum,
+                tags=list(tags) if tags else None,
+                limit=limit,
+            )
+
+        if not results:
+            click.echo("\n  [INFO] No documents found matching your query.")
+            return
+
+        # Display results as table
+        click.echo(f"\n  Found {len(results)} document(s):\n")
+        click.echo(f"  {'Path':<60} {'Type':<15} {'State':<10} {'Score':<10}")
+        click.echo(f"  {'-' * 60} {'-' * 15} {'-' * 10} {'-' * 10}")
+
+        for doc, score in results:
+            # Truncate path if too long
+            path_display = doc.path if len(doc.path) <= 60 else "..." + doc.path[-57:]
+            click.echo(
+                f"  {path_display:<60} {doc.type.value:<15} {doc.state.value:<10} {score:<10.4f}"
+            )
+
+        click.echo()
+
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(f"Search failed: {e}")
+
+
+@lifecycle.command()
+@click.argument("doc_id", type=int)
+@click.option("--limit", type=int, default=10, help="Max related documents to return (default: 10)")
+def related(doc_id: int, limit: int):
+    """
+    Find related documents by content similarity.
+
+    Uses FTS5 to find documents with similar content to the specified document.
+    Results are ranked by similarity score.
+
+    Examples:
+        gao-dev lifecycle related 123
+        gao-dev lifecycle related 456 --limit 5
+    """
+    try:
+        search_manager = _get_search_manager()
+
+        click.echo(f">> Finding documents related to document ID: {doc_id}")
+
+        # Get source document info
+        registry = search_manager.registry
+        source_doc = registry.get_document(doc_id)
+
+        click.echo(f"  Source: {source_doc.path}")
+        click.echo(f"  Type: {source_doc.type.value}")
+        click.echo(f"  State: {source_doc.state.value}\n")
+
+        # Find related documents
+        results = search_manager.get_related_documents(doc_id, limit=limit)
+
+        if not results:
+            click.echo("  [INFO] No related documents found.")
+            return
+
+        # Display results as table
+        click.echo(f"  Found {len(results)} related document(s):\n")
+        click.echo(f"  {'Path':<60} {'Type':<15} {'State':<10} {'Score':<10}")
+        click.echo(f"  {'-' * 60} {'-' * 15} {'-' * 10} {'-' * 10}")
+
+        for doc, score in results:
+            # Truncate path if too long
+            path_display = doc.path if len(doc.path) <= 60 else "..." + doc.path[-57:]
+            click.echo(
+                f"  {path_display:<60} {doc.type.value:<15} {doc.state.value:<10} {score:<10.4f}"
+            )
+
+        click.echo()
+
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(f"Failed to find related documents: {e}")
+
+
+@lifecycle.command()
+@click.option("--tags", multiple=True, required=True, help="Tags to search (can be specified multiple times)")
+@click.option("--match-all", is_flag=True, help="Require all tags (default: match any tag)")
+@click.option("--limit", type=int, default=50, help="Max results to return (default: 50)")
+def search_tags(tags: tuple, match_all: bool, limit: int):
+    """
+    Search documents by tags.
+
+    By default, matches documents with ANY of the specified tags.
+    Use --match-all to require documents to have ALL tags.
+
+    Examples:
+        gao-dev lifecycle search-tags --tags epic-3 --tags security
+        gao-dev lifecycle search-tags --tags prd --tags active --match-all
+    """
+    try:
+        search_manager = _get_search_manager()
+
+        mode = "ALL" if match_all else "ANY"
+        click.echo(f">> Searching for documents with {mode} tags: {', '.join(tags)}")
+
+        # Perform tag search
+        results = search_manager.search_by_tags(
+            tags=list(tags), match_all=match_all, limit=limit
+        )
+
+        if not results:
+            click.echo("\n  [INFO] No documents found matching the specified tags.")
+            return
+
+        # Display results as table
+        click.echo(f"\n  Found {len(results)} document(s):\n")
+        click.echo(f"  {'Path':<60} {'Type':<15} {'State':<10} {'Tags':<30}")
+        click.echo(f"  {'-' * 60} {'-' * 15} {'-' * 10} {'-' * 30}")
+
+        for doc in results:
+            # Truncate path if too long
+            path_display = doc.path if len(doc.path) <= 60 else "..." + doc.path[-57:]
+            tags_display = ", ".join(doc.get_tags()[:3])  # Show first 3 tags
+            if len(doc.get_tags()) > 3:
+                tags_display += "..."
+            click.echo(
+                f"  {path_display:<60} {doc.type.value:<15} {doc.state.value:<10} {tags_display:<30}"
+            )
+
+        click.echo()
+
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(f"Tag search failed: {e}")
 
 
 # Register the lifecycle group as a subcommand
