@@ -12,14 +12,15 @@ import sys
 from gao_dev.lifecycle.registry import DocumentRegistry
 from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
 from gao_dev.lifecycle.archival import ArchivalManager
+from gao_dev.lifecycle.governance import DocumentGovernance
 
 
-def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager]:
+def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager, DocumentGovernance]:
     """
-    Initialize and return lifecycle and archival managers.
+    Initialize and return lifecycle, archival, and governance managers.
 
     Returns:
-        Tuple of (DocumentLifecycleManager, ArchivalManager)
+        Tuple of (DocumentLifecycleManager, ArchivalManager, DocumentGovernance)
 
     Raises:
         click.ClickException: If initialization fails
@@ -30,6 +31,7 @@ def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager]
         db_path = project_root / ".gao-dev" / "documents.db"
         archive_dir = project_root / ".archive"
         policies_path = Path(__file__).parent.parent / "config" / "retention_policies.yaml"
+        governance_path = Path(__file__).parent.parent / "config" / "governance.yaml"
 
         # Ensure directories exist
         db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -39,8 +41,9 @@ def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager]
         registry = DocumentRegistry(db_path)
         doc_manager = DocumentLifecycleManager(registry, archive_dir)
         archival_manager = ArchivalManager(doc_manager, policies_path)
+        governance_manager = DocumentGovernance(doc_manager, governance_path)
 
-        return doc_manager, archival_manager
+        return doc_manager, archival_manager, governance_manager
 
     except Exception as e:
         raise click.ClickException(f"Failed to initialize lifecycle manager: {e}")
@@ -83,7 +86,7 @@ def archive(dry_run: bool, verbose: bool):
         gao-dev lifecycle archive
     """
     try:
-        doc_manager, archival_manager = _get_lifecycle_manager()
+        doc_manager, archival_manager, _ = _get_lifecycle_manager()
 
         if dry_run:
             click.echo(">> DRY RUN: Previewing archival actions...")
@@ -159,7 +162,7 @@ def cleanup(dry_run: bool, verbose: bool, confirm: bool):
         gao-dev lifecycle cleanup --confirm
     """
     try:
-        doc_manager, archival_manager = _get_lifecycle_manager()
+        doc_manager, archival_manager, _ = _get_lifecycle_manager()
 
         if dry_run:
             click.echo(">> DRY RUN: Previewing cleanup actions...")
@@ -242,7 +245,7 @@ def retention_report(format: str, output: str):
         gao-dev lifecycle retention-report --format csv -o report.csv
     """
     try:
-        doc_manager, archival_manager = _get_lifecycle_manager()
+        doc_manager, archival_manager, _ = _get_lifecycle_manager()
 
         click.echo(">> Generating retention policy report...")
 
@@ -277,7 +280,7 @@ def show_policy(doc_type: str):
         gao-dev lifecycle show-policy story
     """
     try:
-        doc_manager, archival_manager = _get_lifecycle_manager()
+        doc_manager, archival_manager, _ = _get_lifecycle_manager()
 
         policy = archival_manager.get_policy(doc_type)
 
@@ -324,7 +327,7 @@ def list_policies():
         gao-dev lifecycle list-policies
     """
     try:
-        doc_manager, archival_manager = _get_lifecycle_manager()
+        doc_manager, archival_manager, _ = _get_lifecycle_manager()
 
         policies = archival_manager.list_policies()
 
@@ -347,6 +350,173 @@ def list_policies():
         raise
     except Exception as e:
         raise click.ClickException(f"Failed to list policies: {e}")
+
+
+@lifecycle.command()
+@click.option(
+    "--owner",
+    "-o",
+    help="Filter by document owner",
+)
+@click.option(
+    "--overdue-only",
+    is_flag=True,
+    help="Show only overdue reviews",
+)
+def review_due(owner: str, overdue_only: bool):
+    """
+    Show documents needing review.
+
+    Lists documents that are due for review based on their review cadence.
+    By default, shows documents due within 7 days. Use --overdue-only to
+    see only documents past their review date.
+
+    Example:
+        gao-dev lifecycle review-due
+        gao-dev lifecycle review-due --owner John
+        gao-dev lifecycle review-due --overdue-only
+    """
+    try:
+        _, _, governance_manager = _get_lifecycle_manager()
+
+        click.echo(">> Checking documents needing review...")
+
+        documents = governance_manager.check_review_due(
+            owner=owner, include_overdue_only=overdue_only
+        )
+
+        if not documents:
+            if overdue_only:
+                click.echo("  [OK] No overdue reviews found.")
+            else:
+                click.echo("  [OK] No reviews due within 7 days.")
+            return
+
+        # Display results
+        status = "overdue" if overdue_only else "due within 7 days"
+        click.echo(f"\n  {len(documents)} document(s) {status}:\n")
+
+        for doc in documents:
+            days_overdue = governance_manager._days_overdue(doc)
+            status_marker = "[OVERDUE]" if days_overdue > 0 else "[DUE SOON]"
+
+            click.echo(f"  {status_marker} {doc.path}")
+            click.echo(f"    Type: {doc.type.value}")
+            click.echo(f"    Owner: {doc.owner or 'N/A'}")
+            click.echo(f"    Reviewer: {doc.reviewer or 'N/A'}")
+            click.echo(f"    Due Date: {doc.review_due_date or 'N/A'}")
+
+            if days_overdue > 0:
+                click.echo(f"    Days Overdue: {days_overdue}")
+
+            priority = doc.metadata.get("priority", "N/A")
+            if priority != "N/A":
+                click.echo(f"    Priority: {priority}")
+
+            click.echo()
+
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(f"Failed to check reviews due: {e}")
+
+
+@lifecycle.command()
+@click.argument("doc_id", type=int)
+@click.option(
+    "--notes",
+    "-n",
+    help="Review notes",
+)
+def mark_reviewed(doc_id: int, notes: str):
+    """
+    Mark a document as reviewed.
+
+    Records the review in the document's history and calculates the next
+    review due date based on the document's review cadence.
+
+    Example:
+        gao-dev lifecycle mark-reviewed 123
+        gao-dev lifecycle mark-reviewed 123 --notes "All good"
+    """
+    try:
+        _, _, governance_manager = _get_lifecycle_manager()
+
+        click.echo(f">> Marking document {doc_id} as reviewed...")
+
+        # Get current user (in real implementation, would get from auth)
+        # For now, use a placeholder
+        reviewer = "CLI User"
+
+        review = governance_manager.mark_reviewed(doc_id, reviewer, notes)
+
+        click.echo(f"\n  [OK] Document marked as reviewed.")
+        click.echo(f"    Document ID: {review.document_id}")
+        click.echo(f"    Reviewer: {review.reviewer}")
+        click.echo(f"    Reviewed At: {review.reviewed_at}")
+
+        if review.next_review_due:
+            click.echo(f"    Next Review Due: {review.next_review_due}")
+        else:
+            click.echo(f"    Next Review Due: Never (immutable document)")
+
+        if review.notes:
+            click.echo(f"    Notes: {review.notes}")
+
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(f"Failed to mark document as reviewed: {e}")
+
+
+@lifecycle.command()
+@click.option(
+    "--format",
+    type=click.Choice(["markdown", "csv"], case_sensitive=False),
+    default="markdown",
+    help="Output format (markdown or csv)",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Save report to file instead of printing to console",
+)
+def governance_report(format: str, output: str):
+    """
+    Generate governance compliance report.
+
+    The report includes:
+    - Documents needing review (overdue and upcoming)
+    - Documents without owners
+    - Review statistics by document type
+
+    Use --format csv to generate a CSV report suitable for compliance audits.
+
+    Example:
+        gao-dev lifecycle governance-report
+        gao-dev lifecycle governance-report --format csv -o governance.csv
+    """
+    try:
+        _, _, governance_manager = _get_lifecycle_manager()
+
+        click.echo(">> Generating governance compliance report...")
+
+        # Generate report
+        report = governance_manager.generate_governance_report(format=format.lower())
+
+        # Output to file or console
+        if output:
+            output_path = Path(output)
+            output_path.write_text(report, encoding="utf-8")
+            click.echo(f"\n[OK] Report saved to: {output_path}")
+        else:
+            click.echo("\n" + report)
+
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(f"Governance report generation failed: {e}")
 
 
 # Register the lifecycle group as a subcommand

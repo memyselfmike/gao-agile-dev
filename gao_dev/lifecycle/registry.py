@@ -89,26 +89,34 @@ class DocumentRegistry:
         """
         Initialize database schema if not exists.
 
-        Creates all tables and indexes using the migration script.
+        Creates all tables and indexes using the migration scripts.
+        Applies migrations in order: 001, 002, 003.
         """
         import importlib.util
         import sys
         from pathlib import Path as ImportPath
 
-        # Import migration module dynamically (can't import module starting with number)
-        migration_path = (
-            ImportPath(__file__).parent / "migrations" / "001_create_schema.py"
-        )
-        spec = importlib.util.spec_from_file_location(
-            "migration_001", migration_path
-        )
-        migration_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(migration_module)
-        Migration001 = migration_module.Migration001
+        migrations = [
+            ("001_create_schema.py", "migration_001"),
+            ("002_add_transitions_table.py", "migration_002"),
+            ("003_add_reviews_table.py", "migration_003"),
+        ]
 
         with self._get_connection() as conn:
-            if not Migration001.is_applied(conn):
-                Migration001.up(conn)
+            for migration_file, module_name in migrations:
+                migration_path = (
+                    ImportPath(__file__).parent / "migrations" / migration_file
+                )
+                spec = importlib.util.spec_from_file_location(module_name, migration_path)
+                migration_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(migration_module)
+
+                # Get the Migration class (e.g., Migration001, Migration002)
+                migration_num = module_name.split("_")[1]
+                migration_class = getattr(migration_module, f"Migration{migration_num}")
+
+                if not migration_class.is_applied(conn):
+                    migration_class.up(conn)
 
     @contextmanager
     def _get_connection(self):
