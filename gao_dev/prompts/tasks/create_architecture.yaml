@@ -1,0 +1,31 @@
+name: create_architecture
+description: "Task prompt for architecture creation by Winston"
+version: 1.0.0
+
+user_prompt: |
+  Use the Winston agent to create system architecture for '{{project_name}}'.
+
+  Winston should:
+  1. Read the PRD from docs/PRD.md
+  2. Use the 'architecture' workflow
+  3. Create docs/architecture.md with:
+     - System context
+     - Component diagram
+     - Data flow
+     - Technology stack
+     - Integration patterns
+     - Technical risks
+  4. Commit the architecture document
+
+variables:
+  project_name: ""
+  agent: "Winston"
+
+response:
+  max_tokens: 8000
+  temperature: 0.7
+
+metadata:
+  category: task
+  phase: architecture
+  agent: Winston

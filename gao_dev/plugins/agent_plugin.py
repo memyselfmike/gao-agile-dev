@@ -4,12 +4,14 @@ This module provides the plugin API for creating custom agent plugins.
 """
 
 from abc import abstractmethod
-from typing import Type
+from typing import Type, List
 import structlog
 
 from .base_plugin import BasePlugin
 from .models import AgentMetadata
 from ..core.interfaces.agent import IAgent
+from ..core.models.agent_config import AgentConfig
+from ..core.models.prompt_template import PromptTemplate
 from .exceptions import PluginError
 
 logger = structlog.get_logger(__name__)
@@ -98,9 +100,7 @@ class BaseAgentPlugin(BasePlugin):
         agent_class = self.get_agent_class()
 
         if not isinstance(agent_class, type):
-            raise PluginError(
-                f"get_agent_class() must return a class, got {type(agent_class)}"
-            )
+            raise PluginError(f"get_agent_class() must return a class, got {type(agent_class)}")
 
         if not issubclass(agent_class, IAgent):
             raise PluginError(
@@ -110,5 +110,45 @@ class BaseAgentPlugin(BasePlugin):
         logger.debug(
             "agent_class_validated",
             agent_class=agent_class.__name__,
-            agent_name=self.get_agent_name()
+            agent_name=self.get_agent_name(),
         )
+
+    def get_agent_definitions(self) -> List[AgentConfig]:
+        """Return custom agent configurations.
+
+        Plugins can override this method to provide custom agent definitions
+        loaded from YAML files or created programmatically.
+
+        Returns:
+            List of AgentConfig instances
+
+        Example:
+            ```python
+            def get_agent_definitions(self):
+                laura = AgentConfig.from_yaml(
+                    Path(__file__).parent / "agents/laura.agent.yaml"
+                )
+                return [laura]
+            ```
+        """
+        return []
+
+    def get_prompt_templates(self) -> List[PromptTemplate]:
+        """Return custom prompt templates.
+
+        Plugins can override this method to provide custom prompts
+        loaded from YAML files or created programmatically.
+
+        Returns:
+            List of PromptTemplate instances
+
+        Example:
+            ```python
+            def get_prompt_templates(self):
+                contract_review = PromptTemplate.from_yaml(
+                    Path(__file__).parent / "prompts/contract_review.yaml"
+                )
+                return [contract_review]
+            ```
+        """
+        return []

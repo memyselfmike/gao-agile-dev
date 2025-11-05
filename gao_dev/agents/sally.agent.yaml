@@ -1,0 +1,25 @@
+agent:
+  metadata:
+    name: Sally
+    role: UX Designer
+    icon: 🎨
+    version: 1.0.0
+
+  persona_file: ./sally.md
+
+  tools:
+    - Read
+    - Write
+    - Grep
+    - Glob
+    - WebSearch
+    - WebFetch
+
+  capabilities:
+    - ux-design
+
+  model: claude-sonnet-4-5-20250929
+
+  workflows:
+    - wireframe
+    - user-flow

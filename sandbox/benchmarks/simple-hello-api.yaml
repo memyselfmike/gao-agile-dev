@@ -1,0 +1,88 @@
+# Simple Hello API Benchmark
+#
+# Minimal test case to verify Epic 10 changes and autonomous capabilities
+# Fast execution, minimal stories, focused on core functionality
+
+benchmark:
+  name: "simple-hello-api"
+  description: "Quick test of autonomous capabilities with minimal complexity"
+  version: "1.0.0"
+
+  # Simple prompt - minimal requirements
+  initial_prompt: |
+    You are starting with an EMPTY project. Build a simple REST API from scratch.
+
+    **IMPORTANT**: This is a greenfield project. You need to:
+    1. Create ALL project structure and documentation
+    2. Create docs/epics.md with a single epic for this API
+    3. Then create and implement stories for the features below
+
+    Core Features to implement:
+    - Single endpoint: GET /hello that returns {"message": "Hello, World!"}
+    - Optional: GET /hello/{name} that returns {"message": "Hello, {name}!"}
+    - Health check endpoint: GET /health
+
+    Technical Requirements:
+    - Backend: Python with FastAPI
+    - Include basic unit tests (>70% coverage)
+    - Type hints throughout
+    - Simple README with setup instructions
+    - Requirements.txt or pyproject.toml
+
+    Keep it SIMPLE:
+    - No database needed
+    - No authentication needed
+    - No frontend needed
+    - Minimal documentation (just README + docs/epics.md)
+
+    SUCCESS CRITERIA: A working API that can be started with `python main.py` or `uvicorn main:app`
+
+  # Force Level 0 to avoid story management overhead
+  scale_level: 0
+
+  # Expected to complete quickly
+  expected_duration_minutes: 30
+
+  # Timeout after 1 hour
+  timeout_seconds: 3600
+
+  # Success criteria
+  success_criteria:
+    # Minimum test coverage
+    min_test_coverage: 70.0
+
+    # Maximum manual interventions allowed
+    max_manual_interventions: 0
+
+    # Maximum errors allowed
+    max_errors: 2
+
+    # Required features/artifacts (minimal)
+    required_features:
+      - "**/*.py"  # At least some Python files
+      - "README.md"
+      - "**/test_*.py OR tests/*.py"  # Some tests
+
+    # Quality gates (relaxed for simple test)
+    quality_gates:
+      tests_must_pass: true
+      build_must_succeed: false  # No build process required
+      min_commits: 1
+      commit_format: "conventional"
+
+  # Metadata
+  metadata:
+    project_type: "greenfield"
+    complexity: "simple"
+    language: "python"
+    framework: "fastapi"
+    epic: "10"
+    test_mode: "integration"
+
+    tags:
+      - epic-10
+      - simple
+      - api
+      - python
+      - fastapi
+      - quick-test

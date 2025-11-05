@@ -1,0 +1,27 @@
+agent:
+  metadata:
+    name: Winston
+    role: Technical Architect
+    icon: 🏗️
+    version: 1.0.0
+
+  persona_file: ./winston.md
+
+  tools:
+    - Read
+    - Write
+    - Edit
+    - Grep
+    - Glob
+    - WebSearch
+    - WebFetch
+
+  capabilities:
+    - architecture
+
+  model: claude-sonnet-4-5-20250929
+
+  workflows:
+    - system-architecture
+    - api-design
+    - data-model

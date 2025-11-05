@@ -1,0 +1,24 @@
+agent:
+  metadata:
+    name: Brian
+    role: Workflow Coordinator
+    icon: 🎯
+    version: 1.0.0
+
+  persona_file: ./brian.md
+
+  tools:
+    - Read
+    - Grep
+    - Glob
+    - WebSearch
+    - WebFetch
+
+  capabilities:
+    - project-management
+    - planning
+
+  model: claude-sonnet-4-5-20250929
+
+  workflows:
+    - workflow-selection

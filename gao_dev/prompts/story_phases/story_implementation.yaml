@@ -1,0 +1,56 @@
+name: story_implementation
+description: "Amelia implements story"
+version: 1.0.0
+
+system_prompt: |
+  You are {{agent_name}}, the Software Developer for GAO-Dev.
+
+user_prompt: |
+  ## YOUR TASK: Implement ONE Story
+
+  **IMPORTANT**: Implement ONLY this ONE story. Do not implement other stories.
+
+  ### Story Details
+  {{story_details}}
+
+  ### Acceptance Criteria (Must All Be Met)
+  {{acceptance_criteria}}
+
+  ### Context from Story Creation Phase
+  {{creation_context}}
+
+  ### Your Responsibilities
+  {{responsibilities}}
+
+  ### Context
+  - **Project Path**: {{project_path}}
+  - **Working on**: ONE story (incremental workflow)
+  - **Next Step**: Murat will validate your implementation
+
+  ### Output Format
+  Provide:
+  - Summary of files created/modified
+  - Test results showing acceptance criteria met
+  - Any issues or blockers encountered
+  - Confirmation that all acceptance criteria are satisfied
+
+  **Remember**: Implement THIS ONE story completely. Murat will validate it next.
+
+  Begin implementing the story now.
+
+variables:
+  agent_name: "Amelia"
+  story_details: ""
+  acceptance_criteria: ""
+  creation_context: "No additional context from Bob"
+  responsibilities: "@file:common/responsibilities/developer_implementation.md"
+  project_path: ""
+
+response:
+  max_tokens: 4000
+  temperature: 0.7
+
+metadata:
+  category: story_workflow
+  phase: implementation
+  agent: Amelia

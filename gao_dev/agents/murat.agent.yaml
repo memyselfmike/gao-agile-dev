@@ -1,0 +1,26 @@
+agent:
+  metadata:
+    name: Murat
+    role: Test Architect
+    icon: 🧪
+    version: 1.0.0
+
+  persona_file: ./murat.md
+
+  tools:
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Grep
+    - Glob
+    - TodoWrite
+
+  capabilities:
+    - testing
+
+  model: claude-sonnet-4-5-20250929
+
+  workflows:
+    - test-strategy
+    - test-plan

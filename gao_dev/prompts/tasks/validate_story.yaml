@@ -1,0 +1,29 @@
+name: validate_story
+description: "Task prompt for story validation by Murat"
+version: 1.0.0
+
+user_prompt: |
+  Use the Murat agent to validate Story {{epic}}.{{story}}.
+
+  Murat should:
+  1. Read the story file from docs/stories/epic-{{epic}}/story-{{epic}}.{{story}}.md
+  2. Verify all acceptance criteria are documented
+  3. Check that tests exist and pass
+  4. Verify code coverage meets requirements (target: 80%+)
+  5. Check code quality (linting, type hints)
+  6. Report validation results (PASS/FAIL)
+  7. If FAIL, document what needs to be fixed
+
+variables:
+  epic: "1"
+  story: "1"
+  agent: "Murat"
+
+response:
+  max_tokens: 4000
+  temperature: 0.7
+
+metadata:
+  category: task
+  phase: validation
+  agent: Murat

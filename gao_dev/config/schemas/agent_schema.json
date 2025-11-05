@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GAO-Dev Agent Configuration Schema",
+  "description": "Schema for agent YAML configuration files with provider support",
+  "type": "object",
+  "required": ["agent"],
+  "properties": {
+    "agent": {
+      "type": "object",
+      "required": ["metadata", "persona", "tools", "configuration"],
+      "properties": {
+        "metadata": {
+          "type": "object",
+          "required": ["name", "role", "version"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Agent name (e.g., 'Amelia', 'John')"
+            },
+            "role": {
+              "type": "string",
+              "description": "Agent role (e.g., 'Software Developer', 'Product Manager')"
+            },
+            "version": {
+              "type": "string",
+              "description": "Configuration version (semantic versioning)"
+            }
+          }
+        },
+        "persona": {
+          "type": "object",
+          "required": ["background"],
+          "properties": {
+            "background": {
+              "type": "string",
+              "description": "Agent background and persona description"
+            },
+            "responsibilities": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of agent responsibilities"
+            },
+            "principles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Guiding principles for the agent"
+            }
+          }
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of tool names available to the agent (e.g., 'Read', 'Write', 'Bash')"
+        },
+        "configuration": {
+          "type": "object",
+          "required": ["model", "max_tokens", "temperature"],
+          "properties": {
+            "provider": {
+              "type": "string",
+              "description": "Provider to use for this agent (optional, defaults to system default). Examples: 'claude-code', 'opencode', 'direct-api'"
+            },
+            "provider_config": {
+              "type": "object",
+              "description": "Provider-specific configuration (optional)",
+              "additionalProperties": true
+            },
+            "model": {
+              "type": "string",
+              "description": "Canonical model name (provider translates to specific ID). Examples: 'sonnet-4.5', 'opus-3', 'haiku-3', 'gpt-4'"
+            },
+            "max_tokens": {
+              "type": "integer",
+              "description": "Maximum tokens per response",
+              "minimum": 1,
+              "maximum": 200000
+            },
+            "temperature": {
+              "type": "number",
+              "description": "Sampling temperature (0.0-1.0)",
+              "minimum": 0.0,
+              "maximum": 1.0
+            }
+          }
+        }
+      }
+    }
+  }
+}

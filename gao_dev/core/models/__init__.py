@@ -55,6 +55,11 @@ from .methodology import (
     ValidationResult,
 )
 
+# Prompt models (Story 10.5)
+from .prompt_template import (
+    PromptTemplate,
+)
+
 __all__ = [
     # Story
     "StoryIdentifier",
@@ -89,4 +94,6 @@ __all__ = [
     "WorkflowStep",
     "MethodologyWorkflowSequence",
     "ValidationResult",
+    # Prompt (Story 10.5)
+    "PromptTemplate",
 ]

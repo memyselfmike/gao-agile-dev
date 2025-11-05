@@ -33,6 +33,7 @@ from ..core.services.workflow_coordinator import WorkflowCoordinator
 from ..core.services.story_lifecycle import StoryLifecycleManager
 from ..core.services.process_executor import ProcessExecutor
 from ..core.services.quality_gate import QualityGateManager
+from ..core.prompt_loader import PromptLoader
 
 logger = structlog.get_logger()
 
@@ -101,7 +102,7 @@ class GAODevOrchestrator:
                 story_lifecycle,
                 process_executor,
                 quality_gate_manager,
-                brian_orchestrator
+                brian_orchestrator,
             )
         else:
             # All services provided, use them directly
@@ -115,12 +116,14 @@ class GAODevOrchestrator:
             "orchestrator_initialized",
             mode=mode,
             project_root=str(project_root),
-            services_injected=all([
-                hasattr(self, "workflow_coordinator"),
-                hasattr(self, "story_lifecycle"),
-                hasattr(self, "process_executor"),
-                hasattr(self, "quality_gate_manager"),
-            ]),
+            services_injected=all(
+                [
+                    hasattr(self, "workflow_coordinator"),
+                    hasattr(self, "story_lifecycle"),
+                    hasattr(self, "process_executor"),
+                    hasattr(self, "quality_gate_manager"),
+                ]
+            ),
         )
 
     def _initialize_default_services(
@@ -149,8 +152,15 @@ class GAODevOrchestrator:
         self.workflow_registry = WorkflowRegistry(self.config_loader)
         self.workflow_registry.index_workflows()
 
+        # Initialize PromptLoader for task prompts
+        prompts_dir = Path(__file__).parent.parent / "prompts"
+        self.prompt_loader = PromptLoader(
+            prompts_dir=prompts_dir, config_loader=self.config_loader, cache_enabled=True
+        )
+
         # Find Claude CLI if needed
         from ..core.cli_detector import find_claude_cli
+
         cli_path = find_claude_cli()
 
         if self.mode == "benchmark" and not cli_path:
@@ -232,6 +242,7 @@ class GAODevOrchestrator:
 
         # Find Claude CLI
         from ..core.cli_detector import find_claude_cli
+
         cli_path = find_claude_cli()
 
         if mode == "benchmark" and not cli_path:
@@ -256,9 +267,7 @@ class GAODevOrchestrator:
         # Create agent executor closure that captures process_executor
         # This will be used by WorkflowCoordinator to execute agent tasks
         async def agent_executor_closure(
-            workflow_info: "WorkflowInfo",
-            epic: int = 1,
-            story: int = 1
+            workflow_info: "WorkflowInfo", epic: int = 1, story: int = 1
         ) -> AsyncGenerator[str, None]:
             """Closure that executes agent tasks via ProcessExecutor."""
             # Load workflow instructions from instructions.md
@@ -271,7 +280,7 @@ class GAODevOrchestrator:
                 logger.warning(
                     "workflow_missing_instructions",
                     workflow=workflow_info.name,
-                    path=str(instructions_file)
+                    path=str(instructions_file),
                 )
 
             # Replace placeholders for story workflows
@@ -285,14 +294,11 @@ class GAODevOrchestrator:
                 workflow=workflow_info.name,
                 epic=epic,
                 story=story,
-                prompt_length=len(task_prompt)
+                prompt_length=len(task_prompt),
             )
 
             # Execute via ProcessExecutor
-            async for output in process_executor.execute_agent_task(
-                task=task_prompt,
-                timeout=None
-            ):
+            async for output in process_executor.execute_agent_task(task=task_prompt, timeout=None):
                 yield output
 
         # Initialize services
@@ -370,23 +376,15 @@ class GAODevOrchestrator:
         Yields:
             Progress messages
         """
-        task = f"""Use the John agent to create a Product Requirements Document for '{project_name}'.
+        # Load prompt template from YAML
+        template = self.prompt_loader.load_prompt("tasks/create_prd")
+        task = self.prompt_loader.render_prompt(template, {"project_name": project_name})
 
-John should:
-1. Use the 'prd' workflow to understand the structure
-2. Create a comprehensive PRD.md file
-3. Include: Executive Summary, Problem Statement, Goals, Features, Success Metrics
-4. Save to docs/PRD.md
-5. Commit the file with a conventional commit message
-"""
         async for message in self.execute_task(task):
             yield message
 
     async def create_story(
-        self,
-        epic: int,
-        story: int,
-        story_title: Optional[str] = None
+        self, epic: int, story: int, story_title: Optional[str] = None
     ) -> AsyncGenerator[str, None]:
         """
         Create a user story using Bob (Scrum Master).
@@ -399,18 +397,19 @@ John should:
         Yields:
             Progress messages
         """
+        # Load prompt template from YAML
+        template = self.prompt_loader.load_prompt("tasks/create_story")
         title_part = f" with title '{story_title}'" if story_title else ""
-        task = f"""Use the Bob agent to create Story {epic}.{story}{title_part}.
+        task = self.prompt_loader.render_prompt(
+            template,
+            {
+                "epic": str(epic),
+                "story": str(story),
+                "story_title": story_title or "",
+                "story_title_part": title_part,
+            },
+        )
 
-Bob should:
-1. Ensure the story directory exists for epic {epic}
-2. Use the 'create-story' workflow
-3. Read the epic definition from docs/epics.md
-4. Create story file at docs/stories/epic-{epic}/story-{epic}.{story}.md
-5. Include clear acceptance criteria
-6. Set status to 'Draft'
-7. Commit the story file
-"""
         async for message in self.execute_task(task):
             yield message
 
@@ -425,37 +424,10 @@ Bob should:
         Yields:
             Progress messages
         """
-        task = f"""Execute the complete story implementation workflow for Story {epic}.{story}.
+        # Load prompt template from YAML
+        template = self.prompt_loader.load_prompt("tasks/implement_story")
+        task = self.prompt_loader.render_prompt(template, {"epic": str(epic), "story": str(story)})
 
-Coordinate the following agents:
-
-1. **Bob** (Scrum Master):
-   - Verify story {epic}.{story} exists and is ready
-   - Check story status
-
-2. **Amelia** (Developer):
-   - Read the story file
-   - Create feature branch: feature/epic-{epic}-story-{story}
-   - Use 'dev-story' workflow for implementation guidance
-   - Implement all acceptance criteria
-   - Write tests
-   - Update story status to 'In Progress'
-   - Commit implementation
-
-3. **Amelia** (Code Review):
-   - Review code quality
-   - Ensure tests pass
-   - Verify acceptance criteria met
-   - Update status to 'Ready for Review'
-
-4. **Bob** (Story Completion):
-   - Verify all DoD items completed
-   - Merge feature branch
-   - Update story status to 'Done'
-   - Create final commit
-
-Report progress at each step.
-"""
         async for message in self.execute_task(task):
             yield message
 
@@ -469,20 +441,10 @@ Report progress at each step.
         Yields:
             Progress messages
         """
-        task = f"""Use the Winston agent to create system architecture for '{project_name}'.
+        # Load prompt template from YAML
+        template = self.prompt_loader.load_prompt("tasks/create_architecture")
+        task = self.prompt_loader.render_prompt(template, {"project_name": project_name})
 
-Winston should:
-1. Read the PRD from docs/PRD.md
-2. Use the 'architecture' workflow
-3. Create docs/architecture.md with:
-   - System context
-   - Component diagram
-   - Data flow
-   - Technology stack
-   - Integration patterns
-   - Technical risks
-4. Commit the architecture document
-"""
         async for message in self.execute_task(task):
             yield message
 
@@ -497,11 +459,7 @@ Winston should:
         async for message in self.execute_task(task):
             yield message
 
-    async def validate_story(
-        self,
-        epic: int,
-        story: int
-    ) -> AsyncGenerator[str, None]:
+    async def validate_story(self, epic: int, story: int) -> AsyncGenerator[str, None]:
         """
         Validate a story using Murat (QA).
 
@@ -512,24 +470,15 @@ Winston should:
         Yields:
             Progress messages
         """
-        task = f"""Use the Murat agent to validate Story {epic}.{story}.
+        # Load prompt template from YAML
+        template = self.prompt_loader.load_prompt("tasks/validate_story")
+        task = self.prompt_loader.render_prompt(template, {"epic": str(epic), "story": str(story)})
 
-Murat should:
-1. Read the story file from docs/stories/epic-{epic}/story-{epic}.{story}.md
-2. Verify all acceptance criteria are documented
-3. Check that tests exist and pass
-4. Verify code coverage meets requirements (target: 80%+)
-5. Check code quality (linting, type hints)
-6. Report validation results (PASS/FAIL)
-7. If FAIL, document what needs to be fixed
-"""
         async for message in self.execute_task(task):
             yield message
 
     async def assess_and_select_workflows(
-        self,
-        initial_prompt: str,
-        force_scale_level: Optional[ScaleLevel] = None
+        self, initial_prompt: str, force_scale_level: Optional[ScaleLevel] = None
     ) -> WorkflowSequence:
         """
         Use Brian (Engineering Manager) to analyze prompt and select workflows.
@@ -547,14 +496,10 @@ Murat should:
         Returns:
             WorkflowSequence with selected workflows and rationale
         """
-        logger.info(
-            "brian_assessing_prompt",
-            prompt_preview=initial_prompt[:100]
-        )
+        logger.info("brian_assessing_prompt", prompt_preview=initial_prompt[:100])
 
         workflow_sequence = await self.brian_orchestrator.assess_and_select_workflows(
-            initial_prompt=initial_prompt,
-            force_scale_level=force_scale_level
+            initial_prompt=initial_prompt, force_scale_level=force_scale_level
         )
 
         logger.info(
@@ -581,9 +526,7 @@ Murat should:
         return self.brian_orchestrator.get_scale_level_description(scale_level)
 
     def handle_clarification(
-        self,
-        clarifying_questions: List[str],
-        initial_prompt: str
+        self, clarifying_questions: List[str], initial_prompt: str
     ) -> Optional[str]:
         """
         Handle clarification when workflow selection is ambiguous.
@@ -604,7 +547,7 @@ Murat should:
             "clarification_needed",
             mode=self.mode,
             questions_count=len(clarifying_questions),
-            initial_prompt=initial_prompt[:100]
+            initial_prompt=initial_prompt[:100],
         )
 
         # Log questions
@@ -614,21 +557,18 @@ Murat should:
         if self.mode == "benchmark":
             logger.warning(
                 "clarification_in_benchmark_mode",
-                message="Cannot ask clarifying questions in benchmark mode"
+                message="Cannot ask clarifying questions in benchmark mode",
             )
             return None
         else:
-            logger.info(
-                "clarification_mode",
-                message="Clarification handling delegated to caller"
-            )
+            logger.info("clarification_mode", message="Clarification handling delegated to caller")
             return None
 
     async def execute_workflow(
         self,
         initial_prompt: str,
         workflow: Optional[WorkflowSequence] = None,
-        commit_after_steps: bool = True
+        commit_after_steps: bool = True,
     ) -> WorkflowResult:
         """
         Execute complete workflow sequence from initial prompt.
@@ -648,11 +588,13 @@ Murat should:
 
         # Initialize result
         result = WorkflowResult(
-            workflow_name=workflow.workflows[0].name if workflow and workflow.workflows else "auto-select",
+            workflow_name=(
+                workflow.workflows[0].name if workflow and workflow.workflows else "auto-select"
+            ),
             initial_prompt=initial_prompt,
             status=WorkflowStatus.IN_PROGRESS,
             start_time=datetime.now(),
-            project_path=str(self.project_root) if self.project_root else None
+            project_path=str(self.project_root) if self.project_root else None,
         )
 
         try:
@@ -667,14 +609,15 @@ Murat should:
 
                     # Handle clarification based on mode
                     enhanced_prompt = self.handle_clarification(
-                        ["Unable to determine workflow from prompt"],
-                        initial_prompt
+                        ["Unable to determine workflow from prompt"], initial_prompt
                     )
 
                     # If clarification failed
                     result.status = WorkflowStatus.FAILED
                     result.end_time = datetime.now()
-                    result.error_message = "Workflow selection requires clarification. " + workflow.routing_rationale
+                    result.error_message = (
+                        "Workflow selection requires clarification. " + workflow.routing_rationale
+                    )
                     logger.warning("workflow_selection_failed", workflows_count=0)
                     return result
 
@@ -683,7 +626,7 @@ Murat should:
             logger.info(
                 "workflow_execution_started",
                 workflow_count=len(workflow.workflows),
-                scale_level=workflow.scale_level.value
+                scale_level=workflow.scale_level.value,
             )
 
             # Delegate to WorkflowCoordinator for execution
@@ -699,14 +642,13 @@ Murat should:
                     "project_type": workflow.project_type.value,
                     "estimated_stories": workflow.estimated_stories,
                     "estimated_epics": workflow.estimated_epics,
-                    "routing_rationale": workflow.routing_rationale
-                }
+                    "routing_rationale": workflow.routing_rationale,
+                },
             )
 
             # Execute workflow sequence using WorkflowCoordinator
             coordinator_result = await self.workflow_coordinator.execute_sequence(
-                workflow_sequence=workflow,
-                context=workflow_context
+                workflow_sequence=workflow, context=workflow_context
             )
 
             # Copy results from coordinator to orchestrator result
@@ -717,10 +659,7 @@ Murat should:
 
             # Check if execution failed
             if result.status == WorkflowStatus.FAILED:
-                logger.error(
-                    "workflow_sequence_failed",
-                    error=result.error_message
-                )
+                logger.error("workflow_sequence_failed", error=result.error_message)
 
             # Note: Story loop logic is now handled by WorkflowCoordinator._execute_story_loop()
             # during execute_sequence(). No additional logic needed here.
@@ -731,17 +670,13 @@ Murat should:
                 logger.info(
                     "workflow_execution_completed",
                     steps_completed=len(result.step_results),
-                    duration=result.duration_seconds
+                    duration=result.duration_seconds,
                 )
 
         except Exception as e:
             result.status = WorkflowStatus.FAILED
             result.error_message = str(e)
-            logger.error(
-                "workflow_execution_error",
-                error=str(e),
-                exc_info=True
-            )
+            logger.error("workflow_execution_error", error=str(e), exc_info=True)
 
         finally:
             result.end_time = datetime.now()
@@ -751,10 +686,7 @@ Murat should:
 
         return result
 
-    async def execute_workflow_sequence_from_prompt(
-        self,
-        initial_prompt: str
-    ) -> WorkflowResult:
+    async def execute_workflow_sequence_from_prompt(self, initial_prompt: str) -> WorkflowResult:
         """
         Convenience method: assess prompt and execute full workflow sequence.
 
@@ -766,25 +698,21 @@ Murat should:
         Returns:
             WorkflowResult with complete execution results
         """
-        logger.info(
-            "autonomous_execution_starting",
-            prompt_preview=initial_prompt[:100]
-        )
+        logger.info("autonomous_execution_starting", prompt_preview=initial_prompt[:100])
 
         # Brian assesses and selects workflows
         workflow_sequence = await self.assess_and_select_workflows(initial_prompt)
 
         # Execute the selected workflow sequence
         result = await self.execute_workflow(
-            initial_prompt=initial_prompt,
-            workflow=workflow_sequence
+            initial_prompt=initial_prompt, workflow=workflow_sequence
         )
 
         logger.info(
             "autonomous_execution_complete",
             success=result.success,
             duration=result.duration_seconds,
-            steps=result.total_steps
+            steps=result.total_steps,
         )
 
         return result
@@ -794,10 +722,7 @@ Murat should:
     # ========================================================================
 
     async def _execute_agent_task_static(
-        self,
-        workflow_info: "WorkflowInfo",
-        epic: int = 1,
-        story: int = 1
+        self, workflow_info: "WorkflowInfo", epic: int = 1, story: int = 1
     ) -> AsyncGenerator[str, None]:
         """
         Execute agent task via ProcessExecutor (used by WorkflowCoordinator).
@@ -818,12 +743,7 @@ Murat should:
             ProcessExecutionError: If Claude CLI execution fails
             ValueError: If Claude CLI not found
         """
-        logger.debug(
-            "executing_agent_task",
-            workflow=workflow_info.name,
-            epic=epic,
-            story=story
-        )
+        logger.debug("executing_agent_task", workflow=workflow_info.name, epic=epic, story=story)
 
         # Load workflow instructions from instructions.md
         instructions_file = workflow_info.installed_path / "instructions.md"
@@ -835,7 +755,7 @@ Murat should:
             logger.warning(
                 "workflow_missing_instructions",
                 workflow=workflow_info.name,
-                path=str(instructions_file)
+                path=str(instructions_file),
             )
 
         # Replace placeholders if this is a story workflow
@@ -845,7 +765,7 @@ Murat should:
             "{story}": str(story),
             "{{epic_num}}": str(epic),
             "{{story_num}}": str(story),
-            "{{dev_story_location}}": "docs/stories"  # Default story location
+            "{{dev_story_location}}": "docs/stories",  # Default story location
         }
 
         for placeholder, value in replacements.items():
@@ -858,13 +778,12 @@ Murat should:
             agent=self._get_agent_for_workflow(workflow_info),
             epic=epic,
             story=story,
-            prompt_length=len(task_prompt)
+            prompt_length=len(task_prompt),
         )
 
         # Execute via ProcessExecutor
         async for output in self.process_executor.execute_agent_task(
-            task=task_prompt,
-            timeout=None  # Use default timeout from ProcessExecutor
+            task=task_prompt, timeout=None  # Use default timeout from ProcessExecutor
         ):
             yield output
 

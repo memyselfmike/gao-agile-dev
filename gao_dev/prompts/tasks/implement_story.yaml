@@ -1,0 +1,49 @@
+name: implement_story
+description: "Task prompt for story implementation by Bob and Amelia"
+version: 1.0.0
+
+user_prompt: |
+  Execute the complete story implementation workflow for Story {{epic}}.{{story}}.
+
+  Coordinate the following agents:
+
+  1. **Bob** (Scrum Master):
+     - Verify story {{epic}}.{{story}} exists and is ready
+     - Check story status
+
+  2. **Amelia** (Developer):
+     - Read the story file
+     - Create feature branch: feature/epic-{{epic}}-story-{{story}}
+     - Use 'dev-story' workflow for implementation guidance
+     - Implement all acceptance criteria
+     - Write tests
+     - Update story status to 'In Progress'
+     - Commit implementation
+
+  3. **Amelia** (Code Review):
+     - Review code quality
+     - Ensure tests pass
+     - Verify acceptance criteria met
+     - Update status to 'Ready for Review'
+
+  4. **Bob** (Story Completion):
+     - Verify all DoD items completed
+     - Merge feature branch
+     - Update story status to 'Done'
+     - Create final commit
+
+  Report progress at each step.
+
+variables:
+  epic: "1"
+  story: "1"
+  agent: "Bob"
+
+response:
+  max_tokens: 8000
+  temperature: 0.7
+
+metadata:
+  category: task
+  phase: implementation
+  agent: Bob

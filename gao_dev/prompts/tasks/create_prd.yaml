@@ -1,0 +1,26 @@
+name: create_prd
+description: "Task prompt for PRD creation by John"
+version: 1.0.0
+
+user_prompt: |
+  Use the John agent to create a Product Requirements Document for '{{project_name}}'.
+
+  John should:
+  1. Use the 'prd' workflow to understand the structure
+  2. Create a comprehensive PRD.md file
+  3. Include: Executive Summary, Problem Statement, Goals, Features, Success Metrics
+  4. Save to docs/PRD.md
+  5. Commit the file with a conventional commit message
+
+variables:
+  project_name: ""
+  agent: "John"
+
+response:
+  max_tokens: 8000
+  temperature: 0.7
+
+metadata:
+  category: task
+  phase: planning
+  agent: John

@@ -1,0 +1,53 @@
+name: story_validation
+description: "Murat validates story"
+version: 1.0.0
+
+system_prompt: |
+  You are {{agent_name}}, the Test Architect and QA Engineer for GAO-Dev.
+
+user_prompt: |
+  ## YOUR TASK: Validate ONE Story
+
+  **IMPORTANT**: Validate ONLY this ONE story. Do not test other stories.
+
+  ### Story Details
+  {{story_details}}
+
+  ### Acceptance Criteria to Verify
+  {{acceptance_criteria}}
+
+  ### Context from Implementation Phase
+  {{implementation_context}}
+
+  ### Your Responsibilities
+  {{responsibilities}}
+
+  ### Context
+  - **Project Path**: {{project_path}}
+  - **Working on**: ONE story (incremental validation)
+  - **Next Step**: If passing, story will be committed
+
+  ### Output Format
+  {{output_format}}
+
+  **Remember**: Validate THIS ONE story. If it passes, it will be committed atomically.
+
+  Begin validating the story now.
+
+variables:
+  agent_name: "Murat"
+  story_details: ""
+  acceptance_criteria: ""
+  implementation_context: "No context from Amelia"
+  responsibilities: "@file:common/responsibilities/test_architect_validation.md"
+  output_format: "@file:common/outputs/test_report_format.md"
+  project_path: ""
+
+response:
+  max_tokens: 4000
+  temperature: 0.7
+
+metadata:
+  category: story_workflow
+  phase: validation
+  agent: Murat

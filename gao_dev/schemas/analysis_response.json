@@ -1,0 +1,89 @@
+{
+  "type": "object",
+  "properties": {
+    "scale_level": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4,
+      "description": "Scale level from 0 (single change) to 4 (enterprise system)"
+    },
+    "project_type": {
+      "type": "string",
+      "enum": ["greenfield", "brownfield", "game", "software", "bug_fix", "enhancement"],
+      "description": "Type of project"
+    },
+    "is_greenfield": {
+      "type": "boolean",
+      "description": "Is this a new project built from scratch?"
+    },
+    "is_brownfield": {
+      "type": "boolean",
+      "description": "Is this enhancing existing code?"
+    },
+    "is_game_project": {
+      "type": "boolean",
+      "description": "Is this a game development project?"
+    },
+    "estimated_stories": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Estimated number of user stories"
+    },
+    "estimated_epics": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Estimated number of epics"
+    },
+    "technical_complexity": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Technical complexity assessment"
+    },
+    "domain_complexity": {
+      "type": "string",
+      "enum": ["low", "medium", "high"],
+      "description": "Domain/business complexity assessment"
+    },
+    "timeline_hint": {
+      "type": ["string", "null"],
+      "enum": ["hours", "days", "weeks", "months", null],
+      "description": "Estimated timeline"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Confidence level in assessment (0.0-1.0)"
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Brief explanation of the assessment (1-2 sentences)"
+    },
+    "needs_clarification": {
+      "type": "boolean",
+      "description": "Whether the request is too ambiguous and needs clarification"
+    },
+    "clarifying_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of questions to ask if clarification needed"
+    }
+  },
+  "required": [
+    "scale_level",
+    "project_type",
+    "is_greenfield",
+    "is_brownfield",
+    "is_game_project",
+    "estimated_stories",
+    "estimated_epics",
+    "technical_complexity",
+    "domain_complexity",
+    "confidence",
+    "reasoning",
+    "needs_clarification",
+    "clarifying_questions"
+  ]
+}

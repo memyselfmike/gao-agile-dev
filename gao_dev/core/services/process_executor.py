@@ -1,28 +1,21 @@
-"""
-ProcessExecutor Service - Executes external processes (Claude CLI).
+"""ProcessExecutor Service - Executes agent tasks via configured providers.
 
-Extracted from GAODevOrchestrator (Epic 6, Story 6.3) to achieve SOLID principles.
+Refactored in Epic 11, Story 11.4 to use provider abstraction while maintaining
+100% backward compatibility with existing code.
 
 Responsibilities:
-- Execute Claude CLI subprocesses
+- Execute agent tasks via provider abstraction
 - Stream output to caller
 - Handle process timeouts
-- Capture exit codes and errors
-- Log process execution details
+- Validate provider configuration
+- Log execution details
 
-NOT responsible for:
-- Workflow execution (WorkflowCoordinator)
-- Story lifecycle (StoryLifecycleManager)
-- Quality validation (QualityGateManager)
-- High-level orchestration (stays in orchestrator)
+Design Pattern: Strategy Pattern (provider abstraction)
 """
 
 import structlog
-import subprocess
-import os
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional, List, Dict
 from pathlib import Path
-from datetime import datetime
 
 logger = structlog.get_logger()
 
@@ -34,186 +27,218 @@ class ProcessExecutionError(Exception):
 
 class ProcessExecutor:
     """
-    Executes external processes (Claude CLI).
+    Executes agent tasks via configurable provider.
 
-    Single Responsibility: Execute subprocesses, stream output, handle timeouts,
-    and capture exit codes.
+    Refactored to use provider abstraction while maintaining
+    100% backward compatibility with existing code.
 
-    This service was extracted from GAODevOrchestrator (Epic 6, Story 6.3) to
-    follow the Single Responsibility Principle.
-
-    Responsibilities:
-    - Execute Claude CLI subprocesses
-    - Stream output to caller line-by-line
-    - Handle process timeouts
-    - Capture exit codes and errors
-    - Log process execution details
-
-    NOT responsible for:
-    - Workflow execution (WorkflowCoordinator)
-    - Story lifecycle (StoryLifecycleManager)
-    - Quality validation (QualityGateManager)
-    - Orchestrator-level logic (stays in orchestrator)
-
-    Example:
+    New API (Recommended):
         ```python
+        # Option 1: Provider instance injection
+        provider = ClaudeCodeProvider()
+        executor = ProcessExecutor(project_root, provider=provider)
+
+        # Option 2: Provider name with config
+        executor = ProcessExecutor(
+            project_root,
+            provider_name="claude-code",
+            provider_config={"api_key": "sk-..."}
+        )
+
+        # Option 3: Provider name only (uses defaults)
+        executor = ProcessExecutor(project_root, provider_name="claude-code")
+        ```
+
+    Legacy API (Still Supported):
+        ```python
+        # Old constructor still works exactly as before
         executor = ProcessExecutor(
             project_root=Path("/project"),
             cli_path=Path("/usr/bin/claude"),
-            api_key="sk-..."
+            api_key="sk-ant-..."
         )
-
-        async for output in executor.execute_agent_task(
-            task="Implement feature X",
-            timeout=3600
-        ):
-            print(output)
         ```
     """
 
-    # Default timeout: 1 hour (3600 seconds)
-    DEFAULT_TIMEOUT = 3600
+    DEFAULT_TIMEOUT = 3600  # 1 hour
 
     def __init__(
         self,
         project_root: Path,
+        provider: Optional["IAgentProvider"] = None,
+        provider_name: str = "claude-code",
+        provider_config: Optional[Dict] = None,
+        # Legacy parameters (deprecated but supported)
         cli_path: Optional[Path] = None,
         api_key: Optional[str] = None
     ):
         """
-        Initialize executor with injected dependencies.
+        Initialize executor with provider.
 
         Args:
-            project_root: Root directory of the project
-            cli_path: Path to Claude CLI executable
-            api_key: Anthropic API key for Claude CLI
+            project_root: Project root directory
+            provider: Pre-configured provider instance (takes precedence)
+            provider_name: Provider name if creating new instance
+            provider_config: Provider-specific configuration
+            cli_path: DEPRECATED - Use provider_config instead
+            api_key: DEPRECATED - Use provider_config instead
+
+        Example (New API):
+            ```python
+            executor = ProcessExecutor(
+                project_root=Path("/project"),
+                provider_name="claude-code",
+                provider_config={"api_key": "sk-..."}
+            )
+            ```
+
+        Example (Legacy API - still works):
+            ```python
+            executor = ProcessExecutor(
+                project_root=Path("/project"),
+                cli_path=Path("/usr/bin/claude"),
+                api_key="sk-ant-..."
+            )
+            ```
         """
         self.project_root = project_root
+
+        # Store legacy attributes for backward compatibility with existing tests
         self.cli_path = cli_path
-        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.api_key = api_key
+
+        # Import here to avoid circular dependencies
+        from ..providers import ProviderFactory, AgentContext
+        import os
+
+        # Handle legacy constructor (backward compatibility)
+        if provider is None and (cli_path is not None or api_key is not None):
+            # Legacy mode: create ClaudeCodeProvider with old params
+            logger.info(
+                "process_executor_legacy_mode",
+                message="Using legacy constructor. Consider migrating to provider-based API.",
+                migration_guide="See docs/MIGRATION_PROVIDER.md"
+            )
+
+            # Fill in api_key from environment if not provided (maintain old behavior)
+            effective_api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+            self.api_key = effective_api_key
+
+            factory = ProviderFactory()
+            legacy_config = {}
+            if cli_path is not None:
+                legacy_config["cli_path"] = cli_path
+            if effective_api_key is not None:
+                legacy_config["api_key"] = effective_api_key
+
+            self.provider = factory.create_provider("claude-code", config=legacy_config)
+
+        # Use provided provider instance
+        elif provider is not None:
+            self.provider = provider
+            logger.info(
+                "process_executor_provider_injected",
+                provider=provider.name,
+                provider_version=provider.version
+            )
+
+        # Create provider from factory
+        else:
+            factory = ProviderFactory()
+            self.provider = factory.create_provider(provider_name, config=provider_config)
+            logger.info(
+                "process_executor_provider_created",
+                provider_name=provider_name,
+                has_config=provider_config is not None
+            )
 
         logger.info(
             "process_executor_initialized",
             project_root=str(project_root),
-            has_cli=cli_path is not None,
-            has_api_key=bool(self.api_key)
+            provider=self.provider.name,
+            provider_version=self.provider.version
         )
 
     async def execute_agent_task(
         self,
         task: str,
+        model: str = "sonnet-4.5",
+        tools: Optional[List[str]] = None,
         timeout: Optional[int] = None
     ) -> AsyncGenerator[str, None]:
         """
-        Execute agent task via Claude CLI subprocess.
-
-        Streams output from process line-by-line. Handles timeouts, exit codes,
-        and error conditions with proper logging.
+        Execute agent task via configured provider.
 
         Args:
-            task: Task description to pass to Claude CLI
-            timeout: Process timeout in seconds (default: 3600)
+            task: Task description/prompt
+            model: Canonical model name (provider translates)
+            tools: List of tool names to enable
+            timeout: Optional timeout in seconds
 
         Yields:
-            Output lines from process
+            Progress messages and results
 
         Raises:
-            ProcessExecutionError: If process fails
-            ValueError: If Claude CLI not found
-            TimeoutError: If process exceeds timeout
+            ValueError: If provider not properly configured
+            ProviderExecutionError: If execution fails
+            ProviderTimeoutError: If execution times out
         """
-        if not self.cli_path:
-            raise ValueError("Claude CLI not found")
+        # Import here to avoid circular dependencies
+        from ..providers import AgentContext
 
-        timeout = timeout or self.DEFAULT_TIMEOUT
+        # Validate provider configuration
+        is_valid = await self.provider.validate_configuration()
+        if not is_valid:
+            logger.error(
+                "provider_not_configured",
+                provider=self.provider.name
+            )
+            raise ValueError(
+                f"Provider '{self.provider.name}' not properly configured. "
+                f"Check API keys and CLI installation. "
+                f"See: gao-dev providers validate"
+            )
 
-        # Build command
-        cmd = [str(self.cli_path)]
-        cmd.extend(['--print'])  # Non-interactive output
-        cmd.extend(['--dangerously-skip-permissions'])  # Auto-approve tools
-        cmd.extend(['--model', 'claude-sonnet-4-5-20250929'])
-        cmd.extend(['--add-dir', str(self.project_root)])
+        # Create execution context
+        context = AgentContext(project_root=self.project_root)
 
-        # Set environment with API key
-        env = os.environ.copy()
-        if self.api_key:
-            env['ANTHROPIC_API_KEY'] = self.api_key
-
+        # Delegate to provider
         logger.info(
-            "executing_claude_cli",
-            cli=str(self.cli_path),
-            timeout=timeout,
-            has_api_key=bool(self.api_key),
-            command_preview=f"{cmd[0]} {' '.join(cmd[1:4])}..."
+            "executing_task_via_provider",
+            provider=self.provider.name,
+            model=model,
+            tools=tools,
+            timeout=timeout or self.DEFAULT_TIMEOUT
         )
 
         try:
-            # Execute Claude CLI as subprocess
-            # IMPORTANT: encoding='utf-8' is required for Windows compatibility
-            # Windows defaults to 'charmap' which doesn't support Unicode characters
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding='utf-8',
-                errors='replace',  # Replace unencodable characters instead of failing
-                env=env,
-                cwd=str(self.project_root)
-            )
-
-            # Send task as input and wait for completion
-            stdout, stderr = process.communicate(input=task, timeout=timeout)
+            async for message in self.provider.execute_task(
+                task=task,
+                context=context,
+                model=model,
+                tools=tools or [],
+                timeout=timeout or self.DEFAULT_TIMEOUT
+            ):
+                yield message
 
             logger.info(
-                "claude_cli_completed",
-                return_code=process.returncode,
-                stdout_length=len(stdout) if stdout else 0,
-                stderr_length=len(stderr) if stderr else 0,
-                stdout_preview=stdout[:200] if stdout else "(empty)",
-                stderr_preview=stderr[:200] if stderr else "(empty)"
+                "task_execution_completed",
+                provider=self.provider.name
             )
-
-            if stderr:
-                logger.warning("claude_cli_stderr", stderr=stderr[:1000])
-
-            # Yield output even if return code isn't 0 (might have partial output)
-            if stdout:
-                yield stdout
-
-            # Check exit code
-            if process.returncode != 0:
-                error_msg = f"Claude CLI failed with exit code {process.returncode}"
-                if stderr:
-                    error_msg += f": {stderr[:500]}"
-                if not stdout and not stderr:
-                    error_msg += " (no output - check if claude.bat is configured correctly)"
-
-                logger.error(
-                    "claude_cli_execution_failed",
-                    exit_code=process.returncode,
-                    error=error_msg
-                )
-                raise ProcessExecutionError(error_msg)
-
-        except subprocess.TimeoutExpired:
-            logger.error(
-                "claude_cli_timeout",
-                timeout=timeout,
-                task_preview=task[:100]
-            )
-            process.kill()
-            raise TimeoutError(f"Claude CLI execution timed out after {timeout} seconds")
-
-        except ProcessExecutionError:
-            # Re-raise our own exceptions
-            raise
 
         except Exception as e:
             logger.error(
-                "claude_cli_execution_error",
+                "task_execution_failed",
+                provider=self.provider.name,
                 error=str(e),
                 exc_info=True
             )
-            raise ProcessExecutionError(f"Process execution failed: {str(e)}")
+            raise
+
+    def __repr__(self) -> str:
+        """String representation."""
+        return (
+            f"ProcessExecutor("
+            f"project_root={self.project_root}, "
+            f"provider={self.provider.name})"
+        )
