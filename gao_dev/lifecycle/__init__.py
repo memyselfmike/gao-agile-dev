@@ -8,6 +8,7 @@ This module provides comprehensive document lifecycle management including:
 - Document state tracking (draft, active, obsolete, archived)
 - Governance fields (owner, reviewer, review due dates)
 - Document relationships and linking
+- Document scanning with 5S classification
 """
 
 from gao_dev.lifecycle.naming_convention import DocumentNamingConvention
@@ -18,6 +19,7 @@ from gao_dev.lifecycle.models import (
     DocumentState,
     RelationshipType,
 )
+from gao_dev.lifecycle.scanner import DocumentScanner, ScanResult
 
 __all__ = [
     "DocumentNamingConvention",
@@ -26,4 +28,6 @@ __all__ = [
     "DocumentType",
     "DocumentState",
     "RelationshipType",
+    "DocumentScanner",
+    "ScanResult",
 ]
