@@ -1,0 +1,70 @@
+checklist:
+  name: contract-review
+  category: legal
+  version: 1.0.0
+  description: Checklist for reviewing contracts and legal agreements
+
+  metadata:
+    owner: Legal Team
+    review_cadence: quarterly
+    compliance_tags:
+      - legal
+      - compliance
+      - contracts
+
+  items:
+    - id: contract-parties
+      text: Verify all parties are correctly identified with full legal names
+      severity: high
+      category: parties
+      help_text: Check company names, addresses, and registration numbers
+      references:
+        - https://example.com/contract-best-practices
+
+    - id: contract-terms
+      text: Review and approve all contractual terms and conditions
+      severity: high
+      category: terms
+      help_text: Ensure terms align with company policy and legal requirements
+
+    - id: contract-liability
+      text: Verify liability clauses and limitation of liability
+      severity: high
+      category: liability
+      help_text: Check indemnification, warranties, and liability caps
+
+    - id: contract-termination
+      text: Review termination clauses and exit procedures
+      severity: medium
+      category: termination
+      help_text: Ensure clear termination rights and procedures
+
+    - id: contract-ip
+      text: Verify intellectual property rights and ownership
+      severity: high
+      category: ip
+      help_text: Check IP ownership, licensing, and confidentiality
+
+    - id: contract-compliance
+      text: Ensure compliance with applicable laws and regulations
+      severity: high
+      category: compliance
+      help_text: Verify GDPR, data protection, and industry-specific regulations
+
+    - id: contract-signatures
+      text: Verify all required signatures and authorities
+      severity: high
+      category: execution
+      help_text: Check signing authority and execution formalities
+
+    - id: contract-jurisdiction
+      text: Review governing law and jurisdiction clauses
+      severity: medium
+      category: jurisdiction
+      help_text: Ensure appropriate legal jurisdiction is specified
+
+    - id: contract-dispute-resolution
+      text: Review dispute resolution and arbitration clauses
+      severity: medium
+      category: dispute-resolution
+      help_text: Check arbitration procedures and mediation requirements

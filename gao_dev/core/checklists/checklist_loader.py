@@ -6,8 +6,9 @@ providing the core infrastructure for the checklist system.
 """
 
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set, Tuple
 
+import structlog
 import yaml
 
 from gao_dev.core.checklists.exceptions import (
@@ -17,6 +18,8 @@ from gao_dev.core.checklists.exceptions import (
 )
 from gao_dev.core.checklists.models import Checklist, ChecklistItem
 from gao_dev.core.checklists.schema_validator import ChecklistSchemaValidator
+
+logger = structlog.get_logger(__name__)
 
 
 class ChecklistLoader:
@@ -29,30 +32,45 @@ class ChecklistLoader:
     - Inheritance resolution via 'extends' mechanism
     - Circular dependency detection
     - Performance-optimized caching
+    - Plugin integration for custom checklists
     """
 
-    def __init__(self, checklist_dirs: List[Path], schema_path: Path):
+    def __init__(
+        self,
+        checklist_dirs: List[Path],
+        schema_path: Path,
+        plugin_manager: Optional["ChecklistPluginManager"] = None,
+    ):
         """
         Initialize the checklist loader.
 
         Args:
-            checklist_dirs: List of directories to search for checklists
+            checklist_dirs: List of directories to search for core checklists
                            (searched in order: first match wins)
             schema_path: Path to JSON Schema file for validation
+            plugin_manager: Optional plugin manager for loading plugin checklists
 
         Example:
             >>> from pathlib import Path
+            >>> from gao_dev.core.checklists.plugin_manager import ChecklistPluginManager
             >>> dirs = [Path("gao_dev/config/checklists")]
             >>> schema = Path("gao_dev/config/schemas/checklist_schema.json")
-            >>> loader = ChecklistLoader(dirs, schema)
+            >>> plugin_mgr = ChecklistPluginManager(Path("plugins"))
+            >>> loader = ChecklistLoader(dirs, schema, plugin_mgr)
         """
         self.checklist_dirs = checklist_dirs
         self.validator = ChecklistSchemaValidator(schema_path)
+        self.plugin_manager = plugin_manager
         self._cache: Dict[str, Checklist] = {}
+        self._source_map: Dict[str, str] = {}  # checklist_name -> source
 
     def load_checklist(self, name: str) -> Checklist:
         """
         Load checklist by name (e.g., 'testing/unit-test-standards').
+
+        Search order:
+        1. Plugin checklists (by priority - highest first)
+        2. Core checklists
 
         Args:
             name: Checklist name (relative path without .yaml extension)
@@ -74,10 +92,69 @@ class ChecklistLoader:
         if name in self._cache:
             return self._cache[name]
 
-        # Find checklist file
+        # Search plugin directories first (by priority)
+        if self.plugin_manager:
+            for directory, plugin_name, priority in (
+                self.plugin_manager.get_all_checklist_directories()
+            ):
+                # Skip disabled plugins
+                if not self.plugin_manager.is_plugin_enabled(plugin_name):
+                    continue
+
+                checklist_path = directory / f"{name}.yaml"
+                if checklist_path.exists():
+                    logger.info(
+                        "loading_plugin_checklist",
+                        name=name,
+                        plugin=plugin_name,
+                        priority=priority,
+                    )
+
+                    # Load and validate
+                    with open(checklist_path, "r", encoding="utf-8") as f:
+                        data = yaml.safe_load(f)
+
+                    is_valid, errors = self.validator.validate(data)
+                    if not is_valid:
+                        error_msg = "\n".join(errors)
+                        logger.warning(
+                            "plugin_checklist_validation_failed",
+                            name=name,
+                            plugin=plugin_name,
+                            errors=error_msg,
+                        )
+                        continue
+
+                    # Resolve inheritance
+                    checklist = self._resolve_inheritance(data, name, set())
+
+                    # Cache and track source
+                    self._cache[name] = checklist
+                    self._source_map[name] = plugin_name
+
+                    # Call plugin hook
+                    plugin = self.plugin_manager.get_plugin(plugin_name)
+                    if plugin:
+                        try:
+                            plugin.on_checklist_loaded(
+                                name, {"checklist": data["checklist"]}
+                            )
+                        except Exception as e:
+                            logger.error(
+                                "plugin_hook_error",
+                                plugin=plugin_name,
+                                hook="on_checklist_loaded",
+                                error=str(e),
+                            )
+
+                    return checklist
+
+        # Fall back to core checklists
         checklist_path = self._find_checklist(name)
         if not checklist_path:
             raise ChecklistNotFoundError(f"Checklist not found: {name}")
+
+        logger.info("loading_core_checklist", name=name)
 
         # Load YAML
         with open(checklist_path, "r", encoding="utf-8") as f:
@@ -94,8 +171,9 @@ class ChecklistLoader:
         # Resolve inheritance (with circular dependency tracking)
         checklist = self._resolve_inheritance(data, name, set())
 
-        # Cache and return
+        # Cache and track source
         self._cache[name] = checklist
+        self._source_map[name] = "core"
         return checklist
 
     def _find_checklist(self, name: str) -> Path:
@@ -327,22 +405,42 @@ class ChecklistLoader:
 
         return "\n".join(lines)
 
-    def list_checklists(self) -> List[str]:
+    def get_checklist_source(self, name: str) -> str:
         """
-        Discover all available checklists.
+        Get source of checklist (core or plugin name).
 
-        Recursively searches all checklist directories for .yaml files.
+        Args:
+            name: Checklist name
 
         Returns:
-            Sorted list of checklist names (without .yaml extension)
+            "core" or plugin name, or "unknown" if not loaded
 
         Example:
-            >>> loader = ChecklistLoader(dirs, schema)
-            >>> checklists = loader.list_checklists()
-            >>> for name in checklists:
-            ...     print(f"Available: {name}")
+            >>> loader = ChecklistLoader(dirs, schema, plugin_mgr)
+            >>> checklist = loader.load_checklist("contract-review")
+            >>> source = loader.get_checklist_source("contract-review")
+            >>> print(f"Loaded from: {source}")
         """
-        checklists = []
+        return self._source_map.get(name, "unknown")
+
+    def list_checklists(self) -> List[Tuple[str, str]]:
+        """
+        Discover all available checklists with their sources.
+
+        Recursively searches all checklist directories (core and plugins) for .yaml files.
+
+        Returns:
+            List of tuples: (checklist_name, source)
+            where source is "core" or plugin name
+
+        Example:
+            >>> loader = ChecklistLoader(dirs, schema, plugin_mgr)
+            >>> for name, source in loader.list_checklists():
+            ...     print(f"{name} (from {source})")
+        """
+        checklists_dict: Dict[str, str] = {}
+
+        # Core checklists first (lowest priority)
         for directory in self.checklist_dirs:
             if not directory.exists():
                 continue
@@ -350,7 +448,26 @@ class ChecklistLoader:
                 rel_path = yaml_file.relative_to(directory)
                 # Convert to forward slashes and remove .yaml extension
                 name = str(rel_path.with_suffix("")).replace("\\", "/")
-                checklists.append(name)
+                checklists_dict[name] = "core"
 
-        # Return sorted unique list
-        return sorted(set(checklists))
+        # Plugin checklists (can override core)
+        if self.plugin_manager:
+            # Process in reverse priority order (lowest to highest)
+            # so highest priority wins
+            directories = self.plugin_manager.get_all_checklist_directories()
+            for directory, plugin_name, priority in reversed(directories):
+                # Skip disabled plugins
+                if not self.plugin_manager.is_plugin_enabled(plugin_name):
+                    continue
+
+                if not directory.exists():
+                    continue
+
+                for yaml_file in directory.rglob("*.yaml"):
+                    rel_path = yaml_file.relative_to(directory)
+                    name = str(rel_path.with_suffix("")).replace("\\", "/")
+                    # Override if already exists (higher priority)
+                    checklists_dict[name] = plugin_name
+
+        # Convert to sorted list of tuples
+        return sorted(checklists_dict.items(), key=lambda x: x[0])

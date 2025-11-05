@@ -1,0 +1,61 @@
+checklist:
+  name: legal-review
+  category: legal
+  version: 1.0.0
+  description: General legal document review checklist
+
+  metadata:
+    owner: Legal Team
+    review_cadence: as-needed
+    compliance_tags:
+      - legal
+      - document-review
+
+  items:
+    - id: legal-document-accuracy
+      text: Verify accuracy of all legal statements and claims
+      severity: high
+      category: accuracy
+      help_text: Check facts, figures, and legal assertions
+
+    - id: legal-risk-identification
+      text: Identify and assess legal risks in the document
+      severity: high
+      category: risk
+      help_text: Document potential legal exposures and liabilities
+
+    - id: legal-precedent-review
+      text: Review relevant legal precedents and case law
+      severity: medium
+      category: precedent
+      help_text: Check applicable case law and legal precedents
+
+    - id: legal-regulatory-alignment
+      text: Ensure document aligns with current regulations
+      severity: high
+      category: regulatory
+      help_text: Verify compliance with latest regulatory requirements
+
+    - id: legal-language-clarity
+      text: Verify legal language is clear and unambiguous
+      severity: medium
+      category: clarity
+      help_text: Ensure terms are well-defined and understandable
+
+    - id: legal-references
+      text: Verify all legal references and citations are accurate
+      severity: medium
+      category: references
+      help_text: Check statutes, regulations, and case citations
+
+    - id: legal-stakeholder-approval
+      text: Obtain required legal stakeholder approvals
+      severity: high
+      category: approval
+      help_text: Document approvals from general counsel and relevant parties
+
+    - id: legal-version-control
+      text: Ensure proper version control and change tracking
+      severity: low
+      category: version-control
+      help_text: Track document versions and modifications
