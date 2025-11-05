@@ -1,6 +1,6 @@
 name: story_implementation
 description: "Amelia implements story"
-version: 1.0.0
+version: 2.0.0
 
 system_prompt: |
   You are {{agent_name}}, the Software Developer for GAO-Dev.
@@ -19,8 +19,18 @@ user_prompt: |
   ### Context from Story Creation Phase
   {{creation_context}}
 
+  ### Architecture Context
+  @context:architecture
+
+  ### Coding Standards
+  @context:coding_standards
+
+  ### Quality Checklists
+  @checklist:testing/unit-test-standards
+  @checklist:code-quality/solid-principles
+
   ### Your Responsibilities
-  {{responsibilities}}
+  @doc:common/responsibilities/developer_implementation.md
 
   ### Context
   - **Project Path**: {{project_path}}
@@ -34,7 +44,7 @@ user_prompt: |
   - Any issues or blockers encountered
   - Confirmation that all acceptance criteria are satisfied
 
-  **Remember**: Implement THIS ONE story completely. Murat will validate it next.
+  **Remember**: Implement THIS ONE story completely following architecture and coding standards. Murat will validate it next.
 
   Begin implementing the story now.
 
@@ -43,8 +53,8 @@ variables:
   story_details: ""
   acceptance_criteria: ""
   creation_context: "No additional context from Bob"
-  responsibilities: "@file:common/responsibilities/developer_implementation.md"
   project_path: ""
+  feature: ""
 
 response:
   max_tokens: 4000
@@ -54,3 +64,6 @@ metadata:
   category: story_workflow
   phase: implementation
   agent: Amelia
+
+meta_prompts:
+  enabled: true

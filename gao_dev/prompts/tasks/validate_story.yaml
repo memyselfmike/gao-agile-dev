@@ -1,23 +1,36 @@
 name: validate_story
 description: "Task prompt for story validation by Murat"
-version: 1.0.0
+version: 2.0.0
 
 user_prompt: |
   Use the Murat agent to validate Story {{epic}}.{{story}}.
 
+  Story Definition:
+  @doc:stories/epic-{{epic}}/story-{{epic}}.{{story}}.md
+
+  Acceptance Criteria:
+  @doc:stories/epic-{{epic}}/story-{{epic}}.{{story}}.md#acceptance-criteria
+
+  Quality Checklists:
+  @checklist:testing/qa-comprehensive
+  @checklist:code-quality/code-review-checklist
+  @checklist:testing/unit-test-standards
+
   Murat should:
-  1. Read the story file from docs/stories/epic-{{epic}}/story-{{epic}}.{{story}}.md
-  2. Verify all acceptance criteria are documented
+  1. Read the story definition and acceptance criteria above
+  2. Verify all acceptance criteria are documented and met
   3. Check that tests exist and pass
   4. Verify code coverage meets requirements (target: 80%+)
-  5. Check code quality (linting, type hints)
-  6. Report validation results (PASS/FAIL)
-  7. If FAIL, document what needs to be fixed
+  5. Check code quality against the checklists (linting, type hints, SOLID principles)
+  6. Verify tests follow unit test standards
+  7. Report validation results (PASS/FAIL)
+  8. If FAIL, document what needs to be fixed with specific checklist items
 
 variables:
   epic: "1"
   story: "1"
   agent: "Murat"
+  feature: ""
 
 response:
   max_tokens: 4000
@@ -27,3 +40,6 @@ metadata:
   category: task
   phase: validation
   agent: Murat
+
+meta_prompts:
+  enabled: true

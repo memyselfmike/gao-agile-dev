@@ -1,6 +1,6 @@
 name: story_validation
 description: "Murat validates story"
-version: 1.0.0
+version: 2.0.0
 
 system_prompt: |
   You are {{agent_name}}, the Test Architect and QA Engineer for GAO-Dev.
@@ -19,8 +19,13 @@ user_prompt: |
   ### Context from Implementation Phase
   {{implementation_context}}
 
+  ### Quality Checklists
+  @checklist:testing/qa-comprehensive
+  @checklist:code-quality/code-review-checklist
+  @checklist:testing/unit-test-standards
+
   ### Your Responsibilities
-  {{responsibilities}}
+  @doc:common/responsibilities/test_architect_validation.md
 
   ### Context
   - **Project Path**: {{project_path}}
@@ -28,9 +33,9 @@ user_prompt: |
   - **Next Step**: If passing, story will be committed
 
   ### Output Format
-  {{output_format}}
+  @doc:common/outputs/test_report_format.md
 
-  **Remember**: Validate THIS ONE story. If it passes, it will be committed atomically.
+  **Remember**: Validate THIS ONE story against all quality checklists. If it passes, it will be committed atomically.
 
   Begin validating the story now.
 
@@ -39,9 +44,8 @@ variables:
   story_details: ""
   acceptance_criteria: ""
   implementation_context: "No context from Amelia"
-  responsibilities: "@file:common/responsibilities/test_architect_validation.md"
-  output_format: "@file:common/outputs/test_report_format.md"
   project_path: ""
+  feature: ""
 
 response:
   max_tokens: 4000
@@ -51,3 +55,6 @@ metadata:
   category: story_workflow
   phase: validation
   agent: Murat
+
+meta_prompts:
+  enabled: true
