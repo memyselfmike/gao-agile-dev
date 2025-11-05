@@ -2,10 +2,12 @@
 Data models for checklists.
 
 Defines the core data structures used throughout the checklist system,
-including ChecklistItem and Checklist dataclasses.
+including ChecklistItem and Checklist dataclasses, as well as execution
+tracking models (ItemResult, ExecutionResult).
 """
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Dict, List, Optional
 
 
@@ -61,3 +63,83 @@ class Checklist:
         """Ensure metadata is never None."""
         if self.metadata is None:
             self.metadata = {}
+
+
+@dataclass
+class ItemResult:
+    """
+    Result of a single checklist item execution.
+
+    Attributes:
+        item_id: Item ID from checklist definition
+        item_category: Category for grouping
+        status: Result status (pass, fail, skip, na)
+        notes: Optional notes explaining the result
+        checked_at: When the item was checked
+        checked_by: Who checked this item
+        evidence_path: Optional path to evidence file/screenshot
+        evidence_metadata: Optional additional evidence metadata
+    """
+
+    item_id: str
+    item_category: Optional[str]
+    status: str
+    notes: Optional[str] = None
+    checked_at: Optional[datetime] = None
+    checked_by: Optional[str] = None
+    evidence_path: Optional[str] = None
+    evidence_metadata: Optional[Dict] = None
+
+    def __post_init__(self):
+        """Ensure evidence_metadata is never None."""
+        if self.evidence_metadata is None:
+            self.evidence_metadata = {}
+
+
+@dataclass
+class ExecutionResult:
+    """
+    Complete checklist execution result with all item results.
+
+    Attributes:
+        execution_id: Unique execution ID
+        checklist_name: Name of checklist executed
+        checklist_version: Version of checklist
+        artifact_type: Type of artifact (story, epic, prd, etc.)
+        artifact_id: ID of artifact
+        epic_num: Epic number if applicable
+        story_num: Story number if applicable
+        executed_by: Who executed the checklist
+        executed_at: When execution started
+        completed_at: When execution completed
+        overall_status: Overall execution status (in_progress, pass, fail, partial)
+        item_results: List of individual item results
+        notes: Optional overall execution notes
+        duration_ms: Total execution time in milliseconds
+        workflow_execution_id: Optional link to workflow execution
+        metadata: Additional metadata
+    """
+
+    execution_id: int
+    checklist_name: str
+    checklist_version: str
+    artifact_type: str
+    artifact_id: str
+    executed_by: str
+    executed_at: datetime
+    overall_status: str
+    item_results: List[ItemResult]
+    epic_num: Optional[int] = None
+    story_num: Optional[int] = None
+    completed_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    duration_ms: Optional[int] = None
+    workflow_execution_id: Optional[int] = None
+    metadata: Optional[Dict] = None
+
+    def __post_init__(self):
+        """Ensure metadata and item_results are never None."""
+        if self.metadata is None:
+            self.metadata = {}
+        if self.item_results is None:
+            self.item_results = []
