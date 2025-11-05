@@ -9,6 +9,7 @@ This module provides comprehensive document lifecycle management including:
 - Governance fields (owner, reviewer, review due dates)
 - Document relationships and linking
 - Document scanning with 5S classification
+- Archival system with retention policies
 """
 
 from gao_dev.lifecycle.naming_convention import DocumentNamingConvention
@@ -20,6 +21,7 @@ from gao_dev.lifecycle.models import (
     RelationshipType,
 )
 from gao_dev.lifecycle.scanner import DocumentScanner, ScanResult
+from gao_dev.lifecycle.archival import ArchivalManager, RetentionPolicy, ArchivalAction
 
 __all__ = [
     "DocumentNamingConvention",
@@ -30,4 +32,7 @@ __all__ = [
     "RelationshipType",
     "DocumentScanner",
     "ScanResult",
+    "ArchivalManager",
+    "RetentionPolicy",
+    "ArchivalAction",
 ]
