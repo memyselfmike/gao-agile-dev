@@ -1,0 +1,62 @@
+# End-to-End Test Standards for GAO-Dev Projects
+#
+# This checklist defines standards for end-to-end tests in GAO-Dev projects.
+# Use this during story implementation and release testing.
+
+checklist:
+  name: "End-to-End Test Standards"
+  category: "testing"
+  version: "1.0.0"
+  description: "Standards for end-to-end tests in GAO-Dev projects"
+
+  extends: "testing/base-testing-standards"
+
+  items:
+    - id: "user-flows"
+      text: "Critical user flows are tested end-to-end"
+      severity: "critical"
+      help_text: "Test complete user journeys (signup -> login -> use feature -> logout). Focus on business-critical paths."
+
+    - id: "browser-automation"
+      text: "Browser automation is properly configured (Selenium, Playwright, etc.)"
+      severity: "high"
+      help_text: "Use headless browsers for CI. Configure timeouts and waits appropriately. Use page object pattern."
+      references:
+        - "https://playwright.dev/python/docs/intro"
+        - "https://www.selenium.dev/documentation/"
+
+    - id: "test-environment"
+      text: "Tests run in staging environment that mirrors production"
+      severity: "high"
+      help_text: "Use staging environment with production-like configuration. Ensure data is representative."
+
+    - id: "test-data-management"
+      text: "Test data is managed and cleaned up after tests"
+      severity: "medium"
+      help_text: "Create test accounts and data. Clean up after test runs to avoid pollution."
+
+    - id: "flaky-tests"
+      text: "Tests are reliable and not flaky"
+      severity: "high"
+      help_text: "Use explicit waits, not sleeps. Handle async operations properly. Retry only when appropriate."
+
+    - id: "performance"
+      text: "E2E tests complete in reasonable time (<5 minutes per test)"
+      severity: "medium"
+      help_text: "Optimize test execution. Run tests in parallel where possible. Mark slow tests appropriately."
+
+    - id: "error-screenshots"
+      text: "Screenshots are captured on test failures"
+      severity: "low"
+      help_text: "Configure test framework to capture screenshots and logs on failure for debugging."
+
+    - id: "cross-browser"
+      text: "Critical flows tested in multiple browsers if applicable"
+      severity: "medium"
+      help_text: "Test in Chrome, Firefox, and Safari for web applications. Use cloud testing services if needed."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["story-implementation", "release-testing", "qa"]
+    author: "Murat"
+    tags: ["testing", "e2e", "quality", "automation"]

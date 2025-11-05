@@ -1,0 +1,59 @@
+# Python Standards Checklist
+#
+# This checklist verifies Python-specific coding standards.
+# Use during code review for Python code.
+
+checklist:
+  name: "Python Standards"
+  category: "code-quality"
+  version: "1.0.0"
+  description: "Python-specific coding standards and best practices"
+
+  items:
+    - id: "pep8-compliance"
+      text: "Code follows PEP 8 style guide"
+      severity: "medium"
+      help_text: "Use Black for formatting. Run flake8 or ruff for linting. Line length should be <100 characters."
+      references:
+        - "https://peps.python.org/pep-0008/"
+
+    - id: "docstrings"
+      text: "All public functions and classes have docstrings"
+      severity: "high"
+      help_text: "Use Google or NumPy style docstrings. Include Args, Returns, and Raises sections. Document parameters and return types."
+
+    - id: "list-comprehensions"
+      text: "Use list comprehensions instead of map/filter where appropriate"
+      severity: "low"
+      help_text: "List comprehensions are more Pythonic and often more readable. But don't sacrifice readability for brevity."
+
+    - id: "context-managers"
+      text: "Use context managers (with statements) for resource management"
+      severity: "high"
+      help_text: "Use 'with' for file operations, database connections, locks. Create custom context managers for cleanup logic."
+
+    - id: "exceptions"
+      text: "Use Python's exception hierarchy appropriately"
+      severity: "medium"
+      help_text: "Catch specific exceptions, not bare 'except'. Create custom exceptions for domain logic. Use exception chaining."
+
+    - id: "iterators-generators"
+      text: "Use iterators and generators for memory efficiency"
+      severity: "low"
+      help_text: "Use generators (yield) for large datasets. Prefer itertools over manual loops where appropriate."
+
+    - id: "dataclasses"
+      text: "Use dataclasses or attrs for simple data containers"
+      severity: "medium"
+      help_text: "Prefer dataclasses over manual __init__ and __repr__. Use frozen=True for immutable data."
+
+    - id: "imports"
+      text: "Imports are organized (stdlib, third-party, local) and clean"
+      severity: "low"
+      help_text: "Use isort to organize imports. No unused imports. No wildcard imports (from x import *)."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["code-review", "story-implementation"]
+    author: "Winston"
+    tags: ["code-quality", "python", "pep8", "best-practices"]

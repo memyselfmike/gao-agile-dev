@@ -1,0 +1,57 @@
+# Clean Code Practices Checklist
+#
+# This checklist verifies clean code practices.
+# Use during code review and story implementation.
+
+checklist:
+  name: "Clean Code Practices"
+  category: "code-quality"
+  version: "1.0.0"
+  description: "Checklist for clean code practices and maintainability"
+
+  items:
+    - id: "dry-principle"
+      text: "Code follows DRY principle (Don't Repeat Yourself)"
+      severity: "high"
+      help_text: "Extract common logic into functions or classes. Avoid copy-paste code. Use inheritance or composition to share behavior."
+
+    - id: "meaningful-names"
+      text: "Variables, functions, and classes have meaningful, descriptive names"
+      severity: "high"
+      help_text: "Names should reveal intent. Avoid abbreviations. Use searchable names. Boolean variables should be questions (is_active, has_permission)."
+
+    - id: "small-functions"
+      text: "Functions are small and focused (<50 lines)"
+      severity: "medium"
+      help_text: "Functions should do one thing well. Extract complex logic into helper functions. Use early returns to reduce nesting."
+
+    - id: "function-arguments"
+      text: "Functions have a reasonable number of arguments (<5)"
+      severity: "medium"
+      help_text: "Too many arguments indicate the function is doing too much. Consider using a configuration object or data class."
+
+    - id: "error-handling"
+      text: "Error handling is explicit and informative"
+      severity: "high"
+      help_text: "Use specific exceptions, not generic Exception. Provide context in error messages. Don't swallow exceptions silently."
+
+    - id: "comments-why-not-what"
+      text: "Comments explain 'why', not 'what' (code should be self-explanatory)"
+      severity: "low"
+      help_text: "Good code is self-documenting. Comments should explain business logic, gotchas, or non-obvious decisions."
+
+    - id: "no-magic-numbers"
+      text: "No magic numbers or strings; use named constants"
+      severity: "medium"
+      help_text: "Replace literal values with named constants. Use enums for related constants."
+
+    - id: "consistent-style"
+      text: "Code follows consistent style and formatting"
+      severity: "low"
+      help_text: "Use Black for Python formatting. Follow PEP 8. Be consistent with naming conventions."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["code-review", "story-implementation", "refactoring"]
+    author: "Winston"
+    tags: ["code-quality", "clean-code", "maintainability"]

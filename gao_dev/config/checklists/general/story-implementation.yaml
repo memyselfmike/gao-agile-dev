@@ -1,0 +1,67 @@
+# Story Implementation Checklist
+#
+# This checklist guides story implementation in GAO-Dev.
+# Use during story development to ensure completeness.
+
+checklist:
+  name: "Story Implementation"
+  category: "code-quality"
+  version: "1.0.0"
+  description: "Comprehensive checklist for implementing user stories"
+
+  items:
+    - id: "acceptance-criteria-met"
+      text: "All acceptance criteria from story are met"
+      severity: "critical"
+      help_text: "Verify each acceptance criterion is satisfied. Demo functionality. Get product owner approval if needed."
+
+    - id: "tests-passing-story"
+      text: "All tests pass (unit, integration, e2e)"
+      severity: "critical"
+      help_text: "Run full test suite. Fix failing tests. Ensure new tests are included."
+
+    - id: "code-coverage-story"
+      text: "Test coverage >80% for new code"
+      severity: "high"
+      help_text: "Use pytest --cov to measure coverage. Write tests for edge cases and error paths."
+
+    - id: "code-quality-story"
+      text: "Code follows quality standards (clean code, SOLID, DRY)"
+      severity: "high"
+      help_text: "Review code against clean code checklist. Ensure no code duplication. Functions are small and focused."
+
+    - id: "security-story"
+      text: "Security considerations addressed (input validation, authorization)"
+      severity: "high"
+      help_text: "Review security checklist. Validate all inputs. Check authorization on protected resources."
+
+    - id: "documentation-updated-story"
+      text: "Documentation updated (README, API docs, changelog)"
+      severity: "medium"
+      help_text: "Update relevant documentation. Add docstrings. Update changelog with story changes."
+
+    - id: "git-commit"
+      text: "Changes committed with atomic, descriptive commit message"
+      severity: "high"
+      help_text: "Use conventional commit format. Reference story number. Commit message explains what and why."
+
+    - id: "manual-testing"
+      text: "Functionality manually tested in development environment"
+      severity: "high"
+      help_text: "Test happy path and error cases. Verify UI/UX works as expected. Check cross-browser compatibility if applicable."
+
+    - id: "performance-check"
+      text: "Performance implications considered and addressed"
+      severity: "medium"
+      help_text: "Check for N+1 queries. Review algorithm complexity. Consider caching if needed."
+
+    - id: "story-status-updated"
+      text: "Story status updated in tracking system"
+      severity: "low"
+      help_text: "Update story to 'Done' or 'Ready for Review'. Add implementation notes. Link to PR."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["story-implementation", "development", "sprint"]
+    author: "Amelia"
+    tags: ["story", "implementation", "development", "agile"]

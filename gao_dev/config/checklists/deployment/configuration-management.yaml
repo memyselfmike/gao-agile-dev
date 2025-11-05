@@ -1,0 +1,57 @@
+# Configuration Management Checklist
+#
+# This checklist ensures proper configuration management for deployments.
+# Use during deployment and environment setup.
+
+checklist:
+  name: "Configuration Management"
+  category: "deployment"
+  version: "1.0.0"
+  description: "Configuration management and environment setup checklist"
+
+  items:
+    - id: "environment-specific"
+      text: "Configuration is environment-specific (dev, staging, prod)"
+      severity: "critical"
+      help_text: "Use separate config files or environment variables for each environment. Never share production credentials with dev."
+
+    - id: "secrets-management-deploy"
+      text: "Secrets managed via secret management system, not in config files"
+      severity: "critical"
+      help_text: "Use AWS Secrets Manager, HashiCorp Vault, or similar. Never commit secrets to version control."
+
+    - id: "version-control"
+      text: "Configuration files are version controlled (except secrets)"
+      severity: "high"
+      help_text: "Store config templates in git. Use .env.example or config.template.yaml. Add actual secrets to .gitignore."
+
+    - id: "validation"
+      text: "Configuration validation on application startup"
+      severity: "high"
+      help_text: "Validate all required config values are present and valid. Fail fast on startup if config is invalid."
+
+    - id: "documentation"
+      text: "Configuration options are documented"
+      severity: "medium"
+      help_text: "Document all environment variables and config options. Include examples and default values."
+
+    - id: "infrastructure-as-code"
+      text: "Infrastructure configuration managed as code (Terraform, CloudFormation)"
+      severity: "medium"
+      help_text: "Use IaC for infrastructure setup. Version control infrastructure code. Use modules for reusability."
+
+    - id: "feature-flags-config"
+      text: "Feature flags managed centrally and auditable"
+      severity: "medium"
+      help_text: "Use feature flag service for runtime configuration. Log flag changes. Document flag ownership."
+
+    - id: "config-drift-detection"
+      text: "Configuration drift is detected and alerted"
+      severity: "low"
+      help_text: "Monitor configuration changes. Alert on manual changes to production. Use drift detection tools."
+
+  metadata:
+    domain: "operations"
+    applicable_to: ["deployment", "environment-setup", "configuration"]
+    author: "Bob"
+    tags: ["deployment", "configuration", "infrastructure", "devops"]

@@ -1,0 +1,59 @@
+# Documentation Standards Checklist
+#
+# This checklist ensures comprehensive documentation.
+# Use during story implementation and documentation review.
+
+checklist:
+  name: "Documentation Standards"
+  category: "code-quality"
+  version: "1.0.0"
+  description: "Documentation completeness and quality checklist"
+
+  items:
+    - id: "readme-exists"
+      text: "README.md exists with project overview and setup instructions"
+      severity: "high"
+      help_text: "Include project description, installation steps, usage examples. Add badges for build status, coverage."
+
+    - id: "api-docs"
+      text: "API documentation complete and up-to-date"
+      severity: "high"
+      help_text: "Document all public APIs. Include request/response examples. Use OpenAPI/Swagger for REST APIs."
+
+    - id: "architecture-diagram"
+      text: "Architecture diagrams document system design"
+      severity: "medium"
+      help_text: "Create architecture diagrams for complex systems. Document component relationships. Use tools like draw.io or mermaid."
+
+    - id: "runbooks"
+      text: "Runbooks exist for operations and troubleshooting"
+      severity: "medium"
+      help_text: "Document deployment procedures. Include troubleshooting guides. Add runbooks for common operational tasks."
+
+    - id: "changelog"
+      text: "CHANGELOG.md maintained with release notes"
+      severity: "low"
+      help_text: "Document all notable changes. Follow Keep a Changelog format. Include breaking changes prominently."
+      references:
+        - "https://keepachangelog.com/"
+
+    - id: "code-comments"
+      text: "Complex logic has explanatory comments"
+      severity: "low"
+      help_text: "Comment 'why', not 'what'. Explain business logic and non-obvious decisions. Keep comments up to date."
+
+    - id: "docstrings"
+      text: "All public functions/classes have docstrings"
+      severity: "high"
+      help_text: "Use consistent docstring format (Google, NumPy, or Sphinx). Document parameters, returns, and exceptions."
+
+    - id: "onboarding-docs"
+      text: "Onboarding documentation for new team members"
+      severity: "medium"
+      help_text: "Create getting started guide. Document development workflow. Include team conventions and standards."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["documentation", "story-implementation", "project-setup"]
+    author: "John"
+    tags: ["documentation", "readme", "api-docs", "quality"]

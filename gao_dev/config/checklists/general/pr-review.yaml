@@ -1,0 +1,62 @@
+# Pull Request Review Checklist
+#
+# This checklist guides PR review process.
+# Use during pull request review before merging.
+
+checklist:
+  name: "Pull Request Review"
+  category: "code-quality"
+  version: "1.0.0"
+  description: "Pull request review and merge checklist"
+
+  items:
+    - id: "pr-description"
+      text: "PR has clear description explaining changes and motivation"
+      severity: "high"
+      help_text: "Description should explain what changed and why. Include ticket/story references. Add screenshots for UI changes."
+
+    - id: "tests-added"
+      text: "Tests added for new functionality"
+      severity: "critical"
+      help_text: "New features must have tests. Bug fixes should include regression tests. Verify tests are meaningful."
+
+    - id: "tests-passing"
+      text: "All CI tests passing"
+      severity: "critical"
+      help_text: "Check CI pipeline is green. Verify all tests pass. Review test coverage reports."
+
+    - id: "documentation-updated-pr"
+      text: "Documentation updated (README, API docs, changelog)"
+      severity: "medium"
+      help_text: "Update relevant documentation. Add changelog entry. Update README if API changed."
+
+    - id: "atomic-commits"
+      text: "Commits are atomic and have clear messages"
+      severity: "medium"
+      help_text: "Each commit should be self-contained. Follow commit message conventions. Squash fixup commits."
+
+    - id: "code-reviewed"
+      text: "Code reviewed by at least one team member"
+      severity: "critical"
+      help_text: "Require approval from team member. Address review comments. Re-request review after changes."
+
+    - id: "no-merge-conflicts"
+      text: "No merge conflicts with target branch"
+      severity: "critical"
+      help_text: "Resolve conflicts with main branch. Test after resolving conflicts. Rerun tests."
+
+    - id: "branch-up-to-date"
+      text: "Branch is up to date with target branch"
+      severity: "high"
+      help_text: "Merge or rebase with main branch. Ensure latest changes are included. Verify compatibility."
+
+    - id: "size-reasonable"
+      text: "PR size is reasonable (<500 lines of code changes)"
+      severity: "low"
+      help_text: "Large PRs are hard to review. Split into smaller PRs if possible. Consider feature branches."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["pr-review", "code-review", "git-workflow"]
+    author: "Bob"
+    tags: ["pr-review", "git", "workflow", "quality"]

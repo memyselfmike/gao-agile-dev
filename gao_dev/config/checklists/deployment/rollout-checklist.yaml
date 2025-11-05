@@ -1,0 +1,59 @@
+# Feature Rollout Checklist
+#
+# This checklist ensures safe feature rollouts to production.
+# Use during feature deployment and release planning.
+
+checklist:
+  name: "Feature Rollout Checklist"
+  category: "deployment"
+  version: "1.0.0"
+  description: "Checklist for safe feature rollouts to production"
+
+  items:
+    - id: "feature-flags"
+      text: "Feature flags implemented for gradual rollout"
+      severity: "high"
+      help_text: "Use feature flag system (LaunchDarkly, Unleash, or custom). Enable progressive rollout. Allow instant rollback."
+      references:
+        - "https://martinfowler.com/articles/feature-toggles.html"
+
+    - id: "rollback-plan"
+      text: "Rollback plan documented and tested"
+      severity: "critical"
+      help_text: "Document rollback procedure. Test rollback in staging. Ensure database changes are backward compatible."
+
+    - id: "monitoring-alerts"
+      text: "Monitoring and alerts configured for new feature"
+      severity: "critical"
+      help_text: "Set up metrics for feature usage. Configure alerts for errors and performance degradation. Monitor error rates."
+
+    - id: "documentation-updated"
+      text: "User documentation and API docs updated"
+      severity: "medium"
+      help_text: "Update user guides, API documentation, and release notes. Notify stakeholders of changes."
+
+    - id: "staged-rollout"
+      text: "Rollout is staged (canary, then gradual percentage increase)"
+      severity: "high"
+      help_text: "Deploy to canary environment first. Gradually increase traffic percentage. Monitor metrics at each stage."
+
+    - id: "communication-plan"
+      text: "Communication plan for stakeholders and users"
+      severity: "medium"
+      help_text: "Notify affected users. Send release notes. Update status page if needed. Have support team ready."
+
+    - id: "performance-testing"
+      text: "Performance tested under expected load"
+      severity: "high"
+      help_text: "Run load tests before rollout. Verify performance meets SLAs. Check resource utilization (CPU, memory, database)."
+
+    - id: "backward-compatibility"
+      text: "Changes are backward compatible or migration path is clear"
+      severity: "critical"
+      help_text: "Ensure API changes don't break existing clients. Provide migration guide for breaking changes."
+
+  metadata:
+    domain: "operations"
+    applicable_to: ["deployment", "release-planning"]
+    author: "Bob"
+    tags: ["deployment", "rollout", "release", "feature-flags"]

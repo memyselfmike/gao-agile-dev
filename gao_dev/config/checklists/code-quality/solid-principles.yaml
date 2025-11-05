@@ -1,0 +1,56 @@
+# SOLID Principles Checklist
+#
+# This checklist verifies adherence to SOLID principles in code design.
+# Use during code review and architecture review.
+
+checklist:
+  name: "SOLID Principles"
+  category: "code-quality"
+  version: "1.0.0"
+  description: "Checklist for verifying SOLID principles in code design"
+
+  items:
+    - id: "single-responsibility"
+      text: "Each class has a single, well-defined responsibility"
+      severity: "high"
+      help_text: "A class should have only one reason to change. If a class does multiple things, split it into separate classes."
+      references:
+        - "https://en.wikipedia.org/wiki/Single-responsibility_principle"
+
+    - id: "open-closed"
+      text: "Classes are open for extension but closed for modification"
+      severity: "medium"
+      help_text: "Use inheritance, composition, or interfaces to extend behavior without modifying existing code."
+
+    - id: "liskov-substitution"
+      text: "Subtypes can be substituted for their base types without breaking functionality"
+      severity: "high"
+      help_text: "Child classes should honor the contract of parent classes. Don't override methods in ways that violate expectations."
+
+    - id: "interface-segregation"
+      text: "Interfaces are focused and clients are not forced to depend on unused methods"
+      severity: "medium"
+      help_text: "Split large interfaces into smaller, focused ones. Use Protocol classes in Python for implicit interfaces."
+
+    - id: "dependency-inversion"
+      text: "High-level modules do not depend on low-level modules; both depend on abstractions"
+      severity: "high"
+      help_text: "Depend on interfaces/protocols, not concrete implementations. Use dependency injection for better testability."
+      references:
+        - "https://en.wikipedia.org/wiki/Dependency_inversion_principle"
+
+    - id: "god-class-check"
+      text: "No 'God classes' with too many responsibilities"
+      severity: "critical"
+      help_text: "Classes should be <300 lines. If a class does everything, refactor into smaller, focused classes."
+
+    - id: "proper-abstractions"
+      text: "Abstractions are meaningful and not over-engineered"
+      severity: "medium"
+      help_text: "Create abstractions when they add value, not for the sake of abstraction. Balance flexibility with simplicity."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["code-review", "architecture-review", "refactoring"]
+    author: "Winston"
+    tags: ["code-quality", "design", "architecture", "solid"]

@@ -1,0 +1,64 @@
+# API Security Checklist
+#
+# This checklist verifies API security best practices.
+# Use during API development and security review.
+
+checklist:
+  name: "API Security"
+  category: "security"
+  version: "1.0.0"
+  description: "Security best practices for REST APIs and web services"
+
+  items:
+    - id: "rate-limiting"
+      text: "Rate limiting is implemented to prevent abuse"
+      severity: "critical"
+      help_text: "Implement rate limiting per IP or user. Use tools like Flask-Limiter or API Gateway rate limiting. Return 429 status code."
+      references:
+        - "https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html"
+
+    - id: "authentication-tokens"
+      text: "Authentication uses secure tokens (JWT, OAuth2)"
+      severity: "critical"
+      help_text: "Use JWT or OAuth2 for API authentication. Include expiration times. Validate tokens on every request."
+
+    - id: "authorization-checks"
+      text: "Authorization checks on all endpoints (verify user permissions)"
+      severity: "critical"
+      help_text: "Check user permissions before allowing access to resources. Use role-based or attribute-based access control."
+
+    - id: "cors-configuration"
+      text: "CORS is properly configured (not allowing * in production)"
+      severity: "high"
+      help_text: "Configure CORS to allow only trusted origins. Never use Access-Control-Allow-Origin: * in production."
+
+    - id: "input-validation-api"
+      text: "All API inputs are validated (request body, query params, headers)"
+      severity: "high"
+      help_text: "Validate content-type headers. Validate request body schemas. Sanitize query parameters."
+
+    - id: "https-only-api"
+      text: "API only accepts HTTPS requests"
+      severity: "critical"
+      help_text: "Redirect HTTP to HTTPS. Use HSTS headers. Disable insecure protocols."
+
+    - id: "api-versioning"
+      text: "API versioning is implemented for backward compatibility"
+      severity: "low"
+      help_text: "Use URL path versioning (/v1/resource) or header versioning. Deprecate old versions gracefully."
+
+    - id: "error-responses"
+      text: "Error responses don't leak sensitive information"
+      severity: "medium"
+      help_text: "Return generic error messages. Don't expose internal paths, database errors, or stack traces."
+
+    - id: "request-size-limits"
+      text: "Request size limits are enforced to prevent DoS"
+      severity: "medium"
+      help_text: "Set max request body size. Implement timeout for long-running requests. Limit file upload sizes."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["api-development", "security-review", "code-review"]
+    author: "Winston"
+    tags: ["security", "api", "rest", "web-services"]

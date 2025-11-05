@@ -1,0 +1,59 @@
+# Type Safety Checklist
+#
+# This checklist verifies type hints and type safety in Python code.
+# Use during code review to ensure proper type annotations.
+
+checklist:
+  name: "Type Safety"
+  category: "code-quality"
+  version: "1.0.0"
+  description: "Type hints and type safety standards for Python code"
+
+  items:
+    - id: "type-hints-functions"
+      text: "All public functions have type hints for parameters and return values"
+      severity: "critical"
+      help_text: "Add type hints to function signatures. Include return type even for None. Use Optional for nullable values."
+
+    - id: "type-hints-variables"
+      text: "Complex variables have type annotations where type is not obvious"
+      severity: "medium"
+      help_text: "Annotate class attributes and complex variables. Simple assignments don't need annotations if type is clear."
+
+    - id: "no-any-types"
+      text: "Avoid using 'Any' type; use specific types"
+      severity: "high"
+      help_text: "Any defeats the purpose of type checking. Use Union, Protocol, or Generic types instead. Only use Any as last resort."
+
+    - id: "mypy-strict"
+      text: "Code passes mypy type checking in strict mode"
+      severity: "high"
+      help_text: "Run 'mypy --strict' and fix all errors. Configure mypy.ini for project. No type: ignore comments without explanation."
+      references:
+        - "https://mypy.readthedocs.io/en/stable/"
+
+    - id: "generic-types"
+      text: "Use generic types for collections (List[str], Dict[str, int])"
+      severity: "high"
+      help_text: "Don't use bare list or dict in type hints. Specify element types. Use typing.Sequence, Mapping for interfaces."
+
+    - id: "protocols"
+      text: "Use Protocol for structural typing instead of abstract base classes where appropriate"
+      severity: "medium"
+      help_text: "Protocols allow duck typing with type safety. Prefer Protocol over ABC for simple interfaces."
+
+    - id: "type-guards"
+      text: "Use type guards (isinstance, TypeGuard) for runtime type checking"
+      severity: "low"
+      help_text: "Use isinstance checks to narrow types. Create TypeGuard functions for complex type predicates."
+
+    - id: "literal-types"
+      text: "Use Literal types for constants and enums"
+      severity: "low"
+      help_text: "Use Literal['value'] for string/int literals. Use Enum for related constants."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["code-review", "story-implementation"]
+    author: "Winston"
+    tags: ["code-quality", "type-safety", "mypy", "python"]

@@ -1,0 +1,59 @@
+# Database Migration Checklist
+#
+# This checklist ensures safe database migrations in production.
+# Use during database schema changes and data migrations.
+
+checklist:
+  name: "Database Migration Safety"
+  category: "deployment"
+  version: "1.0.0"
+  description: "Safety checklist for database migrations and schema changes"
+
+  items:
+    - id: "reversible-migrations"
+      text: "Migrations are reversible (down migration exists)"
+      severity: "critical"
+      help_text: "Write down migrations for every up migration. Test rollback procedure. Ensure data can be restored."
+      references:
+        - "https://www.postgresql.org/docs/current/ddl-alter.html"
+
+    - id: "tested-in-staging"
+      text: "Migration tested in staging with production-like data"
+      severity: "critical"
+      help_text: "Test migration on staging with representative data volume. Measure execution time. Verify data integrity."
+
+    - id: "backup-procedures"
+      text: "Database backup taken before migration"
+      severity: "critical"
+      help_text: "Take full database backup. Verify backup is restorable. Document backup location and retention."
+
+    - id: "zero-downtime"
+      text: "Migration designed for zero downtime if possible"
+      severity: "high"
+      help_text: "Use expand-contract pattern. Make additive changes first, remove old columns later. Avoid table locks."
+
+    - id: "migration-duration"
+      text: "Migration duration is acceptable for production window"
+      severity: "high"
+      help_text: "Measure migration time in staging. Plan for maintenance window if needed. Consider chunked migrations for large tables."
+
+    - id: "index-management"
+      text: "Indexes created/dropped appropriately"
+      severity: "medium"
+      help_text: "Create indexes CONCURRENTLY in PostgreSQL. Drop unused indexes. Monitor index creation time."
+
+    - id: "data-validation"
+      text: "Data validation checks after migration"
+      severity: "high"
+      help_text: "Write SQL queries to validate data integrity. Check row counts, constraint violations. Verify foreign keys."
+
+    - id: "application-compatibility"
+      text: "Application code compatible with both old and new schema"
+      severity: "critical"
+      help_text: "Deploy code changes before or after migration carefully. Ensure application works with intermediate schema states."
+
+  metadata:
+    domain: "operations"
+    applicable_to: ["deployment", "database-changes"]
+    author: "Winston"
+    tags: ["deployment", "database", "migration", "schema"]

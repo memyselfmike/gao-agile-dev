@@ -1,0 +1,59 @@
+# Disaster Recovery Checklist
+#
+# This checklist ensures disaster recovery preparedness.
+# Use during DR planning and testing.
+
+checklist:
+  name: "Disaster Recovery"
+  category: "operations"
+  version: "1.0.0"
+  description: "Disaster recovery planning and testing checklist"
+
+  items:
+    - id: "backup-procedures"
+      text: "Backup procedures documented and automated"
+      severity: "critical"
+      help_text: "Automate database and file backups. Define backup frequency. Store backups in separate region/account."
+      references:
+        - "https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/backup-and-restore.html"
+
+    - id: "backup-testing"
+      text: "Backup restoration tested regularly (quarterly)"
+      severity: "critical"
+      help_text: "Test backup restoration every quarter. Measure recovery time. Verify data integrity after restoration."
+
+    - id: "rto-rpo-defined"
+      text: "Recovery Time Objective (RTO) and Recovery Point Objective (RPO) defined"
+      severity: "high"
+      help_text: "Define acceptable downtime (RTO) and data loss (RPO). Design backup strategy to meet objectives."
+
+    - id: "dr-plan-documented"
+      text: "Disaster recovery plan documented and accessible"
+      severity: "critical"
+      help_text: "Document step-by-step DR procedures. Include contact information. Store DR plan in accessible location (not only in affected system)."
+
+    - id: "multi-region-failover"
+      text: "Multi-region failover configured if applicable"
+      severity: "medium"
+      help_text: "Use multi-region deployment for critical services. Configure DNS failover. Test failover procedures."
+
+    - id: "data-replication"
+      text: "Critical data replicated to secondary location"
+      severity: "high"
+      help_text: "Configure database replication. Use async replication for large datasets. Monitor replication lag."
+
+    - id: "dr-testing"
+      text: "Disaster recovery procedures tested annually"
+      severity: "high"
+      help_text: "Conduct DR drills annually. Test full system recovery. Measure actual RTO and RPO."
+
+    - id: "incident-contacts"
+      text: "Emergency contacts and escalation procedures documented"
+      severity: "medium"
+      help_text: "Maintain contact list for team members and stakeholders. Include vendor contacts. Update regularly."
+
+  metadata:
+    domain: "operations"
+    applicable_to: ["disaster-recovery", "business-continuity", "operations"]
+    author: "Bob"
+    tags: ["operations", "disaster-recovery", "backup", "business-continuity"]
