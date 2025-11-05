@@ -390,7 +390,7 @@ class DocumentRegistry:
 
         Args:
             doc_id: Document ID
-            **updates: Fields to update (state, author, feature, epic, story,
+            **updates: Fields to update (path, state, author, feature, epic, story,
                       owner, reviewer, review_due_date, content_hash, metadata)
 
         Returns:
@@ -412,6 +412,7 @@ class DocumentRegistry:
 
         # Build UPDATE query
         allowed_fields = {
+            "path",
             "state",
             "author",
             "feature",
