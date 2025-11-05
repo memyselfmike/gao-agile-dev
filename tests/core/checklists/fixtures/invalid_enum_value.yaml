@@ -1,0 +1,8 @@
+checklist:
+  name: "Invalid Enum Checklist"
+  category: "invalid-category"  # Not in enum
+  version: "1.0.0"
+  items:
+    - id: "item1"
+      text: "This checklist has invalid enum"
+      severity: "super-critical"  # Not in enum

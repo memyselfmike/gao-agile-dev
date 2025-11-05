@@ -1,0 +1,61 @@
+# Unit Test Standards for GAO-Dev Projects
+#
+# This checklist defines standards for unit tests in GAO-Dev projects.
+# Use this during story implementation and code review to ensure high-quality tests.
+
+checklist:
+  name: "Unit Test Standards"
+  category: "testing"
+  version: "1.0.0"
+  description: "Standards for unit tests in GAO-Dev projects"
+
+  extends: "testing/base-testing-standards"
+
+  items:
+    - id: "test-coverage"
+      text: "Test coverage is >80% for all new code"
+      severity: "high"
+      help_text: "Use pytest --cov to measure coverage. Focus on edge cases and error paths."
+      references:
+        - "https://docs.pytest.org/en/stable/how-to/coverage.html"
+
+    - id: "test-isolation"
+      text: "Tests are isolated and do not depend on execution order"
+      severity: "critical"
+      help_text: "Each test should set up its own fixtures and clean up after itself."
+
+    - id: "test-performance"
+      text: "All tests complete in <5 seconds"
+      severity: "medium"
+      help_text: "Use mocking for external dependencies. Slow tests should be marked with @pytest.mark.slow."
+
+    - id: "test-naming"
+      text: "Test names clearly describe what is being tested"
+      severity: "low"
+      help_text: "Use pattern: test_<function>_<scenario>_<expected_result>"
+
+    - id: "test-assertions"
+      text: "Tests use specific assertions, not generic assertTrue"
+      severity: "medium"
+      help_text: "Use assertEqual, assertRaises, etc. instead of assertTrue for clearer error messages."
+
+    - id: "test-mocking"
+      text: "External dependencies are properly mocked"
+      severity: "high"
+      help_text: "Mock API calls, file system operations, and external services. Tests should not require internet or external resources."
+
+    - id: "test-fixtures"
+      text: "Test fixtures are well-organized and reusable"
+      severity: "medium"
+      help_text: "Use pytest fixtures for common test setup. Place shared fixtures in conftest.py."
+
+    - id: "test-error-cases"
+      text: "Error cases and edge cases are tested"
+      severity: "high"
+      help_text: "Test invalid inputs, boundary conditions, and error handling paths."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["story-implementation", "code-review", "pr-review"]
+    author: "Murat"
+    tags: ["testing", "quality", "python", "pytest"]

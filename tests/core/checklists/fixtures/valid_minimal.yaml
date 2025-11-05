@@ -1,0 +1,8 @@
+checklist:
+  name: "Minimal Valid Checklist"
+  category: "testing"
+  version: "1.0.0"
+  items:
+    - id: "item1"
+      text: "This is a valid item with minimum length"
+      severity: "low"

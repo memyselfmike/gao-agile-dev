@@ -1,0 +1,77 @@
+# OWASP Top 10 Security Checklist
+#
+# This checklist is based on the OWASP Top 10 security vulnerabilities.
+# Use this during code review and security review to ensure secure code.
+
+checklist:
+  name: "OWASP Top 10 Security Checklist"
+  category: "security"
+  version: "1.0.0"
+  description: "Security checklist based on OWASP Top 10 vulnerabilities"
+
+  items:
+    - id: "sql-injection"
+      text: "All database queries use parameterized statements, no string concatenation"
+      severity: "critical"
+      help_text: "Use SQLAlchemy or parameterized queries. Never use f-strings or string concatenation with user input."
+      references:
+        - "https://owasp.org/www-community/attacks/SQL_Injection"
+
+    - id: "xss-prevention"
+      text: "All user input is sanitized before rendering in HTML"
+      severity: "critical"
+      help_text: "Use template engines that auto-escape (Jinja2). Never use innerHTML with user data."
+      references:
+        - "https://owasp.org/www-community/attacks/xss/"
+
+    - id: "authentication"
+      text: "Strong authentication implemented (password hashing, MFA support)"
+      severity: "high"
+      help_text: "Use bcrypt or Argon2 for password hashing. Never store plain text passwords."
+      references:
+        - "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
+
+    - id: "authorization"
+      text: "Authorization checks on all protected resources"
+      severity: "high"
+      help_text: "Verify user permissions before allowing access to data or actions."
+      references:
+        - "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html"
+
+    - id: "secrets-management"
+      text: "No secrets in code or version control"
+      severity: "critical"
+      help_text: "Use environment variables or secret management systems. Add .env to .gitignore."
+      references:
+        - "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+
+    - id: "input-validation"
+      text: "All user input is validated and sanitized"
+      severity: "high"
+      help_text: "Validate type, length, format, and range. Reject invalid input rather than trying to sanitize."
+
+    - id: "error-handling"
+      text: "Error messages do not expose sensitive information"
+      severity: "medium"
+      help_text: "Log detailed errors server-side, but show generic messages to users. Never expose stack traces."
+
+    - id: "https-only"
+      text: "All communication uses HTTPS, no plain HTTP"
+      severity: "high"
+      help_text: "Configure web server to redirect HTTP to HTTPS. Use HSTS headers."
+
+    - id: "dependency-scanning"
+      text: "Dependencies scanned for known vulnerabilities"
+      severity: "medium"
+      help_text: "Use tools like safety or Snyk to scan dependencies. Keep dependencies up to date."
+
+    - id: "logging-monitoring"
+      text: "Security events are logged and monitored"
+      severity: "medium"
+      help_text: "Log authentication attempts, authorization failures, and suspicious activities."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["code-review", "security-review", "deployment"]
+    author: "Winston"
+    tags: ["security", "owasp", "vulnerabilities"]

@@ -1,0 +1,8 @@
+checklist:
+  name: "Invalid Checklist"
+  # Missing category (required field)
+  version: "1.0.0"
+  items:
+    - id: "item1"
+      text: "This checklist is invalid"
+      severity: "low"

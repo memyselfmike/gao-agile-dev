@@ -1,0 +1,24 @@
+checklist:
+  name: "Complete Valid Checklist"
+  category: "testing"
+  version: "1.0.0"
+  description: "A complete checklist with all optional fields"
+  extends: "testing/base-checklist"
+  items:
+    - id: "item1"
+      text: "First item with all fields populated"
+      severity: "critical"
+      category: "unit-tests"
+      help_text: "This is helpful guidance for completing the item"
+      references:
+        - "https://example.com/docs"
+        - "https://example.com/guide"
+    - id: "item2"
+      text: "Second item with medium severity"
+      severity: "medium"
+      help_text: "More helpful guidance"
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["story-implementation", "code-review"]
+    author: "Test Author"
+    tags: ["testing", "quality", "example"]

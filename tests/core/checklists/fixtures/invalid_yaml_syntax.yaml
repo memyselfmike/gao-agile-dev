@@ -1,0 +1,9 @@
+checklist:
+  name: "Invalid YAML Syntax"
+  category: "testing"
+  version: "1.0.0"
+  items:
+    - id: "item1"
+      text: "This YAML has syntax error below"
+      severity: "low"
+    invalid yaml syntax here [[[

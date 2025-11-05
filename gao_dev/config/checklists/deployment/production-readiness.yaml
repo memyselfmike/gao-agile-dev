@@ -1,0 +1,87 @@
+# Production Readiness Checklist
+#
+# This checklist ensures applications are ready for production deployment.
+# Use this before deploying to production environments.
+
+checklist:
+  name: "Production Readiness Checklist"
+  category: "deployment"
+  version: "1.0.0"
+  description: "Checklist for ensuring applications are ready for production deployment"
+
+  items:
+    - id: "all-tests-passing"
+      text: "All tests are passing in CI/CD pipeline"
+      severity: "critical"
+      help_text: "Run full test suite. All unit, integration, and end-to-end tests must pass."
+
+    - id: "test-coverage-threshold"
+      text: "Test coverage meets or exceeds 80% threshold"
+      severity: "high"
+      help_text: "Check coverage report. Focus on critical business logic and error paths."
+
+    - id: "security-scan-clean"
+      text: "Security scans show no critical or high vulnerabilities"
+      severity: "critical"
+      help_text: "Run dependency scanning, SAST, and DAST tools. Address all critical and high findings."
+
+    - id: "performance-benchmarks"
+      text: "Performance benchmarks meet SLA requirements"
+      severity: "high"
+      help_text: "Run load tests. Verify response times, throughput, and resource usage."
+
+    - id: "monitoring-configured"
+      text: "Monitoring and alerting are configured"
+      severity: "high"
+      help_text: "Set up application metrics, logs, and alerts. Configure on-call rotation."
+
+    - id: "error-handling"
+      text: "Error handling and recovery mechanisms are in place"
+      severity: "high"
+      help_text: "Test error scenarios. Ensure graceful degradation and recovery."
+
+    - id: "database-migrations"
+      text: "Database migrations tested and reversible"
+      severity: "critical"
+      help_text: "Test migrations in staging. Ensure rollback procedures are documented and tested."
+
+    - id: "backup-restore"
+      text: "Backup and restore procedures tested"
+      severity: "high"
+      help_text: "Test backup creation and restoration. Document RTO and RPO."
+
+    - id: "documentation-complete"
+      text: "Documentation is complete and up-to-date"
+      severity: "medium"
+      help_text: "Update README, API docs, runbooks, and architecture diagrams."
+
+    - id: "rollback-plan"
+      text: "Rollback plan documented and tested"
+      severity: "high"
+      help_text: "Document rollback steps. Test rollback in staging environment."
+
+    - id: "feature-flags"
+      text: "Feature flags configured for gradual rollout"
+      severity: "medium"
+      help_text: "Use feature flags for new features. Plan gradual rollout strategy."
+
+    - id: "capacity-planning"
+      text: "Capacity planning completed for expected load"
+      severity: "high"
+      help_text: "Estimate resource requirements. Ensure infrastructure can handle peak load."
+
+    - id: "compliance-requirements"
+      text: "Compliance requirements verified (GDPR, SOC2, etc.)"
+      severity: "high"
+      help_text: "Review compliance requirements. Ensure data handling meets regulations."
+
+    - id: "incident-response"
+      text: "Incident response procedures documented"
+      severity: "medium"
+      help_text: "Document escalation procedures, on-call contacts, and runbooks."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["deployment", "production-release", "go-live"]
+    author: "Winston"
+    tags: ["deployment", "production", "readiness", "operations"]
