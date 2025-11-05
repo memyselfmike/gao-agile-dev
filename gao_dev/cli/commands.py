@@ -21,6 +21,7 @@ from ..core import (
 from ..orchestrator import GAODevOrchestrator
 from .sandbox_commands import sandbox
 from .lifecycle_commands import lifecycle
+from .state_commands import state
 
 
 @click.group()
@@ -484,6 +485,13 @@ cli.add_command(sandbox)
 
 # Register lifecycle command group
 cli.add_command(lifecycle)
+
+# ============================================================================
+# STATE COMMANDS
+# ============================================================================
+
+# Register state command group
+cli.add_command(state)
 
 
 if __name__ == "__main__":
