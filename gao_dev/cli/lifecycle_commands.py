@@ -16,6 +16,7 @@ from gao_dev.lifecycle.governance import DocumentGovernance
 from gao_dev.lifecycle.template_manager import DocumentTemplateManager
 from gao_dev.lifecycle.naming_convention import DocumentNamingConvention
 from gao_dev.lifecycle.search import DocumentSearch
+from gao_dev.lifecycle.health_metrics import DocumentHealthMetrics
 from gao_dev.lifecycle.models import DocumentState
 
 
@@ -109,6 +110,46 @@ def _get_search_manager() -> DocumentSearch:
 
     except Exception as e:
         raise click.ClickException(f"Failed to initialize search manager: {e}")
+
+
+def _get_health_metrics_manager() -> DocumentHealthMetrics:
+    """
+    Initialize and return health metrics manager.
+
+    Returns:
+        DocumentHealthMetrics instance
+
+    Raises:
+        click.ClickException: If initialization fails
+    """
+    try:
+        # Use default paths relative to project root
+        project_root = Path.cwd()
+        db_path = project_root / ".gao-dev" / "documents.db"
+        governance_path = Path(__file__).parent.parent / "config" / "governance.yaml"
+
+        # Ensure directory exists
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Initialize components
+        registry = DocumentRegistry(db_path)
+        archive_dir = project_root / ".archive"
+        doc_manager = DocumentLifecycleManager(registry, archive_dir)
+        governance = DocumentGovernance(doc_manager, governance_path)
+        naming_convention = DocumentNamingConvention()
+
+        # Initialize health metrics
+        health_metrics = DocumentHealthMetrics(
+            registry=registry,
+            governance=governance,
+            naming_convention=naming_convention,
+            metrics_db_path=None,  # Optional: could use sandbox metrics DB
+        )
+
+        return health_metrics
+
+    except Exception as e:
+        raise click.ClickException(f"Failed to initialize health metrics manager: {e}")
 
 
 @click.group()
@@ -908,6 +949,107 @@ def search_tags(tags: tuple, match_all: bool, limit: int):
         raise
     except Exception as e:
         raise click.ClickException(f"Tag search failed: {e}")
+
+
+@lifecycle.command()
+@click.option(
+    "--json",
+    "output_json",
+    is_flag=True,
+    help="Output metrics as JSON for automation",
+)
+@click.option(
+    "--export",
+    type=click.Path(),
+    help="Export health report to file (markdown format)",
+)
+@click.option(
+    "--action-items-only",
+    is_flag=True,
+    help="Show only action items (what needs fixing)",
+)
+def health(output_json: bool, export: str, action_items_only: bool):
+    """
+    Display document health dashboard.
+
+    Shows comprehensive health metrics including:
+    - Total documents by state and type
+    - Stale documents (not updated within review cadence)
+    - Documents needing review (past due date)
+    - Orphaned documents (no relationships)
+    - Documents without owners
+    - Naming and frontmatter compliance rates
+    - Actionable items requiring attention
+
+    Examples:
+        gao-dev lifecycle health
+        gao-dev lifecycle health --json
+        gao-dev lifecycle health --export health-report.md
+        gao-dev lifecycle health --action-items-only
+    """
+    try:
+        health_metrics = _get_health_metrics_manager()
+
+        # Handle action items only mode
+        if action_items_only:
+            click.echo(">> Document Health Action Items\n")
+
+            action_items = health_metrics.get_action_items_only()
+
+            if not action_items:
+                click.echo("  [OK] No action items - system is healthy!")
+                return
+
+            click.echo(f"  Found {len(action_items)} action item(s):\n")
+
+            for item in action_items:
+                severity_color = {
+                    "high": "red",
+                    "medium": "yellow",
+                    "low": "blue",
+                }.get(item["severity"], "white")
+
+                # Display item header
+                click.echo(
+                    f"  [{item['severity'].upper()}] {item['description']} "
+                    f"({item['count']} items)"
+                )
+                click.echo(f"    Resolution Steps:")
+
+                for i, step in enumerate(item["resolution_steps"], 1):
+                    click.echo(f"      {i}. {step}")
+
+                click.echo()
+
+            return
+
+        # Handle JSON output
+        if output_json:
+            import json
+
+            click.echo(">> Collecting document health metrics...")
+            metrics = health_metrics.collect_metrics()
+            click.echo(json.dumps(metrics, indent=2))
+            return
+
+        # Generate full health report
+        click.echo(">> Generating document health report...")
+        report = health_metrics.generate_health_report()
+
+        # Handle export to file
+        if export:
+            export_path = Path(export)
+            export_path.write_text(report, encoding="utf-8")
+            click.echo(f"\n[OK] Health report exported to: {export_path}")
+            click.echo(f"  Path: {export_path.absolute()}\n")
+        else:
+            # Display to console
+            click.echo("\n" + report)
+
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(f"Health check failed: {e}")
 
 
 # Register the lifecycle group as a subcommand
