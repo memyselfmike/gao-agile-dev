@@ -56,3 +56,23 @@ class TransactionError(StateTrackerError):
     """
 
     pass
+
+
+class SyncError(StateTrackerError):
+    """Raised when markdown-database sync fails.
+
+    This exception indicates a sync operation between markdown files and
+    the database could not be completed successfully.
+    """
+
+    pass
+
+
+class ConflictError(StateTrackerError):
+    """Raised when manual conflict resolution is required.
+
+    This exception indicates a conflict was detected between markdown and
+    database that requires manual intervention to resolve.
+    """
+
+    pass

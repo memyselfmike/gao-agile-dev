@@ -31,6 +31,7 @@ class Story:
         sprint: Sprint number assignment (optional)
         created_at: Creation timestamp
         updated_at: Last update timestamp
+        content_hash: SHA256 hash of markdown content for change detection
     """
 
     id: int
@@ -44,6 +45,7 @@ class Story:
     sprint: Optional[int] = None
     created_at: str = ""
     updated_at: str = ""
+    content_hash: Optional[str] = None
 
     @property
     def full_id(self) -> str:

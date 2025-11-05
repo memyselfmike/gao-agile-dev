@@ -119,6 +119,7 @@ class StateTracker:
         points: int = 0,
         priority: str = "P1",
         sprint: Optional[int] = None,
+        content_hash: Optional[str] = None,
     ) -> Story:
         """Create new story.
 
@@ -131,6 +132,7 @@ class StateTracker:
             points: Story points estimate
             priority: Priority level (P0-P3)
             sprint: Sprint number assignment (optional)
+            content_hash: SHA256 hash of markdown content (optional)
 
         Returns:
             Created Story instance
@@ -159,11 +161,11 @@ class StateTracker:
                 """
                 INSERT INTO stories (
                     epic_num, story_num, title, status, owner,
-                    points, priority, created_at, updated_at
+                    points, priority, content_hash, created_at, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (epic_num, story_num, title, status, owner, points, priority, now, now),
+                (epic_num, story_num, title, status, owner, points, priority, content_hash, now, now),
             )
 
             # If sprint provided, create assignment
@@ -193,7 +195,7 @@ class StateTracker:
             cursor = conn.execute(
                 """
                 SELECT id, epic_num, story_num, title, status, owner,
-                       points, priority, created_at, updated_at
+                       points, priority, content_hash, created_at, updated_at
                 FROM stories WHERE epic_num = ? AND story_num = ?
                 """,
                 (epic_num, story_num),
@@ -298,6 +300,32 @@ class StateTracker:
         # Query in new transaction to get the updated row
         return self.get_story(epic_num, story_num)
 
+    def update_story_hash(
+        self, epic_num: int, story_num: int, content_hash: str
+    ) -> Story:
+        """Update story content hash.
+
+        Args:
+            epic_num: Epic number
+            story_num: Story number
+            content_hash: New content hash (SHA256)
+
+        Returns:
+            Updated Story instance
+
+        Raises:
+            RecordNotFoundError: If story not found
+        """
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "UPDATE stories SET content_hash = ?, updated_at = ? WHERE epic_num = ? AND story_num = ?",
+                (content_hash, datetime.now().isoformat(), epic_num, story_num),
+            )
+            if cursor.rowcount == 0:
+                raise RecordNotFoundError(f"Story {epic_num}.{story_num} not found")
+        # Query in new transaction to get the updated row
+        return self.get_story(epic_num, story_num)
+
     def get_stories_by_status(
         self, status: str, limit: int = 100, offset: int = 0
     ) -> List[Story]:
@@ -315,7 +343,7 @@ class StateTracker:
             cursor = conn.execute(
                 """
                 SELECT id, epic_num, story_num, title, status, owner,
-                       points, priority, created_at, updated_at
+                       points, priority, content_hash, created_at, updated_at
                 FROM stories WHERE status = ? ORDER BY epic_num, story_num LIMIT ? OFFSET ?
                 """,
                 (status, limit, offset),
@@ -343,7 +371,7 @@ class StateTracker:
             cursor = conn.execute(
                 """
                 SELECT id, epic_num, story_num, title, status, owner,
-                       points, priority, created_at, updated_at
+                       points, priority, content_hash, created_at, updated_at
                 FROM stories WHERE epic_num = ? ORDER BY story_num
                 """,
                 (epic_num,),

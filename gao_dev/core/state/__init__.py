@@ -17,8 +17,12 @@ from .exceptions import (
     ValidationError,
     DatabaseConnectionError,
     TransactionError,
+    SyncError,
+    ConflictError,
 )
 from .state_tracker import StateTracker
+from .frontmatter_parser import FrontmatterParser
+from .markdown_syncer import MarkdownSyncer, SyncReport, ConflictResolution
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -33,6 +37,12 @@ __all__ = [
     "ValidationError",
     "DatabaseConnectionError",
     "TransactionError",
+    "SyncError",
+    "ConflictError",
+    "FrontmatterParser",
+    "MarkdownSyncer",
+    "SyncReport",
+    "ConflictResolution",
 ]
 
 SCHEMA_VERSION = 1
