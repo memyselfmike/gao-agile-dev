@@ -1,0 +1,37 @@
+# Base Testing Standards for GAO-Dev Projects
+#
+# This is the base checklist that other testing checklists extend.
+# It defines common testing standards applicable to all test types.
+
+checklist:
+  name: "Base Testing Standards"
+  category: "testing"
+  version: "1.0.0"
+  description: "Foundation testing standards for all GAO-Dev projects"
+
+  items:
+    - id: "test-exists"
+      text: "Tests exist for all new functionality"
+      severity: "critical"
+      help_text: "Every new function, class, or module should have corresponding tests."
+
+    - id: "test-passing"
+      text: "All tests pass before committing"
+      severity: "critical"
+      help_text: "Run pytest and ensure all tests pass. Fix failing tests before committing."
+
+    - id: "test-documented"
+      text: "Tests are well-documented with clear docstrings"
+      severity: "low"
+      help_text: "Each test should have a docstring explaining what it tests and why."
+
+    - id: "test-maintainable"
+      text: "Tests are maintainable and follow DRY principle"
+      severity: "medium"
+      help_text: "Avoid duplicated test code. Use fixtures and helper functions."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["testing", "code-review"]
+    author: "Murat"
+    tags: ["testing", "quality", "foundation"]
