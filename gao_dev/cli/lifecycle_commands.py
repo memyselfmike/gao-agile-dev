@@ -13,6 +13,8 @@ from gao_dev.lifecycle.registry import DocumentRegistry
 from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
 from gao_dev.lifecycle.archival import ArchivalManager
 from gao_dev.lifecycle.governance import DocumentGovernance
+from gao_dev.lifecycle.template_manager import DocumentTemplateManager
+from gao_dev.lifecycle.naming_convention import DocumentNamingConvention
 
 
 def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager, DocumentGovernance]:
@@ -47,6 +49,36 @@ def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager,
 
     except Exception as e:
         raise click.ClickException(f"Failed to initialize lifecycle manager: {e}")
+
+
+def _get_template_manager() -> DocumentTemplateManager:
+    """
+    Initialize and return template manager.
+
+    Returns:
+        DocumentTemplateManager instance
+
+    Raises:
+        click.ClickException: If initialization fails
+    """
+    try:
+        # Get lifecycle manager
+        doc_manager, _, governance_manager = _get_lifecycle_manager()
+
+        # Initialize template manager
+        templates_dir = Path(__file__).parent.parent / "config" / "templates"
+        naming_convention = DocumentNamingConvention()
+        template_manager = DocumentTemplateManager(
+            templates_dir=templates_dir,
+            doc_manager=doc_manager,
+            naming_convention=naming_convention,
+            governance=governance_manager,
+        )
+
+        return template_manager
+
+    except Exception as e:
+        raise click.ClickException(f"Failed to initialize template manager: {e}")
 
 
 @click.group()
@@ -517,6 +549,154 @@ def governance_report(format: str, output: str):
         raise
     except Exception as e:
         raise click.ClickException(f"Governance report generation failed: {e}")
+
+
+@lifecycle.command()
+@click.argument("template")
+@click.option("--subject", required=True, help="Document subject (e.g., 'user-authentication')")
+@click.option("--author", required=True, help="Document author")
+@click.option("--feature", help="Feature name (optional)")
+@click.option("--epic", type=int, help="Epic number (required for stories)")
+@click.option("--version", default="1.0", help="Document version (default: 1.0)")
+@click.option("--output-dir", type=click.Path(), help="Output directory (default: current dir)")
+@click.option("--related-docs", multiple=True, help="Related document paths (can be specified multiple times)")
+@click.option("--tags", multiple=True, help="Document tags (can be specified multiple times)")
+@click.option("--adr-number", type=int, help="ADR number (for ADR templates)")
+@click.option("--decision", help="Decision text (for ADR templates)")
+@click.option("--status", default="Proposed", help="Status (for ADR templates, default: Proposed)")
+def create(
+    template: str,
+    subject: str,
+    author: str,
+    feature: str,
+    epic: int,
+    version: str,
+    output_dir: str,
+    related_docs: tuple,
+    tags: tuple,
+    adr_number: int,
+    decision: str,
+    status: str,
+):
+    """
+    Create document from template.
+
+    Creates a new document from a template with automatic frontmatter,
+    naming convention, and lifecycle registration.
+
+    Examples:
+        gao-dev lifecycle create prd --subject "user-auth" --author "John"
+        gao-dev lifecycle create story --subject "login-flow" --author "Bob" --epic 5
+        gao-dev lifecycle create adr --subject "database-choice" --author "Winston" --adr-number 1 --decision "Use PostgreSQL"
+    """
+    try:
+        template_manager = _get_template_manager()
+
+        # Build variables dictionary
+        variables = {
+            "subject": subject,
+            "author": author,
+            "version": version,
+        }
+
+        # Add optional variables
+        if feature:
+            variables["feature"] = feature
+        if epic:
+            variables["epic"] = epic
+        if related_docs:
+            variables["related_docs"] = list(related_docs)
+        if tags:
+            variables["tags"] = list(tags)
+        if adr_number:
+            variables["adr_number"] = adr_number
+        if decision:
+            variables["decision"] = decision
+        if status:
+            variables["status"] = status
+
+        # Determine output directory
+        if output_dir:
+            output_path = Path(output_dir)
+        else:
+            output_path = Path.cwd()
+
+        click.echo(f">> Creating {template} document: {subject}")
+
+        # Create document from template
+        file_path = template_manager.create_from_template(
+            template_name=template, variables=variables, output_dir=output_path
+        )
+
+        # Display success message
+        click.echo(f"\n[OK] Document created successfully!")
+        click.echo(f"  File: {file_path}")
+        click.echo(f"  Path: {file_path.absolute()}")
+
+        # Show governance info
+        doc_type = template_manager._get_doc_type(template)
+        governance_config = template_manager.governance.config["document_governance"]
+        ownership = governance_config["ownership"].get(doc_type.lower(), {})
+
+        if ownership:
+            owner = ownership.get("approved_by")
+            reviewer = ownership.get("reviewed_by")
+            if owner:
+                click.echo(f"  Owner: {owner}")
+            if reviewer:
+                click.echo(f"  Reviewer: {reviewer}")
+
+        click.echo()
+
+    except ValueError as e:
+        raise click.ClickException(str(e))
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(f"Failed to create document: {e}")
+
+
+@lifecycle.command()
+def list_templates():
+    """
+    List available document templates.
+
+    Shows all available templates with their descriptions.
+
+    Example:
+        gao-dev lifecycle list-templates
+    """
+    try:
+        template_manager = _get_template_manager()
+
+        templates = template_manager.list_templates()
+
+        if not templates:
+            click.echo("[WARNING] No templates found.")
+            return
+
+        click.echo(f"\n>> Available Document Templates ({len(templates)})\n")
+
+        for template_name in templates:
+            info = template_manager.get_template_variables(template_name)
+            click.echo(f"{template_name.upper():20} - {info['description']}")
+
+            # Show required variables
+            required = info.get("required", [])
+            if required:
+                click.echo(f"{'':22}Required: {', '.join(required)}")
+
+            # Show optional variables
+            optional = info.get("optional", [])
+            if optional:
+                click.echo(f"{'':22}Optional: {', '.join(optional)}")
+
+            click.echo()
+
+    except click.ClickException:
+        raise
+    except Exception as e:
+        raise click.ClickException(f"Failed to list templates: {e}")
 
 
 # Register the lifecycle group as a subcommand
