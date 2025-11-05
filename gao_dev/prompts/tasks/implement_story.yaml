@@ -1,9 +1,28 @@
 name: implement_story
 description: "Task prompt for story implementation by Bob and Amelia"
-version: 1.0.0
+version: 2.0.0
 
 user_prompt: |
   Execute the complete story implementation workflow for Story {{epic}}.{{story}}.
+
+  Story Requirements:
+  @doc:stories/epic-{{epic}}/story-{{epic}}.{{story}}.md
+
+  Acceptance Criteria:
+  @doc:stories/epic-{{epic}}/story-{{epic}}.{{story}}.md#acceptance-criteria
+
+  Epic Context:
+  @context:epic_definition
+
+  Architecture Guidelines:
+  @context:architecture
+
+  Coding Standards:
+  @context:coding_standards
+
+  Quality Checklists:
+  @checklist:testing/unit-test-standards
+  @checklist:code-quality/solid-principles
 
   Coordinate the following agents:
 
@@ -12,16 +31,17 @@ user_prompt: |
      - Check story status
 
   2. **Amelia** (Developer):
-     - Read the story file
+     - Read the story requirements and acceptance criteria above
      - Create feature branch: feature/epic-{{epic}}-story-{{story}}
      - Use 'dev-story' workflow for implementation guidance
+     - Follow coding standards and quality checklists
      - Implement all acceptance criteria
-     - Write tests
+     - Write tests according to unit test standards
      - Update story status to 'In Progress'
      - Commit implementation
 
   3. **Amelia** (Code Review):
-     - Review code quality
+     - Review code quality against SOLID principles
      - Ensure tests pass
      - Verify acceptance criteria met
      - Update status to 'Ready for Review'
@@ -38,6 +58,7 @@ variables:
   epic: "1"
   story: "1"
   agent: "Bob"
+  feature: ""
 
 response:
   max_tokens: 8000
@@ -47,3 +68,6 @@ metadata:
   category: task
   phase: implementation
   agent: Bob
+
+meta_prompts:
+  enabled: true

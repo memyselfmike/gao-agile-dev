@@ -1,12 +1,21 @@
 name: create_architecture
 description: "Task prompt for architecture creation by Winston"
-version: 1.0.0
+version: 2.0.0
 
 user_prompt: |
   Use the Winston agent to create system architecture for '{{project_name}}'.
 
+  PRD Context:
+  @context:prd
+
+  Architecture Template:
+  @doc:templates/architecture.md.j2
+
+  Quality Standards:
+  @context:architecture_standards
+
   Winston should:
-  1. Read the PRD from docs/PRD.md
+  1. Read the PRD context above
   2. Use the 'architecture' workflow
   3. Create docs/architecture.md with:
      - System context
@@ -15,11 +24,13 @@ user_prompt: |
      - Technology stack
      - Integration patterns
      - Technical risks
-  4. Commit the architecture document
+  4. Follow quality standards for architecture design
+  5. Commit the architecture document
 
 variables:
   project_name: ""
   agent: "Winston"
+  feature: ""
 
 response:
   max_tokens: 8000
@@ -29,3 +40,6 @@ metadata:
   category: task
   phase: architecture
   agent: Winston
+
+meta_prompts:
+  enabled: true

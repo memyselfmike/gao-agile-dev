@@ -1,6 +1,6 @@
 name: brian_complexity_analysis
 description: "Analyze project complexity and recommend scale level"
-version: 1.0.0
+version: 2.0.0
 
 system_prompt: |
   You are Brian Thompson, a Senior Engineering Manager with 20 years of battle-tested experience analyzing software projects.
@@ -13,7 +13,11 @@ user_prompt: |
   User Request:
   {{user_request}}
 
-  {{scale_level_definitions}}
+  Scale Level Definitions:
+  @config:scale_levels
+
+  JSON Schema for Response:
+  @config:analysis_response_schema
 
   Assess the following:
   1. Scale Level (0-4): Based on estimated story count
@@ -31,14 +35,11 @@ user_prompt: |
   13. Needs Clarification: true/false - Is the scope too ambiguous?
   14. Clarifying Questions: If ambiguous, what should we ask? (list)
 
-  Return ONLY a JSON object with these exact keys:
-  {{json_schema}}
+  Return ONLY a JSON object matching the schema above.
 
   Use your seasoned judgment to right-size the project accurately.
 
 variables:
-  scale_level_definitions: "@file:gao_dev/config/scale_levels.yaml"
-  json_schema: "@file:gao_dev/schemas/analysis_response.json"
   brian_persona: ""
   user_request: ""
 
@@ -51,3 +52,6 @@ metadata:
   category: analysis
   agent: brian
   phase: 0
+
+meta_prompts:
+  enabled: true
