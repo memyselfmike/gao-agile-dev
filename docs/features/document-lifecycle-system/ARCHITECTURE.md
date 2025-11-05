@@ -133,16 +133,19 @@ The Document Lifecycle & Context Management System provides comprehensive docume
 
 ## Component Design
 
-### Component 1: DocumentLifecycleManager
+### Component 1: DocumentLifecycleManager (ENHANCED)
 
-**Purpose:** Manage document lifecycle from creation to archival
+**Purpose:** Manage document lifecycle from creation to archival with governance, templates, and search
 
 **Responsibilities:**
-- Track document metadata and states
+- Track document metadata and states with governance fields (owner, reviewer, review_due_date)
 - Enforce state machine transitions
-- Archive obsolete documents
-- Manage document relationships
-- Provide query interface
+- Archive obsolete documents with retention policies
+- Manage document relationships and lineage
+- Provide query interface with full-text search (FTS5)
+- Generate documents from templates with standardized naming
+- Track document health KPIs
+- Support 5S methodology (Sort, Set in Order, Shine, Standardize, Sustain)
 
 **Interface:**
 ```python
@@ -494,6 +497,464 @@ class MetaPromptEngine:
 
         return variables
 ```
+
+### Component 2A: DocumentNamingConvention (NEW - Research Insight)
+
+**Purpose:** Enforce standardized document naming convention for professional, searchable filenames
+
+**Responsibilities:**
+- Generate standard filenames: `{DocType}_{subject}_{date}_v{version}.{ext}`
+- Parse filenames into components
+- Validate filenames against standard
+- Provide CLI utilities for bulk renaming
+
+**Interface:**
+```python
+class DocumentNamingConvention:
+    """Enforce naming standards from research team."""
+
+    PATTERN = re.compile(
+        r"^(?P<doctype>[A-Z]+)_(?P<subject>[a-z0-9-]+)_(?P<date>\d{4}-\d{2}-\d{2})_v(?P<version>\d+\.\d+)\.(?P<ext>\w+)$"
+    )
+
+    @staticmethod
+    def generate_filename(doc_type: str, subject: str, version: str = "1.0") -> str:
+        """
+        Generate standard filename.
+
+        Example: generate_filename("PRD", "user authentication", "2.0")
+        Returns: "PRD_user-authentication_2024-11-05_v2.0.md"
+        """
+        date = datetime.now().strftime("%Y-%m-%d")
+        subject_slug = subject.lower().replace(" ", "-")
+        return f"{doc_type.upper()}_{subject_slug}_{date}_v{version}.md"
+
+    @staticmethod
+    def parse_filename(filename: str) -> Dict[str, str]:
+        """Parse filename into components."""
+        match = DocumentNamingConvention.PATTERN.match(filename)
+        if not match:
+            raise ValueError(f"Filename does not match convention: {filename}")
+        return match.groupdict()
+
+    @staticmethod
+    def validate_filename(filename: str) -> Tuple[bool, Optional[str]]:
+        """Validate filename, return (is_valid, error_message)."""
+        try:
+            DocumentNamingConvention.parse_filename(filename)
+            return (True, None)
+        except ValueError as e:
+            return (False, str(e))
+```
+
+**Technical Notes:**
+- Pattern: `PRD_user-auth_2024-11-05_v1.0.md`
+- ADRs use sequential numbering: `ADR-001_database-choice_2024-09-01.md`
+- Postmortems use incident date: `Postmortem_2024-11-15_api-outage.md`
+
+---
+
+### Component 2B: DocumentTemplateManager (NEW - Research Insight)
+
+**Purpose:** Generate documents from templates with proper frontmatter and naming
+
+**Responsibilities:**
+- Load and render document templates (Jinja2)
+- Auto-generate filenames using naming convention
+- Auto-populate YAML frontmatter with governance fields
+- Auto-register documents in lifecycle system
+- Provide CLI for document creation
+
+**Interface:**
+```python
+class DocumentTemplateManager:
+    """Manage document templates with proper frontmatter."""
+
+    def __init__(
+        self,
+        templates_dir: Path,
+        doc_manager: DocumentLifecycleManager,
+        naming_convention: DocumentNamingConvention
+    ):
+        self.templates_dir = templates_dir
+        self.doc_manager = doc_manager
+        self.naming = naming_convention
+        self.jinja_env = Environment(loader=FileSystemLoader(templates_dir))
+
+    def create_from_template(
+        self,
+        template_name: str,
+        variables: Dict[str, Any],
+        output_dir: Path
+    ) -> Path:
+        """
+        Create new document from template.
+
+        Args:
+            template_name: Template name (e.g., "prd", "architecture", "story")
+            variables: Template variables (subject, author, feature, epic, etc.)
+            output_dir: Where to create the document
+
+        Returns:
+            Path to created document
+        """
+        # Load template
+        template = self.jinja_env.get_template(f"{template_name}.md.j2")
+
+        # Generate filename using naming convention
+        filename = self.naming.generate_filename(
+            doc_type=variables.get('doc_type', template_name.upper()),
+            subject=variables['subject'],
+            version=variables.get('version', '1.0')
+        )
+
+        # Auto-populate governance fields
+        frontmatter = self._generate_frontmatter(template_name, variables)
+
+        # Render template with frontmatter
+        rendered = self._render_with_frontmatter(template, variables, frontmatter)
+
+        # Write file
+        file_path = output_dir / filename
+        file_path.write_text(rendered)
+
+        # Auto-register in lifecycle system
+        self.doc_manager.register_document(
+            path=file_path,
+            doc_type=variables.get('doc_type', template_name),
+            author=variables.get('author'),
+            metadata=frontmatter
+        )
+
+        return file_path
+
+    def _generate_frontmatter(
+        self,
+        template_name: str,
+        variables: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Generate YAML frontmatter with governance fields."""
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        # Get governance config for document type
+        governance = self._get_governance_config(template_name)
+
+        review_cadence_days = governance.get('review_cadence', 90)
+        review_due = (datetime.now() + timedelta(days=review_cadence_days)).strftime("%Y-%m-%d")
+
+        return {
+            "title": variables['subject'],
+            "doc_type": variables.get('doc_type', template_name.upper()),
+            "status": "draft",
+            "owner": variables.get('author'),
+            "reviewer": governance.get('reviewer'),
+            "created_date": today,
+            "last_updated": today,
+            "version": variables.get('version', '1.0'),
+            "review_due_date": review_due,
+            "related_docs": variables.get('related_docs', []),
+            "tags": variables.get('tags', []),
+            "retention_policy": governance.get('retention_policy', 'archive_after_30_days_obsolete'),
+            "feature": variables.get('feature'),
+            "epic": variables.get('epic'),
+        }
+```
+
+**Available Templates:**
+- `prd.md.j2` - Product Requirements Document
+- `architecture.md.j2` - System Architecture
+- `epic.md.j2` - Epic Definition
+- `story.md.j2` - User Story
+- `adr.md.j2` - Architecture Decision Record
+- `postmortem.md.j2` - Incident Postmortem
+- `runbook.md.j2` - Operational Runbook
+
+---
+
+### Component 2C: DocumentSearch (NEW - Research Insight)
+
+**Purpose:** Full-text search using SQLite FTS5 for fast document discovery
+
+**Responsibilities:**
+- Full-text search across documents
+- Tag-based filtering
+- Related document discovery
+- Result ranking by relevance
+- Position for Phase 3 semantic search (vector embeddings)
+
+**Interface:**
+```python
+class DocumentSearch:
+    """Full-text search for documents using FTS5."""
+
+    def __init__(self, registry: DocumentRegistry):
+        self.registry = registry
+
+    def search(
+        self,
+        query: str,
+        doc_type: Optional[str] = None,
+        state: Optional[DocumentState] = None,
+        tags: Optional[List[str]] = None,
+        limit: int = 50
+    ) -> List[Tuple[Document, float]]:
+        """
+        Full-text search with filters.
+
+        Args:
+            query: Search query ("authentication security")
+            doc_type: Filter by document type
+            state: Filter by state
+            tags: Filter by tags
+            limit: Max results
+
+        Returns:
+            List of (Document, relevance_score) tuples
+
+        Examples:
+            search("authentication security")
+            search("api design", doc_type="architecture")
+            search("testing", tags=["epic-3"])
+        """
+        # Use FTS5 MATCH for full-text search
+        sql = """
+            SELECT d.*, fts.rank FROM documents d
+            JOIN documents_fts fts ON d.id = fts.rowid
+            WHERE fts MATCH ?
+        """
+
+        params = [query]
+
+        # Add filters
+        if doc_type:
+            sql += " AND d.type = ?"
+            params.append(doc_type)
+
+        if state:
+            sql += " AND d.state = ?"
+            params.append(state.value)
+
+        if tags:
+            # Use JSON functions to query tags
+            sql += " AND EXISTS (SELECT 1 FROM json_each(d.metadata, '$.tags') WHERE value IN ({})".format(
+                ','.join('?' * len(tags))
+            )
+            sql += ")"
+            params.extend(tags)
+
+        sql += " ORDER BY fts.rank LIMIT ?"
+        params.append(limit)
+
+        return self.registry._execute_query(sql, params)
+
+    def search_by_tags(self, tags: List[str]) -> List[Document]:
+        """Tag-based search."""
+        sql = """
+            SELECT * FROM documents
+            WHERE EXISTS (
+                SELECT 1 FROM json_each(metadata, '$.tags')
+                WHERE value IN ({})
+            )
+        """.format(','.join('?' * len(tags)))
+        return self.registry._execute_query(sql, tags)
+
+    def get_related_documents(
+        self,
+        doc_id: int,
+        limit: int = 10
+    ) -> List[Tuple[Document, float]]:
+        """
+        Find related documents by content similarity.
+
+        Uses FTS5 for lexical similarity (Phase 1-2).
+        Can be enhanced with vector embeddings for semantic similarity (Phase 3).
+        """
+        # Get document content
+        doc = self.registry.get_document(doc_id)
+
+        # Extract key terms for similarity search
+        terms = self._extract_key_terms(doc.content)
+        query = " ".join(terms[:10])  # Use top 10 terms
+
+        # Search for similar documents
+        results = self.search(query, limit=limit)
+
+        # Filter out the original document
+        return [(d, score) for d, score in results if d.id != doc_id]
+
+    def _extract_key_terms(self, content: str) -> List[str]:
+        """Extract key terms from content for similarity search."""
+        # Simple term extraction (can be enhanced with TF-IDF, etc.)
+        # Remove common words, extract nouns/technical terms
+        # ...implementation...
+        pass
+```
+
+**FTS5 Schema:**
+```sql
+-- FTS5 virtual table for full-text search
+CREATE VIRTUAL TABLE documents_fts USING fts5(
+    title,
+    content,
+    tags,
+    content='documents',
+    content_rowid='id'
+);
+
+-- Triggers to keep FTS in sync
+CREATE TRIGGER documents_fts_insert AFTER INSERT ON documents BEGIN
+    INSERT INTO documents_fts(rowid, title, content, tags)
+    VALUES (
+        new.id,
+        new.path,
+        new.content,
+        json_extract(new.metadata, '$.tags')
+    );
+END;
+
+CREATE TRIGGER documents_fts_update AFTER UPDATE ON documents BEGIN
+    UPDATE documents_fts
+    SET title = new.path,
+        content = new.content,
+        tags = json_extract(new.metadata, '$.tags')
+    WHERE rowid = new.id;
+END;
+
+CREATE TRIGGER documents_fts_delete AFTER DELETE ON documents BEGIN
+    DELETE FROM documents_fts WHERE rowid = old.id;
+END;
+```
+
+---
+
+### Component 2D: DocumentHealthMetrics (NEW - Research Insight)
+
+**Purpose:** Track KPIs and health monitoring for document lifecycle system
+
+**Responsibilities:**
+- Collect document health metrics
+- Generate health reports
+- Track document access patterns
+- Identify stale/orphaned documents
+- Monitor system effectiveness (5S: Sustain)
+
+**Interface:**
+```python
+class DocumentHealthMetrics:
+    """Track document health KPIs."""
+
+    def __init__(
+        self,
+        registry: DocumentRegistry,
+        governance: DocumentGovernance,
+        metrics_db: Path
+    ):
+        self.registry = registry
+        self.governance = governance
+        self.metrics_db = metrics_db
+
+    def collect_metrics(self) -> Dict[str, Any]:
+        """Collect all document health metrics."""
+        return {
+            "total_documents": self.count_documents(),
+            "documents_by_state": self.count_by_state(),
+            "documents_by_type": self.count_by_type(),
+            "stale_documents": self.count_stale_documents(),
+            "documents_needing_review": self.count_review_due(),
+            "orphaned_documents": self.count_orphaned(),
+            "avg_document_age_days": self.avg_document_age(),
+            "most_accessed_documents": self.get_top_accessed(limit=10),
+            "least_accessed_documents": self.get_least_accessed(limit=10),
+            "cache_hit_rate": self.get_cache_hit_rate(),
+            "avg_query_time_ms": self.get_avg_query_time(),
+            "context_injection_rate": self.get_auto_injection_rate(),
+            "naming_compliance_rate": self.get_naming_compliance_rate(),
+            "frontmatter_compliance_rate": self.get_frontmatter_compliance_rate(),
+        }
+
+    def count_stale_documents(self) -> int:
+        """Count documents not updated in >review_cadence days."""
+        sql = """
+            SELECT COUNT(*) FROM documents d
+            WHERE julianday('now') - julianday(d.modified_at) >
+                  COALESCE(json_extract(d.metadata, '$.review_cadence_days'), 90)
+        """
+        return self.registry._execute_scalar(sql)
+
+    def count_review_due(self) -> int:
+        """Count documents with review_due_date in the past."""
+        sql = """
+            SELECT COUNT(*) FROM documents
+            WHERE json_extract(metadata, '$.review_due_date') < date('now')
+              AND state != 'archived'
+        """
+        return self.registry._execute_scalar(sql)
+
+    def count_orphaned(self) -> int:
+        """Count documents with no relationships to other documents."""
+        sql = """
+            SELECT COUNT(*) FROM documents d
+            WHERE NOT EXISTS (
+                SELECT 1 FROM document_relationships
+                WHERE parent_id = d.id OR child_id = d.id
+            )
+            AND d.type NOT IN ('temp', 'draft')
+        """
+        return self.registry._execute_scalar(sql)
+
+    def get_naming_compliance_rate(self) -> float:
+        """Percentage of documents following naming convention."""
+        total = self.count_documents()
+        compliant = self._count_naming_compliant()
+        return (compliant / total * 100) if total > 0 else 0.0
+
+    def generate_health_report(self) -> str:
+        """Generate markdown health report."""
+        metrics = self.collect_metrics()
+
+        report = f"""# Document Lifecycle Health Report
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Summary Metrics
+
+| Metric | Value |
+|--------|-------|
+| Total Documents | {metrics['total_documents']} |
+| Stale Documents | {metrics['stale_documents']} ({metrics['stale_documents']/metrics['total_documents']*100:.1f}%) |
+| Needs Review | {metrics['documents_needing_review']} |
+| Orphaned Documents | {metrics['orphaned_documents']} |
+| Avg Document Age | {metrics['avg_document_age_days']:.1f} days |
+| Cache Hit Rate | {metrics['cache_hit_rate']:.1f}% |
+| Avg Query Time | {metrics['avg_query_time_ms']:.1f}ms |
+| Naming Compliance | {metrics['naming_compliance_rate']:.1f}% |
+
+## Documents by State
+
+| State | Count |
+|-------|-------|
+"""
+        for state, count in metrics['documents_by_state'].items():
+            report += f"| {state} | {count} |\n"
+
+        report += "\n## Action Items\n\n"
+
+        if metrics['stale_documents'] > 0:
+            report += f"- [ ] Review {metrics['stale_documents']} stale documents\n"
+
+        if metrics['documents_needing_review'] > 0:
+            report += f"- [ ] Review {metrics['documents_needing_review']} documents past due date\n"
+
+        if metrics['orphaned_documents'] > 0:
+            report += f"- [ ] Verify {metrics['orphaned_documents']} orphaned documents\n"
+
+        if metrics['naming_compliance_rate'] < 100:
+            non_compliant = metrics['total_documents'] * (100 - metrics['naming_compliance_rate']) / 100
+            report += f"- [ ] Rename {non_compliant:.0f} non-compliant documents\n"
+
+        return report
+```
+
+---
 
 ### Component 3: ChecklistLoader
 
@@ -1522,7 +1983,7 @@ cp ~/.gao-dev/backups/state_20251104.db ~/.gao-dev/state.db
 
 ## Migration Strategy
 
-### Phase 1: Foundation (Epic 11)
+### Phase 1: Foundation (Epic 12)
 1. Create database schemas
 2. Implement DocumentLifecycleManager
 3. Scan and register existing documents

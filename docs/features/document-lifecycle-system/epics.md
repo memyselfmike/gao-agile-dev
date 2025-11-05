@@ -8,49 +8,61 @@
 
 ---
 
-## Epic 11: Document Lifecycle Management
+## Epic 12: Document Lifecycle Management
 
-**Goal:** Build comprehensive document tracking system that manages document states, relationships, and archival.
+**Goal:** Build comprehensive document tracking system that manages document states, relationships, archival, governance, and search capabilities with professional naming standards and templates.
 
 **Owner:** Amelia (Developer) + Bob (Scrum Master for stories)
 **Priority:** P0 (Critical - Foundation)
-**Estimated Duration:** 2-3 weeks
-**Story Points:** 28 points
+**Estimated Duration:** 3-4 weeks
+**Story Points:** 44 points (Enhanced from 28 with research insights)
 
 ### Success Criteria
-- All documents tracked in SQLite registry
+- All documents tracked in SQLite registry with standardized naming
 - Document queries return results in <100ms
+- Full-text search (FTS5) enables fast document discovery
 - State machine enforces valid transitions
-- Archival system moves obsolete documents automatically
+- Archival system with retention policies moves obsolete documents automatically
+- Document templates reduce creation friction by 80%
+- Governance framework ensures document ownership and review cycles
+- Health KPIs track document system effectiveness
 - Lineage queries show document relationships
 - Zero data loss in state transitions
+- 5S methodology principles applied throughout
 
 ### Stories
 
-#### Story 11.1: Document Registry Database Schema
+#### Story 12.1: Document Registry Database Schema + Naming Standards
 **Points:** 5 | **Priority:** P0
 
-**Description:** Create SQLite database schema for document registry with tables for documents, relationships, and metadata.
+**Description:** Create SQLite database schema for document registry with tables for documents, relationships, metadata, AND establish standardized naming convention and YAML frontmatter schema for all documents.
 
 **Acceptance Criteria:**
-- [ ] `documents` table with all required fields (id, path, type, state, dates, author, metadata)
+- [ ] `documents` table with all required fields (id, path, type, state, dates, author, reviewer, owner, review_due_date, metadata)
 - [ ] `document_relationships` table for parent-child relationships
-- [ ] Indexes on frequently queried columns (type, state, feature, epic)
+- [ ] Indexes on frequently queried columns (type, state, feature, epic, owner, tags)
+- [ ] FTS5 virtual table for full-text search (prepared for Story 12.9)
 - [ ] Foreign key constraints enforced
 - [ ] Schema migration support
-- [ ] Unit tests for schema creation
+- [ ] Naming convention standard: `{DocType}_{subject}_{date}_v{version}.{ext}`
+- [ ] YAML frontmatter schema defined with all required/optional fields
+- [ ] DocumentNamingConvention utility class for filename generation/parsing
+- [ ] Unit tests for schema creation and naming utilities
 - [ ] Performance: Create tables <100ms
 
 **Technical Notes:**
 - Use SQLite JSON1 extension for metadata storage
 - Content hash field for sync conflict detection
 - Composite indexes for common query patterns
+- Naming pattern: `PRD_user-auth_2024-11-05_v1.0.md`
+- Frontmatter includes: title, doc_type, status, owner, reviewer, tags, retention_policy
+- Governance fields: created_date, last_updated, review_due_date, related_docs
 
 **Dependencies:** None (foundational)
 
 ---
 
-#### Story 11.2: DocumentRegistry Implementation
+#### Story 12.2: DocumentRegistry Implementation
 **Points:** 5 | **Priority:** P0
 
 **Description:** Implement DocumentRegistry class for CRUD operations on documents in SQLite.
@@ -70,11 +82,11 @@
 - Parameterized queries to prevent SQL injection
 - Return Document dataclass instances
 
-**Dependencies:** Story 11.1
+**Dependencies:** Story 12.1
 
 ---
 
-#### Story 11.3: Document State Machine
+#### Story 12.3: Document State Machine
 **Points:** 3 | **Priority:** P0
 
 **Description:** Implement state machine for document lifecycle with validation and transition logic.
@@ -94,11 +106,11 @@
 - Audit log for all state changes
 - Support for custom validators per document type
 
-**Dependencies:** Story 11.2
+**Dependencies:** Story 12.2
 
 ---
 
-#### Story 11.4: DocumentLifecycleManager
+#### Story 12.4: DocumentLifecycleManager
 **Points:** 5 | **Priority:** P0
 
 **Description:** Implement high-level DocumentLifecycleManager that orchestrates document lifecycle operations.
@@ -118,22 +130,24 @@
 - Handles filesystem operations (move to archive)
 - Preserves directory structure in archive
 
-**Dependencies:** Story 11.3
+**Dependencies:** Story 12.3
 
 ---
 
-#### Story 11.5: Document Scanning & Auto-Registration
+#### Story 12.5: Document Scanning & Auto-Registration (with 5S Classification)
 **Points:** 5 | **Priority:** P1
 
-**Description:** Implement document scanning to automatically discover and register existing documents.
+**Description:** Implement document scanning to automatically discover and register existing documents with 5S methodology classification (Sort: permanent, transient, temp).
 
 **Acceptance Criteria:**
 - [ ] `scan_directory()` discovers documents recursively
 - [ ] Detects document type from path patterns
-- [ ] Extracts metadata from frontmatter/YAML
+- [ ] Extracts metadata from frontmatter/YAML (including governance fields)
+- [ ] Validates filenames against naming convention (warn on non-standard)
 - [ ] Registers unregistered documents
 - [ ] Updates metadata for registered documents
-- [ ] Respects exclude patterns (.git, node_modules, etc.)
+- [ ] 5S Classification: classify as permanent, transient, or temp
+- [ ] Respects exclude patterns (.git, node_modules, .archive, .scratch, etc.)
 - [ ] Progress reporting for large scans
 - [ ] Performance: Scan 1000 docs <10 seconds
 
@@ -141,38 +155,156 @@
 - Use glob patterns for type detection
 - Parse markdown frontmatter for metadata
 - Batch insert for performance
+- 5S Sort: PRD/Architecture=permanent, QA reports=transient, drafts=temp
+- Flag documents missing frontmatter or non-standard names
 
-**Dependencies:** Story 11.4
+**Dependencies:** Story 12.4
 
 ---
 
-#### Story 11.6: Archival System
-**Points:** 5 | **Priority:** P1
+#### Story 12.6: Archival System with Retention Policies
+**Points:** 6 | **Priority:** P1 (Enhanced: +1 pt for retention framework)
 
-**Description:** Implement automatic archival system that moves obsolete documents based on configurable rules.
+**Description:** Implement automatic archival system that moves obsolete documents based on configurable rules with comprehensive retention policies for compliance (archive vs delete, retention periods).
 
 **Acceptance Criteria:**
 - [ ] Archival rules defined in YAML config
-- [ ] Rules support: document type, state, age in days
+- [ ] Retention policy framework: archive_to_obsolete, obsolete_to_archive, archive_retention, delete_after_archive
+- [ ] Rules support: document type, state, age in days, compliance tags
 - [ ] `archive_obsolete_documents()` applies rules
-- [ ] Moves files to `.archive/` with preserved structure
-- [ ] Metadata preserved in database
+- [ ] Moves files to `.archive/` with preserved structure (5S: Shine)
+- [ ] Metadata preserved in database with archive timestamp
+- [ ] Retention period enforcement (e.g., PRD: 2 years, QA: 5 years, postmortem: forever)
+- [ ] Archive vs Delete distinction based on compliance requirements
 - [ ] Dry-run mode for testing
-- [ ] CLI command: `gao-dev lifecycle archive`
-- [ ] Unit tests for rule evaluation
+- [ ] CLI commands: `gao-dev lifecycle archive`, `gao-dev lifecycle cleanup`
+- [ ] Retention policy report: shows what will be archived/deleted
+- [ ] Unit tests for rule evaluation and retention policies
 
 **Technical Notes:**
-- Configurable per document type
-- Archive directory outside docs/
+- Configurable per document type with compliance tags
+- Archive directory outside docs/ (.archive/)
 - Support manual archival override
+- Never delete documents tagged with compliance flags unless retention expired
+- Example: postmortems never obsolete, QA reports retained 5 years for audits
 
-**Dependencies:** Story 11.4
+**Dependencies:** Story 12.4
+
+---
+
+#### Story 12.7: Document Governance Framework
+**Points:** 3 | **Priority:** P1
+
+**Description:** Implement document governance framework with ownership, review cycles, and RACI matrix for document management (Research Insight: prevent document rot).
+
+**Acceptance Criteria:**
+- [ ] Governance configuration YAML with RACI matrix per document type
+- [ ] Document ownership assignment (owner, reviewer, approver)
+- [ ] Review cadence configuration per document type (e.g., PRD: 90 days, Architecture: 60 days)
+- [ ] `check_review_due()` identifies documents needing review
+- [ ] Auto-assignment of review due dates on document creation
+- [ ] Governance rules: who can create, approve, archive each document type
+- [ ] CLI command: `gao-dev lifecycle review-due`
+- [ ] Email/notification support (optional, for future)
+- [ ] Unit tests for governance rules
+
+**Technical Notes:**
+- RACI: Responsible (creator), Accountable (owner), Consulted (reviewer), Informed (stakeholders)
+- John owns PRDs, Winston owns Architecture, Bob owns Stories
+- Review cadence prevents stale documents (5S: Sustain)
+- Integrates with document metadata (owner, reviewer, review_due_date)
+
+**Dependencies:** Story 12.2
+
+---
+
+#### Story 12.8: Document Templates System
+**Points:** 3 | **Priority:** P0
+
+**Description:** Create document template system that generates documents from templates with proper frontmatter, naming convention, and governance metadata (Research Insight: reduce friction, ensure consistency).
+
+**Acceptance Criteria:**
+- [ ] `DocumentTemplateManager` class for template management
+- [ ] `create_from_template()` generates document from template with variables
+- [ ] Auto-generates filename using naming convention
+- [ ] Auto-populates YAML frontmatter with governance fields
+- [ ] Auto-registers document in lifecycle system
+- [ ] Templates created: PRD, Architecture, Epic, Story, ADR, Postmortem, Runbook
+- [ ] Template variables: subject, author, feature, epic, related_docs
+- [ ] CLI command: `gao-dev lifecycle create <template> --subject "..." --author "..."`
+- [ ] Unit tests for template rendering and document creation
+
+**Technical Notes:**
+- Templates in `gao_dev/config/templates/`
+- Use Jinja2 for variable substitution
+- Templates include @doc: references for context injection (prepares for Epic 13)
+- Example: `gao-dev lifecycle create prd --subject "user-auth" --author "John"`
+- Generated: `PRD_user-auth_2024-11-05_v1.0.md` with full frontmatter
+
+**Dependencies:** Story 12.1, 12.2
+
+---
+
+#### Story 12.9: Full-Text Search (SQLite FTS5)
+**Points:** 5 | **Priority:** P1
+
+**Description:** Implement full-text search using SQLite FTS5 for fast document discovery and semantic search foundation (Research Insight: dramatically improves discovery, positions for Phase 3 vector search).
+
+**Acceptance Criteria:**
+- [ ] FTS5 virtual table `documents_fts` for full-text search
+- [ ] Triggers to keep FTS in sync with documents table
+- [ ] `DocumentSearch` class with search methods
+- [ ] `search(query)` - full-text search across title, content, tags
+- [ ] `search_by_tags(tags)` - tag-based search
+- [ ] `get_related_documents(doc_id)` - find similar documents
+- [ ] Query syntax: "authentication security", "api design"
+- [ ] Filter by doc_type, state, feature, epic
+- [ ] Result ranking by relevance
+- [ ] CLI command: `gao-dev lifecycle search "query"`
+- [ ] Performance: Search <200ms for 10,000 documents
+- [ ] Unit tests with sample documents
+
+**Technical Notes:**
+- FTS5 MATCH syntax for queries
+- Index title, content, tags, metadata fields
+- Prepare for Phase 3 semantic search (vector embeddings)
+- Can migrate to hybrid search (lexical + semantic) later
+- Return Document objects with relevance score
+
+**Dependencies:** Story 12.1, 12.2
+
+---
+
+#### Story 12.10: Document Health KPIs and Monitoring
+**Points:** 3 | **Priority:** P2
+
+**Description:** Implement KPI tracking and health monitoring for document lifecycle system (Research Insight: measure effectiveness, enable continuous improvement).
+
+**Acceptance Criteria:**
+- [ ] `DocumentHealthMetrics` class for metrics collection
+- [ ] KPIs tracked: total docs, stale docs, docs needing review, orphaned docs
+- [ ] KPIs tracked: avg document age, most/least accessed docs
+- [ ] KPIs tracked: cache hit rate, avg query time, context injection rate
+- [ ] `collect_metrics()` returns comprehensive metrics dict
+- [ ] `generate_health_report()` produces markdown health report
+- [ ] CLI commands: `gao-dev lifecycle health`, `gao-dev lifecycle health --json`
+- [ ] Integration with logging for metric tracking
+- [ ] Unit tests for metric calculation
+
+**Technical Notes:**
+- Metrics stored in existing metrics database
+- Track document access patterns for "least accessed" detection
+- Stale document: not updated in >review_cadence days
+- Orphaned document: no relationships to other documents
+- 5S: Sustain - KPIs ensure practices continue
+
+**Dependencies:** Story 12.2, 12.7
 
 ---
 
 ### Epic Dependencies
 - **Requires:** Epic 10 (Prompt Abstraction) - COMPLETE
-- **Blocks:** Epic 12 (Meta-Prompts), Epic 15 (Context Layer)
+- **Blocks:** Epic 13 (Meta-Prompts), Epic 15 (Context Layer)
 
 ---
 
@@ -215,7 +347,7 @@
 - Each resolver implements resolve() method
 - Support for nested references (reference in referenced file)
 
-**Dependencies:** Epic 11 (Story 11.4)
+**Dependencies:** Epic 12 (Story 12.4)
 
 ---
 
@@ -339,7 +471,7 @@
 ---
 
 ### Epic Dependencies
-- **Requires:** Epic 11 (Document Lifecycle)
+- **Requires:** Epic 12 (Document Lifecycle)
 - **Blocks:** None (improves existing system)
 
 ---
@@ -482,7 +614,7 @@
 ---
 
 ### Epic Dependencies
-- **Requires:** Epic 11 (Document Lifecycle)
+- **Requires:** Epic 12 (Document Lifecycle)
 - **Integrates With:** Epic 12 (Meta-Prompts for @checklist: references)
 
 ---
@@ -652,7 +784,7 @@
 ---
 
 ### Epic Dependencies
-- **Requires:** Epic 11 (Document Lifecycle for document models)
+- **Requires:** Epic 12 (Document Lifecycle for document models)
 - **Blocks:** Epic 12 (@query: references), Epic 15 (Context persistence)
 
 ---
@@ -719,7 +851,7 @@
 - Lazy loading loads from DocumentLifecycleManager
 - Immutability prevents accidental mutations
 
-**Dependencies:** Epic 11 (Document Lifecycle)
+**Dependencies:** Epic 12 (Document Lifecycle)
 
 ---
 
@@ -767,7 +899,7 @@
 - Link to workflow_executions
 - Enable compliance auditing
 
-**Dependencies:** Story 15.3, Epic 11 (Document Lifecycle)
+**Dependencies:** Story 15.3, Epic 12 (Document Lifecycle)
 
 ---
 
@@ -795,7 +927,7 @@
 ---
 
 ### Epic Dependencies
-- **Requires:** Epic 11 (Document Lifecycle), Epic 14 (State Database)
+- **Requires:** Epic 12 (Document Lifecycle), Epic 14 (State Database)
 - **Enhances:** Epic 12 (Meta-Prompts use context cache)
 
 ---
@@ -805,7 +937,7 @@
 ### Critical Path
 
 ```
-Epic 11 (Document Lifecycle) → 2-3 weeks
+Epic 12 (Document Lifecycle) → 2-3 weeks
     ↓
 Epic 12 (Meta-Prompts) → 2 weeks
     ↓
@@ -817,8 +949,8 @@ Epic 15 (Context Persistence) → 1-2 weeks
 ### Parallel Work
 
 ```
-Epic 11 (weeks 1-3)
-    └─ Epic 13 (Checklists) can start after Epic 11 complete (weeks 4-5)
+Epic 12 (weeks 1-3)
+    └─ Epic 13 (Checklists) can start after Epic 12 complete (weeks 4-5)
 
 Epic 12 (weeks 4-5) ║ Epic 13 (weeks 4-5)
     ↓                    ↓
@@ -827,106 +959,173 @@ Epic 14 (weeks 6-8) ← needs both complete
 Epic 15 (weeks 9-10)
 ```
 
-### Recommended Sprint Breakdown
+### Recommended Sprint Breakdown (UPDATED with Enhancements)
 
-**Sprint 1 (Weeks 1-2): Foundation**
-- Epic 11: Stories 11.1, 11.2, 11.3, 11.4 (18 points)
-- Goal: Document lifecycle foundation working
+**Sprint 1 (Weeks 1-2): Foundation + Standards**
+- Epic 12: Stories 12.1 (Enhanced), 12.2, 12.3, 12.4 (18 points)
+- Epic 12: Story 12.8 - Document Templates (3 points)
+- **Total: 21 points**
+- Goal: Document lifecycle foundation with naming standards and templates
 
-**Sprint 2 (Weeks 3-4): Complete Document Lifecycle + Start Meta-Prompts**
-- Epic 11: Stories 11.5, 11.6 (10 points)
-- Epic 12: Stories 12.1, 12.2 (10 points)
-- Goal: Document system complete, meta-prompts started
+**Sprint 2 (Weeks 3-4): Scanning, Archival, Governance**
+- Epic 12: Story 12.5 - Scanning with 5S (5 points)
+- Epic 12: Story 12.6 - Archival + Retention (6 points)
+- Epic 12: Story 12.7 - Governance Framework (3 points)
+- Epic 12: Story 12.9 - Full-Text Search (5 points)
+- **Total: 19 points**
+- Goal: Complete document lifecycle with search and governance
 
-**Sprint 3 (Weeks 5-6): Meta-Prompts + Checklists**
-- Epic 12: Stories 12.3, 12.4, 12.5, 12.6 (16 points)
-- Epic 13: Stories 13.1, 13.2, 13.3 (13 points)
+**Sprint 3 (Weeks 5): Polish + Start Meta-Prompts**
+- Epic 12: Story 12.10 - Health KPIs (3 points)
+- Epic 13 (Meta-Prompts): Stories 13.1, 13.2 (10 points)
+- **Total: 13 points**
+- Goal: Epic 12 complete, meta-prompts started
+
+**Sprint 4 (Weeks 6-7): Complete Meta-Prompts + Checklists**
+- Epic 13: Stories 13.3, 13.4, 13.5, 13.6 (16 points)
+- Epic 14 (Checklists): Stories 14.1, 14.2 (8 points)
+- **Total: 24 points**
 - Goal: Meta-prompts complete, checklist foundation
 
-**Sprint 4 (Weeks 7-8): State Database**
-- Epic 13: Stories 13.4, 13.5 (8 points)
-- Epic 14: Stories 14.1, 14.2, 14.3 (17 points)
-- Goal: Checklist system complete, state database started
+**Sprint 5 (Weeks 8-9): Complete Checklists + State Database**
+- Epic 14: Stories 14.3, 14.4, 14.5 (13 points)
+- Epic 15 (State): Stories 15.1, 15.2 (11 points)
+- **Total: 24 points**
+- Goal: Checklists complete, state database started
 
-**Sprint 5 (Weeks 9-10): Complete State + Context Layer**
-- Epic 14: Stories 14.4, 14.5, 14.6 (12 points)
-- Epic 15: Stories 15.1, 15.2, 15.3, 15.4, 15.5 (20 points)
+**Sprint 6 (Weeks 10-11): Complete State + Context Layer**
+- Epic 15: Stories 15.3, 15.4, 15.5, 15.6 (18 points)
+- Epic 16 (Context): Stories 16.1, 16.2 (7 points)
+- **Total: 25 points**
+- Goal: State database complete, context layer started
+
+**Sprint 7 (Weeks 12-13): Complete Context Layer + Integration**
+- Epic 16: Stories 16.3, 16.4, 16.5 (13 points)
+- Integration testing and bug fixes
+- **Total: 13+ points**
 - Goal: All epics complete, system integrated
 
 ---
 
-## Total Effort Summary
+## Total Effort Summary (UPDATED with Research Enhancements)
 
-| Epic | Story Points | Duration | Priority |
-|------|--------------|----------|----------|
-| Epic 11: Document Lifecycle | 28 | 2-3 weeks | P0 |
-| Epic 12: Meta-Prompts | 26 | 2 weeks | P0 |
-| Epic 13: Checklists | 21 | 1-2 weeks | P1 |
-| Epic 14: State Database | 29 | 2-3 weeks | P0 |
-| Epic 15: Context Persistence | 20 | 1-2 weeks | P1 |
-| **TOTAL** | **124 points** | **8-12 weeks** | - |
+| Epic | Story Points | Duration | Priority | Notes |
+|------|--------------|----------|----------|-------|
+| Epic 12: Document Lifecycle | **44** | 3-4 weeks | P0 | **+16 pts** from research insights |
+| Epic 13: Meta-Prompts | 26 | 2 weeks | P0 | |
+| Epic 14: Checklists | 21 | 1-2 weeks | P1 | |
+| Epic 15: State Database | 29 | 2-3 weeks | P0 | |
+| Epic 16: Context Persistence | 20 | 1-2 weeks | P1 | |
+| **TOTAL** | **140 points** | **9-13 weeks** | - | Was 124 pts, 8-12 weeks |
+
+### What Was Added (Research Team Insights)
+- ✅ Naming Convention Standard (integrated into 12.1)
+- ✅ YAML Frontmatter Schema (integrated into 12.1)
+- ✅ Retention Policy Framework (+1 pt to 12.6)
+- ✅ Document Governance Framework (Story 12.7: 3 pts)
+- ✅ Document Templates System (Story 12.8: 3 pts)
+- ✅ Full-Text Search FTS5 (Story 12.9: 5 pts)
+- ✅ Document Health KPIs (Story 12.10: 3 pts)
+- ✅ 5S Methodology (integrated throughout, 0 pts)
 
 ### Team Velocity Assumptions
 - 1 developer full-time: ~20 points/week
 - 2 developers full-time: ~35 points/week
 - With testing/refactoring overhead: ~15-20 points/week/developer
+- **Recommended:** 2 developers for optimal velocity (Amelia + rotating support)
 
 ### Risk Buffer
-- Add 20% buffer for unknowns: 10-14 weeks
-- Add 30% buffer for integration issues: 10-16 weeks
+- Add 20% buffer for unknowns: 11-16 weeks
+- Add 30% buffer for integration issues: 12-17 weeks
+- **Conservative estimate:** 12-14 weeks (3-3.5 months)
 
 ---
 
-## Implementation Order
+## Implementation Order (UPDATED)
 
-### Phase 1: MVP (Epics 11, 12, 14)
-**Duration:** 6-8 weeks
-**Deliverable:** Core lifecycle + meta-prompts + state tracking
+### Phase 1: Foundation with Excellence Standards (Epic 12 Enhanced)
+**Duration:** 4-5 weeks (was 2-3 weeks)
+**Deliverable:** Complete document lifecycle with governance, search, and templates
 
-**Reason:** These three epics provide the minimum viable system:
-- Document tracking (Epic 11)
-- Context injection (Epic 12)
-- Queryable state (Epic 14)
+**Reason:** Epic 12 now includes research insights for production-grade system:
+- Document tracking with standardized naming and frontmatter (12.1)
+- Full lifecycle management (12.2-12.4)
+- 5S-based scanning and retention policies (12.5-12.6)
+- Governance framework prevents document rot (12.7)
+- Templates reduce friction (12.8)
+- FTS5 search enables discovery (12.9)
+- KPIs measure effectiveness (12.10)
 
-### Phase 2: Quality & Performance (Epics 13, 15)
-**Duration:** 2-4 weeks
-**Deliverable:** Checklists + context caching
+### Phase 2: Context Injection (Epics 13, 14)
+**Duration:** 3-4 weeks
+**Deliverable:** Meta-prompts + checklists
 
-**Reason:** These epics enhance the MVP:
-- Reusable checklists (Epic 13)
-- Performance optimization (Epic 15)
+**Reason:** Build on solid document foundation:
+- Meta-prompt engine with @doc:, @checklist:, @query: references (Epic 13)
+- YAML-based reusable checklists (Epic 14)
 
-### Phase 3: Polish & Optimization
+### Phase 3: State & Context (Epics 15, 16)
+**Duration:** 3-4 weeks
+**Deliverable:** Queryable state + context persistence
+
+**Reason:** Complete the integrated system:
+- SQLite state tracking with markdown sync (Epic 15)
+- Context caching and persistence (Epic 16)
+
+### Phase 4: Integration & Polish
 **Duration:** 1-2 weeks
-**Deliverable:** Bug fixes, performance tuning, documentation
+**Deliverable:** Integration testing, bug fixes, performance tuning, documentation
 
-**Reason:** Final polish before production use
+**Reason:** Final polish before production use:
+- End-to-end testing across all components
+- Performance optimization based on benchmarks
+- Documentation and migration guides
+- Backwards compatibility verification
 
 ---
 
-## Success Metrics
+## Success Metrics (UPDATED with Research Enhancements)
 
-### MVP Success (After Phase 1)
-- [ ] All documents tracked in registry
-- [ ] @doc: and @query: references working in 10+ prompts
-- [ ] Story/epic status queryable in <50ms
+### Phase 1 Success (Enhanced Document Lifecycle)
+- [ ] All documents tracked in registry with standardized naming
+- [ ] 100% of documents follow naming convention: `{DocType}_{subject}_{date}_v{version}.{ext}`
+- [ ] YAML frontmatter present in 100% of new documents
+- [ ] Full-text search returns results in <200ms for 10K documents
+- [ ] Document templates reduce creation time by 80% (measured)
+- [ ] Governance framework: 100% of documents have owner and review_due_date
+- [ ] Retention policies prevent accumulation of stale documents
+- [ ] 5S principles applied: no orphaned/temp files in production docs
+- [ ] Health KPIs dashboard shows system effectiveness
 - [ ] Zero breaking changes to existing workflows
-- [ ] Developer productivity: No increase in prompt complexity
 
-### Full System Success (After Phase 2)
-- [ ] 20+ checklists available
+### Phase 2 Success (Context Injection)
+- [ ] @doc:, @checklist:, @query:, @context: references working in 10+ prompts
+- [ ] Context injection reduces manual context by 90%
+- [ ] 20+ checklists available in YAML format
+- [ ] Agent prompt size reduced by 50%
+
+### Phase 3 Success (State & Context)
+- [ ] Story/epic status queryable in <50ms
+- [ ] Markdown-SQLite bidirectional sync working with zero data loss
 - [ ] Context cache hit rate >80%
 - [ ] Document reads reduced by 80%
-- [ ] Agent prompt size reduced by 50%
+
+### Full System Success (After Phase 4)
 - [ ] Works across dev, ops, legal, research domains
 - [ ] Plugin developers can extend all systems
+- [ ] Professional documentation appearance (naming, frontmatter, templates)
+- [ ] Document discovery improved 10x (measured by time to find)
+- [ ] Compliance-ready with retention policies and audit trails
+- [ ] Zero stale documents (>review_cadence days without review)
 
 ### Performance Targets
 - [ ] System overhead <5%
 - [ ] Document queries <100ms
+- [ ] Full-text search <200ms
 - [ ] Reference resolution <50ms per reference
 - [ ] Context cache hit <1ms
 - [ ] State queries <50ms
+- [ ] Template generation <1 second
 
 ---
 

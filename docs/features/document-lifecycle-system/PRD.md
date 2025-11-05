@@ -179,27 +179,27 @@ state_db.get_document_lineage(path="docs/PRD.md")
 
 ## User Stories
 
-### Epic 11: Document Lifecycle Management
+### Epic 12: Document Lifecycle Management
 
-**US-11.1: As a system administrator, I want all documents tracked with lifecycle metadata so I can understand document states and relationships**
+**US-12.1: As a system administrator, I want all documents tracked with lifecycle metadata so I can understand document states and relationships**
 - Documents have state (draft, active, obsolete, archived)
 - Metadata includes author, dates, type, relationships
 - Query interface for finding documents
 - Automatic state transitions
 
-**US-11.2: As a developer, I want obsolete documents automatically archived so the docs folder doesn't accumulate stale files**
+**US-12.2: As a developer, I want obsolete documents automatically archived so the docs folder doesn't accumulate stale files**
 - Configurable archival rules
 - Automatic archival on state transition
 - Archived documents moved to `.archive/` subdirectory
 - Metadata preserved in lifecycle database
 
-**US-11.3: As an agent, I want to query current documents so I only read relevant, up-to-date information**
+**US-12.3: As an agent, I want to query current documents so I only read relevant, up-to-date information**
 - `get_current_prd()` returns active PRD
 - `get_current_architecture()` returns active architecture
 - `get_epic_context(epic_num)` returns epic definition + related docs
 - Performance: <100ms for queries
 
-**US-11.4: As a product manager, I want to track document lineage so I understand which documents led to which implementations**
+**US-12.4: As a product manager, I want to track document lineage so I understand which documents led to which implementations**
 - PRD → Architecture → Epics → Stories → Implementations
 - Query: "Which stories relate to this PRD?"
 - Query: "Which code files were created for this story?"
@@ -822,7 +822,7 @@ CREATE TABLE context_usage (
 
 ## Success Criteria
 
-### Epic 11: Document Lifecycle Management
+### Epic 12: Document Lifecycle Management
 - All documents tracked in lifecycle database (100% coverage)
 - Document queries return results in <100ms
 - Archival system moves obsolete documents automatically
@@ -933,8 +933,8 @@ CREATE TABLE context_usage (
 - Plugin system must be extensible
 
 ### Timeline Constraints
-- Epic 11: 2-3 weeks (foundational)
-- Epic 12: 2 weeks (builds on Epic 11)
+- Epic 12: 2-3 weeks (foundational)
+- Epic 12: 2 weeks (builds on Epic 12)
 - Epic 13: 1-2 weeks (parallel with Epic 12)
 - Epic 14: 2-3 weeks (critical path)
 - Epic 15: 1-2 weeks (polish)
@@ -1078,7 +1078,7 @@ Based on codebase analysis, these documents are currently created:
 
 ### Migration Path
 
-**Phase 1: Document Registry (Epic 11)**
+**Phase 1: Document Registry (Epic 12)**
 1. Scan existing documents
 2. Import metadata to database
 3. Set initial states (all "active")

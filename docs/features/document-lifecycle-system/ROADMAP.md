@@ -48,26 +48,26 @@ This roadmap defines the implementation strategy for transforming GAO-Dev into a
 
 ```
 Phase 1: Foundation (Weeks 1-8)
-├── Epic 11.1: Document Lifecycle Management
+├── Epic 12.1: Document Lifecycle Management
 │
 Phase 2: Context System (Weeks 9-14)
-├── Epic 11.2: Meta-Prompt System
+├── Epic 12.2: Meta-Prompt System
 │
 Phase 3: Quality Gates (Weeks 15-18)
-├── Epic 11.3: Checklist Management
+├── Epic 12.3: Checklist Management
 │
 Phase 4: State Tracking (Weeks 19-26)
-├── Epic 11.4: Context Persistence & Workflow Tracking
+├── Epic 12.4: Context Persistence & Workflow Tracking
 │
 Phase 5: Domain Support (Weeks 27-32)
-└── Epic 11.5: Domain Abstraction
+└── Epic 12.5: Domain Abstraction
 ```
 
 ---
 
 ## Epic Breakdown
 
-### Epic 11.1: Document Lifecycle Management
+### Epic 12.1: Document Lifecycle Management
 
 **Goal:** Automate document management through lifecycle stages (draft → active → archived → deleted)
 
@@ -87,7 +87,7 @@ Phase 5: Domain Support (Weeks 27-32)
 
 ---
 
-### Epic 11.2: Meta-Prompt System
+### Epic 12.2: Meta-Prompt System
 
 **Goal:** Enable dynamic context injection into prompts via @doc:, @prompt:, @checklist: references
 
@@ -106,7 +106,7 @@ Phase 5: Domain Support (Weeks 27-32)
 
 ---
 
-### Epic 11.3: Checklist Management System
+### Epic 12.3: Checklist Management System
 
 **Goal:** Structured, domain-specific checklists with automated validation
 
@@ -125,7 +125,7 @@ Phase 5: Domain Support (Weeks 27-32)
 
 ---
 
-### Epic 11.4: Context Persistence & Workflow Tracking
+### Epic 12.4: Context Persistence & Workflow Tracking
 
 **Goal:** SQLite database for queryable project state while keeping markdown for content
 
@@ -145,7 +145,7 @@ Phase 5: Domain Support (Weeks 27-32)
 
 ---
 
-### Epic 11.5: Domain Abstraction
+### Epic 12.5: Domain Abstraction
 
 **Goal:** Support any domain (software, ops, legal, research) through configuration
 
@@ -167,9 +167,9 @@ Phase 5: Domain Support (Weeks 27-32)
 
 ## Detailed Story Outlines
 
-### Epic 11.1: Document Lifecycle Management (8 weeks, 34 pts)
+### Epic 12.1: Document Lifecycle Management (8 weeks, 34 pts)
 
-#### Story 11.1.1: Document Classification & Metadata System (5 pts)
+#### Story 12.1.1: Document Classification & Metadata System (5 pts)
 
 **Owner:** Winston (Architect) + Amelia (Developer)
 **Dependencies:** None
@@ -195,10 +195,10 @@ Create document classification system with three categories: persistent, ephemer
 
 ---
 
-#### Story 11.1.2: Lifecycle State Machine (5 pts)
+#### Story 12.1.2: Lifecycle State Machine (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.1.1
+**Dependencies:** 12.1.1
 **Priority:** P0
 
 **Description:**
@@ -221,10 +221,10 @@ Implement state machine for document lifecycle transitions with validation and a
 
 ---
 
-#### Story 11.1.3: DocumentManager Service (8 pts)
+#### Story 12.1.3: DocumentManager Service (8 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.1.1, 11.1.2
+**Dependencies:** 12.1.1, 12.1.2
 **Priority:** P0
 
 **Description:**
@@ -247,10 +247,10 @@ Create DocumentManager service to manage document lifecycle, relationships, and 
 
 ---
 
-#### Story 11.1.4: Automatic Archival System (5 pts)
+#### Story 12.1.4: Automatic Archival System (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.1.3
+**Dependencies:** 12.1.3
 **Priority:** P1
 
 **Description:**
@@ -273,10 +273,10 @@ Implement background job to automatically archive completed epic documents after
 
 ---
 
-#### Story 11.1.5: Automatic Deletion System (3 pts)
+#### Story 12.1.5: Automatic Deletion System (3 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.1.4
+**Dependencies:** 12.1.4
 **Priority:** P1
 
 **Description:**
@@ -299,10 +299,10 @@ Implement automatic deletion of ephemeral documents (test reports, temp files) a
 
 ---
 
-#### Story 11.1.6: Document Versioning System (5 pts)
+#### Story 12.1.6: Document Versioning System (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.1.3
+**Dependencies:** 12.1.3
 **Priority:** P1
 
 **Description:**
@@ -325,10 +325,10 @@ Implement versioning for key documents (PRD, Architecture) with version comparis
 
 ---
 
-#### Story 11.1.7: Migration & Testing (3 pts)
+#### Story 12.1.7: Migration & Testing (3 pts)
 
 **Owner:** Amelia (Developer) + Murat (QA)
-**Dependencies:** 11.1.1-11.1.6
+**Dependencies:** 12.1.1-12.1.6
 **Priority:** P0
 
 **Description:**
@@ -351,12 +351,12 @@ Migrate existing documents to new system, comprehensive testing, and documentati
 
 ---
 
-### Epic 11.2: Meta-Prompt System (6 weeks, 28 pts)
+### Epic 12.2: Meta-Prompt System (6 weeks, 28 pts)
 
-#### Story 11.2.1: @doc: Reference Resolution (5 pts)
+#### Story 12.2.1: @doc: Reference Resolution (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** Epic 11.1 complete
+**Dependencies:** Epic 12.1 complete
 **Priority:** P0
 
 **Description:**
@@ -379,10 +379,10 @@ Implement @doc: syntax to include document content and sections in prompts.
 
 ---
 
-#### Story 11.2.2: @prompt: Composition (3 pts)
+#### Story 12.2.2: @prompt: Composition (3 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.2.1
+**Dependencies:** 12.2.1
 **Priority:** P0
 
 **Description:**
@@ -405,10 +405,10 @@ Implement @prompt: syntax to compose prompts from reusable pieces.
 
 ---
 
-#### Story 11.2.3: @checklist: Integration (3 pts)
+#### Story 12.2.3: @checklist: Integration (3 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.2.2, Epic 11.3 (or stub)
+**Dependencies:** 12.2.2, Epic 12.3 (or stub)
 **Priority:** P1
 
 **Description:**
@@ -430,10 +430,10 @@ Implement @checklist: syntax to include quality checklists in prompts.
 
 ---
 
-#### Story 11.2.4: @query: Database Queries (5 pts)
+#### Story 12.2.4: @query: Database Queries (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.2.3, Epic 11.4 (or stub)
+**Dependencies:** 12.2.3, Epic 12.4 (or stub)
 **Priority:** P1
 
 **Description:**
@@ -456,10 +456,10 @@ Implement @query: syntax to run database queries and inject results into prompts
 
 ---
 
-#### Story 11.2.5: Context Injection System (5 pts)
+#### Story 12.2.5: Context Injection System (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.2.1-11.2.4
+**Dependencies:** 12.2.1-12.2.4
 **Priority:** P0
 
 **Description:**
@@ -482,10 +482,10 @@ Implement automatic context injection based on ExecutionContext.
 
 ---
 
-#### Story 11.2.6: PromptExpander Service (5 pts)
+#### Story 12.2.6: PromptExpander Service (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.2.1-11.2.5
+**Dependencies:** 12.2.1-12.2.5
 **Priority:** P0
 
 **Description:**
@@ -509,10 +509,10 @@ Create unified PromptExpander service that orchestrates all expansion logic.
 
 ---
 
-#### Story 11.2.7: Integration & Testing (2 pts)
+#### Story 12.2.7: Integration & Testing (2 pts)
 
 **Owner:** Amelia (Developer) + Murat (QA)
-**Dependencies:** 11.2.1-11.2.6
+**Dependencies:** 12.2.1-12.2.6
 **Priority:** P0
 
 **Description:**
@@ -535,9 +535,9 @@ Integration testing, performance optimization, and documentation.
 
 ---
 
-### Epic 11.3: Checklist Management System (4 weeks, 20 pts)
+### Epic 12.3: Checklist Management System (4 weeks, 20 pts)
 
-#### Story 11.3.1: Structured Checklist Format (3 pts)
+#### Story 12.3.1: Structured Checklist Format (3 pts)
 
 **Owner:** Amelia (Developer)
 **Dependencies:** None
@@ -563,10 +563,10 @@ Define YAML format for checklists with metadata, items, severity levels, and aut
 
 ---
 
-#### Story 11.3.2: ChecklistManager Service (5 pts)
+#### Story 12.3.2: ChecklistManager Service (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.3.1
+**Dependencies:** 12.3.1
 **Priority:** P1
 
 **Description:**
@@ -589,10 +589,10 @@ Create ChecklistManager service to load, query, and manage checklists.
 
 ---
 
-#### Story 11.3.3: Core Checklists Creation (3 pts)
+#### Story 12.3.3: Core Checklists Creation (3 pts)
 
 **Owner:** John (PM) + Amelia (Developer)
-**Dependencies:** 11.3.1
+**Dependencies:** 12.3.1
 **Priority:** P1
 
 **Description:**
@@ -620,10 +620,10 @@ Create 10+ core checklists for software engineering domain.
 
 ---
 
-#### Story 11.3.4: Checklist Validation Engine (5 pts)
+#### Story 12.3.4: Checklist Validation Engine (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.3.2
+**Dependencies:** 12.3.2
 **Priority:** P1
 
 **Description:**
@@ -647,10 +647,10 @@ Implement automated validation engine that runs checklist checks.
 
 ---
 
-#### Story 11.3.5: Plugin Support for Checklists (3 pts)
+#### Story 12.3.5: Plugin Support for Checklists (3 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.3.2
+**Dependencies:** 12.3.2
 **Priority:** P2
 
 **Description:**
@@ -672,10 +672,10 @@ Enable plugins to register custom checklists for specialized domains.
 
 ---
 
-#### Story 11.3.6: Integration & Testing (1 pt)
+#### Story 12.3.6: Integration & Testing (1 pt)
 
 **Owner:** Murat (QA)
-**Dependencies:** 11.3.1-11.3.5
+**Dependencies:** 12.3.1-12.3.5
 **Priority:** P1
 
 **Description:**
@@ -696,9 +696,9 @@ End-to-end testing and documentation.
 
 ---
 
-### Epic 11.4: Context Persistence & Workflow Tracking (8 weeks, 42 pts)
+### Epic 12.4: Context Persistence & Workflow Tracking (8 weeks, 42 pts)
 
-#### Story 11.4.1: Database Schema Design (5 pts)
+#### Story 12.4.1: Database Schema Design (5 pts)
 
 **Owner:** Winston (Architect) + Amelia (Developer)
 **Dependencies:** None
@@ -724,10 +724,10 @@ Design comprehensive SQLite schema for epics, stories, sprints, documents, workf
 
 ---
 
-#### Story 11.4.2: Database Infrastructure (3 pts)
+#### Story 12.4.2: Database Infrastructure (3 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.4.1
+**Dependencies:** 12.4.1
 **Priority:** P0
 
 **Description:**
@@ -750,10 +750,10 @@ Create database infrastructure with connection management and migrations.
 
 ---
 
-#### Story 11.4.3: Story Repository Service (5 pts)
+#### Story 12.4.3: Story Repository Service (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.4.2
+**Dependencies:** 12.4.2
 **Priority:** P0
 
 **Description:**
@@ -776,10 +776,10 @@ Create StoryRepository for story CRUD operations and queries.
 
 ---
 
-#### Story 11.4.4: Story State Machine Implementation (3 pts)
+#### Story 12.4.4: Story State Machine Implementation (3 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.4.3
+**Dependencies:** 12.4.3
 **Priority:** P0
 
 **Description:**
@@ -802,10 +802,10 @@ Implement state machine for story lifecycle with validation.
 
 ---
 
-#### Story 11.4.5: Epic Repository Service (3 pts)
+#### Story 12.4.5: Epic Repository Service (3 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.4.2
+**Dependencies:** 12.4.2
 **Priority:** P1
 
 **Description:**
@@ -828,10 +828,10 @@ Create EpicRepository for epic CRUD operations and queries.
 
 ---
 
-#### Story 11.4.6: Sprint Repository Service (3 pts)
+#### Story 12.4.6: Sprint Repository Service (3 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.4.2
+**Dependencies:** 12.4.2
 **Priority:** P1
 
 **Description:**
@@ -854,10 +854,10 @@ Create SprintRepository for sprint tracking and velocity calculation.
 
 ---
 
-#### Story 11.4.7: Migration from sprint-status.yaml (8 pts)
+#### Story 12.4.7: Migration from sprint-status.yaml (8 pts)
 
 **Owner:** Amelia (Developer) + Bob (Scrum Master)
-**Dependencies:** 11.4.3, 11.4.5, 11.4.6
+**Dependencies:** 12.4.3, 12.4.5, 12.4.6
 **Priority:** P0
 
 **Description:**
@@ -881,10 +881,10 @@ Migrate existing sprint-status.yaml data to SQLite database.
 
 ---
 
-#### Story 11.4.8: Sync Layer (Database ↔ Markdown) (5 pts)
+#### Story 12.4.8: Sync Layer (Database ↔ Markdown) (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.4.7
+**Dependencies:** 12.4.7
 **Priority:** P0
 
 **Description:**
@@ -907,10 +907,10 @@ Keep database and markdown synchronized during transition period.
 
 ---
 
-#### Story 11.4.9: Query API & CLI Commands (5 pts)
+#### Story 12.4.9: Query API & CLI Commands (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.4.3-11.4.8
+**Dependencies:** 12.4.3-12.4.8
 **Priority:** P1
 
 **Description:**
@@ -934,10 +934,10 @@ Create query API and CLI commands for common queries.
 
 ---
 
-#### Story 11.4.10: Integration & Testing (2 pts)
+#### Story 12.4.10: Integration & Testing (2 pts)
 
 **Owner:** Murat (QA)
-**Dependencies:** 11.4.1-11.4.9
+**Dependencies:** 12.4.1-12.4.9
 **Priority:** P0
 
 **Description:**
@@ -960,9 +960,9 @@ Comprehensive testing, performance validation, and documentation.
 
 ---
 
-### Epic 11.5: Domain Abstraction (6 weeks, 33 pts)
+### Epic 12.5: Domain Abstraction (6 weeks, 33 pts)
 
-#### Story 11.5.1: Domain Configuration Format (3 pts)
+#### Story 12.5.1: Domain Configuration Format (3 pts)
 
 **Owner:** Winston (Architect)
 **Dependencies:** None
@@ -988,10 +988,10 @@ Define YAML format for domain configurations.
 
 ---
 
-#### Story 11.5.2: DomainManager Service (5 pts)
+#### Story 12.5.2: DomainManager Service (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.5.1
+**Dependencies:** 12.5.1
 **Priority:** P1
 
 **Description:**
@@ -1014,10 +1014,10 @@ Create DomainManager service to load and manage domains.
 
 ---
 
-#### Story 11.5.3: Extract Software Engineering Domain (8 pts)
+#### Story 12.5.3: Extract Software Engineering Domain (8 pts)
 
 **Owner:** Amelia (Developer) + Winston (Architect)
-**Dependencies:** 11.5.2
+**Dependencies:** 12.5.2
 **Priority:** P0
 
 **Description:**
@@ -1041,10 +1041,10 @@ Extract software engineering configuration to domain file.
 
 ---
 
-#### Story 11.5.4: Multi-Domain Project Support (5 pts)
+#### Story 12.5.4: Multi-Domain Project Support (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.5.3
+**Dependencies:** 12.5.3
 **Priority:** P1
 
 **Description:**
@@ -1067,10 +1067,10 @@ Support projects using multiple domains simultaneously.
 
 ---
 
-#### Story 11.5.5: Domain Plugin System (5 pts)
+#### Story 12.5.5: Domain Plugin System (5 pts)
 
 **Owner:** Amelia (Developer)
-**Dependencies:** 11.5.2
+**Dependencies:** 12.5.2
 **Priority:** P1
 
 **Description:**
@@ -1092,10 +1092,10 @@ Enable plugins to provide complete domain configurations.
 
 ---
 
-#### Story 11.5.6: Create gao-ops Domain (3 pts)
+#### Story 12.5.6: Create gao-ops Domain (3 pts)
 
 **Owner:** John (PM) + Amelia (Developer)
-**Dependencies:** 11.5.2, 11.5.5
+**Dependencies:** 12.5.2, 12.5.5
 **Priority:** P2
 
 **Description:**
@@ -1118,10 +1118,10 @@ Create operations/DevOps domain as reference implementation.
 
 ---
 
-#### Story 11.5.7: Create gao-legal and gao-research Domains (2 pts)
+#### Story 12.5.7: Create gao-legal and gao-research Domains (2 pts)
 
 **Owner:** John (PM) + Amelia (Developer)
-**Dependencies:** 11.5.6
+**Dependencies:** 12.5.6
 **Priority:** P2
 
 **Description:**
@@ -1143,10 +1143,10 @@ Create legal and research domains as additional examples.
 
 ---
 
-#### Story 11.5.8: Integration & Testing (2 pts)
+#### Story 12.5.8: Integration & Testing (2 pts)
 
 **Owner:** Murat (QA)
-**Dependencies:** 11.5.1-11.5.7
+**Dependencies:** 12.5.1-12.5.7
 **Priority:** P1
 
 **Description:**
@@ -1174,64 +1174,64 @@ End-to-end testing, plugin development guide, and documentation.
 ### Critical Path
 
 ```
-Epic 11.1 (Document Lifecycle)
-  └─> Epic 11.2 (Meta-Prompt System)
-        └─> Epic 11.3 (Checklist Management)
-              └─> Epic 11.4 (Context Persistence)
-                    └─> Epic 11.5 (Domain Abstraction)
+Epic 12.1 (Document Lifecycle)
+  └─> Epic 12.2 (Meta-Prompt System)
+        └─> Epic 12.3 (Checklist Management)
+              └─> Epic 12.4 (Context Persistence)
+                    └─> Epic 12.5 (Domain Abstraction)
 ```
 
 **Note:** Epics must be completed sequentially due to dependencies.
 
 ### Parallel Work Opportunities
 
-**During Epic 11.1:**
-- Can start design work on Epic 11.2 (meta-prompt syntax)
-- Can start checklist content creation (Epic 11.3.3)
+**During Epic 12.1:**
+- Can start design work on Epic 12.2 (meta-prompt syntax)
+- Can start checklist content creation (Epic 12.3.3)
 
-**During Epic 11.2:**
-- Can start database schema design (Epic 11.4.1)
-- Can start checklist format design (Epic 11.3.1)
+**During Epic 12.2:**
+- Can start database schema design (Epic 12.4.1)
+- Can start checklist format design (Epic 12.3.1)
 
-**During Epic 11.4:**
-- Can start domain format design (Epic 11.5.1)
+**During Epic 12.4:**
+- Can start domain format design (Epic 12.5.1)
 
 ### Story Dependencies Within Epics
 
-**Epic 11.1:**
-- 11.1.1 → 11.1.2 → 11.1.3
-- 11.1.3 → 11.1.4 → 11.1.5
-- 11.1.3 → 11.1.6
-- 11.1.1-11.1.6 → 11.1.7
+**Epic 12.1:**
+- 12.1.1 → 12.1.2 → 12.1.3
+- 12.1.3 → 12.1.4 → 12.1.5
+- 12.1.3 → 12.1.6
+- 12.1.1-12.1.6 → 12.1.7
 
-**Epic 11.2:**
-- 11.2.1 → 11.2.2 → 11.2.3 → 11.2.4 → 11.2.5 → 11.2.6 → 11.2.7
+**Epic 12.2:**
+- 12.2.1 → 12.2.2 → 12.2.3 → 12.2.4 → 12.2.5 → 12.2.6 → 12.2.7
 
-**Epic 11.3:**
-- 11.3.1 → 11.3.2
-- 11.3.1 → 11.3.3 (parallel with 11.3.2)
-- 11.3.2 → 11.3.4
-- 11.3.2 → 11.3.5 (parallel with 11.3.4)
-- 11.3.1-11.3.5 → 11.3.6
+**Epic 12.3:**
+- 12.3.1 → 12.3.2
+- 12.3.1 → 12.3.3 (parallel with 12.3.2)
+- 12.3.2 → 12.3.4
+- 12.3.2 → 12.3.5 (parallel with 12.3.4)
+- 12.3.1-12.3.5 → 12.3.6
 
-**Epic 11.4:**
-- 11.4.1 → 11.4.2
-- 11.4.2 → 11.4.3 → 11.4.4
-- 11.4.2 → 11.4.5 (parallel with 11.4.3)
-- 11.4.2 → 11.4.6 (parallel with 11.4.3)
-- 11.4.3, 11.4.5, 11.4.6 → 11.4.7
-- 11.4.7 → 11.4.8
-- 11.4.3-11.4.8 → 11.4.9
-- 11.4.1-11.4.9 → 11.4.10
+**Epic 12.4:**
+- 12.4.1 → 12.4.2
+- 12.4.2 → 12.4.3 → 12.4.4
+- 12.4.2 → 12.4.5 (parallel with 12.4.3)
+- 12.4.2 → 12.4.6 (parallel with 12.4.3)
+- 12.4.3, 12.4.5, 12.4.6 → 12.4.7
+- 12.4.7 → 12.4.8
+- 12.4.3-12.4.8 → 12.4.9
+- 12.4.1-12.4.9 → 12.4.10
 
-**Epic 11.5:**
-- 11.5.1 → 11.5.2
-- 11.5.2 → 11.5.3
-- 11.5.2 → 11.5.5 (parallel with 11.5.3)
-- 11.5.3 → 11.5.4
-- 11.5.2, 11.5.5 → 11.5.6
-- 11.5.6 → 11.5.7
-- 11.5.1-11.5.7 → 11.5.8
+**Epic 12.5:**
+- 12.5.1 → 12.5.2
+- 12.5.2 → 12.5.3
+- 12.5.2 → 12.5.5 (parallel with 12.5.3)
+- 12.5.3 → 12.5.4
+- 12.5.2, 12.5.5 → 12.5.6
+- 12.5.6 → 12.5.7
+- 12.5.1-12.5.7 → 12.5.8
 
 ---
 
@@ -1252,17 +1252,17 @@ Epic 11.1 (Document Lifecycle)
 
 ### Sprint Planning (2-week sprints)
 
-**Sprint 1-2 (Weeks 1-4):** Epic 11.1 Stories 1-4
-**Sprint 3 (Weeks 5-6):** Epic 11.1 Stories 5-7
-**Sprint 4-5 (Weeks 7-10):** Epic 11.2 Stories 1-4
-**Sprint 6 (Weeks 11-12):** Epic 11.2 Stories 5-7
-**Sprint 7 (Weeks 13-14):** Epic 11.3 Stories 1-3
-**Sprint 8 (Weeks 15-16):** Epic 11.3 Stories 4-6
-**Sprint 9-10 (Weeks 17-20):** Epic 11.4 Stories 1-5
-**Sprint 11-12 (Weeks 21-24):** Epic 11.4 Stories 6-10
-**Sprint 13 (Weeks 25-26):** Epic 11.5 Stories 1-3
-**Sprint 14-15 (Weeks 27-30):** Epic 11.5 Stories 4-7
-**Sprint 16 (Weeks 31-32):** Epic 11.5 Story 8, Final Integration
+**Sprint 1-2 (Weeks 1-4):** Epic 12.1 Stories 1-4
+**Sprint 3 (Weeks 5-6):** Epic 12.1 Stories 5-7
+**Sprint 4-5 (Weeks 7-10):** Epic 12.2 Stories 1-4
+**Sprint 6 (Weeks 11-12):** Epic 12.2 Stories 5-7
+**Sprint 7 (Weeks 13-14):** Epic 12.3 Stories 1-3
+**Sprint 8 (Weeks 15-16):** Epic 12.3 Stories 4-6
+**Sprint 9-10 (Weeks 17-20):** Epic 12.4 Stories 1-5
+**Sprint 11-12 (Weeks 21-24):** Epic 12.4 Stories 6-10
+**Sprint 13 (Weeks 25-26):** Epic 12.5 Stories 1-3
+**Sprint 14-15 (Weeks 27-30):** Epic 12.5 Stories 4-7
+**Sprint 16 (Weeks 31-32):** Epic 12.5 Story 8, Final Integration
 
 ### Capacity Planning
 
@@ -1273,7 +1273,7 @@ Epic 11.1 (Document Lifecycle)
 - Timeline: 32 weeks includes buffer for reviews, testing, iteration
 
 **Winston (Architect):**
-- Needed for: 11.1.1, 11.4.1, 11.5.1, 11.5.3
+- Needed for: 12.1.1, 12.4.1, 12.5.1, 12.5.3
 - Total: ~25 hours over 32 weeks (feasible with 20% allocation)
 
 **Murat (QA):**
@@ -1286,7 +1286,7 @@ Epic 11.1 (Document Lifecycle)
 
 ### High Risks
 
-#### 1. Database Migration Complexity (Epic 11.4.7)
+#### 1. Database Migration Complexity (Epic 12.4.7)
 
 **Risk:** Data loss or corruption during sprint-status.yaml migration
 **Probability:** Medium
@@ -1304,7 +1304,7 @@ Epic 11.1 (Document Lifecycle)
 - If migration fails, keep dual-write mode longer
 - Manual data validation by Bob (Scrum Master)
 
-#### 2. Performance Degradation (Epic 11.2)
+#### 2. Performance Degradation (Epic 12.2)
 
 **Risk:** Meta-prompt expansion slows execution by >2x
 **Probability:** Medium
@@ -1312,7 +1312,7 @@ Epic 11.1 (Document Lifecycle)
 **Timeline Impact:** Could add 1-2 weeks for optimization
 
 **Mitigation:**
-- Performance benchmarking early (Story 11.2.1)
+- Performance benchmarking early (Story 12.2.1)
 - Aggressive caching strategy
 - Lazy loading of referenced documents
 - Parallel expansion where possible
@@ -1321,7 +1321,7 @@ Epic 11.1 (Document Lifecycle)
 - Reduce scope of automatic context injection
 - Make some references explicit (manual inclusion)
 
-#### 3. Backward Compatibility Breaks (Epic 11.5.3)
+#### 3. Backward Compatibility Breaks (Epic 12.5.3)
 
 **Risk:** Domain extraction breaks existing projects
 **Probability:** Low
@@ -1354,7 +1354,7 @@ Epic 11.1 (Document Lifecycle)
 
 **Contingency:**
 - Prioritize ruthlessly
-- Drop P2 stories if needed (11.5.6, 11.5.7)
+- Drop P2 stories if needed (12.5.6, 12.5.7)
 
 #### 5. Testing Gaps
 
@@ -1390,26 +1390,26 @@ Epic 11.1 (Document Lifecycle)
 
 ### Epic-Level Success Criteria
 
-**Epic 11.1:**
+**Epic 12.1:**
 - ✓ Zero orphaned documents
 - ✓ 100% ephemeral documents cleaned up automatically
 - ✓ Document queries <100ms
 
-**Epic 11.2:**
+**Epic 12.2:**
 - ✓ Agents receive 95% of needed context
 - ✓ Prompt expansion <100ms
 - ✓ Agent quality improves 30%
 
-**Epic 11.3:**
+**Epic 12.3:**
 - ✓ 80%+ quality checks automated
 - ✓ Checklist validation <2 minutes
 
-**Epic 11.4:**
+**Epic 12.4:**
 - ✓ Queries <100ms
 - ✓ 100% data migrated
 - ✓ Zero data loss
 
-**Epic 11.5:**
+**Epic 12.5:**
 - ✓ Create new domain in <1 week
 - ✓ Multi-domain projects work
 - ✓ 3 reference domains created
@@ -1430,23 +1430,23 @@ Epic 11.1 (Document Lifecycle)
 
 ### Milestone Reviews
 
-**Milestone 1 (Week 8):** Epic 11.1 Complete
+**Milestone 1 (Week 8):** Epic 12.1 Complete
 - Demo: Automatic document lifecycle working
 - Review: Document classification and archival
 
-**Milestone 2 (Week 14):** Epic 11.2 Complete
+**Milestone 2 (Week 14):** Epic 12.2 Complete
 - Demo: Context-aware prompts with @doc: references
 - Review: Agent quality improvement
 
-**Milestone 3 (Week 18):** Epic 11.3 Complete
+**Milestone 3 (Week 18):** Epic 12.3 Complete
 - Demo: Automated checklist validation
 - Review: Quality gate automation
 
-**Milestone 4 (Week 26):** Epic 11.4 Complete
+**Milestone 4 (Week 26):** Epic 12.4 Complete
 - Demo: Queryable project state
 - Review: Database queries and migration
 
-**Milestone 5 (Week 32):** Epic 11.5 Complete
+**Milestone 5 (Week 32):** Epic 12.5 Complete
 - Demo: Multi-domain project (software + ops)
 - Review: Domain plugin ecosystem
 
@@ -1460,9 +1460,9 @@ Epic 11.1 (Document Lifecycle)
    - Stakeholders: Mary, Brian, Winston
    - Decision: Approve priority order and timeline
 
-2. **Create Story Files for Epic 11.1**
+2. **Create Story Files for Epic 12.1**
    - Owner: Bob (Scrum Master)
-   - Create 7 story files in docs/features/document-lifecycle-system/stories/epic-11.1/
+   - Create 7 story files in docs/features/document-lifecycle-system/stories/epic-12.1/
 
 3. **Architecture Review**
    - Owner: Winston (Architect)
@@ -1471,14 +1471,14 @@ Epic 11.1 (Document Lifecycle)
 
 4. **Sprint Planning**
    - Owner: Bob (Scrum Master)
-   - Plan Sprint 1 (Stories 11.1.1 - 11.1.4)
+   - Plan Sprint 1 (Stories 12.1.1 - 12.1.4)
    - Allocate resources
 
 ### Near-Term (Next 2 Weeks)
 
-1. **Begin Epic 11.1 Implementation**
+1. **Begin Epic 12.1 Implementation**
    - Owner: Amelia (Developer)
-   - Start Story 11.1.1 (Document Classification)
+   - Start Story 12.1.1 (Document Classification)
 
 2. **Create Benchmarks**
    - Owner: Murat (QA)
@@ -1492,11 +1492,11 @@ Epic 11.1 (Document Lifecycle)
 
 ### Medium-Term (1-2 Months)
 
-1. **Epic 11.1 Completion**
+1. **Epic 12.1 Completion**
    - All stories complete
    - Milestone 1 review
 
-2. **Epic 11.2 Start**
+2. **Epic 12.2 Start**
    - Meta-prompt system implementation begins
    - First context-aware prompts tested
 

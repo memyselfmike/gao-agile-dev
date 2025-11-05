@@ -502,22 +502,22 @@ Quality Standards:
 
 #### Implementation Phases
 
-**Phase 1: Basic References (Epic 11.1)**
+**Phase 1: Basic References (Epic 12.1)**
 - @doc: references for document sections
 - @prompt: references for prompt composition
 - @checklist: references for checklist inclusion
 
-**Phase 2: Dynamic Context (Epic 11.2)**
+**Phase 2: Dynamic Context (Epic 12.2)**
 - @query: references for database queries
 - Context injection from ExecutionContext
 - Related document discovery
 
-**Phase 3: Advanced Features (Epic 11.3)**
+**Phase 3: Advanced Features (Epic 12.3)**
 - Conditional sections ({{#if}})
 - Loops ({{#for}})
 - Filters and transformations
 
-**Phase 4: Optimization (Epic 11.4)**
+**Phase 4: Optimization (Epic 12.4)**
 - Caching of expanded prompts
 - Incremental expansion
 - Performance profiling
@@ -1508,26 +1508,26 @@ class LegalDomainPlugin(BasePlugin):
 
 #### Implementation Strategy
 
-**Phase 1: Extract Software Engineering Domain (Epic 11.5)**
+**Phase 1: Extract Software Engineering Domain (Epic 12.5)**
 - Create `domains/software_engineering.yaml`
 - Move agent configs to domain
 - Move workflow references to domain
 - Make system load from domain config
 - **Goal:** No breaking changes, everything works as before
 
-**Phase 2: Domain Abstraction Layer (Epic 11.6)**
+**Phase 2: Domain Abstraction Layer (Epic 12.6)**
 - Create DomainManager service
 - Update services to use DomainManager
 - Support domain switching
 - **Goal:** Can load different domains, but only one at a time
 
-**Phase 3: Multi-Domain Support (Epic 11.7)**
+**Phase 3: Multi-Domain Support (Epic 12.7)**
 - Support projects with multiple domains
 - Agent collaboration across domains
 - Workflow sequencing across domains
 - **Goal:** SaaS project can use both software and operations agents
 
-**Phase 4: Domain Plugin Ecosystem (Epic 11.8)**
+**Phase 4: Domain Plugin Ecosystem (Epic 12.8)**
 - Plugin API for domain definitions
 - Create example plugins: gao-ops, gao-legal, gao-research
 - Documentation for creating custom domains
@@ -1632,34 +1632,34 @@ story = story_repository.create_story(story_data)
 
 ### Priority Order for Implementation
 
-**Epic 11.1: Document Lifecycle Management (8 weeks)**
+**Epic 12.1: Document Lifecycle Management (8 weeks)**
 - Document classification and metadata
 - Lifecycle automation (draft → active → archived → deleted)
 - DocumentManager service
 - SQLite schema for documents
 - Archival and cleanup automation
 
-**Epic 11.2: Meta-Prompt System (6 weeks)**
+**Epic 12.2: Meta-Prompt System (6 weeks)**
 - PromptExpander service
 - @doc: reference resolution
 - @prompt: reference resolution
 - @checklist: reference resolution
 - Context injection
 
-**Epic 11.3: Checklist Management System (4 weeks)**
+**Epic 12.3: Checklist Management System (4 weeks)**
 - Structured checklist format (YAML)
 - ChecklistManager service
 - Checklist validation and tracking
 - Plugin support for custom checklists
 
-**Epic 11.4: Context Persistence & Workflow Tracking (8 weeks)**
+**Epic 12.4: Context Persistence & Workflow Tracking (8 weeks)**
 - SQLite schema for epics, stories, sprints
 - StoryRepository service
 - State machine for story lifecycle
 - Migration from sprint-status.yaml
 - Audit logging
 
-**Epic 11.5: Domain Abstraction - Foundation (6 weeks)**
+**Epic 12.5: Domain Abstraction - Foundation (6 weeks)**
 - Extract software_engineering domain
 - DomainManager service
 - Domain configuration loading
@@ -1729,19 +1729,19 @@ story = story_repository.create_story(story_data)
 ### Next Steps
 
 **Immediate (Next Sprint):**
-1. Create PRD for Epic 11 (Document Lifecycle System)
+1. Create PRD for Epic 12 (Document Lifecycle System)
 2. Create Architecture Proposal for hybrid SQLite + Markdown approach
 3. Create Roadmap with detailed epic breakdown and story outlines
 4. Get stakeholder approval for strategic direction
 
 **Near-Term (1-2 Sprints):**
-1. Begin Epic 11.1 implementation (Document Lifecycle Management)
+1. Begin Epic 12.1 implementation (Document Lifecycle Management)
 2. Create proof-of-concept for meta-prompt system
 3. Design SQLite schema with DBA review
 4. Create migration strategy document
 
 **Long-Term (6-12 Months):**
-1. Complete all 5 epics (11.1 through 11.5)
+1. Complete all 5 epics (12.1 through 12.5)
 2. Create 3 reference domain plugins (gao-ops, gao-legal, gao-research)
 3. Migrate existing projects to new architecture
 4. Launch domain plugin ecosystem
