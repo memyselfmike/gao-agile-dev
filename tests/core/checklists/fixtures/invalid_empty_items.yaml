@@ -1,0 +1,5 @@
+checklist:
+  name: "Empty Items Checklist"
+  category: "testing"
+  version: "1.0.0"
+  items: []  # Empty array violates minItems

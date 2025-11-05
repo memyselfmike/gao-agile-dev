@@ -1,0 +1,61 @@
+# Monitoring Setup Checklist
+#
+# This checklist ensures comprehensive monitoring and observability.
+# Use during new service deployment and monitoring configuration.
+
+checklist:
+  name: "Monitoring and Alerting Setup"
+  category: "operations"
+  version: "1.0.0"
+  description: "Checklist for setting up monitoring, logging, and alerting"
+
+  items:
+    - id: "application-metrics"
+      text: "Application metrics instrumented (requests, errors, latency)"
+      severity: "critical"
+      help_text: "Instrument golden signals: latency, traffic, errors, saturation. Use Prometheus, Datadog, or CloudWatch."
+      references:
+        - "https://sre.google/sre-book/monitoring-distributed-systems/"
+
+    - id: "logging-configured"
+      text: "Structured logging configured and centralized"
+      severity: "high"
+      help_text: "Use structured logging (JSON). Send logs to central system (ELK, Splunk, CloudWatch). Include correlation IDs."
+
+    - id: "distributed-tracing"
+      text: "Distributed tracing configured for microservices"
+      severity: "medium"
+      help_text: "Use OpenTelemetry, Jaeger, or X-Ray for tracing. Trace requests across service boundaries."
+
+    - id: "alerting-thresholds"
+      text: "Alert thresholds configured (error rate, latency, availability)"
+      severity: "critical"
+      help_text: "Set alerts for SLO violations. Use percentage-based thresholds, not absolute values. Alert on anomalies."
+
+    - id: "runbooks"
+      text: "Runbooks created for common alerts"
+      severity: "high"
+      help_text: "Document troubleshooting steps for each alert. Include links to dashboards. Update after incidents."
+
+    - id: "dashboards"
+      text: "Monitoring dashboards created for service health"
+      severity: "high"
+      help_text: "Create dashboards for golden signals. Include business metrics. Make dashboards accessible to team."
+
+    - id: "slo-defined"
+      text: "Service Level Objectives (SLOs) defined and monitored"
+      severity: "medium"
+      help_text: "Define SLOs for availability, latency, and error rate. Monitor SLO compliance. Use error budget for decision making."
+      references:
+        - "https://sre.google/sre-book/service-level-objectives/"
+
+    - id: "on-call-rotation"
+      text: "On-call rotation configured with escalation policy"
+      severity: "high"
+      help_text: "Set up PagerDuty or similar. Define escalation policy. Ensure team has access to monitoring tools."
+
+  metadata:
+    domain: "operations"
+    applicable_to: ["monitoring", "deployment", "sre"]
+    author: "Bob"
+    tags: ["operations", "monitoring", "observability", "alerting", "sre"]

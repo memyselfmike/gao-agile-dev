@@ -217,6 +217,79 @@ gao-dev list-agents
 - [Prompt Template Reference](../../prompt-templates.md)
 - [Plugin API Reference](../../api/plugins.md)
 
+## Checklist Plugin Support (NEW)
+
+The Legal Team Plugin now includes checklist support for quality standards and compliance verification.
+
+### Available Checklists
+
+1. **contract-review** - Contract review and approval
+2. **compliance-check** - Regulatory compliance verification
+3. **legal-review** - General legal document review
+4. **data-privacy** - Data privacy and GDPR compliance
+
+### Using Legal Checklists
+
+```python
+from pathlib import Path
+from gao_dev.core.checklists.checklist_loader import ChecklistLoader
+from gao_dev.core.checklists.plugin_manager import ChecklistPluginManager
+
+# Initialize plugin manager
+plugin_mgr = ChecklistPluginManager(Path("plugins"))
+plugin_mgr.discover_plugins()
+
+# Initialize checklist loader with plugin support
+loader = ChecklistLoader(
+    checklist_dirs=[Path("gao_dev/config/checklists")],
+    schema_path=Path("gao_dev/config/schemas/checklist_schema.json"),
+    plugin_manager=plugin_mgr
+)
+
+# Load legal checklist
+checklist = loader.load_checklist("contract-review")
+print(f"Loaded {checklist.name} from {loader.get_checklist_source('contract-review')}")
+
+# List all checklists with sources
+for name, source in loader.list_checklists():
+    print(f"{name} (from {source})")
+```
+
+### Creating Custom Legal Checklists
+
+1. Add YAML file to `checklists/legal/`
+2. Follow checklist schema (name, category, version, items)
+3. Include compliance metadata tags
+4. Checklists are automatically discovered
+
+Example structure:
+
+```yaml
+checklist:
+  name: your-checklist
+  category: legal
+  version: 1.0.0
+  description: Your checklist description
+
+  metadata:
+    owner: Legal Team
+    compliance_tags:
+      - legal
+      - compliance
+
+  items:
+    - id: item-1
+      text: Check this item
+      severity: high
+      category: review
+```
+
+### Plugin Priority
+
+The Legal Team Plugin has priority 100, which means:
+- Legal checklists override core checklists with the same name
+- Useful for customizing standard checklists for legal requirements
+
 ## License
 
 MIT License - see LICENSE file for details

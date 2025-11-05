@@ -1,0 +1,57 @@
+# Change Management Checklist
+#
+# This checklist ensures safe changes to production systems.
+# Use during production changes and maintenance.
+
+checklist:
+  name: "Change Management"
+  category: "operations"
+  version: "1.0.0"
+  description: "Process checklist for managing changes to production systems"
+
+  items:
+    - id: "change-approval"
+      text: "Change approved by appropriate stakeholders"
+      severity: "high"
+      help_text: "Get approval from tech lead or manager for production changes. Use change advisory board for high-risk changes."
+
+    - id: "impact-assessment"
+      text: "Impact assessment completed (affected systems, users, risk level)"
+      severity: "critical"
+      help_text: "Document what will change and who is affected. Assess risk level. Identify dependencies."
+
+    - id: "testing-completed"
+      text: "Change tested in non-production environment"
+      severity: "critical"
+      help_text: "Test in staging or dev environment first. Verify functionality. Run integration tests."
+
+    - id: "rollback-plan-change"
+      text: "Rollback plan documented and understood"
+      severity: "critical"
+      help_text: "Document step-by-step rollback procedure. Ensure team knows how to rollback. Test rollback if possible."
+
+    - id: "communication-plan-change"
+      text: "Communication plan for change notification"
+      severity: "medium"
+      help_text: "Notify affected users. Update status page. Inform support team. Schedule maintenance window if needed."
+
+    - id: "monitoring-during-change"
+      text: "Monitoring in place during change execution"
+      severity: "high"
+      help_text: "Watch dashboards during change. Monitor error rates and performance. Have incident response ready."
+
+    - id: "change-window"
+      text: "Change scheduled during appropriate maintenance window"
+      severity: "medium"
+      help_text: "Schedule during low-traffic periods. Avoid weekends unless necessary. Consider time zones."
+
+    - id: "post-change-validation"
+      text: "Post-change validation completed"
+      severity: "high"
+      help_text: "Verify change was successful. Run smoke tests. Check monitoring dashboards. Confirm no degradation."
+
+  metadata:
+    domain: "operations"
+    applicable_to: ["change-management", "operations", "production-changes"]
+    author: "Bob"
+    tags: ["operations", "change-management", "production", "process"]

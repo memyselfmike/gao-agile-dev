@@ -1,0 +1,61 @@
+# Integration Test Standards for GAO-Dev Projects
+#
+# This checklist defines standards for integration tests in GAO-Dev projects.
+# Use this during story implementation and code review to ensure proper integration testing.
+
+checklist:
+  name: "Integration Test Standards"
+  category: "testing"
+  version: "1.0.0"
+  description: "Standards for integration tests in GAO-Dev projects"
+
+  extends: "testing/base-testing-standards"
+
+  items:
+    - id: "integration-scope"
+      text: "Integration tests cover interactions between multiple components"
+      severity: "high"
+      help_text: "Test how modules work together, not individual functions. Focus on boundaries between services, APIs, and databases."
+
+    - id: "database-setup"
+      text: "Database setup and teardown are properly managed"
+      severity: "critical"
+      help_text: "Use test databases or in-memory databases. Ensure clean state before each test. Use transactions or database migrations."
+      references:
+        - "https://docs.pytest.org/en/stable/how-to/fixtures.html#fixture-scopes"
+
+    - id: "api-contracts"
+      text: "API contracts are tested (request/response schemas)"
+      severity: "high"
+      help_text: "Verify that APIs return expected data structures. Use schema validation libraries like jsonschema or pydantic."
+
+    - id: "environment-isolation"
+      text: "Tests use isolated test environment, not production"
+      severity: "critical"
+      help_text: "Configure separate test environment. Never run integration tests against production databases or services."
+
+    - id: "external-services"
+      text: "External services are mocked or use test instances"
+      severity: "high"
+      help_text: "Use tools like responses or httpretty for HTTP mocking. Consider docker-compose for test dependencies."
+
+    - id: "test-data"
+      text: "Test data is realistic and covers common scenarios"
+      severity: "medium"
+      help_text: "Create fixtures with realistic data. Test common user workflows and edge cases."
+
+    - id: "cleanup"
+      text: "All resources are cleaned up after tests (connections, files, etc.)"
+      severity: "high"
+      help_text: "Use pytest fixtures with yield for cleanup. Close database connections, delete temporary files."
+
+    - id: "idempotency"
+      text: "Tests can run multiple times without side effects"
+      severity: "medium"
+      help_text: "Tests should be idempotent. Running them multiple times should produce same results."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["story-implementation", "code-review", "pr-review"]
+    author: "Murat"
+    tags: ["testing", "integration", "quality", "python"]

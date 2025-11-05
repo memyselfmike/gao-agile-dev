@@ -1,0 +1,61 @@
+# Secure Coding Practices Checklist
+#
+# This checklist verifies secure coding practices.
+# Use during code review and security review.
+
+checklist:
+  name: "Secure Coding Practices"
+  category: "security"
+  version: "1.0.0"
+  description: "Secure coding practices and vulnerability prevention"
+
+  items:
+    - id: "input-validation"
+      text: "All user input is validated (type, length, format, range)"
+      severity: "critical"
+      help_text: "Validate input on server side. Use allow-lists, not deny-lists. Reject invalid input, don't try to sanitize everything."
+      references:
+        - "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html"
+
+    - id: "output-encoding"
+      text: "All output is properly encoded for context (HTML, JSON, SQL)"
+      severity: "critical"
+      help_text: "Use template engines that auto-escape. Encode based on context (HTML entities, URL encoding, JSON escaping)."
+
+    - id: "session-management"
+      text: "Session management is secure (timeout, regeneration, secure flags)"
+      severity: "high"
+      help_text: "Set session timeout. Regenerate session ID after login. Use secure and httpOnly flags on cookies."
+      references:
+        - "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+
+    - id: "error-handling-secure"
+      text: "Error handling does not expose sensitive information"
+      severity: "high"
+      help_text: "Log detailed errors server-side. Show generic error messages to users. Never expose stack traces or database errors."
+
+    - id: "path-traversal"
+      text: "File operations prevent path traversal attacks"
+      severity: "high"
+      help_text: "Validate file paths. Use os.path.basename(). Never concatenate user input into file paths. Use allow-lists for allowed directories."
+
+    - id: "command-injection"
+      text: "No command injection vulnerabilities (avoid shell=True, use parameterized commands)"
+      severity: "critical"
+      help_text: "Never pass user input to os.system() or subprocess with shell=True. Use argument lists instead of string commands."
+
+    - id: "xml-parsing"
+      text: "XML parsing is secure (disable external entities)"
+      severity: "high"
+      help_text: "Disable XXE (XML External Entity) attacks. Use defusedxml library for parsing XML."
+
+    - id: "deserialization"
+      text: "Deserialization of untrusted data is avoided or properly secured"
+      severity: "critical"
+      help_text: "Never use pickle with untrusted data. Use JSON instead. If necessary, use cryptographic signatures to verify data integrity."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["code-review", "security-review", "story-implementation"]
+    author: "Winston"
+    tags: ["security", "secure-coding", "vulnerabilities"]

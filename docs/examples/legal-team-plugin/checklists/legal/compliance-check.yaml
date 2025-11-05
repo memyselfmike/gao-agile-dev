@@ -1,0 +1,64 @@
+checklist:
+  name: compliance-check
+  category: legal
+  version: 1.0.0
+  description: Regulatory compliance verification checklist
+
+  metadata:
+    owner: Legal Team
+    review_cadence: monthly
+    compliance_tags:
+      - legal
+      - compliance
+      - regulatory
+
+  items:
+    - id: compliance-gdpr
+      text: Verify GDPR compliance for data processing activities
+      severity: high
+      category: data-protection
+      help_text: Check data processing agreements, privacy notices, and consent mechanisms
+      references:
+        - https://gdpr.eu/
+
+    - id: compliance-industry-regulations
+      text: Ensure compliance with industry-specific regulations
+      severity: high
+      category: industry
+      help_text: Check healthcare, finance, or other industry-specific requirements
+
+    - id: compliance-data-retention
+      text: Verify data retention policies comply with regulations
+      severity: high
+      category: data-protection
+      help_text: Check retention periods and deletion procedures
+
+    - id: compliance-audit-trail
+      text: Ensure adequate audit trails for compliance monitoring
+      severity: medium
+      category: audit
+      help_text: Verify logging, monitoring, and audit trail capabilities
+
+    - id: compliance-reporting
+      text: Verify compliance reporting mechanisms are in place
+      severity: medium
+      category: reporting
+      help_text: Check regulatory reporting procedures and schedules
+
+    - id: compliance-risk-assessment
+      text: Conduct compliance risk assessment
+      severity: high
+      category: risk
+      help_text: Identify and document compliance risks
+
+    - id: compliance-training
+      text: Verify compliance training for relevant personnel
+      severity: medium
+      category: training
+      help_text: Check training records and certification requirements
+
+    - id: compliance-documentation
+      text: Ensure all compliance documentation is up-to-date
+      severity: medium
+      category: documentation
+      help_text: Review policies, procedures, and compliance manuals

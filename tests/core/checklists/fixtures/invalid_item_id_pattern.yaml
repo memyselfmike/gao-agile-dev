@@ -1,0 +1,8 @@
+checklist:
+  name: "Invalid Item ID Pattern"
+  category: "testing"
+  version: "1.0.0"
+  items:
+    - id: "Invalid ID With Spaces"  # Invalid pattern
+      text: "This item has invalid ID"
+      severity: "low"

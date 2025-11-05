@@ -1,0 +1,89 @@
+checklist:
+  name: data-privacy
+  category: legal
+  version: 1.0.0
+  description: Data privacy and GDPR compliance checklist
+
+  metadata:
+    owner: Legal Team
+    review_cadence: quarterly
+    compliance_tags:
+      - legal
+      - compliance
+      - gdpr
+      - data-privacy
+
+  items:
+    - id: privacy-data-inventory
+      text: Maintain comprehensive data inventory
+      severity: high
+      category: data-management
+      help_text: Document all personal data collected, processed, and stored
+
+    - id: privacy-lawful-basis
+      text: Verify lawful basis for data processing
+      severity: high
+      category: legal-basis
+      help_text: Ensure consent, contract, or legitimate interest for each processing activity
+      references:
+        - https://gdpr.eu/article-6-how-to-process-personal-data-legally/
+
+    - id: privacy-consent-mechanisms
+      text: Implement proper consent mechanisms
+      severity: high
+      category: consent
+      help_text: Ensure clear, specific, and freely given consent
+
+    - id: privacy-notice
+      text: Provide clear and comprehensive privacy notices
+      severity: high
+      category: transparency
+      help_text: Inform data subjects about data processing activities
+
+    - id: privacy-data-subject-rights
+      text: Enable data subject rights (access, rectification, erasure)
+      severity: high
+      category: rights
+      help_text: Implement procedures for handling data subject requests
+
+    - id: privacy-data-minimization
+      text: Apply data minimization principle
+      severity: medium
+      category: minimization
+      help_text: Collect only necessary personal data
+
+    - id: privacy-security-measures
+      text: Implement appropriate security measures
+      severity: high
+      category: security
+      help_text: Ensure encryption, access controls, and security protocols
+
+    - id: privacy-breach-procedures
+      text: Establish data breach notification procedures
+      severity: high
+      category: breach
+      help_text: Document breach detection and notification processes
+
+    - id: privacy-third-party-processors
+      text: Verify data processing agreements with third parties
+      severity: high
+      category: third-party
+      help_text: Ensure DPAs with all data processors
+
+    - id: privacy-cross-border-transfers
+      text: Ensure lawful cross-border data transfers
+      severity: high
+      category: transfers
+      help_text: Verify adequacy decisions or safeguards for international transfers
+
+    - id: privacy-dpia
+      text: Conduct Data Protection Impact Assessment (DPIA) if required
+      severity: high
+      category: dpia
+      help_text: Perform DPIA for high-risk processing activities
+
+    - id: privacy-dpo
+      text: Appoint Data Protection Officer (DPO) if required
+      severity: medium
+      category: governance
+      help_text: Verify DPO appointment and contact information

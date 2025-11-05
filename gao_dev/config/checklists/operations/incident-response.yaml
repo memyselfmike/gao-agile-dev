@@ -1,0 +1,61 @@
+# Incident Response Checklist
+#
+# This checklist guides incident response and resolution.
+# Use during production incidents and outages.
+
+checklist:
+  name: "Incident Response"
+  category: "operations"
+  version: "1.0.0"
+  description: "Checklist for handling production incidents and outages"
+
+  items:
+    - id: "detection-alerting"
+      text: "Incident detected through monitoring/alerting (not user reports)"
+      severity: "high"
+      help_text: "Configure comprehensive monitoring and alerting. Monitor key metrics (error rates, latency, availability)."
+      references:
+        - "https://sre.google/sre-book/monitoring-distributed-systems/"
+
+    - id: "communication-started"
+      text: "Incident communication started (status page, stakeholders notified)"
+      severity: "critical"
+      help_text: "Update status page immediately. Notify stakeholders via incident channel. Set up war room if needed."
+
+    - id: "severity-assigned"
+      text: "Incident severity assigned (SEV1, SEV2, SEV3)"
+      severity: "high"
+      help_text: "Assign severity based on impact. SEV1: Critical outage. SEV2: Degraded service. SEV3: Minor issue."
+
+    - id: "mitigation-started"
+      text: "Mitigation actions started (rollback, scaling, etc.)"
+      severity: "critical"
+      help_text: "Focus on mitigation first, root cause later. Rollback recent changes. Scale resources. Enable feature flags."
+
+    - id: "logs-collected"
+      text: "Relevant logs and metrics collected for analysis"
+      severity: "high"
+      help_text: "Capture logs before rollback. Export metrics. Save error traces. Document timeline of events."
+
+    - id: "incident-resolved"
+      text: "Incident resolved and service restored"
+      severity: "critical"
+      help_text: "Verify service is healthy. Monitor for recurrence. Keep status page updated."
+
+    - id: "postmortem-scheduled"
+      text: "Postmortem scheduled within 48 hours"
+      severity: "medium"
+      help_text: "Schedule blameless postmortem. Document timeline, root cause, action items. Share learnings."
+      references:
+        - "https://sre.google/sre-book/postmortem-culture/"
+
+    - id: "action-items-tracked"
+      text: "Action items created and tracked to prevent recurrence"
+      severity: "high"
+      help_text: "Create tickets for follow-up work. Assign owners. Track progress. Update runbooks."
+
+  metadata:
+    domain: "operations"
+    applicable_to: ["incident-response", "operations", "on-call"]
+    author: "Bob"
+    tags: ["operations", "incident", "outage", "sre"]

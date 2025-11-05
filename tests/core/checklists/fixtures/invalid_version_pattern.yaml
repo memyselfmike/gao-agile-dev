@@ -1,0 +1,8 @@
+checklist:
+  name: "Invalid Version Pattern"
+  category: "testing"
+  version: "1.0"  # Invalid semver pattern
+  items:
+    - id: "item1"
+      text: "This checklist has invalid version"
+      severity: "low"

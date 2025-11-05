@@ -1,0 +1,57 @@
+# Code Review Checklist
+#
+# This checklist guides code review process.
+# Use during code review to ensure quality and consistency.
+
+checklist:
+  name: "Code Review"
+  category: "code-quality"
+  version: "1.0.0"
+  description: "Comprehensive code review checklist"
+
+  items:
+    - id: "logic-correctness"
+      text: "Code logic is correct and handles edge cases"
+      severity: "critical"
+      help_text: "Verify business logic is correct. Check error handling. Consider edge cases and boundary conditions."
+
+    - id: "test-coverage-review"
+      text: "Tests are included and provide adequate coverage"
+      severity: "high"
+      help_text: "Verify unit tests exist. Check coverage is >80%. Review test quality and assertions."
+
+    - id: "code-quality-review"
+      text: "Code follows quality standards (DRY, SOLID, clean code)"
+      severity: "high"
+      help_text: "Check for code duplication. Verify functions are small and focused. Review naming and structure."
+
+    - id: "security-review"
+      text: "Code has no obvious security vulnerabilities"
+      severity: "critical"
+      help_text: "Check for SQL injection, XSS, secrets in code. Verify input validation and authorization checks."
+
+    - id: "performance-review"
+      text: "Code does not introduce performance issues"
+      severity: "medium"
+      help_text: "Check for N+1 queries. Review algorithm complexity. Consider scalability implications."
+
+    - id: "documentation-review"
+      text: "Code is well-documented (docstrings, comments)"
+      severity: "low"
+      help_text: "Verify public APIs have docstrings. Check complex logic has explanatory comments."
+
+    - id: "error-handling-review"
+      text: "Error handling is comprehensive and appropriate"
+      severity: "high"
+      help_text: "Verify exceptions are caught and handled. Check error messages are informative. Ensure no silent failures."
+
+    - id: "backward-compatibility-review"
+      text: "Changes maintain backward compatibility or migration is provided"
+      severity: "high"
+      help_text: "Check API changes don't break existing clients. Verify database migrations are reversible."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["code-review", "pr-review"]
+    author: "Winston"
+    tags: ["code-review", "quality", "process"]

@@ -1,0 +1,59 @@
+# Refactoring Checklist
+#
+# This checklist identifies code smells and refactoring opportunities.
+# Use during code review and technical debt assessment.
+
+checklist:
+  name: "Refactoring"
+  category: "code-quality"
+  version: "1.0.0"
+  description: "Checklist for identifying code smells and refactoring opportunities"
+
+  items:
+    - id: "god-class-detection"
+      text: "No God classes (classes >300 lines with too many responsibilities)"
+      severity: "critical"
+      help_text: "Split large classes into smaller, focused ones. Extract related methods into new classes. Use composition."
+
+    - id: "code-duplication"
+      text: "No significant code duplication (DRY principle)"
+      severity: "high"
+      help_text: "Extract duplicated code into functions or classes. Use inheritance or mixins for shared behavior."
+
+    - id: "cyclomatic-complexity"
+      text: "Functions have reasonable cyclomatic complexity (<10)"
+      severity: "high"
+      help_text: "Reduce branching (if/else, loops). Extract complex logic into helper functions. Use early returns."
+      references:
+        - "https://en.wikipedia.org/wiki/Cyclomatic_complexity"
+
+    - id: "long-parameter-list"
+      text: "Functions don't have excessive parameters (>5 is a code smell)"
+      severity: "medium"
+      help_text: "Group related parameters into data classes or configuration objects. Consider builder pattern."
+
+    - id: "nested-structures"
+      text: "No deeply nested structures (>3 levels of indentation)"
+      severity: "medium"
+      help_text: "Extract nested logic into functions. Use guard clauses. Consider strategy pattern for complex conditionals."
+
+    - id: "dead-code"
+      text: "No commented-out code or unused functions"
+      severity: "medium"
+      help_text: "Remove dead code. Use version control for history. Delete unused imports and variables."
+
+    - id: "feature-envy"
+      text: "Methods don't excessively use data from other classes"
+      severity: "low"
+      help_text: "If a method uses more data from another class, move it there. Check for inappropriate intimacy."
+
+    - id: "primitive-obsession"
+      text: "Use domain objects instead of primitives for complex data"
+      severity: "low"
+      help_text: "Create value objects for email, phone, money, etc. Use Enum instead of magic strings."
+
+  metadata:
+    domain: "software-engineering"
+    applicable_to: ["code-review", "refactoring", "technical-debt"]
+    author: "Winston"
+    tags: ["code-quality", "refactoring", "code-smells", "technical-debt"]
