@@ -1,0 +1,89 @@
+# Automatic context injection per workflow
+#
+# This configuration defines which context should be automatically injected
+# into prompts based on the workflow being executed.
+#
+# Format:
+#   workflow_name:
+#     variable_name: "@reference_type:reference_value"
+#
+# Supported reference types:
+#   @doc:        - Document reference (loads markdown files)
+#   @checklist:  - Checklist reference (loads quality checklists)
+#   @query:      - Query reference (executes document queries)
+#   @context:    - Context reference (loads contextual information)
+#   @config:     - Config reference (loads configuration values)
+#   @file:       - File reference (loads arbitrary files)
+#
+# Template variables ({{epic}}, {{story}}, etc.) are rendered before resolution.
+
+# Story implementation workflow
+implement_story:
+  # Story context
+  story_definition: "@doc:stories/epic-{{epic}}/story-{{story}}.md"
+  acceptance_criteria: "@doc:stories/epic-{{epic}}/story-{{story}}.md#acceptance-criteria"
+
+  # Epic and architecture context
+  epic_definition: "@context:epic_definition"
+  architecture: "@context:architecture"
+
+  # Quality standards
+  testing_standards: "@checklist:testing/unit-test-standards"
+  code_quality: "@checklist:code-quality/solid-principles"
+
+# Story creation workflow
+create_story:
+  # Epic context for story creation
+  epic_definition: "@context:epic_definition"
+  prd: "@context:prd"
+
+  # Related stories for context
+  related_stories: "@query:stories.where(epic={{epic}}, status='done').format('list')"
+
+# Story validation workflow
+validate_story:
+  # Story and acceptance criteria
+  story_definition: "@doc:stories/epic-{{epic}}/story-{{story}}.md"
+  acceptance_criteria: "@doc:stories/epic-{{epic}}/story-{{story}}.md#acceptance-criteria"
+
+  # Quality checklists
+  qa_checklist: "@checklist:testing/qa-comprehensive"
+  code_review_checklist: "@checklist:code-quality/code-review-standards"
+
+# Epic planning workflow
+plan_epic:
+  # PRD and architecture
+  prd: "@context:prd"
+  architecture: "@context:architecture"
+
+  # Existing epics for reference
+  existing_epics: "@query:epics.format('summary')"
+
+# Code review workflow
+review_code:
+  # Story context
+  story_definition: "@doc:stories/epic-{{epic}}/story-{{story}}.md"
+
+  # Quality checklists
+  code_quality: "@checklist:code-quality/solid-principles"
+  code_review_checklist: "@checklist:code-quality/code-review-standards"
+  testing_standards: "@checklist:testing/unit-test-standards"
+
+# Test planning workflow
+plan_tests:
+  # Story and architecture
+  story_definition: "@doc:stories/epic-{{epic}}/story-{{story}}.md"
+  architecture: "@context:architecture"
+
+  # Testing standards
+  testing_standards: "@checklist:testing/unit-test-standards"
+  integration_testing: "@checklist:testing/integration-test-standards"
+
+# Documentation workflow
+write_documentation:
+  # Architecture and PRD
+  architecture: "@context:architecture"
+  prd: "@context:prd"
+
+  # Documentation standards
+  documentation_standards: "@checklist:documentation/documentation-standards"
