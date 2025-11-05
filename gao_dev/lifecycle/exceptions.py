@@ -99,3 +99,24 @@ class DatabaseError(DocumentLifecycleError):
         """
         super().__init__(message)
         self.original_error = original_error
+
+
+class InvalidStateTransition(DocumentLifecycleError):
+    """Raised when an invalid state transition is attempted."""
+
+    def __init__(
+        self, message: str, from_state: str = None, to_state: str = None, doc_id: int = None
+    ):
+        """
+        Initialize InvalidStateTransition.
+
+        Args:
+            message: Error message
+            from_state: Optional current state
+            to_state: Optional target state
+            doc_id: Optional document ID
+        """
+        super().__init__(message)
+        self.from_state = from_state
+        self.to_state = to_state
+        self.doc_id = doc_id
