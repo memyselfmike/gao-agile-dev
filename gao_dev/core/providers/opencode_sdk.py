@@ -340,25 +340,21 @@ class OpenCodeSDKProvider(IAgentProvider):
 
             # Create session if needed
             if not self.session:
-                logger.debug(
-                    "opencode_sdk_create_session",
-                    provider_id=provider_id,
-                    model_id=model_id,
-                )
-                # Correct API: client.session.create() not client.create_session()
-                session_response = self.sdk_client.session.create(
-                    provider_id=provider_id,
-                    model_id=model_id,
-                )
+                logger.debug("opencode_sdk_create_session")
+                # Correct API: client.session.create() takes NO parameters
+                session_response = self.sdk_client.session.create()
                 # Store session ID for subsequent chat calls
                 self.session_id = getattr(session_response, 'id', session_response.get('id') if isinstance(session_response, dict) else None)
                 logger.debug("opencode_sdk_session_created", session_id=self.session_id)
 
             # Send chat message using session resource
+            # API signature: chat(id, model_id, provider_id, parts, ...)
             logger.debug("opencode_sdk_send_chat", message_length=len(task), session_id=self.session_id)
             response = self.sdk_client.session.chat(
-                session_id=self.session_id,
-                message=task,
+                id=self.session_id,
+                provider_id=provider_id,
+                model_id=model_id,
+                parts=[{"type": "text", "text": task}],
             )
 
             # Extract response content
