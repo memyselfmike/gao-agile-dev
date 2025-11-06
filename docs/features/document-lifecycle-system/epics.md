@@ -1173,4 +1173,223 @@ Epic 15 (weeks 9-10)
 
 ---
 
+## Epic 17: Context System Integration
+
+**Goal:** Integrate Epic 16 Context Persistence Layer into the GAO-Dev ecosystem, making it functional and usable by agents, workflows, and users.
+
+**Owner:** Amelia (Developer) + Bob (Scrum Master)
+**Priority:** P0 (Critical - Makes Epic 16 Functional)
+**Estimated Duration:** 2-3 weeks
+**Story Points:** 34 points
+
+### Success Criteria
+- Documents load correctly from DocumentLifecycleManager (Epic 12)
+- All context tables in single unified database with Epic 15
+- Workflows automatically create and persist WorkflowContext
+- Agents can access context via AgentContextAPI
+- Users can query/manage context via CLI
+- End-to-end tests verify full integration
+- Migration system handles schema upgrades
+- Performance validated (<50ms operations)
+- Documentation updated with working examples
+
+### Stories
+
+#### Story 17.1: Document Loading Integration (Epic 12)
+**Points:** 5 | **Priority:** P0
+
+**Description:** Implement actual document loading via DocumentLifecycleManager to make WorkflowContext functional.
+
+**Acceptance Criteria:**
+- [ ] `context.get_prd()` returns actual PRD content from DocumentLifecycleManager
+- [ ] `context.get_architecture()` returns actual architecture document
+- [ ] `context.get_epic_definition()` returns actual epic definition
+- [ ] `context.get_story_definition()` returns actual story content
+- [ ] Document not found returns None gracefully (no errors)
+- [ ] Integration tests with DocumentLifecycleManager pass
+- [ ] AgentContextAPI default loader uses DocumentLifecycleManager
+- [ ] Examples in documentation work with real documents
+
+**Technical Notes:**
+- Replace stub `_load_document()` in WorkflowContext
+- Map doc_type to DocumentType enum from Epic 12
+- Use feature/epic/story to construct document paths
+- Cache loaded documents in WorkflowContext._document_cache
+
+**Dependencies:** Epic 12 (DocumentLifecycleManager)
+
+---
+
+#### Story 17.2: Database Unification (Epic 15)
+**Points:** 5 | **Priority:** P0
+
+**Description:** Unify all context tables into single database with Epic 15 StateTracker to fix database fragmentation.
+
+**Acceptance Criteria:**
+- [ ] Single `gao_dev.db` contains all tables (state, context, documents)
+- [ ] Foreign keys between context_usage and workflow_context validated
+- [ ] Foreign keys between context_usage and documents table validated
+- [ ] ContextPersistence uses same DB path as StateTracker
+- [ ] ContextUsageTracker uses same DB path
+- [ ] ContextLineageTracker uses same DB path
+- [ ] Migration script moves data from old separate DBs
+- [ ] Integration tests verify FK constraints work
+- [ ] No orphaned data in separate databases
+
+**Technical Notes:**
+- Create `gao_dev.core.config.get_gao_db_path()` for unified DB path
+- Update all context modules to use shared DB configuration
+- Add migration script `003_unify_database.sql`
+- Ensure workflow_context.workflow_id references workflow_executions.id
+
+**Dependencies:** Epic 15 (StateTracker)
+
+---
+
+#### Story 17.3: Orchestrator Integration
+**Points:** 8 | **Priority:** P0
+
+**Description:** Wire WorkflowContext into GAODevOrchestrator lifecycle so workflows automatically create and persist context.
+
+**Acceptance Criteria:**
+- [ ] Orchestrator creates WorkflowContext at workflow start
+- [ ] Context persisted to database at workflow initialization
+- [ ] Context updated after each workflow phase transition
+- [ ] Decisions recorded in context during execution
+- [ ] Artifacts recorded in context as they're created
+- [ ] Failed workflows mark context status as 'failed'
+- [ ] Completed workflows mark context status as 'completed'
+- [ ] WorkflowResult includes context_id field
+- [ ] Integration tests verify full workflow with context tracking
+- [ ] Benchmark workflows show context tracking in action
+
+**Technical Notes:**
+- Modify GAODevOrchestrator.__init__ to create ContextPersistence
+- Add create_workflow_context() at workflow start
+- Add update_workflow_context() after each phase
+- Store context_id in WorkflowResult
+- Use set_workflow_context() for thread-local access by agents
+
+**Dependencies:** Story 17.1, Story 17.2
+
+---
+
+#### Story 17.4: Agent Prompt Integration
+**Points:** 5 | **Priority:** P0
+
+**Description:** Update agent prompts and configurations to use AgentContextAPI for accessing project context.
+
+**Acceptance Criteria:**
+- [ ] Story orchestrator sets WorkflowContext before agent execution
+- [ ] Agents can call `get_workflow_context()` in prompt code
+- [ ] Agents can access `context.get_epic_definition()` successfully
+- [ ] Agents can access `context.get_architecture()` successfully
+- [ ] Agents can access `context.get_coding_standards()` successfully
+- [ ] Context usage automatically tracked for lineage
+- [ ] Agent YAML configs include context API import examples
+- [ ] Integration tests verify agents can access context
+- [ ] Documentation shows complete agent usage examples
+- [ ] Updated prompts work with real workflow executions
+
+**Technical Notes:**
+- Update `story_orchestrator/` prompts to set context
+- Update `tasks/implement_story.yaml` to use AgentContextAPI
+- Update `tasks/validate_story.yaml` to access context
+- Add context API examples to agent YAML configs
+- Document context access patterns for agent developers
+
+**Dependencies:** Story 17.3
+
+---
+
+#### Story 17.5: CLI Commands for Context Management
+**Points:** 5 | **Priority:** P1
+
+**Description:** Add CLI commands for users to query and manage workflow context.
+
+**Acceptance Criteria:**
+- [ ] `gao-dev context show <workflow-id>` displays full context details
+- [ ] `gao-dev context list` shows recent workflow contexts (last 20)
+- [ ] `gao-dev context history <epic> <story>` shows all context versions
+- [ ] `gao-dev context lineage <epic>` generates and displays lineage report
+- [ ] `gao-dev context stats` shows cache hit rate and usage statistics
+- [ ] `gao-dev context clear-cache` clears ContextCache
+- [ ] All commands support `--json` output for scripting
+- [ ] Rich formatting with tables and colors for terminal
+- [ ] Help text and examples for all commands
+- [ ] Unit tests for all CLI commands
+
+**Technical Notes:**
+- Create `gao_dev/cli/context_commands.py`
+- Use Click for CLI framework
+- Use Rich for table formatting and colors
+- Register commands in `gao_dev/cli/commands.py`
+
+**Dependencies:** Story 17.2, Story 17.3
+
+---
+
+#### Story 17.6: Migration System
+**Points:** 3 | **Priority:** P1
+
+**Description:** Implement database migration runner for schema upgrades and version tracking.
+
+**Acceptance Criteria:**
+- [ ] `schema_version` table tracks applied migrations with timestamps
+- [ ] MigrationRunner detects pending migrations automatically
+- [ ] Migrations applied in order on startup
+- [ ] Rollback support for last N migrations
+- [ ] `gao-dev db migrate` CLI command applies pending migrations
+- [ ] `gao-dev db rollback [N]` CLI command rolls back migrations
+- [ ] `gao-dev db status` shows migration status and version
+- [ ] Migration logs show applied migrations with timestamps
+- [ ] Integration tests verify migration up/down
+- [ ] Existing databases migrated successfully without data loss
+
+**Technical Notes:**
+- Create `gao_dev/core/context/migrations/runner.py`
+- Create `schema_version` table for tracking
+- Support both .sql and Python migration files
+- Add `003_unify_database.sql` migration
+- Auto-run migrations on first DB access
+
+**Dependencies:** Story 17.2
+
+---
+
+#### Story 17.7: End-to-End Integration Tests
+**Points:** 3 | **Priority:** P0
+
+**Description:** Comprehensive integration tests verifying the entire context system works end-to-end.
+
+**Acceptance Criteria:**
+- [ ] E2E test: Create PRD, workflow loads it via context
+- [ ] E2E test: Implement story, context tracks document usage
+- [ ] E2E test: Generate lineage report showing PRD → Architecture → Story flow
+- [ ] E2E test: Cache hit rate >80% for repeated document access
+- [ ] E2E test: Concurrent workflows don't interfere with each other
+- [ ] E2E test: Missing documents handled gracefully (no errors)
+- [ ] Performance test: Document load <50ms (p95)
+- [ ] Performance test: Context save <50ms (p95)
+- [ ] Performance test: Lineage query <100ms (p95)
+- [ ] All E2E tests pass consistently (no flaky tests)
+
+**Technical Notes:**
+- Create `tests/integration/test_context_e2e.py`
+- Create `tests/performance/test_context_performance.py`
+- Use real DocumentLifecycleManager, not mocks
+- Test full workflow execution end-to-end
+- Validate performance claims from Epic 16
+
+**Dependencies:** Story 17.1, 17.2, 17.3, 17.4
+
+---
+
+### Epic Dependencies
+- **Requires:** Epic 12 (Document Lifecycle), Epic 15 (State Database), Epic 16 (Context Persistence Layer)
+- **Blocks:** Meta-Prompt System, Advanced Context Features
+- **Integrates With:** GAODevOrchestrator, Agent System, CLI
+
+---
+
 *End of Epic Breakdown*
