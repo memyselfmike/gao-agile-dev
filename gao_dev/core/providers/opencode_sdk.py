@@ -182,7 +182,8 @@ class OpenCodeSDKProvider(IAgentProvider):
         self.shutdown_timeout = shutdown_timeout
 
         self.sdk_client: Optional[Any] = None  # Type: Opencode
-        self.session: Optional[Any] = None  # Type: Session
+        self.session: Optional[Any] = None  # Type: Session (deprecated, kept for compatibility)
+        self.session_id: Optional[str] = None  # Active session ID
         self.server_process: Optional[subprocess.Popen] = None
         self._initialized = False
 
@@ -344,17 +345,20 @@ class OpenCodeSDKProvider(IAgentProvider):
                     provider_id=provider_id,
                     model_id=model_id,
                 )
-                self.session = self.sdk_client.create_session(
+                # Correct API: client.session.create() not client.create_session()
+                session_response = self.sdk_client.session.create(
                     provider_id=provider_id,
                     model_id=model_id,
                 )
-                logger.debug("opencode_sdk_session_created", session_id=getattr(self.session, 'id', 'unknown'))
+                # Store session ID for subsequent chat calls
+                self.session_id = getattr(session_response, 'id', session_response.get('id') if isinstance(session_response, dict) else None)
+                logger.debug("opencode_sdk_session_created", session_id=self.session_id)
 
-            # Send chat message
-            logger.debug("opencode_sdk_send_chat", message_length=len(task))
-            response = self.session.chat(
+            # Send chat message using session resource
+            logger.debug("opencode_sdk_send_chat", message_length=len(task), session_id=self.session_id)
+            response = self.sdk_client.session.chat(
+                session_id=self.session_id,
                 message=task,
-                tools=tools or [],
             )
 
             # Extract response content
