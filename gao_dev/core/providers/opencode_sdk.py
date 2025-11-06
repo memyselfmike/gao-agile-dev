@@ -341,20 +341,29 @@ class OpenCodeSDKProvider(IAgentProvider):
             # Create session if needed
             if not self.session:
                 logger.debug("opencode_sdk_create_session")
-                # Correct API: client.session.create() takes NO parameters
-                session_response = self.sdk_client.session.create()
+                # Session creation: server expects empty JSON body {}
+                # Use extra_body to ensure JSON is sent
+                session_response = self.sdk_client.session.create(extra_body={})
                 # Store session ID for subsequent chat calls
                 self.session_id = getattr(session_response, 'id', session_response.get('id') if isinstance(session_response, dict) else None)
                 logger.debug("opencode_sdk_session_created", session_id=self.session_id)
 
             # Send chat message using session resource
-            # API signature: chat(id, model_id, provider_id, parts, ...)
+            # NOTE: SDK version mismatch - SDK uses snake_case, server expects camelCase nested structure
+            # Using extra_body to override SDK's format with server's expected format
             logger.debug("opencode_sdk_send_chat", message_length=len(task), session_id=self.session_id)
             response = self.sdk_client.session.chat(
                 id=self.session_id,
-                provider_id=provider_id,
-                model_id=model_id,
-                parts=[{"type": "text", "text": task}],
+                provider_id="dummy",  # Ignored, using extra_body
+                model_id="dummy",      # Ignored, using extra_body
+                parts=[],               # Ignored, using extra_body
+                extra_body={
+                    "model": {
+                        "providerID": provider_id,
+                        "modelID": model_id
+                    },
+                    "parts": [{"type": "text", "text": task}]
+                }
             )
 
             # Extract response content
