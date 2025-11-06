@@ -24,3 +24,26 @@ agent:
   workflows:
     - test-strategy
     - test-plan
+
+  context_api:
+    enabled: true
+    description: "Access project context via AgentContextAPI"
+    available_documents:
+      - epic_definition: "Epic definition for current story"
+      - architecture: "System architecture guidelines"
+      - story_definition: "Current story definition"
+      - acceptance_criteria: "Story acceptance criteria"
+      - coding_standards: "Project coding standards"
+    usage: |
+      # Accessing Context in Murat's prompts:
+      from gao_dev.core.context.context_api import get_workflow_context, AgentContextAPI
+
+      context = get_workflow_context()
+      api = AgentContextAPI(context)
+
+      # Get documents for validation
+      epic_def = api.get_epic_definition()
+      architecture = api.get_architecture()
+      story_def = api.get_story_definition()
+      acceptance_criteria = api.get_acceptance_criteria()
+      coding_standards = api.get_coding_standards()

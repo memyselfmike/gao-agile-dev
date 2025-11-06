@@ -27,7 +27,45 @@ def temp_db():
 @pytest.fixture
 def tracker(temp_db):
     """Create ContextLineageTracker instance for testing."""
+    # Run migration to create both workflow_context and context_usage tables
+    from gao_dev.core.context.migrations.migration_003_unify_database import Migration003
+    Migration003.upgrade(temp_db, backup=False)
     return ContextLineageTracker(temp_db)
+
+
+def create_workflow_record(temp_db, workflow_id, epic=3, story="3.1", feature="test_feature"):
+    """
+    Helper function to create a workflow record in workflow_context table.
+    Required for foreign key constraint satisfaction.
+    """
+    from datetime import datetime
+    import json
+
+    conn = sqlite3.connect(str(temp_db))
+    try:
+        conn.execute(
+            """
+            INSERT INTO workflow_context (
+                workflow_id, epic_num, story_num, feature, workflow_name,
+                current_phase, status, context_data, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                workflow_id,
+                epic,
+                story,
+                feature,
+                "test_workflow",
+                "implementation",
+                "running",
+                json.dumps({}),
+                datetime.now().isoformat(),
+                datetime.now().isoformat(),
+            )
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 class TestContextLineageTracker:
@@ -46,8 +84,11 @@ class TestContextLineageTracker:
         assert cursor.fetchone() is not None
         conn.close()
 
-    def test_record_usage_basic(self, tracker):
+    def test_record_usage_basic(self, tracker, temp_db):
         """Test recording basic context usage."""
+        # Create workflow record first (required for FK constraint)
+        create_workflow_record(temp_db, "wf-story-3.1", epic=3, story="3.1")
+
         usage_id = tracker.record_usage(
             artifact_type="story",
             artifact_id="3.1",
@@ -188,8 +229,11 @@ class TestContextLineageTracker:
         context = tracker.get_workflow_context("wf-nonexistent")
         assert context == []
 
-    def test_get_workflow_context_single(self, tracker):
+    def test_get_workflow_context_single(self, tracker, temp_db):
         """Test getting context for workflow execution."""
+        # Create workflow record first (required for FK constraint)
+        create_workflow_record(temp_db, "wf-123")
+
         # Record usages for workflow
         tracker.record_usage(
             artifact_type="story",
@@ -214,9 +258,12 @@ class TestContextLineageTracker:
             assert c["workflow_id"] == "wf-123"
             assert c["workflow_name"] == "implement_story"
 
-    def test_get_workflow_context_ordered_by_accessed_at_asc(self, tracker):
+    def test_get_workflow_context_ordered_by_accessed_at_asc(self, tracker, temp_db):
         """Test workflow context is ordered by accessed_at ascending."""
         import time
+
+        # Create workflow record first (required for FK constraint)
+        create_workflow_record(temp_db, "wf-123")
 
         # Record usages with delays
         tracker.record_usage(
@@ -450,9 +497,12 @@ class TestContextLineageTracker:
 
         assert prd_idx < arch_idx < epic_idx < story_idx
 
-    def test_performance_record_usage(self, tracker):
+    def test_performance_record_usage(self, tracker, temp_db):
         """Test record_usage performance is <50ms."""
         import time
+
+        # Create workflow record first (required for FK constraint)
+        create_workflow_record(temp_db, "wf-123")
 
         start = time.time()
         tracker.record_usage(

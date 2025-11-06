@@ -10,9 +10,16 @@ import json
 import uuid
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from pathlib import Path
+from typing import Optional, Dict, Any, List, Callable
+import structlog
 
 from gao_dev.core.context.models import PhaseTransition
+from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
+from gao_dev.lifecycle.registry import DocumentRegistry
+from gao_dev.lifecycle.models import DocumentType, DocumentState
+
+logger = structlog.get_logger(__name__)
 
 
 @dataclass
@@ -91,7 +98,12 @@ class WorkflowContext:
     tags: List[str] = field(default_factory=list)
 
     # Internal cache for lazy-loaded documents (not serialized)
-    _document_cache: Dict[str, str] = field(default_factory=dict, repr=False)
+    _document_cache: Dict[str, Optional[str]] = field(default_factory=dict, repr=False)
+
+    # Optional custom document loader (not serialized)
+    _document_loader: Optional[Callable[[str], Optional[str]]] = field(
+        default=None, repr=False
+    )
 
     def __post_init__(self) -> None:
         """
@@ -191,20 +203,191 @@ class WorkflowContext:
 
     def _load_document(self, doc_type: str) -> Optional[str]:
         """
-        Load document from file system.
+        Load document from file system using DocumentLifecycleManager.
 
-        This is a placeholder implementation. In production, this should
-        integrate with DocumentLifecycleManager (Epic 12) to load documents
-        from the proper location based on feature, epic, and story numbers.
+        This method integrates with DocumentLifecycleManager (Epic 12) to load
+        documents from the registry. If a custom document loader is provided,
+        it will be used instead. Falls back to file-based loading if registry
+        access fails.
 
         Args:
             doc_type: Type of document (prd, architecture, epic, story)
 
         Returns:
             Document content or None if not found
+
+        Example:
+            >>> context = WorkflowContext(...)
+            >>> prd_content = context._load_document("prd")
         """
-        # TODO: Integrate with DocumentLifecycleManager (Epic 12)
-        # For now, return None (placeholder)
+        # Use custom loader if provided
+        if self._document_loader is not None:
+            try:
+                return self._document_loader(doc_type)
+            except Exception as e:
+                logger.warning(
+                    "custom_document_loader_failed",
+                    doc_type=doc_type,
+                    error=str(e)
+                )
+                # Fall through to default loading
+
+        # Map doc_type string to DocumentType enum
+        doc_type_map = {
+            "prd": DocumentType.PRD,
+            "architecture": DocumentType.ARCHITECTURE,
+            "epic": DocumentType.EPIC,
+            "epic_definition": DocumentType.EPIC,
+            "story": DocumentType.STORY,
+            "story_definition": DocumentType.STORY,
+        }
+
+        document_type = doc_type_map.get(doc_type)
+        if document_type is None:
+            logger.warning("unknown_document_type", doc_type=doc_type)
+            return None
+
+        try:
+            # Try loading from DocumentLifecycleManager
+            content = self._load_from_lifecycle_manager(document_type)
+            if content is not None:
+                return content
+
+            # Fall back to file-based loading
+            return self._load_from_filesystem(doc_type)
+
+        except Exception as e:
+            logger.error(
+                "document_load_failed",
+                doc_type=doc_type,
+                feature=self.feature,
+                epic=self.epic_num,
+                story=self.story_num,
+                error=str(e)
+            )
+            return None
+
+    def _load_from_lifecycle_manager(
+        self,
+        document_type: DocumentType
+    ) -> Optional[str]:
+        """
+        Load document from DocumentLifecycleManager registry.
+
+        Args:
+            document_type: DocumentType enum value
+
+        Returns:
+            Document content or None if not found
+        """
+        try:
+            # Initialize registry and manager
+            db_path = Path.cwd() / ".gao" / "documents.db"
+            if not db_path.exists():
+                logger.debug("document_registry_not_found", db_path=str(db_path))
+                return None
+
+            registry = DocumentRegistry(db_path)
+            manager = DocumentLifecycleManager(
+                registry=registry,
+                archive_dir=Path.cwd() / ".gao" / ".archive"
+            )
+
+            # Query for active document
+            document = manager.get_current_document(
+                doc_type=document_type.value,
+                feature=self.feature
+            )
+
+            # Close registry connection
+            registry.close()
+
+            if document is None:
+                logger.debug(
+                    "document_not_found_in_registry",
+                    doc_type=document_type.value,
+                    feature=self.feature
+                )
+                return None
+
+            # Load content from file
+            doc_path = Path(document.path)
+            if not doc_path.exists():
+                logger.warning(
+                    "document_path_not_found",
+                    path=str(doc_path),
+                    doc_type=document_type.value
+                )
+                return None
+
+            content = doc_path.read_text(encoding='utf-8')
+            logger.debug(
+                "document_loaded_from_registry",
+                doc_type=document_type.value,
+                path=str(doc_path)
+            )
+            return content
+
+        except Exception as e:
+            logger.debug(
+                "lifecycle_manager_load_failed",
+                doc_type=document_type.value,
+                error=str(e)
+            )
+            return None
+
+    def _load_from_filesystem(self, doc_type: str) -> Optional[str]:
+        """
+        Load document directly from filesystem (fallback).
+
+        Uses standard docs/features directory structure.
+
+        Args:
+            doc_type: Type of document (string)
+
+        Returns:
+            Document content or None if not found
+        """
+        docs_base = Path.cwd() / "docs" / "features" / self.feature
+
+        file_path: Optional[Path] = None
+
+        if doc_type in ("prd",):
+            file_path = docs_base / "PRD.md"
+        elif doc_type in ("architecture",):
+            file_path = docs_base / "ARCHITECTURE.md"
+        elif doc_type in ("epic", "epic_definition"):
+            file_path = docs_base / "epics" / f"epic-{self.epic_num}.md"
+        elif doc_type in ("story", "story_definition"):
+            if self.story_num is not None:
+                file_path = (
+                    docs_base / "stories" / f"epic-{self.epic_num}" /
+                    f"story-{self.epic_num}.{self.story_num}.md"
+                )
+
+        # Load file if path determined
+        if file_path and file_path.exists():
+            try:
+                content = file_path.read_text(encoding='utf-8')
+                logger.debug(
+                    "document_loaded_from_filesystem",
+                    doc_type=doc_type,
+                    path=str(file_path)
+                )
+                return content
+            except Exception as e:
+                logger.error(
+                    "filesystem_read_failed",
+                    file_path=str(file_path),
+                    error=str(e)
+                )
+                return None
+
+        logger.debug(
+            "document_path_not_found",
+            doc_type=doc_type,
+            file_path=str(file_path) if file_path else None
+        )
         return None
 
     def add_decision(self, name: str, value: Any) -> "WorkflowContext":
@@ -317,12 +500,15 @@ class WorkflowContext:
 
         # Create new instance with changes
         data = asdict(self)
-        # Preserve document cache from original instance
+        # Preserve document cache and loader from original instance
         cache = data.pop("_document_cache", {})
+        loader = data.pop("_document_loader", None)
         data.update(changes)
         result = WorkflowContext(**data)
         # Copy document cache to new instance (avoid reloading)
         result._document_cache = cache.copy()
+        # Preserve custom document loader
+        result._document_loader = loader
         return result
 
     def to_dict(self) -> Dict[str, Any]:

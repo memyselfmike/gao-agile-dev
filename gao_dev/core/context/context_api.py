@@ -35,6 +35,9 @@ import structlog
 from gao_dev.core.context.workflow_context import WorkflowContext
 from gao_dev.core.context.context_cache import ContextCache
 from gao_dev.core.context.context_usage_tracker import ContextUsageTracker
+from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
+from gao_dev.lifecycle.registry import DocumentRegistry
+from gao_dev.lifecycle.models import DocumentType, DocumentState
 
 logger = structlog.get_logger(__name__)
 
@@ -348,13 +351,124 @@ class AgentContextAPI:
         workflow_context: WorkflowContext
     ) -> Optional[str]:
         """
-        Default document loader implementation.
+        Default document loader implementation with DocumentLifecycleManager integration.
 
-        This loads documents from the standard docs/features directory structure.
-        Can be overridden by providing custom document_loader to constructor.
+        This method integrates with DocumentLifecycleManager (Epic 12) to load
+        documents from the registry. Falls back to file-based loading if registry
+        access fails.
 
         Args:
             doc_type: Type of document to load
+            workflow_context: Workflow context with feature/epic/story info
+
+        Returns:
+            Document content or None if not found
+        """
+        # Map doc_type string to DocumentType enum
+        doc_type_map = {
+            "prd": DocumentType.PRD,
+            "architecture": DocumentType.ARCHITECTURE,
+            "epic_definition": DocumentType.EPIC,
+            "story_definition": DocumentType.STORY,
+        }
+
+        document_type = doc_type_map.get(doc_type)
+
+        # Try loading from DocumentLifecycleManager if we have a mapped type
+        if document_type is not None:
+            content = self._load_from_lifecycle_manager(
+                document_type,
+                workflow_context
+            )
+            if content is not None:
+                return content
+
+        # Fall back to file-based loading
+        return self._load_from_filesystem(doc_type, workflow_context)
+
+    def _load_from_lifecycle_manager(
+        self,
+        document_type: DocumentType,
+        workflow_context: WorkflowContext
+    ) -> Optional[str]:
+        """
+        Load document from DocumentLifecycleManager registry.
+
+        Args:
+            document_type: DocumentType enum value
+            workflow_context: Workflow context with feature info
+
+        Returns:
+            Document content or None if not found
+        """
+        try:
+            # Initialize registry and manager
+            db_path = Path.cwd() / ".gao" / "documents.db"
+            if not db_path.exists():
+                logger.debug("document_registry_not_found", db_path=str(db_path))
+                return None
+
+            registry = DocumentRegistry(db_path)
+            manager = DocumentLifecycleManager(
+                registry=registry,
+                archive_dir=Path.cwd() / ".gao" / ".archive"
+            )
+
+            # Query for active document
+            document = manager.get_current_document(
+                doc_type=document_type.value,
+                feature=workflow_context.feature
+            )
+
+            # Close registry connection
+            registry.close()
+
+            if document is None:
+                logger.debug(
+                    "document_not_found_in_registry",
+                    doc_type=document_type.value,
+                    feature=workflow_context.feature
+                )
+                return None
+
+            # Load content from file
+            doc_path = Path(document.path)
+            if not doc_path.exists():
+                logger.warning(
+                    "document_path_not_found",
+                    path=str(doc_path),
+                    doc_type=document_type.value
+                )
+                return None
+
+            content = doc_path.read_text(encoding='utf-8')
+            logger.debug(
+                "document_loaded_from_registry",
+                doc_type=document_type.value,
+                path=str(doc_path)
+            )
+            return content
+
+        except Exception as e:
+            logger.debug(
+                "lifecycle_manager_load_failed",
+                doc_type=document_type.value,
+                error=str(e)
+            )
+            return None
+
+    def _load_from_filesystem(
+        self,
+        doc_type: str,
+        workflow_context: WorkflowContext
+    ) -> Optional[str]:
+        """
+        Load document directly from filesystem (fallback).
+
+        Uses standard docs/features directory structure.
+
+        Args:
+            doc_type: Type of document
             workflow_context: Workflow context with feature/epic/story info
 
         Returns:
@@ -390,12 +504,26 @@ class AgentContextAPI:
         # Load file if path determined
         if file_path and file_path.exists():
             try:
-                return file_path.read_text(encoding='utf-8')
+                content = file_path.read_text(encoding='utf-8')
+                logger.debug(
+                    "document_loaded_from_filesystem",
+                    doc_type=doc_type,
+                    path=str(file_path)
+                )
+                return content
             except Exception as e:
-                logger.error("document_load_failed", file_path=str(file_path), error=str(e))
+                logger.error(
+                    "document_load_failed",
+                    file_path=str(file_path),
+                    error=str(e)
+                )
                 return None
 
-        logger.debug("document_path_not_found", doc_type=doc_type, file_path=str(file_path))
+        logger.debug(
+            "document_path_not_found",
+            doc_type=doc_type,
+            file_path=str(file_path) if file_path else None
+        )
         return None
 
     def get_cache_statistics(self) -> Dict[str, Any]:

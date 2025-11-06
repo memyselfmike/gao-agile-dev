@@ -34,6 +34,9 @@ from ..core.services.story_lifecycle import StoryLifecycleManager
 from ..core.services.process_executor import ProcessExecutor
 from ..core.services.quality_gate import QualityGateManager
 from ..core.prompt_loader import PromptLoader
+from ..core.context.context_persistence import ContextPersistence
+from ..core.context.workflow_context import WorkflowContext
+from ..core.context.context_api import set_workflow_context, clear_workflow_context
 
 logger = structlog.get_logger()
 
@@ -64,6 +67,7 @@ class GAODevOrchestrator:
         process_executor: Optional[ProcessExecutor] = None,
         quality_gate_manager: Optional[QualityGateManager] = None,
         brian_orchestrator: Optional[BrianOrchestrator] = None,
+        context_persistence: Optional[ContextPersistence] = None,
     ):
         """
         Initialize the GAO-Dev orchestrator with injected services.
@@ -79,10 +83,14 @@ class GAODevOrchestrator:
             process_executor: Optional custom ProcessExecutor
             quality_gate_manager: Optional custom QualityGateManager
             brian_orchestrator: Optional custom BrianOrchestrator
+            context_persistence: Optional custom ContextPersistence
         """
         self.project_root = project_root
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.mode = mode
+
+        # Initialize context persistence (always needed)
+        self.context_persistence = context_persistence or ContextPersistence()
 
         # CRITICAL FIX: Initialize missing services automatically
         # Check if any services are missing - if so, initialize all of them
@@ -571,10 +579,11 @@ class GAODevOrchestrator:
         commit_after_steps: bool = True,
     ) -> WorkflowResult:
         """
-        Execute complete workflow sequence from initial prompt.
+        Execute complete workflow sequence from initial prompt with automatic context tracking.
 
         Delegates to WorkflowCoordinator for execution while handling high-level
-        orchestration (workflow selection, clarification).
+        orchestration (workflow selection, clarification). Automatically creates and
+        manages WorkflowContext throughout the workflow lifecycle.
 
         Args:
             initial_prompt: User's initial request
@@ -582,9 +591,10 @@ class GAODevOrchestrator:
             commit_after_steps: Whether to commit after each workflow step
 
         Returns:
-            WorkflowResult with execution details and metrics
+            WorkflowResult with execution details, metrics, and context_id
         """
         from .workflow_results import WorkflowResult, WorkflowStatus
+        import uuid
 
         # Initialize result
         result = WorkflowResult(
@@ -596,6 +606,9 @@ class GAODevOrchestrator:
             start_time=datetime.now(),
             project_path=str(self.project_root) if self.project_root else None,
         )
+
+        # Create WorkflowContext for this execution
+        workflow_context = None
 
         try:
             # Step 1: Select workflow sequence if not provided
@@ -623,16 +636,59 @@ class GAODevOrchestrator:
 
                 result.workflow_name = f"{workflow.scale_level.name}_sequence"
 
+            # Step 2: Create WorkflowContext for this execution
+            workflow_id = str(uuid.uuid4())
+            workflow_context = WorkflowContext(
+                workflow_id=workflow_id,
+                epic_num=1,  # Default to epic 1 (can be overridden by metadata)
+                story_num=None,  # Will be set by story workflows
+                feature=self._extract_feature_name(initial_prompt),
+                workflow_name=result.workflow_name,
+                current_phase="initialization",
+                status="running",
+                metadata={
+                    "mode": self.mode,
+                    "commit_after_steps": commit_after_steps,
+                    "scale_level": workflow.scale_level.value if workflow.scale_level else None,
+                    "project_type": workflow.project_type.value if workflow.project_type else None,
+                    "estimated_stories": getattr(workflow, 'estimated_stories', None),
+                    "estimated_epics": getattr(workflow, 'estimated_epics', None),
+                    "routing_rationale": getattr(workflow, 'routing_rationale', None),
+                },
+            )
+
+            # Persist initial context to database
+            version = self.context_persistence.save_context(workflow_context)
+            result.context_id = workflow_id
+
+            logger.info(
+                "workflow_context_created",
+                workflow_id=workflow_id,
+                version=version,
+                feature=workflow_context.feature,
+            )
+
+            # Set thread-local context for agent access
+            set_workflow_context(workflow_context)
+
             logger.info(
                 "workflow_execution_started",
                 workflow_count=len(workflow.workflows),
                 scale_level=workflow.scale_level.value,
+                context_id=workflow_id,
             )
 
-            # Delegate to WorkflowCoordinator for execution
-            from ..core.models.workflow_context import WorkflowContext
+            # Step 3: Transition to planning phase
+            workflow_context = workflow_context.transition_phase("planning")
+            self.context_persistence.update_context(workflow_context)
+            set_workflow_context(workflow_context)  # Update thread-local
 
-            workflow_context = WorkflowContext(
+            # Delegate to WorkflowCoordinator for execution
+            # Note: WorkflowCoordinator expects the old-style WorkflowContext from models.workflow_context
+            # We'll pass metadata but also update our tracking context
+            from ..core.models.workflow_context import WorkflowContext as OldWorkflowContext
+
+            old_workflow_context = OldWorkflowContext(
                 initial_prompt=initial_prompt,
                 project_root=self.project_root,
                 metadata={
@@ -643,12 +699,13 @@ class GAODevOrchestrator:
                     "estimated_stories": workflow.estimated_stories,
                     "estimated_epics": workflow.estimated_epics,
                     "routing_rationale": workflow.routing_rationale,
+                    "tracking_context_id": workflow_id,  # Link to our tracking context
                 },
             )
 
             # Execute workflow sequence using WorkflowCoordinator
             coordinator_result = await self.workflow_coordinator.execute_sequence(
-                workflow_sequence=workflow, context=workflow_context
+                workflow_sequence=workflow, context=old_workflow_context
             )
 
             # Copy results from coordinator to orchestrator result
@@ -657,9 +714,22 @@ class GAODevOrchestrator:
             result.error_message = coordinator_result.error_message
             result.total_artifacts = coordinator_result.total_artifacts
 
+            # Step 4: Update context with artifacts from execution
+            for step_result in result.step_results:
+                for artifact_path in step_result.artifacts_created:
+                    workflow_context = workflow_context.add_artifact(artifact_path)
+
             # Check if execution failed
             if result.status == WorkflowStatus.FAILED:
                 logger.error("workflow_sequence_failed", error=result.error_message)
+                # Mark context as failed
+                workflow_context = workflow_context.copy_with(
+                    status="failed",
+                    current_phase="failed",
+                )
+                workflow_context.metadata["error"] = result.error_message
+                self.context_persistence.update_context(workflow_context)
+                set_workflow_context(workflow_context)
 
             # Note: Story loop logic is now handled by WorkflowCoordinator._execute_story_loop()
             # during execute_sequence(). No additional logic needed here.
@@ -667,10 +737,18 @@ class GAODevOrchestrator:
             # Mark as completed if all steps succeeded
             if result.status != WorkflowStatus.FAILED:
                 result.status = WorkflowStatus.COMPLETED
+
+                # Transition context to completed phase
+                workflow_context = workflow_context.transition_phase("completed")
+                workflow_context = workflow_context.copy_with(status="completed")
+                self.context_persistence.update_context(workflow_context)
+                set_workflow_context(workflow_context)
+
                 logger.info(
                     "workflow_execution_completed",
                     steps_completed=len(result.step_results),
                     duration=result.duration_seconds,
+                    context_id=workflow_id,
                 )
 
         except Exception as e:
@@ -678,10 +756,28 @@ class GAODevOrchestrator:
             result.error_message = str(e)
             logger.error("workflow_execution_error", error=str(e), exc_info=True)
 
+            # Mark context as failed if it was created
+            if workflow_context is not None:
+                workflow_context = workflow_context.copy_with(
+                    status="failed",
+                    current_phase="failed",
+                )
+                workflow_context.metadata["error"] = str(e)
+                workflow_context.metadata["exception_type"] = type(e).__name__
+                self.context_persistence.update_context(workflow_context)
+
         finally:
             result.end_time = datetime.now()
             result.total_artifacts = sum(
                 len(step.artifacts_created) for step in result.step_results
+            )
+
+            # Clear thread-local context
+            clear_workflow_context()
+
+            logger.debug(
+                "workflow_context_cleared",
+                context_id=workflow_context.workflow_id if workflow_context else None,
             )
 
         return result
@@ -821,3 +917,31 @@ class GAODevOrchestrator:
         else:
             # Default to orchestrator
             return "Orchestrator"
+
+    def _extract_feature_name(self, prompt: str) -> str:
+        """
+        Extract feature name from initial prompt for context tracking.
+
+        This is a simple extraction that takes the first few words
+        or falls back to a generic name. Can be enhanced with NLP later.
+
+        Args:
+            prompt: Initial user prompt
+
+        Returns:
+            Feature name string (kebab-case)
+        """
+        # Simple extraction: take first 3-5 words, convert to kebab-case
+        words = prompt.lower().split()[:5]
+        # Remove common stop words
+        stop_words = {"a", "an", "the", "for", "with", "to", "and", "or"}
+        filtered_words = [w for w in words if w not in stop_words]
+
+        if not filtered_words:
+            return "workflow-execution"
+
+        # Join with hyphens, limit length
+        feature_name = "-".join(filtered_words[:3])
+        # Remove special characters
+        feature_name = "".join(c if c.isalnum() or c == "-" else "" for c in feature_name)
+        return feature_name[:50] or "workflow-execution"

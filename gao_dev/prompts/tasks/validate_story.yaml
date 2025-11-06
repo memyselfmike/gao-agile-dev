@@ -5,6 +5,36 @@ version: 2.0.0
 user_prompt: |
   Use the Murat agent to validate Story {{epic}}.{{story}}.
 
+  ### Accessing Context via AgentContextAPI
+
+  Before starting validation, set up the WorkflowContext and AgentContextAPI:
+
+  ```python
+  from gao_dev.core.context.context_api import set_workflow_context, get_workflow_context, AgentContextAPI
+  from gao_dev.core.context.workflow_context import WorkflowContext
+  import uuid
+
+  # Create and set WorkflowContext
+  context = WorkflowContext(
+      workflow_id=str(uuid.uuid4()),
+      epic_num={{epic}},
+      story_num={{story}},
+      feature="{{feature}}",
+      workflow_name="validate_story"
+  )
+  set_workflow_context(context)
+
+  # Initialize AgentContextAPI for document access
+  api = AgentContextAPI(context)
+
+  # Access documents (lazy-loaded, cached, tracked)
+  epic_def = api.get_epic_definition()
+  architecture = api.get_architecture()
+  story_def = api.get_story_definition()
+  acceptance_criteria = api.get_acceptance_criteria()
+  coding_standards = api.get_coding_standards()
+  ```
+
   Story Definition:
   @doc:stories/epic-{{epic}}/story-{{epic}}.{{story}}.md
 
