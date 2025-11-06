@@ -1,4 +1,11 @@
-"""OpenCode CLI provider implementation.
+"""OpenCode CLI provider implementation (LEGACY - CLI-based).
+
+DEPRECATION NOTICE:
+This provider uses CLI subprocess calls which can cause hanging issues.
+Consider using OpenCodeSDKProvider (opencode-sdk) instead for better reliability.
+Set AGENT_PROVIDER=opencode-sdk in your .env file.
+
+See: docs/features/opencode-sdk-integration/MIGRATION.md
 
 This provider enables GAO-Dev to use OpenCode as an execution backend,
 providing multi-provider AI support (Anthropic, OpenAI, Google, and 75+ more)
@@ -25,6 +32,7 @@ from pathlib import Path
 from typing import AsyncGenerator, List, Dict, Optional
 import subprocess
 import os
+import warnings
 import structlog
 
 from .base import IAgentProvider
@@ -42,6 +50,11 @@ logger = structlog.get_logger()
 class OpenCodeProvider(IAgentProvider):
     """
     Provider for OpenCode CLI execution with multi-AI-provider support.
+
+    DEPRECATION WARNING:
+    This provider uses CLI subprocess calls which can cause hanging issues.
+    Use OpenCodeSDKProvider (opencode-sdk) instead for better reliability.
+    Set AGENT_PROVIDER=opencode-sdk in .env file.
 
     OpenCode is an open-source AI coding agent that supports multiple
     AI providers (Anthropic, OpenAI, Google, and 75+ more) through
@@ -180,6 +193,9 @@ class OpenCodeProvider(IAgentProvider):
         """
         Initialize OpenCode provider.
 
+        DEPRECATION WARNING: This provider is deprecated.
+        Use OpenCodeSDKProvider instead for better reliability.
+
         Args:
             cli_path: Path to OpenCode CLI (auto-detected if None)
             ai_provider: AI provider to use (anthropic, openai, google)
@@ -200,6 +216,16 @@ class OpenCodeProvider(IAgentProvider):
             )
             ```
         """
+        # Emit deprecation warning
+        warnings.warn(
+            "OpenCodeProvider is deprecated. "
+            "Use OpenCodeSDKProvider (opencode-sdk) for better reliability. "
+            "Set AGENT_PROVIDER=opencode-sdk in .env file. "
+            "See: docs/features/opencode-sdk-integration/MIGRATION.md",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
         self.cli_path = cli_path or self._detect_opencode_cli()
         self.ai_provider = ai_provider.lower()
 
@@ -285,10 +311,12 @@ class OpenCodeProvider(IAgentProvider):
         model_id = self.translate_model_name(model)
 
         # Build command
-        # Format: opencode run --model PROVIDER/MODEL "TASK"
+        # Format: opencode run --model PROVIDER/MODEL --format json "TASK"
         cmd = [str(self.cli_path)]
         cmd.extend(['run'])
         cmd.extend(['--model', model_id])
+        cmd.extend(['--format', 'json'])  # Use JSON format for structured output
+        cmd.append(task)  # Task as positional argument
         # Note: OpenCode 'run' uses current directory as project root
         # We set cwd to context.project_root below
 
@@ -313,9 +341,9 @@ class OpenCodeProvider(IAgentProvider):
         try:
             # Execute subprocess
             # IMPORTANT: encoding='utf-8' is required for Windows compatibility
+            # Note: Task is passed as argument, so no stdin needed
             process = subprocess.Popen(
                 cmd,
-                stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -325,10 +353,9 @@ class OpenCodeProvider(IAgentProvider):
                 cwd=str(context.project_root)  # Set working directory
             )
 
-            # Communicate with timeout
-            # Send task via stdin
+            # Wait for completion with timeout
+            # No stdin input needed since task is in command args
             stdout, stderr = process.communicate(
-                input=task,
                 timeout=timeout or self.DEFAULT_TIMEOUT
             )
 
@@ -729,3 +756,9 @@ class OpenCodeProvider(IAgentProvider):
             f"has_api_key={bool(self.api_key)}, "
             f"has_cli={bool(self.cli_path)})"
         )
+
+
+# Backward compatibility alias
+# The class is still called OpenCodeProvider, so this alias is for clarity
+# Users can reference it as OpenCodeCLIProvider if desired
+OpenCodeCLIProvider = OpenCodeProvider

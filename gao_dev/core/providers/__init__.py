@@ -77,7 +77,7 @@ from .models import AgentContext
 from .factory import ProviderFactory
 from .direct_api import DirectAPIProvider
 from .claude_code import ClaudeCodeProvider
-from .opencode import OpenCodeProvider  # CLI-based (legacy)
+from .opencode import OpenCodeProvider, OpenCodeCLIProvider  # CLI-based (legacy, with alias)
 from .opencode_sdk import OpenCodeSDKProvider  # SDK-based (new)
 from .selection import (
     IProviderSelectionStrategy,
@@ -104,6 +104,7 @@ __all__ = [
     "DirectAPIProvider",
     "ClaudeCodeProvider",
     "OpenCodeProvider",  # CLI-based (legacy)
+    "OpenCodeCLIProvider",  # Alias for OpenCodeProvider
     "OpenCodeSDKProvider",  # SDK-based (new)
 
     # Selection strategies
