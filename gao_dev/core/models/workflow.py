@@ -374,6 +374,7 @@ class WorkflowInfo:
             "name": self.name,
             "description": self.description,
             "phase": self.phase,
+            "installed_path": str(self.installed_path),  # Convert Path to string
             "author": self.author,
             "tags": self.tags,
             "variables": self.variables,

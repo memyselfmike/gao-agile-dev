@@ -98,6 +98,10 @@ class ClaudeCodeProvider(IAgentProvider):
             cli_path: Path to Claude CLI executable (auto-detected if None)
             api_key: Anthropic API key (uses ANTHROPIC_API_KEY env if None)
         """
+        # Convert cli_path to Path if it's a string (defensive for JSON deserialization)
+        if cli_path is not None and isinstance(cli_path, str):
+            cli_path = Path(cli_path)
+
         self.cli_path = cli_path or find_claude_cli()
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self._initialized = False
