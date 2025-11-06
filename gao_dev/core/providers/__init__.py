@@ -77,7 +77,8 @@ from .models import AgentContext
 from .factory import ProviderFactory
 from .direct_api import DirectAPIProvider
 from .claude_code import ClaudeCodeProvider
-from .opencode import OpenCodeProvider
+from .opencode import OpenCodeProvider  # CLI-based (legacy)
+from .opencode_sdk import OpenCodeSDKProvider  # SDK-based (new)
 from .selection import (
     IProviderSelectionStrategy,
     AutoDetectStrategy,
@@ -102,7 +103,8 @@ __all__ = [
     # Built-in providers
     "DirectAPIProvider",
     "ClaudeCodeProvider",
-    "OpenCodeProvider",
+    "OpenCodeProvider",  # CLI-based (legacy)
+    "OpenCodeSDKProvider",  # SDK-based (new)
 
     # Selection strategies
     "IProviderSelectionStrategy",
