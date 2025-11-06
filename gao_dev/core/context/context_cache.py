@@ -1,175 +1,282 @@
 """
-Context cache for storing frequently accessed context.
+Context cache for storing frequently accessed documents.
 
-This module provides an in-memory cache with TTL (Time To Live) for context data.
-It improves performance by caching frequently accessed context like epic definitions,
-architecture docs, and coding standards.
+This module provides a high-performance in-memory cache with TTL expiration
+and LRU eviction for frequently accessed documents (PRDs, architecture, stories).
+Thread-safe for concurrent agent execution.
 """
 
-import time
-from typing import Optional, Dict, Any
-from dataclasses import dataclass
-import structlog
+from collections import OrderedDict
+from datetime import datetime, timedelta
+from threading import RLock
+from typing import Optional, Callable, Any, Dict, List
+import sys
 
-logger = structlog.get_logger(__name__)
 
-
-@dataclass
 class CacheEntry:
-    """Cache entry with value and expiration time."""
+    """Cache entry with value and metadata."""
 
-    value: str
-    expires_at: float
+    def __init__(self, value: Any, ttl: timedelta):
+        self.value = value
+        self.created_at = datetime.now()
+        self.ttl = ttl
+        self.access_count = 0
+
+    def is_expired(self) -> bool:
+        """Check if entry is expired."""
+        return datetime.now() - self.created_at > self.ttl
+
+    def touch(self):
+        """Update access statistics."""
+        self.access_count += 1
 
 
 class ContextCache:
     """
-    In-memory cache with TTL for context data.
+    Thread-safe LRU cache with TTL expiration.
 
-    This cache stores context values with automatic expiration based on TTL.
-    It provides simple get/set/invalidate operations for context caching.
+    Provides high-performance in-memory caching for frequently accessed
+    documents with automatic expiration and eviction. Optimized for
+    concurrent agent access.
 
     Features:
-        - TTL-based expiration (default: 5 minutes)
-        - LRU eviction when cache is full
-        - Cache hit/miss tracking
-        - Cache invalidation by key or pattern
+    - TTL-based expiration (configurable per instance and per key)
+    - LRU eviction when cache full
+    - Thread-safe concurrent access
+    - Comprehensive metrics (hits, misses, evictions)
+    - O(1) get/set operations
+    - Lazy loading with get_or_load
 
     Example:
-        >>> cache = ContextCache(ttl_seconds=300)  # 5 minutes
-        >>> cache.set("epic_definition", "Epic content here")
-        >>> content = cache.get("epic_definition")  # Cache hit
-        >>> cache.invalidate("epic_definition")  # Force reload
-        >>> content = cache.get("epic_definition")  # Cache miss -> None
+        cache = ContextCache(ttl=timedelta(minutes=5), max_size=100)
 
-    Args:
-        ttl_seconds: Time to live in seconds (default: 300 = 5 minutes)
-        max_size: Maximum cache size (default: 1000 entries)
+        # Cache a value
+        cache.set("prd", prd_content)
+
+        # Get cached value
+        prd = cache.get("prd")
+
+        # Lazy load with caching
+        prd = cache.get_or_load("prd", lambda: load_prd_from_file())
+
+        # Check metrics
+        stats = cache.get_statistics()
+        print(f"Hit rate: {stats['hit_rate']:.2%}")
     """
 
-    def __init__(self, ttl_seconds: int = 300, max_size: int = 1000):
+    def __init__(self, ttl: timedelta = timedelta(minutes=5), max_size: int = 100):
         """
-        Initialize context cache.
+        Initialize ContextCache.
 
         Args:
-            ttl_seconds: Default TTL for cache entries in seconds
-            max_size: Maximum number of entries before LRU eviction
+            ttl: Default time-to-live for cache entries
+            max_size: Maximum number of entries (LRU eviction when exceeded)
         """
-        self.ttl_seconds = ttl_seconds
-        self.max_size = max_size
-        self._cache: Dict[str, CacheEntry] = {}
-        self._hit_count = 0
-        self._miss_count = 0
+        self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
+        self._default_ttl = ttl
+        self._max_size = max_size
+        self._lock = RLock()  # Reentrant lock for nested calls
 
-    def get(self, key: str) -> Optional[str]:
+        # Metrics
+        self._hits = 0
+        self._misses = 0
+        self._evictions = 0
+        self._expirations = 0
+
+    def get(self, key: str) -> Optional[Any]:
         """
-        Get value from cache.
-
-        Returns None if key not found or entry has expired.
+        Get cached value if valid (not expired).
 
         Args:
             key: Cache key
 
         Returns:
-            Cached value if found and not expired, None otherwise
+            Cached value if exists and not expired, None otherwise
         """
-        entry = self._cache.get(key)
+        with self._lock:
+            if key not in self._cache:
+                self._misses += 1
+                return None
 
-        if entry is None:
-            self._miss_count += 1
-            logger.debug("cache_miss", key=key)
-            return None
+            entry = self._cache[key]
 
-        # Check if expired
-        if time.time() > entry.expires_at:
-            # Remove expired entry
-            del self._cache[key]
-            self._miss_count += 1
-            logger.debug("cache_expired", key=key)
-            return None
+            # Check expiration
+            if entry.is_expired():
+                del self._cache[key]
+                self._expirations += 1
+                self._misses += 1
+                return None
 
-        self._hit_count += 1
-        logger.debug("cache_hit", key=key)
-        return entry.value
+            # Cache hit
+            self._hits += 1
+            entry.touch()
+            self._cache.move_to_end(key)  # Update LRU order
+            return entry.value
 
-    def set(self, key: str, value: str, ttl_seconds: Optional[int] = None) -> None:
+    def set(self, key: str, value: Any, ttl: Optional[timedelta] = None):
         """
-        Store value in cache with TTL.
-
-        If cache is full, evicts the oldest entry (simple FIFO).
+        Cache a value with optional TTL override.
 
         Args:
             key: Cache key
             value: Value to cache
-            ttl_seconds: Custom TTL for this entry (default: use cache default)
+            ttl: Optional TTL override (uses default if None)
         """
-        # Check cache size and evict if needed
-        if len(self._cache) >= self.max_size and key not in self._cache:
-            # Simple FIFO eviction - remove first entry
-            # In production, this would be LRU
-            first_key = next(iter(self._cache))
-            del self._cache[first_key]
-            logger.debug("cache_evicted", evicted_key=first_key)
+        with self._lock:
+            # Use provided TTL or default
+            entry_ttl = ttl if ttl is not None else self._default_ttl
 
-        ttl = ttl_seconds if ttl_seconds is not None else self.ttl_seconds
-        expires_at = time.time() + ttl
+            # Evict oldest if at max size and adding new key
+            if len(self._cache) >= self._max_size and key not in self._cache:
+                self._evict_oldest()
 
-        self._cache[key] = CacheEntry(value=value, expires_at=expires_at)
-        logger.debug("cache_set", key=key, ttl=ttl)
+            # Create or update entry
+            self._cache[key] = CacheEntry(value, entry_ttl)
+            self._cache.move_to_end(key)  # Move to most recent
 
-    def invalidate(self, key: str) -> None:
+    def get_or_load(self, key: str, loader: Callable[[], Any], ttl: Optional[timedelta] = None) -> Any:
         """
-        Remove entry from cache.
+        Get cached value or load and cache it (lazy loading).
 
         Args:
-            key: Cache key to invalidate
-        """
-        if key in self._cache:
-            del self._cache[key]
-            logger.debug("cache_invalidated", key=key)
+            key: Cache key
+            loader: Function to load value if not cached
+            ttl: Optional TTL override
 
-    def invalidate_pattern(self, pattern: str) -> int:
+        Returns:
+            Cached or loaded value
         """
-        Invalidate all entries matching pattern.
+        # Try to get from cache first
+        cached = self.get(key)
+        if cached is not None:
+            return cached
 
-        Pattern matching is simple substring match.
+        # Load value
+        value = loader()
+
+        # Cache it
+        self.set(key, value, ttl)
+
+        return value
+
+    def invalidate(self, key: str) -> bool:
+        """
+        Remove specific key from cache.
 
         Args:
-            pattern: Pattern to match (substring)
+            key: Cache key to remove
 
         Returns:
-            Number of entries invalidated
+            True if key was removed, False if not found
         """
-        keys_to_remove = [k for k in self._cache.keys() if pattern in k]
+        with self._lock:
+            if key in self._cache:
+                del self._cache[key]
+                return True
+            return False
 
-        for key in keys_to_remove:
-            del self._cache[key]
+    def clear(self):
+        """Remove all cached values."""
+        with self._lock:
+            self._cache.clear()
 
-        logger.info("cache_pattern_invalidated", pattern=pattern, count=len(keys_to_remove))
-        return len(keys_to_remove)
-
-    def clear(self) -> None:
-        """Clear all cache entries."""
-        self._cache.clear()
-        self._hit_count = 0
-        self._miss_count = 0
-        logger.info("cache_cleared")
-
-    def get_stats(self) -> Dict[str, Any]:
+    def has_key(self, key: str) -> bool:
         """
-        Get cache statistics.
+        Check if key exists and is not expired.
+
+        Args:
+            key: Cache key
 
         Returns:
-            Dict with cache stats (size, hits, misses, hit_rate)
+            True if key exists and valid, False otherwise
         """
-        total = self._hit_count + self._miss_count
-        hit_rate = self._hit_count / total if total > 0 else 0.0
+        with self._lock:
+            if key not in self._cache:
+                return False
 
-        return {
-            'size': len(self._cache),
-            'max_size': self.max_size,
-            'hits': self._hit_count,
-            'misses': self._miss_count,
-            'hit_rate': hit_rate,
-            'ttl_seconds': self.ttl_seconds
-        }
+            entry = self._cache[key]
+            if entry.is_expired():
+                del self._cache[key]
+                self._expirations += 1
+                return False
+
+            return True
+
+    def keys(self) -> List[str]:
+        """
+        Get all valid cache keys (removes expired entries).
+
+        Returns:
+            List of valid cache keys
+        """
+        with self._lock:
+            # Remove expired entries
+            expired_keys = [k for k, v in self._cache.items() if v.is_expired()]
+            for key in expired_keys:
+                del self._cache[key]
+                self._expirations += 1
+
+            return list(self._cache.keys())
+
+    def get_statistics(self) -> Dict[str, Any]:
+        """
+        Get comprehensive cache statistics.
+
+        Returns:
+            Dict with metrics:
+            - hits: Cache hit count
+            - misses: Cache miss count
+            - evictions: LRU eviction count
+            - expirations: TTL expiration count
+            - size: Current entry count
+            - max_size: Maximum entry count
+            - hit_rate: Hit rate percentage (0.0-1.0)
+            - memory_usage: Estimated memory usage in bytes
+        """
+        with self._lock:
+            total_requests = self._hits + self._misses
+            hit_rate = self._hits / total_requests if total_requests > 0 else 0.0
+
+            # Estimate memory usage
+            memory_usage = 0
+            for entry in self._cache.values():
+                memory_usage += sys.getsizeof(entry.value)
+
+            return {
+                "hits": self._hits,
+                "misses": self._misses,
+                "evictions": self._evictions,
+                "expirations": self._expirations,
+                "size": len(self._cache),
+                "max_size": self._max_size,
+                "hit_rate": hit_rate,
+                "memory_usage": memory_usage
+            }
+
+    def reset_statistics(self):
+        """Reset metrics counters."""
+        with self._lock:
+            self._hits = 0
+            self._misses = 0
+            self._evictions = 0
+            self._expirations = 0
+
+    def _evict_oldest(self):
+        """Evict least recently used entry."""
+        if self._cache:
+            self._cache.popitem(last=False)  # Remove oldest (FIFO)
+            self._evictions += 1
+
+    def __len__(self) -> int:
+        """Return current cache size."""
+        with self._lock:
+            return len(self._cache)
+
+    def __contains__(self, key: str) -> bool:
+        """Check if key exists (same as has_key)."""
+        return self.has_key(key)
+
+    def __repr__(self) -> str:
+        """String representation."""
+        stats = self.get_statistics()
+        return f"ContextCache(size={stats['size']}/{stats['max_size']}, hit_rate={stats['hit_rate']:.2%})"
