@@ -186,6 +186,9 @@ class OpenCodeSDKProvider(IAgentProvider):
         self.server_process: Optional[subprocess.Popen] = None
         self._initialized = False
 
+        # Auto-detect OpenCode CLI path for server startup
+        self.cli_path = self._detect_opencode_cli()
+
         # Register cleanup on exit
         atexit.register(self.cleanup_sync)
 
@@ -195,6 +198,7 @@ class OpenCodeSDKProvider(IAgentProvider):
             port=port,
             has_api_key=bool(self.api_key),
             auto_start=auto_start_server,
+            has_cli_path=bool(self.cli_path),
         )
 
     @property
@@ -700,8 +704,14 @@ class OpenCodeSDKProvider(IAgentProvider):
                         )
 
                 # Start server process
+                if not self.cli_path:
+                    raise ProviderInitializationError(
+                        "OpenCode CLI not found. Install: npm install -g opencode-ai@latest",
+                        provider_name=self.name
+                    )
+
                 self.server_process = subprocess.Popen(
-                    ["opencode", "serve", "--port", str(self.port)],
+                    [str(self.cli_path), "serve", "--port", str(self.port)],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     text=True,
@@ -876,6 +886,54 @@ class OpenCodeSDKProvider(IAgentProvider):
                 "opencode_server_stop_error",
                 error=str(e),
             )
+
+    def _detect_opencode_cli(self) -> Optional[Any]:
+        """
+        Auto-detect OpenCode CLI installation.
+
+        Searches common installation paths for opencode executable.
+
+        Returns:
+            Path to OpenCode CLI if found, None otherwise
+
+        Example:
+            ```python
+            cli_path = provider._detect_opencode_cli()
+            if cli_path:
+                print(f"Found OpenCode at: {cli_path}")
+            else:
+                print("OpenCode not found. Please install.")
+            ```
+        """
+        from pathlib import Path
+
+        # Common installation paths
+        search_paths = [
+            Path.home() / ".opencode" / "bin" / "opencode",
+            Path.home() / "bin" / "opencode",
+            Path("/usr/local/bin/opencode"),
+            Path("/usr/bin/opencode"),
+        ]
+
+        # Windows paths
+        if os.name == 'nt':
+            search_paths.extend([
+                Path(os.environ.get("LOCALAPPDATA", "")) / "opencode" / "bin" / "opencode.exe",
+                Path.home() / ".opencode" / "bin" / "opencode.exe",
+                Path("C:/Program Files/opencode/opencode.exe"),
+            ])
+
+        for path in search_paths:
+            if path.exists() and path.is_file():
+                logger.info("opencode_cli_detected", path=str(path))
+                return path
+
+        logger.warning(
+            "opencode_cli_not_detected",
+            searched_paths=[str(p) for p in search_paths],
+            message="OpenCode CLI not found. Install: npm install -g opencode-ai@latest"
+        )
+        return None
 
     async def cleanup(self) -> None:
         """
