@@ -8,20 +8,30 @@ Key Differences from CLI Provider:
 - Direct API communication (no process management)
 - Better error handling and response parsing
 - No timeout issues from subprocess hangs
+- Automatic server lifecycle management (auto-start, health check, shutdown)
 
 Implementation Status:
-- Story 19.2: Core provider implementation
-- Story 19.3: Server lifecycle management (future)
+- Story 19.2: Core provider implementation - COMPLETE
+- Story 19.3: Server lifecycle management - COMPLETE
 - Story 19.4: Integration testing (future)
 
 Extracted for: Epic 19 - OpenCode SDK Integration
-Story: 19.2 - Implement OpenCodeSDKProvider Core
+Story: 19.3 - Server Lifecycle Management
 """
 
 from pathlib import Path
 from typing import AsyncGenerator, List, Dict, Optional, Any
 import structlog
 import os
+import atexit
+import subprocess
+import time
+import socket
+
+try:
+    import requests
+except ImportError:
+    requests = None  # type: ignore
 
 from .base import IAgentProvider
 from .models import AgentContext
@@ -121,39 +131,72 @@ class OpenCodeSDKProvider(IAgentProvider):
     def __init__(
         self,
         server_url: str = "http://localhost:4096",
+        port: int = 4096,
         api_key: Optional[str] = None,
+        auto_start_server: bool = True,
+        startup_timeout: int = 30,
+        health_check_timeout: int = 10,
+        shutdown_timeout: int = 15,
         **kwargs: Any
     ) -> None:
         """
-        Initialize OpenCode SDK provider.
+        Initialize OpenCode SDK provider with server lifecycle management.
 
         Args:
             server_url: URL of OpenCode server (default: http://localhost:4096)
+            port: Port for OpenCode server (default: 4096)
             api_key: API key for authentication (if required)
+            auto_start_server: Whether to auto-start server on init (default: True)
+            startup_timeout: Max seconds to wait for server startup (default: 30)
+            health_check_timeout: Max seconds for health check (default: 10)
+            shutdown_timeout: Max seconds for graceful shutdown (default: 15)
             **kwargs: Additional configuration options (for future use)
 
         Example:
             ```python
-            # With default server URL
+            # With default settings (auto-start server)
             provider = OpenCodeSDKProvider()
 
-            # With custom server URL
-            provider = OpenCodeSDKProvider(server_url="http://localhost:8080")
+            # With custom configuration
+            provider = OpenCodeSDKProvider(
+                port=8080,
+                auto_start_server=True,
+                startup_timeout=60
+            )
 
-            # With API key
-            provider = OpenCodeSDKProvider(api_key="sk-...")
+            # Disable auto-start (assume server already running)
+            provider = OpenCodeSDKProvider(auto_start_server=False)
             ```
         """
+        # Validate port
+        if not (1024 <= port <= 65535):
+            raise ProviderConfigurationError(
+                f"Invalid port {port}. Must be between 1024 and 65535.",
+                provider_name="opencode-sdk"
+            )
+
         self.server_url = server_url
+        self.port = port
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.auto_start_server = auto_start_server
+        self.startup_timeout = startup_timeout
+        self.health_check_timeout = health_check_timeout
+        self.shutdown_timeout = shutdown_timeout
+
         self.sdk_client: Optional[Any] = None  # Type: Opencode
         self.session: Optional[Any] = None  # Type: Session
+        self.server_process: Optional[subprocess.Popen] = None
         self._initialized = False
+
+        # Register cleanup on exit
+        atexit.register(self.cleanup_sync)
 
         logger.info(
             "opencode_sdk_provider_init",
             server_url=server_url,
+            port=port,
             has_api_key=bool(self.api_key),
+            auto_start=auto_start_server,
         )
 
     @property
@@ -168,7 +211,12 @@ class OpenCodeSDKProvider(IAgentProvider):
 
     async def initialize(self) -> None:
         """
-        Initialize SDK client and verify server connection.
+        Initialize SDK client and start server if needed.
+
+        This method:
+        1. Starts OpenCode server if auto_start_server is True
+        2. Verifies server health with retries
+        3. Creates SDK client
 
         Raises:
             ProviderInitializationError: If initialization fails
@@ -177,7 +225,7 @@ class OpenCodeSDKProvider(IAgentProvider):
             ```python
             provider = OpenCodeSDKProvider()
             await provider.initialize()
-            # Provider ready to use
+            # Provider ready to use, server started automatically
             ```
         """
         if self._initialized:
@@ -186,6 +234,13 @@ class OpenCodeSDKProvider(IAgentProvider):
 
         try:
             logger.info("opencode_sdk_provider_initialize_start")
+
+            # Start server if auto-start enabled
+            if self.auto_start_server:
+                self._start_server()
+
+            # Verify server health
+            self._health_check()
 
             # Import SDK here to avoid import-time errors if SDK not installed
             try:
@@ -213,6 +268,8 @@ class OpenCodeSDKProvider(IAgentProvider):
                 error=str(e),
                 error_type=type(e).__name__,
             )
+            # Cleanup on failure
+            self._stop_server()
             raise ProviderInitializationError(
                 f"Failed to initialize OpenCode SDK provider: {e}",
                 provider_name=self.name,
@@ -609,16 +666,230 @@ class OpenCodeSDKProvider(IAgentProvider):
             "required": []  # Both optional
         }
 
+    def _start_server(self) -> None:
+        """
+        Start OpenCode server process with retry logic.
+
+        Raises:
+            ProviderInitializationError: If server startup fails after all retries
+        """
+        max_retries = 3
+        retry_delay = 2  # seconds
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.info(
+                    "opencode_server_start_attempt",
+                    attempt=attempt,
+                    max_retries=max_retries,
+                    port=self.port,
+                )
+
+                # Check if port is available
+                if self._is_port_in_use(self.port):
+                    logger.warning(
+                        "opencode_server_port_in_use",
+                        port=self.port,
+                    )
+                    # Try to connect to existing server
+                    if self._is_server_healthy():
+                        logger.info("opencode_server_already_running")
+                        return
+                    else:
+                        raise ProviderInitializationError(
+                            f"Port {self.port} in use but server not responding",
+                            provider_name=self.name
+                        )
+
+                # Start server process
+                self.server_process = subprocess.Popen(
+                    ["opencode", "serve", "--port", str(self.port)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+
+                logger.info(
+                    "opencode_server_process_started",
+                    pid=self.server_process.pid,
+                )
+
+                # Wait for server to be ready
+                if self._wait_for_server_ready():
+                    logger.info("opencode_server_start_success")
+                    return
+
+                # Server didn't become ready
+                self._stop_server()
+                raise ProviderInitializationError(
+                    f"Server failed to become ready within {self.startup_timeout}s",
+                    provider_name=self.name
+                )
+
+            except subprocess.SubprocessError as e:
+                logger.warning(
+                    "opencode_server_start_attempt_failed",
+                    attempt=attempt,
+                    error=str(e),
+                )
+
+                if attempt < max_retries:
+                    time.sleep(retry_delay)
+                else:
+                    raise ProviderInitializationError(
+                        f"Failed to start OpenCode server after {max_retries} attempts: {e}",
+                        provider_name=self.name,
+                        original_error=e
+                    ) from e
+
+    def _wait_for_server_ready(self) -> bool:
+        """
+        Wait for server to be ready with timeout.
+
+        Returns:
+            True if server is ready, False if timeout
+        """
+        start_time = time.time()
+        check_interval = 0.5  # seconds
+
+        while time.time() - start_time < self.startup_timeout:
+            if self._is_server_healthy():
+                return True
+
+            time.sleep(check_interval)
+
+            # Check if process crashed
+            if self.server_process and self.server_process.poll() is not None:
+                logger.error(
+                    "opencode_server_process_crashed",
+                    returncode=self.server_process.returncode,
+                )
+                return False
+
+        return False
+
+    def _health_check(self) -> None:
+        """
+        Perform health check on OpenCode server with retries.
+
+        Raises:
+            ProviderInitializationError: If health check fails after all retries
+        """
+        max_retries = 3
+        retry_delay = 1  # seconds
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.debug(
+                    "opencode_health_check_attempt",
+                    attempt=attempt,
+                )
+
+                if self._is_server_healthy():
+                    logger.info("opencode_health_check_success")
+                    return
+
+            except Exception as e:
+                logger.warning(
+                    "opencode_health_check_attempt_failed",
+                    attempt=attempt,
+                    error=str(e),
+                )
+
+                if attempt < max_retries:
+                    time.sleep(retry_delay)
+                else:
+                    raise ProviderInitializationError(
+                        f"Health check failed after {max_retries} attempts: {e}",
+                        provider_name=self.name,
+                        original_error=e
+                    ) from e
+
+        # If we get here without exception, health check never succeeded
+        raise ProviderInitializationError(
+            f"Health check failed after {max_retries} attempts",
+            provider_name=self.name
+        )
+
+    def _is_server_healthy(self) -> bool:
+        """
+        Check if OpenCode server is healthy using HTTP health check.
+
+        Returns:
+            True if server responds to health check
+        """
+        try:
+            if requests is None:
+                logger.warning("requests module not available, cannot check server health")
+                return False
+
+            # Try health endpoint
+            health_url = f"{self.server_url}/health"
+            response = requests.get(
+                health_url,
+                timeout=self.health_check_timeout,
+            )
+            return response.status_code == 200
+
+        except Exception:
+            return False
+
+    def _is_port_in_use(self, port: int) -> bool:
+        """
+        Check if port is already in use.
+
+        Args:
+            port: Port number to check
+
+        Returns:
+            True if port is in use
+        """
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            return s.connect_ex(('localhost', port)) == 0
+
+    def _stop_server(self) -> None:
+        """Stop OpenCode server gracefully."""
+        if not self.server_process:
+            return
+
+        try:
+            logger.info(
+                "opencode_server_stop_start",
+                pid=self.server_process.pid,
+            )
+
+            # Try graceful shutdown first
+            self.server_process.terminate()
+
+            # Wait for graceful shutdown
+            try:
+                self.server_process.wait(timeout=self.shutdown_timeout)
+                logger.info("opencode_server_stopped_gracefully")
+            except subprocess.TimeoutExpired:
+                # Force kill if graceful shutdown fails
+                logger.warning("opencode_server_force_kill")
+                self.server_process.kill()
+                self.server_process.wait()
+
+            self.server_process = None
+
+        except Exception as e:
+            logger.error(
+                "opencode_server_stop_error",
+                error=str(e),
+            )
+
     async def cleanup(self) -> None:
         """
-        Clean up SDK resources.
+        Clean up SDK resources and stop server if auto-started.
 
-        Closes any open sessions and SDK clients.
+        Closes any open sessions, SDK clients, and gracefully stops
+        the OpenCode server if it was started by this provider.
 
         Example:
             ```python
             await provider.cleanup()
-            # Provider cleaned up
+            # Provider cleaned up, server stopped
             ```
         """
         try:
@@ -638,6 +909,10 @@ class OpenCodeSDKProvider(IAgentProvider):
                 self.sdk_client = None
                 logger.debug("opencode_sdk_client_closed")
 
+            # Stop server if we started it
+            if self.auto_start_server:
+                self._stop_server()
+
             self._initialized = False
             logger.info("opencode_sdk_provider_cleanup_complete")
 
@@ -647,6 +922,25 @@ class OpenCodeSDKProvider(IAgentProvider):
                 "opencode_sdk_provider_cleanup_error",
                 error=str(e),
                 message="Error during cleanup, continuing"
+            )
+
+    def cleanup_sync(self) -> None:
+        """
+        Synchronous cleanup method for atexit handler.
+
+        This is called automatically on Python exit to ensure
+        server is stopped properly.
+        """
+        try:
+            # Only stop server, don't cleanup other resources
+            # (those may already be garbage collected)
+            if self.auto_start_server:
+                self._stop_server()
+        except Exception as e:
+            # Silently fail - we're exiting anyway
+            logger.warning(
+                "opencode_sdk_provider_atexit_cleanup_error",
+                error=str(e),
             )
 
     def __repr__(self) -> str:
