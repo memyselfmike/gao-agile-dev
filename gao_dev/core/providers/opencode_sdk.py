@@ -19,7 +19,6 @@ Extracted for: Epic 19 - OpenCode SDK Integration
 Story: 19.3 - Server Lifecycle Management
 """
 
-from pathlib import Path
 from typing import AsyncGenerator, List, Dict, Optional, Any
 import structlog
 import os
@@ -37,7 +36,6 @@ from .base import IAgentProvider
 from .models import AgentContext
 from .exceptions import (
     ProviderExecutionError,
-    ProviderTimeoutError,
     ProviderConfigurationError,
     ProviderInitializationError,
     ModelNotSupportedError

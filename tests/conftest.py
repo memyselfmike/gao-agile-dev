@@ -208,3 +208,71 @@ def event_loop_policy():
 
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
+
+# =============================================================================
+# OpenCode SDK Provider Fixtures
+# =============================================================================
+
+@pytest.fixture
+def mock_opencode_sdk():
+    """
+    Fixture for mocking OpenCode SDK.
+
+    Provides a mocked OpenCode SDK client and session for unit testing
+    without requiring actual SDK or server.
+
+    Yields:
+        Mock: Mocked Opencode class
+    """
+    from unittest.mock import MagicMock, patch
+
+    with patch('gao_dev.core.providers.opencode_sdk.Opencode') as mock:
+        mock_client = MagicMock()
+        mock_session = MagicMock()
+
+        # Setup response
+        mock_response = MagicMock()
+        mock_response.content = "Mocked response"
+        mock_response.usage = MagicMock()
+        mock_response.usage.input_tokens = 10
+        mock_response.usage.output_tokens = 5
+
+        mock_session.chat.return_value = mock_response
+        mock_client.create_session.return_value = mock_session
+        mock.return_value = mock_client
+
+        yield mock
+
+
+@pytest.fixture
+def opencode_sdk_provider():
+    """
+    Fixture for creating OpenCodeSDKProvider instance.
+
+    Creates a provider with auto_start_server disabled (for unit tests).
+
+    Yields:
+        OpenCodeSDKProvider: Provider instance
+
+    Note:
+        Automatically cleans up resources after test
+    """
+    from gao_dev.core.providers.opencode_sdk import OpenCodeSDKProvider
+
+    provider = OpenCodeSDKProvider(auto_start_server=False)
+    yield provider
+
+    # Cleanup
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            # Schedule cleanup
+            asyncio.create_task(provider.cleanup())
+        else:
+            # Run cleanup synchronously
+            loop.run_until_complete(provider.cleanup())
+    except Exception:
+        # Fallback to sync cleanup
+        provider.cleanup_sync()
