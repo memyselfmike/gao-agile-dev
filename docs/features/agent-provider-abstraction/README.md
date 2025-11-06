@@ -119,7 +119,18 @@ class ProviderSelectionStrategy:
 
 ### Planning Documentation
 - [stories/epic-11/](stories/epic-11/) - Detailed story documentation
-- [provider-abstraction-analysis.md](../../provider-abstraction-analysis.md) - Comprehensive analysis
+- [provider-abstraction-analysis.md](provider-abstraction-analysis.md) - Comprehensive analysis
+
+### Migration & Guides
+- [MIGRATION_PROVIDER.md](MIGRATION_PROVIDER.md) - Migration guide for adopting provider abstraction
+- [PROVIDER_SYSTEM_GUIDE.md](PROVIDER_SYSTEM_GUIDE.md) - System guide for using providers
+- [provider-plugin-development.md](provider-plugin-development.md) - Guide for developing custom provider plugins
+
+### OpenCode Documentation
+- [opencode-cli-reference.md](opencode-cli-reference.md) - OpenCode CLI command reference
+- [opencode-research.md](opencode-research.md) - OpenCode research and investigation notes
+- [opencode-setup-guide.md](opencode-setup-guide.md) - Setting up OpenCode provider
+- [opencode-tool-mapping.md](opencode-tool-mapping.md) - Tool mapping between Claude Code and OpenCode
 
 ## Current Coupling Analysis
 

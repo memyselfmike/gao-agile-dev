@@ -237,6 +237,10 @@ The Document Lifecycle System enables:
 
 **Note**: Core documents now include YAML frontmatter with lifecycle metadata (this system managing itself!)
 
+### Migration & Guides
+- [MIGRATION_GUIDE_EPIC_13.md](MIGRATION_GUIDE_EPIC_13.md) - Migration guide for adopting Epic 13's meta-prompt system
+- [checklist-authoring-guide.md](checklist-authoring-guide.md) - Guide for creating custom quality checklists
+
 ### Additional Documentation
 - [ARCHITECTURE-PROPOSAL.md](ARCHITECTURE-PROPOSAL.md) - Architecture proposal
 - [ARCHITECTURAL-REVIEW.md](ARCHITECTURAL-REVIEW.md) - Architecture review

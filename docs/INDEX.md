@@ -103,6 +103,15 @@ This is the master navigation hub for all GAO-Dev documentation.
 - Previous architectural explorations
 - Preserved for reference only
 
+### Cleanup Summaries
+- [archive/cleanup-summaries/](archive/cleanup-summaries/) - Documentation cleanup summaries
+- Temporary reference documents from cleanup process
+- Created during multi-phase documentation reorganization
+
+### Legacy Documents
+- [archive/README.md](archive/README.md) - Superseded by INDEX.md (this file)
+- [archive/SCIENTIFIC_METHOD.md](archive/SCIENTIFIC_METHOD.md) - Merged into BENCHMARK_STANDARDS.md
+
 ## Quick Navigation
 
 ### I want to...

@@ -125,6 +125,9 @@ The Sandbox System provides comprehensive testing and validation infrastructure 
 - [epics.md](epics.md) - Epic breakdown and story details (with lifecycle metadata)
 - [stories/](stories/) - Detailed story documentation
 
+### Guides
+- [sandbox-autonomous-benchmark-guide.md](sandbox-autonomous-benchmark-guide.md) - Comprehensive guide for creating and running autonomous benchmarks
+
 ### Archive
 - [archive/](archive/) - Historical planning documents
   - PROJECT_BRIEF.md - Initial project brief

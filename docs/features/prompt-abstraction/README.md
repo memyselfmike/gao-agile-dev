@@ -377,7 +377,7 @@ Epic 10 enables:
 
 ## Documentation
 
-**Key Documents**:
+### Core Documents
 - [PRD](PRD.md) - Product requirements and vision (with lifecycle metadata)
 - [Architecture](ARCHITECTURE.md) - Technical design and implementation (with lifecycle metadata)
 - [Epics](epics.md) - Epic breakdown and stories (with lifecycle metadata)
@@ -385,7 +385,10 @@ Epic 10 enables:
 
 **Note**: All core documents now include YAML frontmatter with lifecycle metadata for document tracking and management.
 
-**Related Documentation**:
+### Migration Guide
+- [MIGRATION_GUIDE_EPIC_10.md](MIGRATION_GUIDE_EPIC_10.md) - Complete migration guide for upgrading to Epic 10's configuration system
+
+### Related Documentation
 - [Plugin Development Guide](../../plugin-development-guide.md)
 - [Agent Configuration Reference](ARCHITECTURE.md#agent-configuration)
 - [Prompt Template Reference](ARCHITECTURE.md#prompt-templates)
