@@ -1022,6 +1022,13 @@ class StateTracker:
                 wf_data["result"] = wf_data.pop("output")
                 # Map epic_num to epic
                 wf_data["epic"] = wf_data.pop("epic_num")
+                # Remove fields that are not in the WorkflowExecution model
+                wf_data.pop("phase", None)
+                wf_data.pop("duration_ms", None)
+                wf_data.pop("error_message", None)
+                wf_data.pop("exit_code", None)
+                wf_data.pop("metadata", None)
+                wf_data.pop("context_snapshot", None)
                 workflows.append(WorkflowExecution(**wf_data))
             return workflows
 
@@ -1052,6 +1059,13 @@ class StateTracker:
             wf_data["workflow_id"] = wf_data.pop("executor")
             wf_data["result"] = wf_data.pop("output")
             wf_data["epic"] = wf_data.pop("epic_num")
+            # Remove fields that are not in the WorkflowExecution model
+            wf_data.pop("phase", None)
+            wf_data.pop("duration_ms", None)
+            wf_data.pop("error_message", None)
+            wf_data.pop("exit_code", None)
+            wf_data.pop("metadata", None)
+            wf_data.pop("context_snapshot", None)
             return WorkflowExecution(**wf_data)
 
     def get_failed_workflows(self) -> List[WorkflowExecution]:
@@ -1070,6 +1084,13 @@ class StateTracker:
                 wf_data["workflow_id"] = wf_data.pop("executor")
                 wf_data["result"] = wf_data.pop("output")
                 wf_data["epic"] = wf_data.pop("epic_num")
+                # Remove fields that are not in the WorkflowExecution model
+                wf_data.pop("phase", None)
+                wf_data.pop("duration_ms", None)
+                wf_data.pop("error_message", None)
+                wf_data.pop("exit_code", None)
+                wf_data.pop("metadata", None)
+                wf_data.pop("context_snapshot", None)
                 workflows.append(WorkflowExecution(**wf_data))
             return workflows
 

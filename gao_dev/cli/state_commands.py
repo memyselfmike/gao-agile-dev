@@ -31,12 +31,13 @@ def get_state_tracker() -> StateTracker:
     """Get StateTracker instance.
 
     Returns:
-        StateTracker instance for default database
+        StateTracker instance for unified database
 
     Raises:
         click.ClickException: If database not found
     """
-    db_path = Path.cwd() / "gao-dev-state.db"
+    from ..core.config import get_database_path
+    db_path = get_database_path()
     if not db_path.exists():
         raise click.ClickException(
             f"State database not found: {db_path}\n"
@@ -53,9 +54,14 @@ def state():
 
 @state.command()
 @click.option("--force", is_flag=True, help="Overwrite existing database")
-def init(force: bool):
-    """Initialize state database."""
-    db_path = Path.cwd() / "gao-dev-state.db"
+@click.option("--migrate", is_flag=True, help="Migrate data from legacy databases")
+def init(force: bool, migrate: bool):
+    """Initialize unified state database."""
+    from ..core.config import get_database_path, get_legacy_state_db_path, get_legacy_context_db_path
+
+    db_path = get_database_path()
+    legacy_state_db = get_legacy_state_db_path()
+    legacy_context_db = get_legacy_context_db_path()
 
     if db_path.exists() and not force:
         click.echo(
@@ -68,12 +74,27 @@ def init(force: bool):
     if force and db_path.exists():
         db_path.unlink()
 
-    # Create schema using migration
+    # Create schema using migrations
     from ..core.state.migrations.migration_001_create_state_schema import Migration001
+    from ..core.context.migrations.migration_003_unify_database import Migration003
 
     try:
+        # Create base state schema
         Migration001.upgrade(db_path)
-        click.echo(f"[OK] State database initialized: {db_path}")
+        click.echo(f"[OK] Base schema created: {db_path}")
+
+        # Run unification migration to add context tables and migrate data
+        if migrate and (legacy_state_db.exists() or legacy_context_db.exists()):
+            click.echo("[INFO] Migrating data from legacy databases...")
+            Migration003.upgrade(db_path, backup=True)
+            click.echo("[OK] Data migration completed")
+            click.echo(f"[INFO] Legacy database backups created in .gao/backups/")
+        else:
+            # Just create the schema without migrating data
+            Migration003.upgrade(db_path, backup=False)
+            click.echo("[OK] Context tables created")
+
+        click.echo(f"[OK] Unified database initialized: {db_path}")
     except Exception as e:
         raise click.ClickException(f"Failed to initialize database: {e}")
 

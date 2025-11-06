@@ -51,14 +51,19 @@ class ContextPersistence:
         >>> failed = persistence.get_failed_contexts()
     """
 
-    def __init__(self, db_path: Path):
+    def __init__(self, db_path: Optional[Path] = None):
         """
         Initialize ContextPersistence.
 
         Args:
-            db_path: Path to SQLite database file
+            db_path: Path to SQLite database file. If None, uses unified gao_dev.db
         """
-        self.db_path = db_path
+        if db_path is None:
+            # Use unified database from config
+            from ..config import get_database_path
+            self.db_path = get_database_path()
+        else:
+            self.db_path = db_path
         self._ensure_schema_exists()
 
     def _ensure_schema_exists(self) -> None:
@@ -124,6 +129,8 @@ class ContextPersistence:
         """
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
+        # Enable foreign keys (required for CASCADE behavior in SQLite)
+        conn.execute("PRAGMA foreign_keys = ON")
         try:
             yield conn
             conn.commit()

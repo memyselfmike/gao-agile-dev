@@ -48,23 +48,48 @@ class ContextUsageTracker:
         db_path: Path to SQLite database file
     """
 
-    def __init__(self, db_path: Path):
+    def __init__(self, db_path: Optional[Path] = None):
         """
         Initialize context usage tracker.
 
         Creates database and schema if not exists.
 
         Args:
-            db_path: Path to SQLite database file
+            db_path: Path to SQLite database file. If None, uses unified gao_dev.db
         """
-        self.db_path = Path(db_path)
+        if db_path is None:
+            # Use unified database from config
+            from ..config import get_database_path
+            self.db_path = get_database_path()
+        else:
+            self.db_path = Path(db_path)
         self._init_db()
 
     def _init_db(self) -> None:
-        """Initialize database schema."""
+        """Initialize database schema.
+
+        Note: If using unified database (Epic 17), the schema is already created
+        by migration 003. This method only creates the schema if it doesn't exist.
+        """
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         with self._get_connection() as conn:
+            # Check if context_usage table already exists with new schema (Epic 17)
+            cursor = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name='context_usage'"
+            )
+            existing_schema = cursor.fetchone()
+
+            if existing_schema and 'artifact_type' in existing_schema[0]:
+                # Table exists with new Epic 17 schema, skip creation
+                logger.debug(
+                    "context_usage_table_exists",
+                    db_path=str(self.db_path),
+                    message="Using unified database schema"
+                )
+                return
+
+            # Legacy schema creation (for backward compatibility)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS context_usage (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
