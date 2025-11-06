@@ -256,7 +256,7 @@ class BenchmarkConfig:
         """
         import hashlib
 
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             yaml_data = yaml.safe_load(f)
 
         # Handle both wrapped (with "benchmark:" key) and unwrapped formats
@@ -329,7 +329,7 @@ class BenchmarkConfig:
             FileNotFoundError: If config file doesn't exist
             json.JSONDecodeError: If JSON is invalid
         """
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         # Convert nested dicts to dataclasses
@@ -394,7 +394,7 @@ class BenchmarkConfig:
         Args:
             path: Path where to save the configuration
         """
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             yaml.dump(self.to_dict(), f, default_flow_style=False, indent=2)
 
     def to_json(self, path: Path) -> None:
@@ -404,5 +404,5 @@ class BenchmarkConfig:
         Args:
             path: Path where to save the configuration
         """
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, indent=2)

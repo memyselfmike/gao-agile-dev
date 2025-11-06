@@ -50,6 +50,7 @@ class DocumentLifecycleManager:
         self,
         registry: DocumentRegistry,
         archive_dir: Path,
+        project_root: Optional[Path] = None,
     ):
         """
         Initialize lifecycle manager.
@@ -57,9 +58,11 @@ class DocumentLifecycleManager:
         Args:
             registry: Document registry for data access
             archive_dir: Directory for archived documents
+            project_root: Optional project root for logging context
         """
         self.registry = registry
         self.archive_dir = Path(archive_dir)
+        self.project_root = project_root
         self.state_machine = DocumentStateMachine(registry)
         self.archive_dir.mkdir(parents=True, exist_ok=True)
 

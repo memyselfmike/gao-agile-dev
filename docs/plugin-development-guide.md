@@ -18,9 +18,10 @@
 8. [Permissions](#permissions)
 9. [Configuration](#configuration)
 10. [Testing](#testing)
-11. [Best Practices](#best-practices)
-12. [Troubleshooting](#troubleshooting)
-13. [API Reference](#api-reference)
+11. [Working with Project-Scoped Document Lifecycle](#working-with-project-scoped-document-lifecycle)
+12. [Best Practices](#best-practices)
+13. [Troubleshooting](#troubleshooting)
+14. [API Reference](#api-reference)
 
 ---
 
@@ -692,6 +693,245 @@ def test_plugin_loads():
   - Error handling
   - Edge cases
   - Integration points
+
+---
+
+## Working with Project-Scoped Document Lifecycle
+
+### Overview
+
+GAO-Dev's document lifecycle system is project-scoped. Each project has its own `.gao-dev/documents.db` for tracking documentation. Plugins that work with documents should respect this project isolation.
+
+### Using Project Lifecycle in Plugins
+
+**Basic Usage**:
+
+```python
+from pathlib import Path
+from gao_dev.lifecycle.project_lifecycle import ProjectDocumentLifecycle
+
+class MyPlugin(BasePlugin):
+    def on_project_created(self, project_root: Path):
+        """Initialize document lifecycle for new project."""
+        # Initialize lifecycle for this project
+        doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+
+        # Register plugin-specific documents
+        doc_manager.registry.register_document(
+            path="docs/PLUGIN_CONFIG.md",
+            doc_type="plugin-config",
+            metadata={"plugin": "my-plugin", "version": "1.0.0"}
+        )
+
+    def on_document_created(self, project_root: Path, doc_path: str):
+        """Track custom document types."""
+        # Get existing manager (project already initialized)
+        doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+
+        if doc_path.endswith(".report.md"):
+            doc_manager.registry.register_document(
+                path=doc_path,
+                doc_type="report",
+                metadata={"generated_by": "my-plugin"}
+            )
+```
+
+**Multi-Project Support**:
+
+```python
+class MultiProjectPlugin(BasePlugin):
+    def process_projects(self, project_roots: List[Path]):
+        """Process multiple projects with isolated tracking."""
+        for project_root in project_roots:
+            # Each project gets its own manager
+            doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+
+            # List documents for this specific project
+            documents = doc_manager.registry.list_documents()
+            self.logger.info(
+                "project_documents",
+                project=project_root.name,
+                count=len(documents)
+            )
+
+            # Process documents for this project
+            for doc in documents:
+                self.process_document(project_root, doc)
+```
+
+**Checking Initialization**:
+
+```python
+def ensure_lifecycle(self, project_root: Path):
+    """Ensure document lifecycle is initialized."""
+    if not ProjectDocumentLifecycle.is_initialized(project_root):
+        # Initialize if needed
+        self.logger.info("initializing_lifecycle", project=project_root)
+
+    # Initialize or get existing (idempotent)
+    doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+    return doc_manager
+```
+
+### Best Practices for Project-Scoped Plugins
+
+1. **Always Use Project Root**: Pass `project_root` parameter to all document operations
+   ```python
+   # Good: Project-specific
+   doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+
+   # Bad: Assumes global
+   doc_manager = DocumentLifecycle.get_instance()  # Don't do this!
+   ```
+
+2. **Check Initialization**: Always verify lifecycle is initialized before operations
+   ```python
+   if not ProjectDocumentLifecycle.is_initialized(project_root):
+       ProjectDocumentLifecycle.initialize(project_root)
+   ```
+
+3. **Handle Failures Gracefully**: Lifecycle initialization can fail
+   ```python
+   try:
+       doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+   except Exception as e:
+       self.logger.error("lifecycle_init_failed", project=project_root, error=str(e))
+       return None
+   ```
+
+4. **Project Isolation**: Never mix data between projects
+   ```python
+   # Good: Isolated per project
+   for project in projects:
+       manager = ProjectDocumentLifecycle.initialize(project)
+       process_documents(manager)
+
+   # Bad: Shared state across projects
+   global_manager = get_global_manager()  # Don't do this!
+   ```
+
+5. **Metadata Tagging**: Tag plugin-created documents for identification
+   ```python
+   doc_manager.registry.register_document(
+       path="docs/custom.md",
+       doc_type="custom",
+       metadata={
+           "plugin": self.name,
+           "version": self.version,
+           "created_at": datetime.now().isoformat()
+       }
+   )
+   ```
+
+### Example: Document Generator Plugin
+
+```python
+from pathlib import Path
+from gao_dev.lifecycle.project_lifecycle import ProjectDocumentLifecycle
+from gao_dev.plugins import BasePlugin
+
+class DocumentGeneratorPlugin(BasePlugin):
+    """Plugin that generates custom documentation."""
+
+    def generate_report(self, project_root: Path):
+        """Generate a report document."""
+        # Ensure lifecycle is ready
+        doc_manager = self.ensure_lifecycle(project_root)
+        if not doc_manager:
+            return
+
+        # Generate report content
+        report_path = project_root / "docs" / "CUSTOM_REPORT.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text("# Custom Report\n\n...")
+
+        # Register in lifecycle
+        doc_manager.registry.register_document(
+            path="docs/CUSTOM_REPORT.md",
+            doc_type="custom-report",
+            metadata={
+                "plugin": "document-generator",
+                "generator_version": "1.0.0"
+            }
+        )
+
+        self.logger.info(
+            "report_generated",
+            project=project_root.name,
+            path=str(report_path)
+        )
+
+    def ensure_lifecycle(self, project_root: Path):
+        """Ensure lifecycle is initialized."""
+        if not ProjectDocumentLifecycle.is_initialized(project_root):
+            try:
+                return ProjectDocumentLifecycle.initialize(project_root)
+            except Exception as e:
+                self.logger.error(
+                    "lifecycle_init_failed",
+                    project=project_root.name,
+                    error=str(e)
+                )
+                return None
+        return ProjectDocumentLifecycle.initialize(project_root)
+```
+
+### Common Patterns
+
+**Pattern 1: Document Validator**
+
+```python
+def validate_documents(self, project_root: Path):
+    """Validate all documents in a project."""
+    doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+    documents = doc_manager.registry.list_documents()
+
+    for doc in documents:
+        if not (project_root / doc.path).exists():
+            self.logger.warning("missing_document", path=doc.path)
+```
+
+**Pattern 2: Document Analyzer**
+
+```python
+def analyze_documentation(self, project_root: Path):
+    """Analyze documentation completeness."""
+    doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+    documents = doc_manager.registry.list_documents()
+
+    doc_types = {}
+    for doc in documents:
+        doc_types[doc.doc_type] = doc_types.get(doc.doc_type, 0) + 1
+
+    return {
+        "project": project_root.name,
+        "total_documents": len(documents),
+        "by_type": doc_types
+    }
+```
+
+**Pattern 3: Cross-Project Report**
+
+```python
+def generate_cross_project_report(self, project_roots: List[Path]):
+    """Generate report across multiple projects."""
+    report = []
+
+    for project_root in project_roots:
+        if not ProjectDocumentLifecycle.is_initialized(project_root):
+            continue
+
+        doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+        documents = doc_manager.registry.list_documents()
+
+        report.append({
+            "project": project_root.name,
+            "document_count": len(documents),
+            "types": list(set(d.doc_type for d in documents))
+        })
+
+    return report
+```
 
 ---
 

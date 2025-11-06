@@ -229,6 +229,12 @@ class ProcessExecutor:
                 f"See: gao-dev providers validate"
             )
 
+        # Initialize provider if needed (SDK providers require explicit initialization)
+        if hasattr(self.provider, 'initialize') and not getattr(self.provider, '_initialized', False):
+            logger.info("initializing_provider", provider=self.provider.name)
+            await self.provider.initialize()
+            logger.info("provider_initialized", provider=self.provider.name)
+
         # Create execution context
         context = AgentContext(project_root=self.project_root)
 

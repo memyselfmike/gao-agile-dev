@@ -10,6 +10,7 @@ This module provides comprehensive document lifecycle management including:
 - Document relationships and linking
 - Document scanning with 5S classification
 - Archival system with retention policies
+- Project-scoped lifecycle management
 """
 
 from gao_dev.lifecycle.naming_convention import DocumentNamingConvention
@@ -22,6 +23,9 @@ from gao_dev.lifecycle.models import (
 )
 from gao_dev.lifecycle.scanner import DocumentScanner, ScanResult
 from gao_dev.lifecycle.archival import ArchivalManager, RetentionPolicy, ArchivalAction
+from gao_dev.lifecycle.registry import DocumentRegistry
+from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
+from gao_dev.lifecycle.project_lifecycle import ProjectDocumentLifecycle
 
 __all__ = [
     "DocumentNamingConvention",
@@ -35,4 +39,7 @@ __all__ = [
     "ArchivalManager",
     "RetentionPolicy",
     "ArchivalAction",
+    "DocumentRegistry",
+    "DocumentLifecycleManager",
+    "ProjectDocumentLifecycle",
 ]

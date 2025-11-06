@@ -7,8 +7,12 @@ including archival, cleanup, and retention policy reporting.
 
 import click
 from pathlib import Path
+from typing import Optional
 import sys
+import structlog
 
+from gao_dev.cli.project_detection import detect_project_root, is_project_root
+from gao_dev.lifecycle.project_lifecycle import ProjectDocumentLifecycle
 from gao_dev.lifecycle.registry import DocumentRegistry
 from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
 from gao_dev.lifecycle.archival import ArchivalManager
@@ -19,10 +23,73 @@ from gao_dev.lifecycle.search import DocumentSearch
 from gao_dev.lifecycle.health_metrics import DocumentHealthMetrics
 from gao_dev.lifecycle.models import DocumentState
 
+logger = structlog.get_logger(__name__)
 
-def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager, DocumentGovernance]:
+
+def get_project_lifecycle(
+    project: Optional[str],
+    require_initialized: bool = True
+) -> tuple[Path, DocumentLifecycleManager]:
+    """
+    Get project root and document lifecycle manager.
+
+    Args:
+        project: Optional explicit project path
+        require_initialized: Whether to require .gao-dev/ to exist
+
+    Returns:
+        Tuple of (project_root, doc_manager)
+
+    Raises:
+        click.ClickException: If project invalid or not initialized
+    """
+    # Detect or use provided project
+    if project:
+        project_root = Path(project)
+        if not project_root.exists():
+            raise click.ClickException(f"Project path does not exist: {project}")
+    else:
+        project_root = detect_project_root()
+
+    logger.debug("Project detected", project_root=str(project_root))
+
+    # Check if initialized
+    if require_initialized and not ProjectDocumentLifecycle.is_initialized(project_root):
+        raise click.ClickException(
+            f"Document lifecycle not initialized for project: {project_root.name}\n"
+            f"Project path: {project_root}\n\n"
+            f"To initialize, run:\n"
+            f"  gao-dev sandbox init {project_root.name}  (for new projects)\n"
+            f"Or contact a maintainer to initialize existing projects."
+        )
+
+    # Initialize lifecycle
+    try:
+        doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+        return project_root, doc_manager
+    except Exception as e:
+        logger.error("Failed to initialize lifecycle", error=str(e))
+        raise click.ClickException(f"Failed to initialize document lifecycle: {e}")
+
+
+def display_project_context(project_root: Path) -> None:
+    """
+    Display project context information.
+
+    Args:
+        project_root: Project root directory
+    """
+    click.echo(f"Project: {click.style(project_root.name, fg='cyan', bold=True)}")
+    click.echo(f"Location: {project_root}")
+    click.echo()
+
+
+def _get_lifecycle_manager(project: Optional[str] = None) -> tuple[DocumentLifecycleManager, ArchivalManager, DocumentGovernance]:
     """
     Initialize and return lifecycle, archival, and governance managers.
+
+    Args:
+        project: Optional explicit project path
 
     Returns:
         Tuple of (DocumentLifecycleManager, ArchivalManager, DocumentGovernance)
@@ -31,20 +98,13 @@ def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager,
         click.ClickException: If initialization fails
     """
     try:
-        # Use default paths relative to project root
-        project_root = Path.cwd()
-        db_path = project_root / ".gao-dev" / "documents.db"
-        archive_dir = project_root / ".archive"
+        # Get project-scoped lifecycle manager
+        project_root, doc_manager = get_project_lifecycle(project)
+
+        # Initialize archival and governance managers
         policies_path = Path(__file__).parent.parent / "config" / "retention_policies.yaml"
         governance_path = Path(__file__).parent.parent / "config" / "governance.yaml"
 
-        # Ensure directories exist
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        archive_dir.mkdir(parents=True, exist_ok=True)
-
-        # Initialize registry and managers
-        registry = DocumentRegistry(db_path)
-        doc_manager = DocumentLifecycleManager(registry, archive_dir)
         archival_manager = ArchivalManager(doc_manager, policies_path)
         governance_manager = DocumentGovernance(doc_manager, governance_path)
 
@@ -54,9 +114,12 @@ def _get_lifecycle_manager() -> tuple[DocumentLifecycleManager, ArchivalManager,
         raise click.ClickException(f"Failed to initialize lifecycle manager: {e}")
 
 
-def _get_template_manager() -> DocumentTemplateManager:
+def _get_template_manager(project: Optional[str] = None) -> DocumentTemplateManager:
     """
     Initialize and return template manager.
+
+    Args:
+        project: Optional explicit project path
 
     Returns:
         DocumentTemplateManager instance
@@ -66,7 +129,7 @@ def _get_template_manager() -> DocumentTemplateManager:
     """
     try:
         # Get lifecycle manager
-        doc_manager, _, governance_manager = _get_lifecycle_manager()
+        doc_manager, _, governance_manager = _get_lifecycle_manager(project)
 
         # Initialize template manager
         templates_dir = Path(__file__).parent.parent / "config" / "templates"
@@ -84,9 +147,12 @@ def _get_template_manager() -> DocumentTemplateManager:
         raise click.ClickException(f"Failed to initialize template manager: {e}")
 
 
-def _get_search_manager() -> DocumentSearch:
+def _get_search_manager(project: Optional[str] = None) -> DocumentSearch:
     """
     Initialize and return search manager.
+
+    Args:
+        project: Optional explicit project path
 
     Returns:
         DocumentSearch instance
@@ -95,16 +161,11 @@ def _get_search_manager() -> DocumentSearch:
         click.ClickException: If initialization fails
     """
     try:
-        # Use default paths relative to project root
-        project_root = Path.cwd()
-        db_path = project_root / ".gao-dev" / "documents.db"
+        # Get project-scoped lifecycle manager
+        project_root, doc_manager = get_project_lifecycle(project)
 
-        # Ensure directory exists
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Initialize registry and search
-        registry = DocumentRegistry(db_path)
-        search_manager = DocumentSearch(registry)
+        # Initialize search manager with project's registry
+        search_manager = DocumentSearch(doc_manager.registry)
 
         return search_manager
 
@@ -112,9 +173,12 @@ def _get_search_manager() -> DocumentSearch:
         raise click.ClickException(f"Failed to initialize search manager: {e}")
 
 
-def _get_health_metrics_manager() -> DocumentHealthMetrics:
+def _get_health_metrics_manager(project: Optional[str] = None) -> DocumentHealthMetrics:
     """
     Initialize and return health metrics manager.
+
+    Args:
+        project: Optional explicit project path
 
     Returns:
         DocumentHealthMetrics instance
@@ -123,24 +187,13 @@ def _get_health_metrics_manager() -> DocumentHealthMetrics:
         click.ClickException: If initialization fails
     """
     try:
-        # Use default paths relative to project root
-        project_root = Path.cwd()
-        db_path = project_root / ".gao-dev" / "documents.db"
-        governance_path = Path(__file__).parent.parent / "config" / "governance.yaml"
-
-        # Ensure directory exists
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Initialize components
-        registry = DocumentRegistry(db_path)
-        archive_dir = project_root / ".archive"
-        doc_manager = DocumentLifecycleManager(registry, archive_dir)
-        governance = DocumentGovernance(doc_manager, governance_path)
-        naming_convention = DocumentNamingConvention()
+        # Get project-scoped lifecycle manager
+        doc_manager, _, governance = _get_lifecycle_manager(project)
 
         # Initialize health metrics
+        naming_convention = DocumentNamingConvention()
         health_metrics = DocumentHealthMetrics(
-            registry=registry,
+            registry=doc_manager.registry,
             governance=governance,
             naming_convention=naming_convention,
             metrics_db_path=None,  # Optional: could use sandbox metrics DB
@@ -157,12 +210,23 @@ def lifecycle():
     """
     Document lifecycle management commands.
 
-    Manage document archival, cleanup, and retention policies.
+    These commands help track and manage documentation throughout
+    its lifecycle. All commands operate on project-scoped document
+    lifecycle systems (.gao-dev/documents.db).
+
+    The project root is automatically detected by searching for
+    .gao-dev/ or .sandbox.yaml markers. You can override this
+    with the --project option on any command.
     """
     pass
 
 
 @lifecycle.command()
+@click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
 @click.option(
     "--dry-run",
     is_flag=True,
@@ -174,7 +238,7 @@ def lifecycle():
     is_flag=True,
     help="Show detailed information about each action",
 )
-def archive(dry_run: bool, verbose: bool):
+def archive(project: Optional[str], dry_run: bool, verbose: bool):
     """
     Archive obsolete documents based on retention policies.
 
@@ -187,9 +251,14 @@ def archive(dry_run: bool, verbose: bool):
     Example:
         gao-dev lifecycle archive --dry-run
         gao-dev lifecycle archive
+        gao-dev lifecycle archive --project sandbox/projects/my-app
     """
     try:
-        doc_manager, archival_manager, _ = _get_lifecycle_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        doc_manager, archival_manager, _ = _get_lifecycle_manager(project)
 
         if dry_run:
             click.echo(">> DRY RUN: Previewing archival actions...")
@@ -232,6 +301,11 @@ def archive(dry_run: bool, verbose: bool):
 
 @lifecycle.command()
 @click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Preview what would be deleted without making changes",
@@ -247,7 +321,7 @@ def archive(dry_run: bool, verbose: bool):
     is_flag=True,
     help="Skip confirmation prompt (use with caution)",
 )
-def cleanup(dry_run: bool, verbose: bool, confirm: bool):
+def cleanup(project: Optional[str], dry_run: bool, verbose: bool, confirm: bool):
     """
     Delete archived documents past retention period.
 
@@ -263,9 +337,14 @@ def cleanup(dry_run: bool, verbose: bool, confirm: bool):
     Example:
         gao-dev lifecycle cleanup --dry-run
         gao-dev lifecycle cleanup --confirm
+        gao-dev lifecycle cleanup --project sandbox/projects/my-app --confirm
     """
     try:
-        doc_manager, archival_manager, _ = _get_lifecycle_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        doc_manager, archival_manager, _ = _get_lifecycle_manager(project)
 
         if dry_run:
             click.echo(">> DRY RUN: Previewing cleanup actions...")
@@ -319,6 +398,11 @@ def cleanup(dry_run: bool, verbose: bool, confirm: bool):
 
 @lifecycle.command()
 @click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
+@click.option(
     "--format",
     type=click.Choice(["markdown", "csv"], case_sensitive=False),
     default="markdown",
@@ -330,7 +414,7 @@ def cleanup(dry_run: bool, verbose: bool, confirm: bool):
     type=click.Path(),
     help="Save report to file instead of printing to console",
 )
-def retention_report(format: str, output: str):
+def retention_report(project: Optional[str], format: str, output: str):
     """
     Generate retention policy compliance report.
 
@@ -346,9 +430,14 @@ def retention_report(format: str, output: str):
     Example:
         gao-dev lifecycle retention-report
         gao-dev lifecycle retention-report --format csv -o report.csv
+        gao-dev lifecycle retention-report --project sandbox/projects/my-app
     """
     try:
-        doc_manager, archival_manager, _ = _get_lifecycle_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        doc_manager, archival_manager, _ = _get_lifecycle_manager(project)
 
         click.echo(">> Generating retention policy report...")
 
@@ -371,7 +460,12 @@ def retention_report(format: str, output: str):
 
 @lifecycle.command()
 @click.argument("doc_type")
-def show_policy(doc_type: str):
+@click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
+def show_policy(doc_type: str, project: Optional[str]):
     """
     Show retention policy for a document type.
 
@@ -381,9 +475,14 @@ def show_policy(doc_type: str):
     Example:
         gao-dev lifecycle show-policy prd
         gao-dev lifecycle show-policy story
+        gao-dev lifecycle show-policy prd --project sandbox/projects/my-app
     """
     try:
-        doc_manager, archival_manager, _ = _get_lifecycle_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        doc_manager, archival_manager, _ = _get_lifecycle_manager(project)
 
         policy = archival_manager.get_policy(doc_type)
 
@@ -420,7 +519,12 @@ def show_policy(doc_type: str):
 
 
 @lifecycle.command()
-def list_policies():
+@click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
+def list_policies(project: Optional[str]):
     """
     List all configured retention policies.
 
@@ -428,9 +532,14 @@ def list_policies():
 
     Example:
         gao-dev lifecycle list-policies
+        gao-dev lifecycle list-policies --project sandbox/projects/my-app
     """
     try:
-        doc_manager, archival_manager, _ = _get_lifecycle_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        doc_manager, archival_manager, _ = _get_lifecycle_manager(project)
 
         policies = archival_manager.list_policies()
 
@@ -457,6 +566,11 @@ def list_policies():
 
 @lifecycle.command()
 @click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
+@click.option(
     "--owner",
     "-o",
     help="Filter by document owner",
@@ -466,7 +580,7 @@ def list_policies():
     is_flag=True,
     help="Show only overdue reviews",
 )
-def review_due(owner: str, overdue_only: bool):
+def review_due(project: Optional[str], owner: str, overdue_only: bool):
     """
     Show documents needing review.
 
@@ -478,9 +592,14 @@ def review_due(owner: str, overdue_only: bool):
         gao-dev lifecycle review-due
         gao-dev lifecycle review-due --owner John
         gao-dev lifecycle review-due --overdue-only
+        gao-dev lifecycle review-due --project sandbox/projects/my-app
     """
     try:
-        _, _, governance_manager = _get_lifecycle_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        _, _, governance_manager = _get_lifecycle_manager(project)
 
         click.echo(">> Checking documents needing review...")
 
@@ -527,11 +646,16 @@ def review_due(owner: str, overdue_only: bool):
 @lifecycle.command()
 @click.argument("doc_id", type=int)
 @click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
+@click.option(
     "--notes",
     "-n",
     help="Review notes",
 )
-def mark_reviewed(doc_id: int, notes: str):
+def mark_reviewed(doc_id: int, project: Optional[str], notes: str):
     """
     Mark a document as reviewed.
 
@@ -541,9 +665,14 @@ def mark_reviewed(doc_id: int, notes: str):
     Example:
         gao-dev lifecycle mark-reviewed 123
         gao-dev lifecycle mark-reviewed 123 --notes "All good"
+        gao-dev lifecycle mark-reviewed 123 --project sandbox/projects/my-app
     """
     try:
-        _, _, governance_manager = _get_lifecycle_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        _, _, governance_manager = _get_lifecycle_manager(project)
 
         click.echo(f">> Marking document {doc_id} as reviewed...")
 
@@ -574,6 +703,11 @@ def mark_reviewed(doc_id: int, notes: str):
 
 @lifecycle.command()
 @click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
+@click.option(
     "--format",
     type=click.Choice(["markdown", "csv"], case_sensitive=False),
     default="markdown",
@@ -585,7 +719,7 @@ def mark_reviewed(doc_id: int, notes: str):
     type=click.Path(),
     help="Save report to file instead of printing to console",
 )
-def governance_report(format: str, output: str):
+def governance_report(project: Optional[str], format: str, output: str):
     """
     Generate governance compliance report.
 
@@ -599,9 +733,14 @@ def governance_report(format: str, output: str):
     Example:
         gao-dev lifecycle governance-report
         gao-dev lifecycle governance-report --format csv -o governance.csv
+        gao-dev lifecycle governance-report --project sandbox/projects/my-app
     """
     try:
-        _, _, governance_manager = _get_lifecycle_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        _, _, governance_manager = _get_lifecycle_manager(project)
 
         click.echo(">> Generating governance compliance report...")
 
@@ -626,6 +765,11 @@ def governance_report(format: str, output: str):
 @click.argument("template")
 @click.option("--subject", required=True, help="Document subject (e.g., 'user-authentication')")
 @click.option("--author", required=True, help="Document author")
+@click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
 @click.option("--feature", help="Feature name (optional)")
 @click.option("--epic", type=int, help="Epic number (required for stories)")
 @click.option("--version", default="1.0", help="Document version (default: 1.0)")
@@ -639,6 +783,7 @@ def create(
     template: str,
     subject: str,
     author: str,
+    project: Optional[str],
     feature: str,
     epic: int,
     version: str,
@@ -659,9 +804,14 @@ def create(
         gao-dev lifecycle create prd --subject "user-auth" --author "John"
         gao-dev lifecycle create story --subject "login-flow" --author "Bob" --epic 5
         gao-dev lifecycle create adr --subject "database-choice" --author "Winston" --adr-number 1 --decision "Use PostgreSQL"
+        gao-dev lifecycle create prd --subject "user-auth" --author "John" --project sandbox/projects/my-app
     """
     try:
-        template_manager = _get_template_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        template_manager = _get_template_manager(project)
 
         # Build variables dictionary
         variables = {
@@ -728,7 +878,12 @@ def create(
 
 
 @lifecycle.command()
-def list_templates():
+@click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
+def list_templates(project: Optional[str]):
     """
     List available document templates.
 
@@ -736,9 +891,14 @@ def list_templates():
 
     Example:
         gao-dev lifecycle list-templates
+        gao-dev lifecycle list-templates --project sandbox/projects/my-app
     """
     try:
-        template_manager = _get_template_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        template_manager = _get_template_manager(project)
 
         templates = template_manager.list_templates()
 
@@ -772,6 +932,11 @@ def list_templates():
 
 @lifecycle.command()
 @click.argument("query")
+@click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
 @click.option("--type", "doc_type", help="Filter by document type (prd, architecture, etc.)")
 @click.option(
     "--state",
@@ -781,7 +946,7 @@ def list_templates():
 @click.option("--tags", multiple=True, help="Filter by tags (can be specified multiple times)")
 @click.option("--limit", type=int, default=50, help="Max results to return (default: 50)")
 @click.option("--with-content", is_flag=True, help="Search file content (slower but more accurate)")
-def search(query: str, doc_type: str, state: str, tags: tuple, limit: int, with_content: bool):
+def search(query: str, project: Optional[str], doc_type: str, state: str, tags: tuple, limit: int, with_content: bool):
     """
     Full-text search for documents.
 
@@ -793,9 +958,14 @@ def search(query: str, doc_type: str, state: str, tags: tuple, limit: int, with_
         gao-dev lifecycle search "api design" --type architecture --state active
         gao-dev lifecycle search "testing" --tags epic-3 --tags unit-tests
         gao-dev lifecycle search "user authentication" --with-content
+        gao-dev lifecycle search "auth" --project sandbox/projects/my-app
     """
     try:
-        search_manager = _get_search_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        search_manager = _get_search_manager(project)
 
         click.echo(f">> Searching for: {query}")
 
@@ -846,8 +1016,13 @@ def search(query: str, doc_type: str, state: str, tags: tuple, limit: int, with_
 
 @lifecycle.command()
 @click.argument("doc_id", type=int)
+@click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
 @click.option("--limit", type=int, default=10, help="Max related documents to return (default: 10)")
-def related(doc_id: int, limit: int):
+def related(doc_id: int, project: Optional[str], limit: int):
     """
     Find related documents by content similarity.
 
@@ -857,9 +1032,14 @@ def related(doc_id: int, limit: int):
     Examples:
         gao-dev lifecycle related 123
         gao-dev lifecycle related 456 --limit 5
+        gao-dev lifecycle related 123 --project sandbox/projects/my-app
     """
     try:
-        search_manager = _get_search_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        search_manager = _get_search_manager(project)
 
         click.echo(f">> Finding documents related to document ID: {doc_id}")
 
@@ -899,10 +1079,15 @@ def related(doc_id: int, limit: int):
 
 
 @lifecycle.command()
+@click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
 @click.option("--tags", multiple=True, required=True, help="Tags to search (can be specified multiple times)")
 @click.option("--match-all", is_flag=True, help="Require all tags (default: match any tag)")
 @click.option("--limit", type=int, default=50, help="Max results to return (default: 50)")
-def search_tags(tags: tuple, match_all: bool, limit: int):
+def search_tags(project: Optional[str], tags: tuple, match_all: bool, limit: int):
     """
     Search documents by tags.
 
@@ -912,9 +1097,14 @@ def search_tags(tags: tuple, match_all: bool, limit: int):
     Examples:
         gao-dev lifecycle search-tags --tags epic-3 --tags security
         gao-dev lifecycle search-tags --tags prd --tags active --match-all
+        gao-dev lifecycle search-tags --tags epic-3 --project sandbox/projects/my-app
     """
     try:
-        search_manager = _get_search_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        search_manager = _get_search_manager(project)
 
         mode = "ALL" if match_all else "ANY"
         click.echo(f">> Searching for documents with {mode} tags: {', '.join(tags)}")
@@ -953,6 +1143,11 @@ def search_tags(tags: tuple, match_all: bool, limit: int):
 
 @lifecycle.command()
 @click.option(
+    '--project',
+    type=click.Path(exists=True),
+    help='Project directory (defaults to detected project root)',
+)
+@click.option(
     "--json",
     "output_json",
     is_flag=True,
@@ -968,7 +1163,7 @@ def search_tags(tags: tuple, match_all: bool, limit: int):
     is_flag=True,
     help="Show only action items (what needs fixing)",
 )
-def health(output_json: bool, export: str, action_items_only: bool):
+def health(project: Optional[str], output_json: bool, export: str, action_items_only: bool):
     """
     Display document health dashboard.
 
@@ -986,9 +1181,14 @@ def health(output_json: bool, export: str, action_items_only: bool):
         gao-dev lifecycle health --json
         gao-dev lifecycle health --export health-report.md
         gao-dev lifecycle health --action-items-only
+        gao-dev lifecycle health --project sandbox/projects/my-app
     """
     try:
-        health_metrics = _get_health_metrics_manager()
+        # Get project and lifecycle manager
+        project_root, _ = get_project_lifecycle(project)
+        display_project_context(project_root)
+
+        health_metrics = _get_health_metrics_manager(project)
 
         # Handle action items only mode
         if action_items_only:

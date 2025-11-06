@@ -17,7 +17,7 @@ NOT responsible for:
 """
 
 import structlog
-from typing import Callable
+from typing import Callable, Optional
 from pathlib import Path
 from datetime import datetime
 import asyncio
@@ -75,6 +75,7 @@ class WorkflowCoordinator:
         event_bus: IEventBus,
         agent_executor: Callable,  # Callback to execute agent task
         project_root: Path,
+        doc_manager: Optional['DocumentLifecycleManager'] = None,
         max_retries: int = 3
     ):
         """
@@ -86,6 +87,7 @@ class WorkflowCoordinator:
             event_bus: Event bus for publishing lifecycle events
             agent_executor: Callback function to execute agent tasks
             project_root: Root directory of the project
+            doc_manager: Optional document lifecycle manager for tracking artifacts
             max_retries: Maximum retry attempts for failed workflows (default: 3)
         """
         self.workflow_registry = workflow_registry
@@ -93,12 +95,14 @@ class WorkflowCoordinator:
         self.event_bus = event_bus
         self.agent_executor = agent_executor
         self.project_root = project_root
+        self.doc_manager = doc_manager
         self.max_retries = max_retries
 
         logger.info(
             "workflow_coordinator_initialized",
             max_retries=max_retries,
-            project_root=str(project_root)
+            project_root=str(project_root),
+            has_doc_manager=doc_manager is not None
         )
 
     async def execute_sequence(

@@ -8,7 +8,13 @@ import os
 
 # Fix Windows console encoding issues
 if sys.platform == "win32":
+    import io
     os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
+    # Reconfigure stdout and stderr to use UTF-8 encoding
+    if hasattr(sys.stdout, 'buffer'):
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'buffer'):
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 from ..core import (
     ConfigLoader,

@@ -369,6 +369,13 @@ class BenchmarkRunner:
             )
 
             # Store workflow results in benchmark metadata
+            # Convert any Path objects to strings for JSON serialization
+            total_artifacts = workflow_result.total_artifacts
+            if isinstance(total_artifacts, (list, tuple)):
+                total_artifacts = [str(p) if isinstance(p, Path) else p for p in total_artifacts]
+            elif isinstance(total_artifacts, Path):
+                total_artifacts = str(total_artifacts)
+
             result.metadata['workflow_result'] = {
                 'workflow_name': workflow_result.workflow_name,
                 'status': workflow_result.status.value,
@@ -376,7 +383,7 @@ class BenchmarkRunner:
                 'successful_steps': workflow_result.successful_steps,
                 'failed_steps': workflow_result.failed_steps,
                 'duration_seconds': workflow_result.duration_seconds,
-                'total_artifacts': workflow_result.total_artifacts,
+                'total_artifacts': total_artifacts,
             }
 
             # Check if workflow succeeded

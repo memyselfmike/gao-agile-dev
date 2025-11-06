@@ -126,7 +126,7 @@ class FileProgressObserver:
         """Save events to file."""
         try:
             self.file_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.file_path, "w") as f:
+            with open(self.file_path, "w", encoding="utf-8") as f:
                 json.dump(self.events, f, indent=2)
         except Exception as e:
             logger.error("progress_file_save_error", error=str(e))

@@ -11,10 +11,10 @@ project_name: GAO-Dev - Complete System
 ## Current State
 
 **Phase**: 4 - Implementation
-**Scale Level**: 3 (Level 3: 12-40 stories, 2-5 epics - we have 11 epics)
+**Scale Level**: 3 (Level 3: 12-40 stories, 2-5 epics - we have 20 completed epics)
 **Project Type**: Software - Python Development Framework
-**Current Epic**: Epic 11 - Agent Provider Abstraction System
-**Status**: PLANNING (16 stories defined, 94 story points)
+**Current Epic**: Epic 20 - Project-Scoped Document Lifecycle ✅ COMPLETE
+**Status**: All 6 stories completed (18 story points)
 
 ## Project Overview
 
@@ -306,6 +306,103 @@ GAO-Dev is now a truly methodology-agnostic framework. All prompts and agent con
 - Create domain teams: Ready to implement
 - 90% reduction in configuration errors
 - A/B testing of prompt variations now possible
+
+## Epic 19: OpenCode SDK Integration ✅ COMPLETE
+
+**Goal**: Integrate OpenCode SDK to provide local code execution and AI-powered coding capabilities through OpenCode's MCP server.
+
+**Status**: COMPLETE (All 5 stories implemented, 21 story points)
+
+**Key Documents**:
+- PRD: `docs/features/opencode-integration/PRD.md`
+- Architecture: `docs/features/opencode-integration/ARCHITECTURE.md`
+- Stories: `docs/features/opencode-integration/stories/epic-19/`
+
+**Success Criteria**: All achieved ✅
+- ✅ OpenCodeSDKProvider implemented for MCP server management
+- ✅ Automatic server initialization and lifecycle management
+- ✅ Integration with GAO-Dev provider architecture
+- ✅ Testing framework with mock MCP server
+- ✅ Documentation and examples complete
+
+**Completed Stories** (21 story points total):
+1. ✅ Story 19.1: OpenCode SDK Research & Setup (3 points)
+2. ✅ Story 19.2: OpenCodeSDKProvider Core (5 points)
+3. ✅ Story 19.3: Server Lifecycle Management (5 points)
+4. ✅ Story 19.4: Integration Testing and Validation (4 points)
+5. ✅ Story 19.5: Provider Registration and Documentation (4 points)
+
+**Total**: 21 story points, 5 stories - ALL COMPLETE
+
+**Achievement**:
+GAO-Dev now has a modular provider architecture that can integrate external AI coding tools like OpenCode. The MCP server lifecycle is fully automated with proper error handling and resource cleanup.
+
+**Key Deliverables**:
+- `gao_dev/core/providers/opencode_sdk.py` - OpenCodeSDKProvider implementation
+- `tests/providers/test_opencode_sdk.py` - Comprehensive test suite
+- Integration with existing provider architecture
+- Documentation for provider usage patterns
+
+## Current Epic: Epic 20 - Project-Scoped Document Lifecycle ✅ COMPLETE
+
+**Goal**: Refactor document lifecycle system from GAO-Dev-global to project-scoped, enabling each project to have its own isolated `.gao-dev/` directory for document tracking.
+
+**Status**: COMPLETE (All 6 stories implemented, 18 story points)
+
+**Key Documents**:
+- PRD: `docs/features/project-scoped-document-lifecycle/PRD.md`
+- Architecture: `docs/features/project-scoped-document-lifecycle/ARCHITECTURE.md`
+- Migration Guide: `docs/MIGRATION_GUIDE_EPIC_20.md`
+- Stories: `docs/features/project-scoped-document-lifecycle/stories/epic-20/`
+
+**Success Criteria**: All achieved ✅
+- ✅ Each project has isolated `.gao-dev/documents.db`
+- ✅ ProjectDocumentLifecycle factory for multi-project support
+- ✅ SandboxManager auto-initializes document lifecycle on project creation
+- ✅ Orchestrator uses project-scoped lifecycle
+- ✅ CLI commands auto-detect project root
+- ✅ All commands support `--project` option for explicit targeting
+- ✅ Comprehensive migration guide created
+- ✅ Full backward compatibility maintained
+
+**Completed Stories** (18 story points total):
+1. ✅ Story 20.1: ProjectDocumentLifecycle Factory Class (3 points)
+2. ✅ Story 20.2: SandboxManager Integration (3 points)
+3. ✅ Story 20.3: Orchestrator Integration (3 points)
+4. ✅ Story 20.4: Project Root Detection (2 points)
+5. ✅ Story 20.5: Update Lifecycle CLI Commands (5 points)
+6. ✅ Story 20.6: Documentation and Migration (2 points)
+
+**Total**: 18 story points, 6 stories - ALL COMPLETE
+
+**Achievement**:
+Complete architectural transformation enabling true project isolation. Each sandbox project, benchmark, or production project now has its own `.gao-dev/` directory with isolated document tracking. CLI commands intelligently detect project context and operate on the correct database automatically.
+
+**Key Deliverables**:
+- `gao_dev/lifecycle/project_lifecycle.py` - ProjectDocumentLifecycle factory (153 lines)
+- `gao_dev/cli/project_detection.py` - Auto-detection utilities (212 lines)
+- Updated SandboxManager with lifecycle initialization
+- Updated GAODevOrchestrator with project-scoped lifecycle
+- 14 lifecycle CLI commands updated with `--project` option and auto-detection
+- Migration guide with FAQ and troubleshooting (`docs/MIGRATION_GUIDE_EPIC_20.md`)
+- 80+ integration tests across all components
+
+**Benefits Achieved**:
+- Project isolation: No cross-contamination between projects
+- Context persistence: Documentation context survives across sessions
+- Portability: `.gao-dev/` moves with the project
+- User experience: Commands "just work" from any directory within a project
+- Multi-project support: Can manage hundreds of projects simultaneously
+
+**Before/After Comparison**:
+```
+Before Epic 20:
+gao-agile-dev/.gao-dev/documents.db  ← Shared by ALL projects (wrong!)
+
+After Epic 20:
+sandbox/projects/app1/.gao-dev/documents.db  ← Isolated per project
+sandbox/projects/app2/.gao-dev/documents.db  ← Isolated per project
+```
 
 ## Epic 8: Reference Todo Application - CANCELLED
 

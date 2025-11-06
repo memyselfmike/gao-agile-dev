@@ -37,6 +37,8 @@ from ..core.prompt_loader import PromptLoader
 from ..core.context.context_persistence import ContextPersistence
 from ..core.context.workflow_context import WorkflowContext
 from ..core.context.context_api import set_workflow_context, clear_workflow_context
+from ..lifecycle.project_lifecycle import ProjectDocumentLifecycle
+from ..lifecycle.document_manager import DocumentLifecycleManager
 
 logger = structlog.get_logger()
 
@@ -92,6 +94,23 @@ class GAODevOrchestrator:
         # Initialize context persistence (always needed)
         self.context_persistence = context_persistence or ContextPersistence()
 
+        # Initialize project-scoped document lifecycle
+        self.doc_lifecycle: Optional[DocumentLifecycleManager] = None
+        try:
+            self.doc_lifecycle = ProjectDocumentLifecycle.initialize(self.project_root)
+            logger.info(
+                "document_lifecycle_initialized",
+                project_root=str(self.project_root),
+                db_path=str(ProjectDocumentLifecycle.get_db_path(self.project_root))
+            )
+        except Exception as e:
+            logger.warning(
+                "document_lifecycle_initialization_failed",
+                project_root=str(self.project_root),
+                error=str(e),
+                message="Orchestrator will continue without document lifecycle tracking"
+            )
+
         # CRITICAL FIX: Initialize missing services automatically
         # Check if any services are missing - if so, initialize all of them
         any_service_missing = (
@@ -120,10 +139,15 @@ class GAODevOrchestrator:
             self.quality_gate_manager = quality_gate_manager
             self.brian_orchestrator = brian_orchestrator
 
+        # Update workflow_coordinator with doc_manager if it was initialized
+        if hasattr(self, 'workflow_coordinator') and self.workflow_coordinator:
+            self.workflow_coordinator.doc_manager = self.doc_lifecycle
+
         logger.info(
             "orchestrator_initialized",
             mode=mode,
             project_root=str(project_root),
+            has_doc_lifecycle=self.doc_lifecycle is not None,
             services_injected=all(
                 [
                     hasattr(self, "workflow_coordinator"),
@@ -197,6 +221,7 @@ class GAODevOrchestrator:
             event_bus=event_bus,
             agent_executor=self._execute_agent_task_static,  # Now self.process_executor exists
             project_root=self.project_root,
+            doc_manager=self.doc_lifecycle,  # Pass document lifecycle manager
             max_retries=3,
         )
 
@@ -248,28 +273,18 @@ class GAODevOrchestrator:
         workflow_registry = WorkflowRegistry(config_loader)
         workflow_registry.index_workflows()
 
-        # Find Claude CLI
-        from ..core.cli_detector import find_claude_cli
-
-        cli_path = find_claude_cli()
-
-        if mode == "benchmark" and not cli_path:
-            raise ValueError(
-                "Claude CLI not found. Install Claude Code or set cli_path. "
-                "Cannot run in benchmark mode without Claude CLI."
-            )
-
-        if cli_path:
-            logger.info("claude_cli_detected", path=str(cli_path), mode=mode)
+        # Get provider from environment (default: claude-code)
+        provider_name = os.getenv("AGENT_PROVIDER", "claude-code").lower()
+        logger.info("agent_provider_selected", provider=provider_name, mode=mode)
 
         # Initialize event bus for service communication
         event_bus = EventBus()
 
-        # Initialize ProcessExecutor first (needed by agent_executor closure)
+        # Initialize ProcessExecutor with provider (new API)
         process_executor = ProcessExecutor(
             project_root=project_root,
-            cli_path=cli_path,
-            api_key=api_key,
+            provider_name=provider_name,
+            provider_config={"api_key": api_key} if api_key else None,
         )
 
         # Create agent executor closure that captures process_executor
@@ -279,7 +294,13 @@ class GAODevOrchestrator:
         ) -> AsyncGenerator[str, None]:
             """Closure that executes agent tasks via ProcessExecutor."""
             # Load workflow instructions from instructions.md
-            instructions_file = workflow_info.installed_path / "instructions.md"
+            # Ensure installed_path is a Path object (defensive coding for serialization)
+            installed_path = (
+                Path(workflow_info.installed_path)
+                if isinstance(workflow_info.installed_path, str)
+                else workflow_info.installed_path
+            )
+            instructions_file = installed_path / "instructions.md"
             if instructions_file.exists():
                 task_prompt = instructions_file.read_text(encoding="utf-8")
             else:
@@ -305,8 +326,12 @@ class GAODevOrchestrator:
                 prompt_length=len(task_prompt),
             )
 
-            # Execute via ProcessExecutor
-            async for output in process_executor.execute_agent_task(task=task_prompt, timeout=None):
+            # Execute via ProcessExecutor with default tools
+            async for output in process_executor.execute_agent_task(
+                task=task_prompt,
+                tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoWrite"],
+                timeout=None
+            ):
                 yield output
 
         # Initialize services
@@ -316,6 +341,7 @@ class GAODevOrchestrator:
             event_bus=event_bus,
             agent_executor=agent_executor_closure,
             project_root=project_root,
+            doc_manager=None,  # Orchestrator will update this after doc_lifecycle initialization
             max_retries=3,
         )
 
@@ -349,11 +375,30 @@ class GAODevOrchestrator:
             brian_orchestrator=brian_orchestrator,
         )
 
+    def get_document_manager(self) -> Optional[DocumentLifecycleManager]:
+        """
+        Get the project-scoped document lifecycle manager.
+
+        Returns:
+            DocumentLifecycleManager instance or None if not initialized
+
+        Example:
+            >>> orchestrator = GAODevOrchestrator(project_root=Path("my-project"))
+            >>> doc_manager = orchestrator.get_document_manager()
+            >>> if doc_manager:
+            ...     doc_manager.registry.register_document("PRD.md", "product-requirements")
+        """
+        return self.doc_lifecycle
+
     # ========================================================================
     # Public API - Thin Delegation Methods
     # ========================================================================
 
-    async def execute_task(self, task: str) -> AsyncGenerator[str, None]:
+    async def execute_task(
+        self,
+        task: str,
+        tools: Optional[List[str]] = None
+    ) -> AsyncGenerator[str, None]:
         """
         Execute a task using the orchestrator.
 
@@ -361,13 +406,25 @@ class GAODevOrchestrator:
 
         Args:
             task: Task description
+            tools: List of tool names to enable (uses default set if None)
 
         Yields:
             Message chunks from the agent
         """
+        # Default tools for development agents (Read, Write, Edit are essential)
+        if tools is None:
+            tools = [
+                "Read", "Write", "Edit", "MultiEdit",  # File operations
+                "Bash", "Grep", "Glob",                # System & search
+                "TodoWrite",                            # Progress tracking
+            ]
+
         if self.mode == "benchmark":
             # Delegate to ProcessExecutor service
-            async for chunk in self.process_executor.execute_agent_task(task):
+            async for chunk in self.process_executor.execute_agent_task(
+                task,
+                tools=tools
+            ):
                 yield chunk
         else:
             raise NotImplementedError(
@@ -842,7 +899,13 @@ class GAODevOrchestrator:
         logger.debug("executing_agent_task", workflow=workflow_info.name, epic=epic, story=story)
 
         # Load workflow instructions from instructions.md
-        instructions_file = workflow_info.installed_path / "instructions.md"
+        # Ensure installed_path is a Path object (defensive coding for serialization)
+        installed_path = (
+            Path(workflow_info.installed_path)
+            if isinstance(workflow_info.installed_path, str)
+            else workflow_info.installed_path
+        )
+        instructions_file = installed_path / "instructions.md"
         if instructions_file.exists():
             task_prompt = instructions_file.read_text(encoding="utf-8")
         else:
@@ -877,9 +940,11 @@ class GAODevOrchestrator:
             prompt_length=len(task_prompt),
         )
 
-        # Execute via ProcessExecutor
+        # Execute via ProcessExecutor with default tools
         async for output in self.process_executor.execute_agent_task(
-            task=task_prompt, timeout=None  # Use default timeout from ProcessExecutor
+            task=task_prompt,
+            tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoWrite"],
+            timeout=None  # Use default timeout from ProcessExecutor
         ):
             yield output
 

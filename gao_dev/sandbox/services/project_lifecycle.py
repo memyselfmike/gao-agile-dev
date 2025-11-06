@@ -2,11 +2,13 @@
 
 import re
 import shutil
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
 import structlog
 
+from gao_dev.lifecycle.project_lifecycle import ProjectDocumentLifecycle
 from gao_dev.sandbox.models import ProjectMetadata, ProjectStatus
 from gao_dev.sandbox.exceptions import (
     ProjectExistsError,
@@ -112,6 +114,24 @@ class ProjectLifecycleService:
                 # Create standard directory structure
                 self._create_project_structure(project_dir)
 
+            # Initialize document lifecycle (NEW)
+            document_lifecycle_initialized = False
+            try:
+                doc_manager = ProjectDocumentLifecycle.initialize(project_dir)
+                document_lifecycle_initialized = True
+                logger.info(
+                    "document_lifecycle_initialized",
+                    project=name,
+                    db_path=str(ProjectDocumentLifecycle.get_db_path(project_dir))
+                )
+            except Exception as e:
+                logger.error(
+                    "failed_to_initialize_document_lifecycle",
+                    project=name,
+                    error=str(e)
+                )
+                # Don't fail project creation, but log the issue
+
             # Create and save metadata using state service
             metadata = self.state_service.create_metadata(
                 name=name,
@@ -119,6 +139,9 @@ class ProjectLifecycleService:
                 boilerplate_url=boilerplate_url,
                 tags=tags or [],
             )
+
+            # Update metadata with document lifecycle status
+            metadata.document_lifecycle_initialized = document_lifecycle_initialized
 
             self.state_service.save_metadata(project_dir, metadata)
 
@@ -226,6 +249,60 @@ class ProjectLifecycleService:
             Absolute Path to project directory
         """
         return (self.projects_dir / name).resolve()
+
+    def initialize_document_lifecycle(
+        self,
+        project_name: str,
+        force: bool = False
+    ) -> bool:
+        """
+        Initialize or re-initialize document lifecycle for a project.
+
+        Args:
+            project_name: Name of the project
+            force: Force re-initialization even if already initialized
+
+        Returns:
+            True if successful, False otherwise
+        """
+        project_dir = self.projects_dir / project_name
+
+        if not project_dir.exists():
+            logger.error("project_does_not_exist", project=project_name)
+            return False
+
+        # Check if already initialized
+        if not force and ProjectDocumentLifecycle.is_initialized(project_dir):
+            logger.info(
+                "document_lifecycle_already_initialized",
+                project=project_name
+            )
+            return True
+
+        # Initialize
+        try:
+            ProjectDocumentLifecycle.initialize(project_dir)
+
+            # Update metadata
+            metadata = self.state_service.load_metadata(project_dir)
+            metadata.document_lifecycle_initialized = True
+            metadata.last_modified = datetime.now()
+            self.state_service.save_metadata(project_dir, metadata)
+
+            logger.info(
+                "document_lifecycle_initialized",
+                project=project_name,
+                force=force
+            )
+            return True
+
+        except Exception as e:
+            logger.error(
+                "failed_to_initialize_document_lifecycle",
+                project=project_name,
+                error=str(e)
+            )
+            return False
 
     def _validate_project_name(self, name: str) -> None:
         """Validate project name (3-50 chars, alphanumeric + hyphens, no consecutive hyphens)."""
