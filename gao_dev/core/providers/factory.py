@@ -7,6 +7,7 @@ import structlog
 from .base import IAgentProvider
 from .claude_code import ClaudeCodeProvider
 from .opencode import OpenCodeProvider
+from .opencode_sdk import OpenCodeSDKProvider
 from .cache import ProviderCache, hash_config
 from .exceptions import (
     ProviderNotFoundError,
@@ -255,7 +256,7 @@ class ProviderFactory:
             ```python
             providers = factory.list_providers()
             # ['claude-code', 'direct-api-anthropic', 'direct-api-google',
-            #  'direct-api-openai', 'opencode']
+            #  'direct-api-openai', 'opencode', 'opencode-cli', 'opencode-sdk']
             ```
         """
         providers = list(self._registry.keys())
@@ -331,23 +332,27 @@ class ProviderFactory:
 
         builtin_providers = {
             "claude-code": ClaudeCodeProvider,
-            "opencode": OpenCodeProvider,
+            "opencode": OpenCodeProvider,  # CLI-based (legacy, default for backward compatibility)
+            "opencode-cli": OpenCodeProvider,  # CLI-based (explicit)
+            "opencode-sdk": OpenCodeSDKProvider,  # SDK-based (recommended)
             "direct-api-anthropic": lambda: DirectAPIProvider(provider="anthropic"),
             "direct-api-openai": lambda: DirectAPIProvider(provider="openai"),
             "direct-api-google": lambda: DirectAPIProvider(provider="google"),
         }
 
         # Note: Direct API providers need special handling since they require a provider parameter
-        # Register claude-code and opencode normally
+        # Register claude-code and opencode providers normally
         self._registry["claude-code"] = ClaudeCodeProvider
-        self._registry["opencode"] = OpenCodeProvider
+        self._registry["opencode"] = OpenCodeProvider  # Default to CLI for backward compatibility
+        self._registry["opencode-cli"] = OpenCodeProvider  # Explicit CLI provider
+        self._registry["opencode-sdk"] = OpenCodeSDKProvider  # SDK provider (recommended)
 
         # For direct-api, we'll need a wrapper or special handling in create_provider
         # For now, register them with a special marker
         logger.debug(
             "builtin_providers_registered",
-            count=2,  # Only actual registered providers
-            providers=["claude-code", "opencode"]
+            count=4,  # Actual registered providers
+            providers=["claude-code", "opencode", "opencode-cli", "opencode-sdk"]
         )
 
     def translate_model_name(

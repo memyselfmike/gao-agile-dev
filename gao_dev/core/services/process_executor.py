@@ -75,13 +75,21 @@ class ProcessExecutor:
         """
         Initialize executor with provider.
 
+        Provider selection (priority order):
+        1. Provided provider instance
+        2. AGENT_PROVIDER environment variable
+        3. provider_name parameter (default: "claude-code")
+
         Args:
             project_root: Project root directory
             provider: Pre-configured provider instance (takes precedence)
-            provider_name: Provider name if creating new instance
+            provider_name: Provider name if creating new instance (default: "claude-code")
             provider_config: Provider-specific configuration
             cli_path: DEPRECATED - Use provider_config instead
             api_key: DEPRECATED - Use provider_config instead
+
+        Environment Variables:
+            AGENT_PROVIDER: Provider name (e.g., "opencode-sdk", "claude-code", "opencode-cli")
 
         Example (New API):
             ```python
@@ -90,6 +98,15 @@ class ProcessExecutor:
                 provider_name="claude-code",
                 provider_config={"api_key": "sk-..."}
             )
+            ```
+
+        Example (Environment Variable):
+            ```bash
+            export AGENT_PROVIDER=opencode-sdk
+            ```
+            ```python
+            executor = ProcessExecutor(project_root=Path("/project"))
+            # Uses opencode-sdk provider from env var
             ```
 
         Example (Legacy API - still works):
@@ -111,6 +128,18 @@ class ProcessExecutor:
         from ..providers import ProviderFactory, AgentContext
         import os
 
+        # Check environment variable for provider name
+        # Priority: 1) provider instance, 2) env var, 3) parameter
+        if provider is None:
+            env_provider = os.getenv("AGENT_PROVIDER")
+            if env_provider:
+                provider_name = env_provider
+                logger.info(
+                    "process_executor_using_env_provider",
+                    provider_name=provider_name,
+                    source="AGENT_PROVIDER environment variable"
+                )
+
         # Handle legacy constructor (backward compatibility)
         if provider is None and (cli_path is not None or api_key is not None):
             # Legacy mode: create ClaudeCodeProvider with old params
@@ -127,7 +156,8 @@ class ProcessExecutor:
             factory = ProviderFactory()
             legacy_config = {}
             if cli_path is not None:
-                legacy_config["cli_path"] = cli_path
+                # Convert Path to string for JSON serialization
+                legacy_config["cli_path"] = str(cli_path)
             if effective_api_key is not None:
                 legacy_config["api_key"] = effective_api_key
 
