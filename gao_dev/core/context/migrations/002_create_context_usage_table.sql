@@ -42,10 +42,11 @@ CREATE TABLE IF NOT EXISTS context_usage (
 
     -- Timestamps
     accessed_at TEXT NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 
-    -- Foreign key constraints (non-strict to allow for missing documents)
-    FOREIGN KEY (workflow_id) REFERENCES workflow_context(workflow_id) ON DELETE SET NULL
+    -- Foreign key constraints removed to avoid dependency issues
+    -- workflow_id is a TEXT field that can reference workflow_context.workflow_id if that table exists
+    -- but the constraint is not enforced to allow for flexible usage
 );
 
 -- Indexes for fast lookups
