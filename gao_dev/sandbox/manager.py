@@ -219,6 +219,26 @@ class SandboxManager:
         # Delegate to lifecycle service
         return self.lifecycle_service.get_project_path(name)
 
+    def initialize_document_lifecycle(
+        self,
+        project_name: str,
+        force: bool = False
+    ) -> bool:
+        """
+        Initialize document lifecycle for existing project.
+
+        Args:
+            project_name: Name of the project
+            force: Force re-initialization
+
+        Returns:
+            True if successful
+        """
+        # Delegate to lifecycle service
+        return self.lifecycle_service.initialize_document_lifecycle(
+            project_name,
+            force
+        )
 
     def update_status(
         self,

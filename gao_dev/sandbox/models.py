@@ -66,6 +66,10 @@ class ProjectMetadata:
     description: str = ""
     benchmark_info: Optional[Dict[str, Any]] = None
 
+    # Document lifecycle tracking
+    document_lifecycle_version: str = "1.0.0"
+    document_lifecycle_initialized: bool = False
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for YAML serialization."""
         result = {
@@ -77,6 +81,8 @@ class ProjectMetadata:
             "runs": [run.to_dict() for run in self.runs],
             "tags": self.tags,
             "description": self.description,
+            "document_lifecycle_version": self.document_lifecycle_version,
+            "document_lifecycle_initialized": self.document_lifecycle_initialized,
         }
 
         if self.benchmark_info:
@@ -97,6 +103,8 @@ class ProjectMetadata:
             tags=data.get("tags", []),
             description=data.get("description", ""),
             benchmark_info=data.get("benchmark_info"),
+            document_lifecycle_version=data.get("document_lifecycle_version", "1.0.0"),
+            document_lifecycle_initialized=data.get("document_lifecycle_initialized", False),
         )
 
     def add_run(self, run: BenchmarkRun) -> None:
