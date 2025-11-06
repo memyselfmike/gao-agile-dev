@@ -16,6 +16,27 @@ user_prompt: |
   ### Predefined Acceptance Criteria
   {{acceptance_criteria}}
 
+  ### Accessing Context via AgentContextAPI
+
+  You have access to the AgentContextAPI for retrieving project context.
+  Use the following API to access documents:
+
+  ```python
+  from gao_dev.core.context.context_api import get_workflow_context, AgentContextAPI
+
+  # Get current workflow context
+  workflow_context = get_workflow_context()
+
+  # Initialize AgentContextAPI
+  api = AgentContextAPI(workflow_context)
+
+  # Access documents (lazy-loaded, cached, tracked)
+  epic_def = api.get_epic_definition()
+  architecture = api.get_architecture()
+  prd = api.get_prd()
+  coding_standards = api.get_coding_standards()
+  ```
+
   ### Epic Context
   @context:epic_definition
 

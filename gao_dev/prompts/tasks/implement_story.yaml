@@ -5,6 +5,35 @@ version: 2.0.0
 user_prompt: |
   Execute the complete story implementation workflow for Story {{epic}}.{{story}}.
 
+  ### Accessing Context via AgentContextAPI
+
+  Before coordinating agents, set up the WorkflowContext and AgentContextAPI:
+
+  ```python
+  from gao_dev.core.context.context_api import set_workflow_context, get_workflow_context, AgentContextAPI
+  from gao_dev.core.context.workflow_context import WorkflowContext
+  import uuid
+
+  # Create and set WorkflowContext
+  context = WorkflowContext(
+      workflow_id=str(uuid.uuid4()),
+      epic_num={{epic}},
+      story_num={{story}},
+      feature="{{feature}}",
+      workflow_name="implement_story"
+  )
+  set_workflow_context(context)
+
+  # Initialize AgentContextAPI for document access
+  api = AgentContextAPI(context)
+
+  # Access documents (lazy-loaded, cached, tracked)
+  epic_def = api.get_epic_definition()
+  architecture = api.get_architecture()
+  story_def = api.get_story_definition()
+  coding_standards = api.get_coding_standards()
+  ```
+
   Story Requirements:
   @doc:stories/epic-{{epic}}/story-{{epic}}.{{story}}.md
 

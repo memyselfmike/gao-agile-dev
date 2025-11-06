@@ -28,3 +28,27 @@ agent:
   workflows:
     - dev-story
     - review-story
+
+  context_api:
+    enabled: true
+    description: "Access project context via AgentContextAPI"
+    available_documents:
+      - epic_definition: "Epic definition for current story"
+      - architecture: "System architecture guidelines"
+      - prd: "Product Requirements Document"
+      - story_definition: "Current story definition"
+      - acceptance_criteria: "Story acceptance criteria"
+      - coding_standards: "Project coding standards"
+    usage: |
+      # Accessing Context in Amelia's prompts:
+      from gao_dev.core.context.context_api import get_workflow_context, AgentContextAPI
+
+      context = get_workflow_context()
+      api = AgentContextAPI(context)
+
+      # Get documents for implementation
+      epic_def = api.get_epic_definition()
+      architecture = api.get_architecture()
+      story_def = api.get_story_definition()
+      coding_standards = api.get_coding_standards()
+      acceptance_criteria = api.get_acceptance_criteria()

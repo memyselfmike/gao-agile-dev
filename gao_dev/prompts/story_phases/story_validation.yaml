@@ -19,6 +19,33 @@ user_prompt: |
   ### Context from Implementation Phase
   {{implementation_context}}
 
+  ### Accessing Context via AgentContextAPI
+
+  You have access to the AgentContextAPI for retrieving project context.
+  Use the following API to access documents:
+
+  ```python
+  from gao_dev.core.context.context_api import get_workflow_context, AgentContextAPI
+
+  # Get current workflow context
+  workflow_context = get_workflow_context()
+
+  # Initialize AgentContextAPI
+  api = AgentContextAPI(workflow_context)
+
+  # Access documents (lazy-loaded, cached, tracked)
+  epic_def = api.get_epic_definition()
+  architecture = api.get_architecture()
+  story_def = api.get_story_definition()
+  acceptance_criteria = api.get_acceptance_criteria()
+  coding_standards = api.get_coding_standards()
+  ```
+
+  All document accesses are automatically:
+  - Cached for performance
+  - Tracked for lineage
+  - Logged for audit trail
+
   ### Quality Checklists
   @checklist:testing/qa-comprehensive
   @checklist:code-quality/code-review-checklist
