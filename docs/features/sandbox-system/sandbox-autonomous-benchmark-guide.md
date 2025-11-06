@@ -22,6 +22,7 @@ The GAO-Dev sandbox system now supports fully autonomous benchmark execution wit
 - **Time tracking**: Precise duration for each phase and agent
 - **Tool calls**: Count of all tool invocations
 - **Agent activity**: Detailed logs of all agent actions
+- **Document tracking**: All documentation tracked in project-scoped `.gao-dev/documents.db`
 
 ### 4. Verbose Logging
 - **Event log**: Timestamped log of all events (`{run_id}_verbose.log`)
@@ -370,6 +371,202 @@ print(f"Metrics: {result.metadata['metrics_report']}")
 2. **Clear prompts**: Specific prompts reduce iteration and token waste
 3. **Reasonable timeouts**: Don't over-allocate time per phase
 4. **Quality gates**: Catch issues early to avoid expensive rework
+
+## Document Lifecycle Tracking in Benchmarks
+
+### Overview
+
+Benchmarks automatically track all documentation created during runs in the project's `.gao-dev/documents.db`. This provides visibility into what documents were generated, when they were created, and their current status.
+
+### What Gets Tracked
+
+During benchmark execution, the following documents are automatically tracked:
+
+- **Product Requirements**: PRD.md (product-requirements)
+- **Architecture**: ARCHITECTURE.md (architecture)
+- **Stories**: All story files (story-X.Y.md)
+- **Technical Specs**: API specs, data models, etc.
+- **Test Plans**: Test strategies and plans
+- **Agent-Generated Docs**: Any documents created by agents during workflows
+
+### Project-Scoped Tracking
+
+Each benchmark project has its own isolated `.gao-dev/` directory:
+
+```
+sandbox/projects/workflow-driven-todo/
+├── .gao-dev/
+│   └── documents.db              # Project-specific tracking
+├── .archive/                     # Archived documents
+└── docs/                         # Live documentation
+    ├── PRD.md
+    ├── ARCHITECTURE.md
+    └── features/
+        └── stories/
+            ├── story-1.1.md
+            └── story-1.2.md
+```
+
+### Viewing Tracked Documents
+
+After a benchmark run completes, you can view all tracked documents:
+
+**Using CLI**:
+```bash
+cd sandbox/projects/workflow-driven-todo
+gao-dev lifecycle list
+
+# Output:
+# Project: workflow-driven-todo
+# Found 15 document(s):
+#
+# docs/PRD.md
+#   Type: product-requirements
+#   Created: 2025-11-06 14:35:22
+#   Status: active
+#
+# docs/ARCHITECTURE.md
+#   Type: architecture
+#   Created: 2025-11-06 14:42:15
+#   Status: active
+#
+# docs/features/stories/story-1.1.md
+#   Type: story
+#   Created: 2025-11-06 15:10:33
+#   Status: active
+#
+# ... (12 more documents)
+```
+
+**Using Python API**:
+```python
+from pathlib import Path
+from gao_dev.lifecycle.project_lifecycle import ProjectDocumentLifecycle
+
+project_root = Path("sandbox/projects/workflow-driven-todo")
+doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+
+# List all documents
+documents = doc_manager.registry.list_documents()
+print(f"Total documents: {len(documents)}")
+
+# Get by type
+prds = doc_manager.registry.get_documents_by_type("product-requirements")
+stories = doc_manager.registry.get_documents_by_type("story")
+
+print(f"PRDs: {len(prds)}")
+print(f"Stories: {len(stories)}")
+```
+
+### Document Lifecycle Metrics
+
+Document lifecycle operations are included in benchmark metrics:
+
+```json
+{
+  "run_id": "workflow-driven-todo-20251106-143522",
+  "document_lifecycle": {
+    "total_documents": 15,
+    "by_type": {
+      "product-requirements": 1,
+      "architecture": 1,
+      "story": 12,
+      "test-plan": 1
+    },
+    "operations": {
+      "registered": 15,
+      "updated": 23,
+      "archived": 0,
+      "restored": 0
+    }
+  }
+}
+```
+
+### Success Criteria and Document Tracking
+
+Benchmark success criteria can include document tracking requirements:
+
+```yaml
+# benchmark.yaml
+success_criteria:
+  - All tests pass
+  - Test coverage > 80%
+  - Application runs successfully
+  - PRD and Architecture documents created
+  - All stories documented
+
+document_requirements:
+  required_types:
+    - product-requirements
+    - architecture
+    - story
+  min_story_count: 5
+```
+
+### Analyzing Documentation Coverage
+
+After a benchmark, you can analyze documentation coverage:
+
+```python
+from gao_dev.lifecycle.project_lifecycle import ProjectDocumentLifecycle
+
+def analyze_documentation(project_root: Path):
+    """Analyze documentation completeness."""
+    doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+    documents = doc_manager.registry.list_documents()
+
+    # Group by type
+    by_type = {}
+    for doc in documents:
+        by_type[doc.doc_type] = by_type.get(doc.doc_type, 0) + 1
+
+    # Check completeness
+    required = ["product-requirements", "architecture", "story"]
+    missing = [t for t in required if t not in by_type]
+
+    return {
+        "total": len(documents),
+        "by_type": by_type,
+        "missing_types": missing,
+        "complete": len(missing) == 0
+    }
+```
+
+### Multi-Project Comparison
+
+Compare documentation across multiple benchmark runs:
+
+```python
+def compare_benchmarks(project_roots: List[Path]):
+    """Compare documentation across benchmark runs."""
+    results = []
+
+    for project_root in project_roots:
+        if not ProjectDocumentLifecycle.is_initialized(project_root):
+            continue
+
+        doc_manager = ProjectDocumentLifecycle.initialize(project_root)
+        documents = doc_manager.registry.list_documents()
+
+        results.append({
+            "project": project_root.name,
+            "total_docs": len(documents),
+            "story_count": len([d for d in documents if d.doc_type == "story"]),
+            "has_prd": any(d.doc_type == "product-requirements" for d in documents),
+            "has_arch": any(d.doc_type == "architecture" for d in documents)
+        })
+
+    return results
+```
+
+### Best Practices
+
+1. **Check Document Tracking**: After benchmarks, verify documents were tracked correctly
+2. **Use for Analysis**: Analyze documentation patterns across successful runs
+3. **Quality Gates**: Include document requirements in success criteria
+4. **Trend Analysis**: Track documentation metrics across multiple runs
+5. **Debugging**: Use document history to understand agent behavior
 
 ## Next Steps
 

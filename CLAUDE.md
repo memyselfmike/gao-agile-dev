@@ -27,9 +27,17 @@ This document helps you (Claude) quickly understand the GAO-Dev project, its str
 
 ---
 
-## Current Status (As of 2025-11-03)
+## Current Status (As of 2025-11-06)
 
 ### Latest Achievements
+
+✅ **Epic 20: Project-Scoped Document Lifecycle** - COMPLETE
+  - Project-scoped `.gao-dev/` directories for isolated tracking
+  - ProjectDocumentLifecycle factory for multi-project support
+  - Auto-detection of project roots in CLI commands
+  - Orchestrator and SandboxManager integration
+  - Migration guide for existing projects
+  - Full backward compatibility
 
 ✅ **Epic 10: Prompt & Agent Configuration Abstraction** - COMPLETE
   - All prompts externalized to YAML templates
@@ -73,6 +81,8 @@ This document helps you (Claude) quickly understand the GAO-Dev project, its str
 - Load prompts and agent configs from YAML files
 - Support custom agents and prompts via plugins
 - Resolve references to files and configuration values
+- Track document lifecycle per-project with isolated `.gao-dev/` directories
+- Auto-detect project context for CLI commands
 
 ### What's Next
 
@@ -255,6 +265,29 @@ gao-agile-dev/
 └── CLAUDE.md                      # This file
 ```
 
+### Project-Scoped Architecture
+
+Each project managed by GAO-Dev has its own `.gao-dev/` directory for isolated document lifecycle tracking:
+
+```
+sandbox/projects/my-app/          # Project root
+├── .gao-dev/                     # Project-specific GAO-Dev data
+│   ├── documents.db              # Document lifecycle tracking
+│   ├── context.json              # Execution context
+│   └── metrics/                  # Project metrics
+├── .archive/                     # Archived documents
+├── docs/                         # Live documentation
+├── src/                          # Application code
+└── tests/                        # Test suite
+```
+
+**Key Points**:
+- Each project is isolated with its own document tracking
+- Documentation context persists across sessions
+- `.gao-dev/` can be moved with the project
+- Same structure for all project types (sandbox, benchmarks, production)
+- Automatic initialization on project creation
+
 ---
 
 ## Scale-Adaptive Routing
@@ -407,7 +440,8 @@ class MyPlugin(BaseAgentPlugin):
 - Separation of concerns (logic vs. content)
 
 **See Also**:
-- [Migration Guide](docs/MIGRATION_GUIDE_EPIC_10.md)
+- [Migration Guide - Epic 10 (Prompt Abstraction)](docs/MIGRATION_GUIDE_EPIC_10.md)
+- [Migration Guide - Epic 20 (Project-Scoped Lifecycle)](docs/MIGRATION_GUIDE_EPIC_20.md)
 - [Plugin Example](docs/examples/legal-team-plugin/)
 
 ---
@@ -451,6 +485,19 @@ gao-dev metrics report trend <config>          # Trend analysis
 gao-dev metrics report list                    # List all reports
 gao-dev metrics report open <report-id>        # Open report in browser
 ```
+
+### Document Lifecycle Commands
+```bash
+gao-dev lifecycle list                         # List documents (auto-detects project)
+gao-dev lifecycle list --project <path>        # List for specific project
+gao-dev lifecycle register <path> <type>       # Register document
+gao-dev lifecycle update <path>                # Update document
+gao-dev lifecycle archive <path>               # Archive document
+gao-dev lifecycle restore <path>               # Restore document
+```
+
+**Note**: Commands auto-detect project root by searching for `.gao-dev/` or `.sandbox.yaml`.
+You can override with `--project` option to target a specific project.
 
 ---
 
