@@ -82,13 +82,13 @@ class OpenCodeSDKProvider(IAgentProvider):
     # Based on OpenCode Models.dev naming conventions
     MODEL_MAP: Dict[str, tuple[str, str]] = {
         # Claude models (Anthropic)
-        "claude-sonnet-4-5-20250929": ("anthropic", "claude-sonnet-4.5"),
+        "claude-sonnet-4-5-20250929": ("anthropic", "claude-sonnet-4-5"),
         "claude-opus-4-20250514": ("anthropic", "claude-opus-4"),
         "claude-3-5-sonnet-20241022": ("anthropic", "claude-3.5-sonnet"),
         "claude-3-haiku-20240307": ("anthropic", "claude-3-haiku"),
 
         # Canonical short names
-        "sonnet-4.5": ("anthropic", "claude-sonnet-4.5"),
+        "sonnet-4.5": ("anthropic", "claude-sonnet-4-5"),
         "opus-4": ("anthropic", "claude-opus-4"),
         "sonnet-3.5": ("anthropic", "claude-3.5-sonnet"),
         "haiku-3": ("anthropic", "claude-3-haiku"),
