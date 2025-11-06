@@ -67,6 +67,7 @@ class WorkflowResult:
     total_artifacts: int = 0
     project_path: Optional[str] = None
     error_message: Optional[str] = None
+    context_id: Optional[str] = None  # Link to WorkflowContext for traceability
 
     @property
     def success(self) -> bool:
@@ -110,6 +111,7 @@ class WorkflowResult:
             "total_artifacts": self.total_artifacts,
             "project_path": self.project_path,
             "error_message": self.error_message,
+            "context_id": self.context_id,
             "step_results": [step.to_dict() for step in self.step_results],
         }
 
