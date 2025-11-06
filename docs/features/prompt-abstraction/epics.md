@@ -1,3 +1,21 @@
+---
+document:
+  type: "epic"
+  state: "archived"
+  created: "2025-11-03"
+  last_modified: "2025-11-06"
+  author: "Bob"
+  feature: "prompt-abstraction"
+  epic: null
+  story: null
+  related_documents:
+    - "PRD.md"
+    - "ARCHITECTURE.md"
+    - "../../MIGRATION_GUIDE_EPIC_10.md"
+  replaces: null
+  replaced_by: null
+---
+
 # Epic Breakdown
 ## Prompt & Agent Configuration Abstraction System
 

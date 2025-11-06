@@ -1,3 +1,20 @@
+---
+document:
+  type: "epic"
+  state: "archived"
+  created: "2025-10-29"
+  last_modified: "2025-11-06"
+  author: "Bob"
+  feature: "core-gao-dev-system-refactor"
+  epic: null
+  story: null
+  related_documents:
+    - "PRD.md"
+    - "ARCHITECTURE.md"
+  replaces: null
+  replaced_by: null
+---
+
 # Epics: Core GAO-Dev System Refactoring
 
 **Feature**: Core System Refactoring

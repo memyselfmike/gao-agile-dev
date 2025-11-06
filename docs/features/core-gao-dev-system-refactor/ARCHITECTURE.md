@@ -1,3 +1,21 @@
+---
+document:
+  type: "architecture"
+  state: "archived"
+  created: "2025-10-29"
+  last_modified: "2025-11-06"
+  author: "Winston"
+  feature: "core-gao-dev-system-refactor"
+  epic: null
+  story: null
+  related_documents:
+    - "PRD.md"
+    - "epics.md"
+    - "MIGRATION-GUIDE.md"
+  replaces: null
+  replaced_by: null
+---
+
 # Architecture Document: Core GAO-Dev System Refactoring
 
 **Version**: 1.0

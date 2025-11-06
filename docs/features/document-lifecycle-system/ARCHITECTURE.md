@@ -1,3 +1,21 @@
+---
+document:
+  type: "architecture"
+  state: "active"
+  created: "2025-11-04"
+  last_modified: "2025-11-06"
+  author: "Winston"
+  feature: "document-lifecycle-system"
+  epic: null
+  story: null
+  related_documents:
+    - "PRD.md"
+    - "epics.md"
+    - "ROADMAP.md"
+  replaces: null
+  replaced_by: null
+---
+
 # System Architecture
 ## GAO-Dev Document Lifecycle & Context Management System
 

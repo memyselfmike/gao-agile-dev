@@ -1,3 +1,21 @@
+---
+document:
+  type: "epic"
+  state: "active"
+  created: "2025-11-04"
+  last_modified: "2025-11-06"
+  author: "Bob"
+  feature: "document-lifecycle-system"
+  epic: null
+  story: null
+  related_documents:
+    - "PRD.md"
+    - "ARCHITECTURE.md"
+    - "ROADMAP.md"
+  replaces: null
+  replaced_by: null
+---
+
 # Epic Breakdown
 ## Document Lifecycle & Context Management System
 

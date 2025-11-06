@@ -1,3 +1,20 @@
+---
+document:
+  type: "architecture"
+  state: "archived"
+  created: "2025-10-27"
+  last_modified: "2025-11-06"
+  author: "Winston"
+  feature: "sandbox-system"
+  epic: null
+  story: null
+  related_documents:
+    - "PRD.md"
+    - "epics.md"
+  replaces: null
+  replaced_by: null
+---
+
 # System Architecture
 ## GAO-Dev Sandbox & Benchmarking System
 

@@ -1,3 +1,21 @@
+---
+document:
+  type: "prd"
+  state: "active"
+  created: "2025-11-04"
+  last_modified: "2025-11-06"
+  author: "John"
+  feature: "document-lifecycle-system"
+  epic: null
+  story: null
+  related_documents:
+    - "ARCHITECTURE.md"
+    - "epics.md"
+    - "ROADMAP.md"
+  replaces: null
+  replaced_by: null
+---
+
 # Product Requirements Document
 ## GAO-Dev Document Lifecycle & Context Management System
 

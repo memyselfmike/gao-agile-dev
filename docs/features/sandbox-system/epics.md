@@ -1,3 +1,20 @@
+---
+document:
+  type: "epic"
+  state: "archived"
+  created: "2025-10-27"
+  last_modified: "2025-11-06"
+  author: "Bob"
+  feature: "sandbox-system"
+  epic: null
+  story: null
+  related_documents:
+    - "PRD.md"
+    - "ARCHITECTURE.md"
+  replaces: null
+  replaced_by: null
+---
+
 # Epics - GAO-Dev Sandbox & Benchmarking System
 
 **Project**: GAO-Dev Sandbox & Benchmarking System

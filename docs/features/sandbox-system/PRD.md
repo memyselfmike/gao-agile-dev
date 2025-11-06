@@ -1,3 +1,20 @@
+---
+document:
+  type: "prd"
+  state: "archived"
+  created: "2025-10-27"
+  last_modified: "2025-11-06"
+  author: "John"
+  feature: "sandbox-system"
+  epic: null
+  story: null
+  related_documents:
+    - "ARCHITECTURE.md"
+    - "epics.md"
+  replaces: null
+  replaced_by: null
+---
+
 # Product Requirements Document
 ## GAO-Dev Sandbox & Benchmarking System
 

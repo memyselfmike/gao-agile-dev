@@ -1,3 +1,21 @@
+---
+document:
+  type: "architecture"
+  state: "archived"
+  created: "2025-11-03"
+  last_modified: "2025-11-06"
+  author: "Winston"
+  feature: "prompt-abstraction"
+  epic: null
+  story: null
+  related_documents:
+    - "PRD.md"
+    - "epics.md"
+    - "../../MIGRATION_GUIDE_EPIC_10.md"
+  replaces: null
+  replaced_by: null
+---
+
 # System Architecture
 ## GAO-Dev Prompt & Agent Configuration Abstraction System
 

@@ -1,3 +1,21 @@
+---
+document:
+  type: "prd"
+  state: "archived"
+  created: "2025-11-03"
+  last_modified: "2025-11-06"
+  author: "John"
+  feature: "prompt-abstraction"
+  epic: null
+  story: null
+  related_documents:
+    - "ARCHITECTURE.md"
+    - "epics.md"
+    - "../../MIGRATION_GUIDE_EPIC_10.md"
+  replaces: null
+  replaced_by: null
+---
+
 # Product Requirements Document
 ## GAO-Dev Prompt & Agent Configuration Abstraction System
 

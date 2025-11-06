@@ -2,11 +2,13 @@
 
 **Software Engineering Team for Generative Autonomous Organisation**
 
-GAO-Dev is an autonomous AI development orchestration system that manages the complete software development lifecycle using specialized Claude agents. Transform "simple prompt → production-ready app" into reality through intelligent workflow selection, scale-adaptive routing, and autonomous agent orchestration.
+GAO-Dev is an autonomous AI development orchestration system that manages the complete software development lifecycle using specialized Claude agents. Transform "simple prompt → production-ready app" into reality through intelligent workflow selection, scale-adaptive routing, autonomous agent orchestration, and comprehensive context management.
 
 ## Features
 
-- **Autonomous Development**: 7 specialized Claude agents (Brian, John, Winston, Sally, Bob, Amelia, Murat)
+- **Autonomous Development**: 8 specialized Claude agents (Mary, Brian, John, Winston, Sally, Bob, Amelia, Murat)
+- **Document Lifecycle Management**: Track document states, metadata, and relationships across the entire lifecycle
+- **Context System Integration**: Automatic context injection, meta-prompts, and state persistence
 - **Scale-Adaptive Routing**: Automatically adjusts approach based on project size (Levels 0-4)
 - **Workflow Intelligence**: Brian agent for intelligent workflow selection and orchestration
 - **Multi-Workflow Sequencing**: Coordinate complex development sequences autonomously
@@ -14,7 +16,10 @@ GAO-Dev is an autonomous AI development orchestration system that manages the co
 - **Sandbox & Benchmarking**: Test and measure autonomous development capabilities
 - **Comprehensive Metrics**: Track performance, autonomy, quality, and workflow metrics
 - **HTML Reporting**: Professional dashboards with charts, comparisons, and trend analysis
-- **Plugin Architecture**: Extensible system for custom agents, workflows, and methodologies
+- **Plugin Architecture**: Extensible system for custom agents, workflows, checklists, and methodologies
+- **Checklist Plugin System**: YAML-based reusable checklists for quality gates across domains
+- **State Tracking Database**: SQLite-based queryable state for stories, epics, sprints, and workflows
+- **Context Persistence**: Maintain context across workflow boundaries with thread-safe caching
 - **Methodology Abstraction**: Support for multiple development methodologies (Adaptive Agile, Simple)
 - **Configuration Abstraction**: All agents and prompts in YAML templates (zero hardcoded prompts)
 - **55+ Embedded Workflows**: Complete SDLC coverage from analysis to deployment
@@ -56,9 +61,16 @@ pip install -e ".[dev]"
 ### Verify Installation
 
 ```bash
+# Preferred method (if package installed in editable mode)
+gao-dev --version
+gao-dev --help
+
+# Alternative method (always works)
 python -m gao_dev.cli.commands --version
 python -m gao_dev.cli.commands --help
 ```
+
+**Note**: In the examples below, `gao-dev` commands can be replaced with `python -m gao_dev.cli.commands` if the shorter command isn't available in your environment.
 
 **See [QUICKSTART.md](QUICKSTART.md) for a detailed getting started guide.**
 
@@ -70,7 +82,7 @@ python -m gao_dev.cli.commands --help
 
 ```bash
 cd your-project
-python -m gao_dev.cli.commands init --name "My Awesome Project"
+gao-dev init --name "My Awesome Project"
 ```
 
 This creates:
@@ -81,7 +93,7 @@ This creates:
 ### 2. Create a PRD (Autonomous)
 
 ```bash
-python -m gao_dev.cli.commands create-prd --name "My Awesome Project"
+gao-dev create-prd --name "My Awesome Project"
 ```
 
 This spawns **John (Product Manager)** to autonomously create a comprehensive PRD.
@@ -89,7 +101,7 @@ This spawns **John (Product Manager)** to autonomously create a comprehensive PR
 ### 3. Create System Architecture (Autonomous)
 
 ```bash
-python -m gao_dev.cli.commands create-architecture --name "My Awesome Project"
+gao-dev create-architecture --name "My Awesome Project"
 ```
 
 This spawns **Winston (Technical Architect)** to design the system architecture.
@@ -97,7 +109,7 @@ This spawns **Winston (Technical Architect)** to design the system architecture.
 ### 4. Create a User Story (Autonomous)
 
 ```bash
-python -m gao_dev.cli.commands create-story --epic 1 --story 1 --title "User authentication"
+gao-dev create-story --epic 1 --story 1 --title "User authentication"
 ```
 
 This spawns **Bob (Scrum Master)** to create a well-defined user story.
@@ -105,7 +117,7 @@ This spawns **Bob (Scrum Master)** to create a well-defined user story.
 ### 5. Implement a Story (Autonomous Multi-Agent)
 
 ```bash
-python -m gao_dev.cli.commands implement-story --epic 1 --story 1
+gao-dev implement-story --epic 1 --story 1
 ```
 
 This coordinates **Bob** and **Amelia (Developer)** through the full implementation workflow:
@@ -123,28 +135,28 @@ export ANTHROPIC_API_KEY=your_key_here  # Linux/Mac
 set ANTHROPIC_API_KEY=your_key_here     # Windows
 
 # Run a benchmark
-python -m gao_dev.cli.commands sandbox run sandbox/benchmarks/workflow-driven-todo.yaml
+gao-dev sandbox run sandbox/benchmarks/workflow-driven-todo.yaml
 
 # View results
-python -m gao_dev.cli.commands metrics report list
-python -m gao_dev.cli.commands metrics report open <report-id>
+gao-dev metrics report list
+gao-dev metrics report open <report-id>
 ```
 
 ### 7. Utility Commands
 
 ```bash
 # Check system health
-python -m gao_dev.cli.commands health
+gao-dev health
 
 # List available workflows (55+)
-python -m gao_dev.cli.commands list-workflows
+gao-dev list-workflows
 
 # List available agents
-python -m gao_dev.cli.commands list-agents
+gao-dev list-agents
 
 # Sandbox management
-python -m gao_dev.cli.commands sandbox list
-python -m gao_dev.cli.commands sandbox status
+gao-dev sandbox list
+gao-dev sandbox status
 ```
 
 ## Available Commands
@@ -152,45 +164,45 @@ python -m gao_dev.cli.commands sandbox status
 ### Core Commands
 
 ```bash
-python -m gao_dev.cli.commands --version                    # Show version
-python -m gao_dev.cli.commands --help                       # Show help
-python -m gao_dev.cli.commands init --name "Project"        # Initialize project
-python -m gao_dev.cli.commands health                       # Run health check
-python -m gao_dev.cli.commands list-workflows               # List all workflows (55+)
-python -m gao_dev.cli.commands list-agents                  # List all agents
-python -m gao_dev.cli.commands version                      # Show detailed version info
+gao-dev --version                    # Show version
+gao-dev --help                       # Show help
+gao-dev init --name "Project"        # Initialize project
+gao-dev health                       # Run health check
+gao-dev list-workflows               # List all workflows (55+)
+gao-dev list-agents                  # List all agents
+gao-dev version                      # Show detailed version info
 ```
 
 ### Autonomous Development Commands
 
 ```bash
-python -m gao_dev.cli.commands create-prd --name "Project"            # John creates PRD
-python -m gao_dev.cli.commands create-architecture --name "Project"   # Winston creates architecture
-python -m gao_dev.cli.commands create-story --epic 1 --story 1        # Bob creates story
-python -m gao_dev.cli.commands implement-story --epic 1 --story 1     # Bob + Amelia implement
-python -m gao_dev.cli.commands execute <workflow-name>                # Execute any workflow
+gao-dev create-prd --name "Project"            # John creates PRD
+gao-dev create-architecture --name "Project"   # Winston creates architecture
+gao-dev create-story --epic 1 --story 1        # Bob creates story
+gao-dev implement-story --epic 1 --story 1     # Bob + Amelia implement
+gao-dev execute <workflow-name>                # Execute any workflow
 ```
 
 ### Sandbox & Benchmarking Commands
 
 ```bash
-python -m gao_dev.cli.commands sandbox init <project-name>            # Create sandbox project
-python -m gao_dev.cli.commands sandbox list                           # List all projects
-python -m gao_dev.cli.commands sandbox clean <project-name>           # Clean/reset project
-python -m gao_dev.cli.commands sandbox delete <project-name>          # Delete project
-python -m gao_dev.cli.commands sandbox status                         # System status
-python -m gao_dev.cli.commands sandbox run <benchmark.yaml>           # Run benchmark
+gao-dev sandbox init <project-name>            # Create sandbox project
+gao-dev sandbox list                           # List all projects
+gao-dev sandbox clean <project-name>           # Clean/reset project
+gao-dev sandbox delete <project-name>          # Delete project
+gao-dev sandbox status                         # System status
+gao-dev sandbox run <benchmark.yaml>           # Run benchmark
 ```
 
 ### Metrics & Reporting Commands
 
 ```bash
-python -m gao_dev.cli.commands metrics export <run-id> --format csv   # Export metrics
-python -m gao_dev.cli.commands metrics report run <run-id>            # Generate HTML report
-python -m gao_dev.cli.commands metrics report compare <id1> <id2>     # Compare two runs
-python -m gao_dev.cli.commands metrics report trend <config>          # Trend analysis
-python -m gao_dev.cli.commands metrics report list                    # List all reports
-python -m gao_dev.cli.commands metrics report open <report-id>        # Open in browser
+gao-dev metrics export <run-id> --format csv   # Export metrics
+gao-dev metrics report run <run-id>            # Generate HTML report
+gao-dev metrics report compare <id1> <id2>     # Compare two runs
+gao-dev metrics report trend <config>          # Trend analysis
+gao-dev metrics report list                    # List all reports
+gao-dev metrics report open <report-id>        # Open in browser
 ```
 
 ## Project Structure
@@ -232,34 +244,38 @@ qa_enabled: true
 test_coverage_threshold: 80
 ```
 
-## The 7 Specialized Agents
+## The 8 Specialized Agents
 
-### 1. Brian - Workflow Coordinator (NEW!)
+### 1. Mary - Engineering Manager
+**Role**: Team coordination, technical oversight, resource management
+**Use For**: Coordinating development teams, reviewing technical decisions, managing resources
+
+### 2. Brian - Workflow Coordinator
 **Role**: Intelligent workflow selection and orchestration
 **Capability**: Scale-adaptive routing (Levels 0-4), clarification dialogs, multi-workflow sequencing
 **Use For**: Initial project analysis, workflow selection, coordinating complex sequences
 
-### 2. John - Product Manager
+### 3. John - Product Manager
 **Role**: PRDs, feature definition, prioritization
 **Use For**: Creating PRDs, defining epics, prioritizing work
 
-### 3. Winston - Technical Architect
+### 4. Winston - Technical Architect
 **Role**: System architecture, technical specifications
 **Use For**: Architecture design, technical decisions
 
-### 4. Sally - UX Designer
+### 5. Sally - UX Designer
 **Role**: User experience, wireframes, design
 **Use For**: UX design, user flows, interface design
 
-### 5. Bob - Scrum Master
+### 6. Bob - Scrum Master
 **Role**: Story creation and management, team coordination
 **Use For**: Creating stories, managing sprint, status tracking
 
-### 6. Amelia - Software Developer
+### 7. Amelia - Software Developer
 **Role**: Implementation, code reviews, testing
 **Use For**: Implementing features, writing code, code reviews
 
-### 7. Murat - Test Architect
+### 8. Murat - Test Architect
 **Role**: Test strategies, quality assurance
 **Use For**: Test strategies, test plans, quality standards
 
@@ -327,11 +343,17 @@ Business logic and infrastructure (`gao_dev/core/`)
 - **Repositories**: File-based storage
 - **Services**: Quality gates, story lifecycle
 - **Factories**: Agent instantiation
+- **Context System**: Document lifecycle, state tracking, context persistence
+  - `context/`: ContextCache, WorkflowContext, ContextPersistence
+  - `lifecycle/`: Document tracking, metadata, relationships
+  - `state/`: StateTracker, database schema, markdown sync
+- **Providers**: Multi-provider support (ClaudeCode, OpenCode, DirectAPI)
 
 ### 5. Plugin System
 Extensibility layer (`gao_dev/plugins/`)
 - Agent plugins
 - Workflow plugins
+- Checklist plugins
 - Methodology plugins
 - Permission management
 - Resource monitoring
@@ -347,14 +369,57 @@ Testing and validation layer (`gao_dev/sandbox/`)
 ### 7. Agent Layer
 Specialized Claude agents (`gao_dev/agents/`)
 - Base agent implementations
-- Agent personas (Brian, John, Winston, Sally, Bob, Amelia, Murat)
+- Agent personas (Mary, Brian, John, Winston, Sally, Bob, Amelia, Murat)
 
 ### 8. Embedded Assets
 Zero external dependencies
 - 55+ workflows across all SDLC phases
 - Agent persona definitions
-- Quality checklists
+- Quality checklists (YAML-based plugin system)
 - Default configurations
+- Document templates
+
+## Document Lifecycle & Context Management
+
+### Document Lifecycle Manager
+Track every document from creation to archival:
+- **State Tracking**: Draft, active, obsolete, archived
+- **Metadata**: Author, dates, relationships, dependencies
+- **Lifecycle Events**: Creation, updates, state transitions
+- **Archival Strategy**: Automatic archival when documents become obsolete
+- **Relationship Graph**: PRD → Architecture → Epics → Stories
+
+### Meta-Prompt Engine
+Automatic context injection into agent prompts:
+- `@doc:` references - Load document content
+- `@checklist:` references - Load checklist templates
+- `@query:` references - Execute database queries
+- `@context:` references - Load workflow context
+- Dynamic resolution at runtime with caching
+
+### Checklist Plugin System
+YAML-based reusable checklists for quality gates:
+- **21 Core Checklists**: Testing, code quality, security, deployment, operations
+- **Inheritance**: Base checklists with domain-specific overrides
+- **Plugin Support**: Custom checklists via plugin system
+- **Execution Tracking**: Pass/fail results stored in database
+- **Domain Agnostic**: Works for dev, ops, legal, research teams
+
+### State Tracking Database
+SQLite-based queryable state:
+- **Comprehensive Schema**: Epics, stories, sprints, workflows, documents, checklists
+- **Bidirectional Sync**: Markdown files ↔ SQLite database
+- **Query Builder**: Fast queries for story status, epic progress, document lineage
+- **Markdown as Source of Truth**: Content in markdown, structure in database
+- **Thread Safety**: Connection pooling, atomic operations
+
+### Context Persistence Layer
+Maintain context across workflow boundaries:
+- **ContextCache**: Thread-safe LRU cache with TTL expiration (1000x faster than file I/O)
+- **WorkflowContext**: Immutable dataclass with lazy-loaded documents
+- **Context Persistence**: Save/load workflow context to database with versioning
+- **Lineage Tracking**: Track which stories affect which files
+- **Context API**: Clean API for agents to access context without file I/O
 
 ## Sandbox & Benchmarking
 
@@ -377,11 +442,11 @@ The sandbox system enables comprehensive testing of autonomous capabilities:
 export ANTHROPIC_API_KEY=your_key_here
 
 # 2. Run a benchmark
-python -m gao_dev.cli.commands sandbox run sandbox/benchmarks/workflow-driven-todo.yaml
+gao-dev sandbox run sandbox/benchmarks/workflow-driven-todo.yaml
 
 # 3. View results
-python -m gao_dev.cli.commands metrics report list
-python -m gao_dev.cli.commands metrics report open <report-id>
+gao-dev metrics report list
+gao-dev metrics report open <report-id>
 
 # 4. Inspect artifacts
 cd sandbox/projects/<project-name>/
@@ -499,19 +564,26 @@ GAO-Dev supports extensibility through plugins:
 
 - **Agent Plugins**: Add new agents or extend existing ones
 - **Workflow Plugins**: Add custom workflows or modify behavior
+- **Checklist Plugins**: Add domain-specific quality checklists
 - **Methodology Plugins**: Add custom development methodologies
 
 See [docs/plugin-development-guide.md](docs/plugin-development-guide.md) for complete guide.
 
 ## Documentation
 
+- **[docs/INDEX.md](docs/INDEX.md)**: Master documentation hub (START HERE)
 - **[CLAUDE.md](CLAUDE.md)**: Comprehensive guide for Claude Code sessions
 - **[QUICKSTART.md](QUICKSTART.md)**: Detailed getting started guide
+- **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)**: Quick reference for commands and agents
 - **[docs/SETUP.md](docs/SETUP.md)**: API key configuration and setup
 - **[docs/BENCHMARK_STANDARDS.md](docs/BENCHMARK_STANDARDS.md)**: Benchmark standards and best practices
 - **[docs/plugin-development-guide.md](docs/plugin-development-guide.md)**: Plugin development guide
 - **[docs/bmm-workflow-status.md](docs/bmm-workflow-status.md)**: Current development status
 - **[docs/features/](docs/features/)**: Feature-specific documentation
+  - **sandbox-system**: Sandbox & benchmarking system (Epics 1-5, 7-7.2)
+  - **prompt-abstraction**: YAML-based prompt templates (Epic 10)
+  - **document-lifecycle-system**: Document lifecycle & context management (Epics 12-17)
+  - **agent-provider-abstraction**: Multi-provider support (Epic 11 - planned)
 
 ## About GAO
 
@@ -530,24 +602,103 @@ Future GAO teams may include:
 **Version**: 1.0.0
 **Status**: Production-ready, core architecture complete
 
-**Recent Achievements**:
-- Epic 10: Prompt & Agent Configuration Abstraction (COMPLETE)
-- Epic 7.2: Workflow-Driven Core Architecture (COMPLETE)
-- Epic 6: Legacy Cleanup & God Class Refactoring (COMPLETE)
-- Epics 1-5: Sandbox & Benchmarking System (COMPLETE)
+**Recent Major Achievements**:
 
-**Latest Achievement - Epic 10**:
+**Epic 17: Context System Integration** ✅ COMPLETE
+- Full integration of document lifecycle, state tracking, and context persistence
+- Database unification and migration system
+- Agent prompt integration with automatic context injection
+- CLI commands for context management
+- End-to-end integration tests passing
+
+**Epic 16: Context Persistence Layer** ✅ COMPLETE
+- ContextCache with thread-safe LRU caching (1000x faster than file I/O)
+- WorkflowContext data model with lazy-loaded documents
+- Context persistence to database with versioning
+- Context lineage tracking and agent API
+- >80% test coverage across all components
+
+**Epic 15: State Tracking Database** ✅ COMPLETE
+- Comprehensive SQLite schema for epics, stories, sprints, workflows
+- StateTracker with CRUD operations and query builder
+- Bidirectional markdown-SQLite syncer with conflict resolution
+- Thread-safe database access with connection pooling
+- >85% test coverage
+
+**Epic 14: Checklist Plugin System** ✅ COMPLETE
+- JSON Schema for checklist validation
+- 21 core checklists (testing, security, deployment, operations)
+- Checklist execution tracking in database
+- Plugin system for custom checklists
+- >80% test coverage
+
+**Epic 13: Meta-Prompt System** ✅ COMPLETE
+- Reference resolver framework with @doc:, @query:, @context:, @checklist:
+- MetaPromptEngine with automatic context injection
+- Core prompts updated to use meta-prompts
+- Cache optimization for performance
+- >90% test coverage
+
+**Epic 12: Document Lifecycle Management** ✅ COMPLETE
+- Document state tracking (draft, active, obsolete, archived)
+- Metadata management and relationship graph
+- Lifecycle events and archival strategy
+- Document query API and cache integration
+- >85% test coverage
+
+**Epic 10: Prompt & Agent Configuration Abstraction** ✅ COMPLETE
 - All 8 agents defined in structured YAML configuration files
 - Zero hardcoded prompts (200+ lines extracted to YAML templates)
 - PromptLoader with @file: and @config: reference support
 - Enhanced plugin system for custom agents and prompts
 - 100% backwards compatible with existing workflows
-- Foundation for domain-specific teams (gao-ops, gao-legal, gao-research)
 
-**Next Steps**:
-- Real-world testing with workflow-driven benchmarks
-- Continuous improvement based on benchmark learnings
-- Create domain-specific agent teams using new abstraction
+**Epic 7.2: Workflow-Driven Core Architecture** ✅ COMPLETE
+- Brian agent for intelligent workflow selection
+- Scale-adaptive routing (Levels 0-4)
+- Multi-workflow sequence execution
+- 41 integration tests passing
+- 55+ workflows loaded
+
+**Epic 6: Legacy Cleanup & God Class Refactoring** ✅ COMPLETE
+- Clean architecture with service layer
+- Facade pattern for managers
+- Model-driven design
+- All services <200 LOC
+
+**Epics 1-5: Sandbox & Benchmarking System** ✅ COMPLETE
+- Full sandbox infrastructure
+- Boilerplate integration
+- Comprehensive metrics collection (performance, autonomy, quality)
+- Benchmark runner with orchestration
+- HTML reporting with charts and trends
+
+### System Capabilities
+
+**The system NOW can**:
+- Accept a simple prompt
+- Intelligently select appropriate workflows based on scale and context
+- Execute multi-workflow sequences
+- Track document lifecycles and automatically inject context
+- Maintain state across workflow boundaries
+- Use reusable checklists for quality gates
+- Query project state via SQL-like interface
+- Create real project artifacts with atomic git commits
+- Track comprehensive metrics
+- Generate detailed HTML reports
+- Validate results against success criteria
+- Load prompts and agent configs from YAML files
+- Support custom agents, prompts, and checklists via plugins
+- Resolve references to files, configs, documents, and queries
+
+### What's Next
+
+1. **Real-world testing** - Run workflow-driven benchmarks to build complete applications
+2. **Domain-specific teams** - Create gao-ops, gao-legal, gao-research using new abstraction
+3. **Prompt optimization** - A/B test prompt variations using YAML templates
+4. **Agent Provider Abstraction** (Epic 11) - Multi-provider support (Claude, OpenAI, Google, local)
+5. **Continuous Improvement** (Epic 9) - Optimize based on benchmark learnings
+6. **Production deployment** - Core architecture is complete and tested
 
 ## Acknowledgments
 

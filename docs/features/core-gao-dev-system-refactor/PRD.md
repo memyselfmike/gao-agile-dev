@@ -1,3 +1,21 @@
+---
+document:
+  type: "prd"
+  state: "archived"
+  created: "2025-10-29"
+  last_modified: "2025-11-06"
+  author: "John"
+  feature: "core-gao-dev-system-refactor"
+  epic: null
+  story: null
+  related_documents:
+    - "ARCHITECTURE.md"
+    - "epics.md"
+    - "MIGRATION-GUIDE.md"
+  replaces: null
+  replaced_by: null
+---
+
 # Product Requirements Document: Core GAO-Dev System Refactoring
 
 **Version**: 1.0
