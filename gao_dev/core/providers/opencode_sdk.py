@@ -128,8 +128,8 @@ class OpenCodeSDKProvider(IAgentProvider):
 
     def __init__(
         self,
-        server_url: str = "http://localhost:4096",
-        port: int = 4096,
+        server_url: str = "http://localhost:54321",
+        port: int = 54321,
         api_key: Optional[str] = None,
         auto_start_server: bool = True,
         startup_timeout: int = 30,
@@ -141,8 +141,8 @@ class OpenCodeSDKProvider(IAgentProvider):
         Initialize OpenCode SDK provider with server lifecycle management.
 
         Args:
-            server_url: URL of OpenCode server (default: http://localhost:4096)
-            port: Port for OpenCode server (default: 4096)
+            server_url: URL of OpenCode server (default: http://localhost:54321)
+            port: Port for OpenCode server (default: 54321)
             api_key: API key for authentication (if required)
             auto_start_server: Whether to auto-start server on init (default: True)
             startup_timeout: Max seconds to wait for server startup (default: 30)
@@ -340,29 +340,75 @@ class OpenCodeSDKProvider(IAgentProvider):
 
             # Create session if needed
             if not self.session:
-                logger.debug("opencode_sdk_create_session")
-                # Session creation: server expects empty JSON body {}
-                # Use extra_body to ensure JSON is sent
-                session_response = self.sdk_client.session.create(extra_body={})
+                logger.debug(
+                    "opencode_sdk_create_session",
+                    project_root=str(context.project_root)
+                )
+                # Session creation with working directory set to project root
+                # This is CRITICAL - without cwd, tools won't know where to create files!
+                session_response = self.sdk_client.session.create(
+                    extra_body={"cwd": str(context.project_root)}
+                )
                 # Store session ID for subsequent chat calls
                 self.session_id = getattr(session_response, 'id', session_response.get('id') if isinstance(session_response, dict) else None)
-                logger.debug("opencode_sdk_session_created", session_id=self.session_id)
+                session_dir = getattr(session_response, 'directory', None)
+                logger.debug(
+                    "opencode_sdk_session_created",
+                    session_id=self.session_id,
+                    directory=session_dir
+                )
+
+            # Convert tools list to dictionary format expected by SDK
+            # Tools should be Dict[str, bool] where True enables the tool
+            # OpenCode expects lowercase tool names: read, write, edit, bash, etc.
+            # Map GAO-Dev tool names (capitalized) to OpenCode tool names (lowercase)
+            tool_mapping = {
+                "Read": "read",
+                "Write": "write",
+                "Edit": "edit",
+                "MultiEdit": "edit",  # OpenCode doesn't have multiedit, use edit
+                "Bash": "bash",
+                "Grep": "grep",
+                "Glob": "glob",
+                "TodoWrite": "todowrite",
+                "WebFetch": "webfetch",
+                "List": "list",
+            }
+            tools_dict = {
+                tool_mapping.get(tool_name, tool_name.lower()): True
+                for tool_name in tools
+            } if tools else {}
 
             # Send chat message using session resource
             # NOTE: SDK version mismatch - SDK uses snake_case, server expects camelCase nested structure
             # Using extra_body to override SDK's format with server's expected format
-            logger.debug("opencode_sdk_send_chat", message_length=len(task), session_id=self.session_id)
+            # Prepend working directory context to task
+            # OpenCode sessions don't support changing cwd, so we tell Claude the working directory
+            task_with_context = f"""IMPORTANT: You are working in the directory: {context.project_root}
+All file paths should be relative to this directory, or you can use absolute paths.
+When using the write, edit, or read tools, paths are relative to: {context.project_root}
+
+{task}"""
+
+            logger.debug(
+                "opencode_sdk_send_chat",
+                message_length=len(task_with_context),
+                session_id=self.session_id,
+                tools_enabled=list(tools_dict.keys()) if tools_dict else None,
+                working_directory=str(context.project_root)
+            )
             response = self.sdk_client.session.chat(
                 id=self.session_id,
                 provider_id="dummy",  # Ignored, using extra_body
                 model_id="dummy",      # Ignored, using extra_body
                 parts=[],               # Ignored, using extra_body
+                tools=tools_dict if tools_dict else {},  # Enable tools
                 extra_body={
                     "model": {
                         "providerID": provider_id,
                         "modelID": model_id
                     },
-                    "parts": [{"type": "text", "text": task}]
+                    "parts": [{"type": "text", "text": task_with_context}]
                 }
             )
 
@@ -452,8 +498,9 @@ class OpenCodeSDKProvider(IAgentProvider):
             Extracted text content
 
         Note:
-            This method handles multiple possible response formats.
-            The exact structure depends on the SDK version.
+            OpenCode SDK returns response with 'parts' array containing:
+            - type: 'text' parts with actual content
+            - type: 'step-start', 'step-finish' for metadata
 
         Example:
             ```python
@@ -461,27 +508,40 @@ class OpenCodeSDKProvider(IAgentProvider):
             # "Task completed successfully"
             ```
         """
-        # Try multiple attribute names (SDK structure may vary)
-        if hasattr(response, 'content'):
-            content = response.content
-        elif hasattr(response, 'text'):
-            content = response.text
-        elif hasattr(response, 'message'):
-            content = response.message
-        elif isinstance(response, str):
-            content = response
-        else:
-            # Fallback: convert to string
-            logger.warning(
-                "unknown_response_format",
-                response_type=type(response).__name__,
-                message="Unknown SDK response format, converting to string"
-            )
-            content = str(response)
+        content_parts = []
 
+        # Extract from parts array (OpenCode SDK v0.1.0a36+)
+        if hasattr(response, 'parts') and isinstance(response.parts, list):
+            for part in response.parts:
+                if isinstance(part, dict) and part.get('type') == 'text':
+                    text = part.get('text', '')
+                    if text:
+                        content_parts.append(text)
+
+        # Fallback: try legacy attributes
+        if not content_parts:
+            if hasattr(response, 'content'):
+                content_parts.append(response.content)
+            elif hasattr(response, 'text'):
+                content_parts.append(response.text)
+            elif hasattr(response, 'message'):
+                content_parts.append(response.message)
+            elif isinstance(response, str):
+                content_parts.append(response)
+            else:
+                # Final fallback: convert to string
+                logger.warning(
+                    "unknown_response_format",
+                    response_type=type(response).__name__,
+                    message="Unknown SDK response format, converting to string"
+                )
+                content_parts.append(str(response))
+
+        content = '\n'.join(content_parts)
         logger.debug(
             "content_extracted",
             content_length=len(content),
+            num_parts=len(content_parts),
             response_type=type(response).__name__,
         )
         return content
@@ -496,16 +556,45 @@ class OpenCodeSDKProvider(IAgentProvider):
         Returns:
             Dictionary with token usage statistics
 
+        Note:
+            OpenCode SDK returns usage in 'step-finish' parts with:
+            - tokens: {input, output, reasoning, cache}
+            - cost: total cost in dollars
+
         Example:
             ```python
             usage = provider._extract_usage(response)
-            # {'input_tokens': 100, 'output_tokens': 50}
+            # {'input_tokens': 100, 'output_tokens': 50, 'cost': 0.001}
             ```
         """
         usage: Dict[str, int] = {}
 
         try:
-            if hasattr(response, 'usage'):
+            # Extract from parts array (OpenCode SDK v0.1.0a36+)
+            if hasattr(response, 'parts') and isinstance(response.parts, list):
+                for part in response.parts:
+                    if isinstance(part, dict) and part.get('type') == 'step-finish':
+                        # Extract token usage
+                        tokens = part.get('tokens', {})
+                        if isinstance(tokens, dict):
+                            if 'input' in tokens:
+                                usage['input_tokens'] = int(tokens['input'])
+                            if 'output' in tokens:
+                                usage['output_tokens'] = int(tokens['output'])
+                            if 'reasoning' in tokens:
+                                usage['reasoning_tokens'] = int(tokens['reasoning'])
+
+                            # Calculate total
+                            total = tokens.get('input', 0) + tokens.get('output', 0) + tokens.get('reasoning', 0)
+                            if total > 0:
+                                usage['total_tokens'] = total
+
+                        # Extract cost
+                        if 'cost' in part:
+                            usage['cost'] = float(part['cost'])
+
+            # Fallback: try legacy attributes
+            if not usage and hasattr(response, 'usage'):
                 usage_obj = response.usage
                 if hasattr(usage_obj, 'input_tokens'):
                     usage['input_tokens'] = int(usage_obj.input_tokens)

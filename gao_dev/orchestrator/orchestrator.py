@@ -326,8 +326,12 @@ class GAODevOrchestrator:
                 prompt_length=len(task_prompt),
             )
 
-            # Execute via ProcessExecutor
-            async for output in process_executor.execute_agent_task(task=task_prompt, timeout=None):
+            # Execute via ProcessExecutor with default tools
+            async for output in process_executor.execute_agent_task(
+                task=task_prompt,
+                tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoWrite"],
+                timeout=None
+            ):
                 yield output
 
         # Initialize services
@@ -390,7 +394,11 @@ class GAODevOrchestrator:
     # Public API - Thin Delegation Methods
     # ========================================================================
 
-    async def execute_task(self, task: str) -> AsyncGenerator[str, None]:
+    async def execute_task(
+        self,
+        task: str,
+        tools: Optional[List[str]] = None
+    ) -> AsyncGenerator[str, None]:
         """
         Execute a task using the orchestrator.
 
@@ -398,13 +406,25 @@ class GAODevOrchestrator:
 
         Args:
             task: Task description
+            tools: List of tool names to enable (uses default set if None)
 
         Yields:
             Message chunks from the agent
         """
+        # Default tools for development agents (Read, Write, Edit are essential)
+        if tools is None:
+            tools = [
+                "Read", "Write", "Edit", "MultiEdit",  # File operations
+                "Bash", "Grep", "Glob",                # System & search
+                "TodoWrite",                            # Progress tracking
+            ]
+
         if self.mode == "benchmark":
             # Delegate to ProcessExecutor service
-            async for chunk in self.process_executor.execute_agent_task(task):
+            async for chunk in self.process_executor.execute_agent_task(
+                task,
+                tools=tools
+            ):
                 yield chunk
         else:
             raise NotImplementedError(
@@ -920,9 +940,11 @@ class GAODevOrchestrator:
             prompt_length=len(task_prompt),
         )
 
-        # Execute via ProcessExecutor
+        # Execute via ProcessExecutor with default tools
         async for output in self.process_executor.execute_agent_task(
-            task=task_prompt, timeout=None  # Use default timeout from ProcessExecutor
+            task=task_prompt,
+            tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoWrite"],
+            timeout=None  # Use default timeout from ProcessExecutor
         ):
             yield output
 
