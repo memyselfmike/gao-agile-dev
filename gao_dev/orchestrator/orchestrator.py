@@ -462,6 +462,41 @@ class GAODevOrchestrator:
         """
         return self.doc_lifecycle
 
+    def close(self) -> None:
+        """
+        Close all resources and database connections.
+
+        This method should be called when the orchestrator is no longer needed
+        to ensure proper cleanup of database connections and other resources.
+
+        Example:
+            >>> orchestrator = GAODevOrchestrator(project_root=Path("my-project"))
+            >>> try:
+            ...     # Use orchestrator
+            ...     pass
+            ... finally:
+            ...     orchestrator.close()
+        """
+        if self.doc_lifecycle is not None:
+            try:
+                self.doc_lifecycle.registry.close()
+                logger.debug("document_lifecycle_closed")
+            except Exception as e:
+                logger.warning("document_lifecycle_close_failed", error=str(e))
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - ensure cleanup."""
+        self.close()
+        return False
+
+    def __del__(self):
+        """Cleanup on deletion."""
+        self.close()
+
     # ========================================================================
     # Public API - Thin Delegation Methods
     # ========================================================================

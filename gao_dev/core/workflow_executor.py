@@ -186,7 +186,10 @@ class WorkflowExecutor:
         # Replace {{variable}} with value
         for key, value in variables.items():
             pattern = r"\{\{" + re.escape(str(key)) + r"\}\}"
-            rendered = re.sub(pattern, str(value), rendered)
+            # Escape backslashes in replacement string to avoid regex escape sequence issues
+            # This is critical for Windows paths (C:\Users\... becomes C:\\Users\\...)
+            replacement = str(value).replace("\\", "\\\\")
+            rendered = re.sub(pattern, replacement, rendered)
 
         return rendered
 
