@@ -1,28 +1,25 @@
 """AI Analysis Service - Provider-abstracted analysis-only AI calls.
 
 This service provides a lightweight interface for components that need AI for
-decision-making without full agent overhead. It uses provider abstraction via
-Anthropic client (or other providers) to enable local models, OpenCode, etc.
+decision-making without full agent overhead. It uses ProcessExecutor for provider
+abstraction to enable Claude Code, OpenCode, local models (Ollama), etc.
 
 Epic: 21 - AI Analysis Service & Brian Provider Abstraction
 Story: 21.1 - Create AI Analysis Service
 
 Design Pattern: Service Layer
-Dependencies: Anthropic client, structlog
+Dependencies: ProcessExecutor, structlog
 """
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, TYPE_CHECKING
 import structlog
 import time
 import os
 import json
 
-# Import anthropic at module level for mockability
-try:
-    import anthropic
-except ImportError:
-    anthropic = None  # type: ignore
+if TYPE_CHECKING:
+    from ..services.process_executor import ProcessExecutor
 
 logger = structlog.get_logger()
 
@@ -52,15 +49,17 @@ class AIAnalysisService:
     Provides simple interface for components that need AI analysis
     without full agent capabilities (tools, artifacts, etc.).
 
-    This service uses the Anthropic client directly for lightweight
-    analysis tasks. Future versions can add support for other providers
-    via provider abstraction.
+    This service uses ProcessExecutor for provider abstraction, enabling
+    use of any AI provider (Claude Code, OpenCode, local Ollama models, etc.).
 
     Example:
         ```python
+        from gao_dev.core.services.process_executor import ProcessExecutor
+
+        executor = ProcessExecutor(project_root=Path("/project"))
         service = AIAnalysisService(
-            api_key="sk-ant-...",
-            default_model="claude-sonnet-4-5-20250929"
+            executor=executor,
+            default_model="deepseek-r1:8b"
         )
 
         result = await service.analyze(
@@ -74,53 +73,34 @@ class AIAnalysisService:
         ```
 
     Environment Variables:
-        ANTHROPIC_API_KEY: API key for Anthropic (if not provided)
         GAO_DEV_MODEL: Default model name (if not provided)
+        AGENT_PROVIDER: Provider to use (claude-code, opencode-sdk, etc.)
     """
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        executor: "ProcessExecutor",
         default_model: Optional[str] = None,
     ):
         """
         Initialize analysis service.
 
         Args:
-            api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var)
+            executor: ProcessExecutor instance for provider abstraction
             default_model: Default model if not specified per-call
                           (defaults to GAO_DEV_MODEL env var or claude-sonnet-4-5-20250929)
-
-        Raises:
-            ValueError: If API key not provided and not in environment
         """
-        # Check anthropic is available
-        if anthropic is None:
-            raise ImportError(
-                "anthropic package required for AIAnalysisService. "
-                "Install with: pip install anthropic"
-            )
-
-        # Get API key from parameter or environment
-        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
-        if not self.api_key:
-            raise ValueError(
-                "API key required. Provide api_key parameter or set "
-                "ANTHROPIC_API_KEY environment variable."
-            )
+        self.executor = executor
 
         # Get default model from parameter or environment
         env_model = os.getenv("GAO_DEV_MODEL")
         self.default_model = default_model or env_model or "claude-sonnet-4-5-20250929"
 
-        # Create Anthropic client
-        self.client = anthropic.AsyncAnthropic(api_key=self.api_key)
-
         self.logger = logger.bind(service="ai_analysis")
         self.logger.info(
             "ai_analysis_service_initialized",
             default_model=self.default_model,
-            has_api_key=bool(self.api_key),
+            provider=self.executor.provider.name if hasattr(self.executor, 'provider') else 'unknown',
         )
 
     async def analyze(
@@ -188,38 +168,36 @@ class AIAnalysisService:
         )
 
         try:
-            # Build messages
-            messages: list[Dict[str, Any]] = [{"role": "user", "content": prompt}]
-
-            # Build API call parameters
-            api_params: Dict[str, Any] = {
-                "model": model_to_use,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "messages": messages,
-            }
-
-            # Add system prompt if provided
+            # Build task prompt
+            task_prompt = prompt
             if system_prompt:
-                api_params["system"] = system_prompt
+                task_prompt = f"{system_prompt}\n\n{prompt}"
 
-            # Execute via Anthropic API
-            self.logger.debug("calling_anthropic_api", model=model_to_use)
-            response = await self.client.messages.create(**api_params)
+            # Execute via ProcessExecutor (provider abstraction)
+            self.logger.debug(
+                "calling_provider_via_executor",
+                model=model_to_use,
+                provider=self.executor.provider.name if hasattr(self.executor, 'provider') else 'unknown'
+            )
 
-            # Extract response content
-            response_text = ""
-            if response.content:
-                # Handle list of content blocks
-                for block in response.content:
-                    if hasattr(block, "text"):
-                        response_text += block.text
+            # Collect all streamed output
+            response_chunks = []
+            async for chunk in self.executor.execute_agent_task(
+                task=task_prompt,
+                model=model_to_use,
+                tools=[],  # No tools for analysis
+                timeout=None
+            ):
+                response_chunks.append(chunk)
+
+            # Join all chunks
+            response_text = "".join(response_chunks)
 
             # Calculate duration
             duration_ms = (time.time() - start_time) * 1000
 
-            # Calculate total tokens
-            tokens_used = response.usage.input_tokens + response.usage.output_tokens
+            # Estimate tokens (rough estimate: ~4 chars per token)
+            tokens_used = (len(task_prompt) + len(response_text)) // 4
 
             # Log success
             self.logger.info(
@@ -252,7 +230,7 @@ class AIAnalysisService:
 
             return result
 
-        except anthropic.APITimeoutError as e:
+        except TimeoutError as e:
             duration_ms = (time.time() - start_time) * 1000
             self.logger.error(
                 "analysis_timeout",
@@ -262,28 +240,28 @@ class AIAnalysisService:
             )
             raise AnalysisTimeoutError(f"Analysis timed out: {e}") from e
 
-        except anthropic.NotFoundError as e:
+        except ValueError as e:
+            # Model not found or invalid
             duration_ms = (time.time() - start_time) * 1000
+            if "model" in str(e).lower() or "not found" in str(e).lower():
+                self.logger.error(
+                    "invalid_model",
+                    model=model_to_use,
+                    duration_ms=duration_ms,
+                    error=str(e),
+                )
+                raise InvalidModelError(
+                    f"Model '{model_to_use}' not found or not available: {e}"
+                ) from e
+            # Re-raise other ValueErrors
             self.logger.error(
-                "invalid_model",
+                "analysis_failed",
                 model=model_to_use,
-                duration_ms=duration_ms,
-                error=str(e),
-            )
-            raise InvalidModelError(
-                f"Model '{model_to_use}' not found or not available: {e}"
-            ) from e
-
-        except anthropic.APIError as e:
-            duration_ms = (time.time() - start_time) * 1000
-            self.logger.error(
-                "analysis_api_error",
-                model=model_to_use,
-                duration_ms=duration_ms,
                 error=str(e),
                 error_type=type(e).__name__,
+                duration_ms=duration_ms,
             )
-            raise AnalysisError(f"Anthropic API error: {e}") from e
+            raise AnalysisError(f"Analysis failed: {e}") from e
 
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000

@@ -251,10 +251,10 @@ class GAODevOrchestrator:
                 except Exception as e:
                     logger.warning("failed_to_load_brian_model_from_config", error=str(e))
 
-        # Create analysis service if API key available
+        # Create analysis service with ProcessExecutor for provider abstraction
         try:
             self.analysis_service = AIAnalysisService(
-                api_key=self.api_key,
+                executor=self.process_executor,
                 default_model=brian_model
             )
         except (ValueError, ImportError) as e:
