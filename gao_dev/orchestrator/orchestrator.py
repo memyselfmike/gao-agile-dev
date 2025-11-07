@@ -33,6 +33,7 @@ from ..core.services.workflow_coordinator import WorkflowCoordinator
 from ..core.services.story_lifecycle import StoryLifecycleManager
 from ..core.services.process_executor import ProcessExecutor
 from ..core.services.quality_gate import QualityGateManager
+from ..core.services.ai_analysis_service import AIAnalysisService
 from ..core.prompt_loader import PromptLoader
 from ..core.context.context_persistence import ContextPersistence
 from ..core.context.workflow_context import WorkflowContext
@@ -235,11 +236,42 @@ class GAODevOrchestrator:
             event_bus=event_bus,
         )
 
-        # Initialize Brian orchestrator
+        # Initialize AIAnalysisService for Brian
+        # Load Brian's model from environment variable or config
+        brian_model = os.getenv("GAO_DEV_MODEL")  # Use environment variable if set
+        if not brian_model:
+            # Try loading from brian.agent.yaml config
+            brian_config_path = self.config_loader.get_agents_path() / "brian.agent.yaml"
+            if brian_config_path.exists():
+                import yaml
+                try:
+                    with open(brian_config_path, encoding="utf-8") as f:
+                        brian_config = yaml.safe_load(f)
+                        brian_model = brian_config.get("agent", {}).get("configuration", {}).get("model")
+                except Exception as e:
+                    logger.warning("failed_to_load_brian_model_from_config", error=str(e))
+
+        # Create analysis service if API key available
+        try:
+            self.analysis_service = AIAnalysisService(
+                api_key=self.api_key,
+                default_model=brian_model
+            )
+        except (ValueError, ImportError) as e:
+            # If no API key or anthropic not available, log warning but continue
+            # Brian will fail at runtime if analysis is attempted
+            logger.warning(
+                "analysis_service_not_available",
+                error=str(e),
+                message="Brian will not be able to analyze prompts without API key"
+            )
+            self.analysis_service = None  # type: ignore
+
+        # Initialize Brian orchestrator with analysis service
         brian_persona_path = self.config_loader.get_agents_path() / "brian.md"
         self.brian_orchestrator = brian_orchestrator or BrianOrchestrator(
             workflow_registry=self.workflow_registry,
-            api_key=self.api_key,
+            analysis_service=self.analysis_service,
             brian_persona_path=brian_persona_path if brian_persona_path.exists() else None,
         )
 
@@ -355,11 +387,42 @@ class GAODevOrchestrator:
             event_bus=event_bus,
         )
 
-        # Initialize Brian
+        # Initialize AIAnalysisService for Brian
+        # Load Brian's model from environment variable or config
+        brian_model = os.getenv("GAO_DEV_MODEL")  # Use environment variable if set
+        if not brian_model:
+            # Try loading from brian.agent.yaml config
+            brian_config_path = config_loader.get_agents_path() / "brian.agent.yaml"
+            if brian_config_path.exists():
+                import yaml
+                try:
+                    with open(brian_config_path, encoding="utf-8") as f:
+                        brian_config = yaml.safe_load(f)
+                        brian_model = brian_config.get("agent", {}).get("configuration", {}).get("model")
+                except Exception as e:
+                    logger.warning("failed_to_load_brian_model_from_config", error=str(e))
+
+        # Create analysis service if API key available
+        try:
+            analysis_service = AIAnalysisService(
+                api_key=api_key,
+                default_model=brian_model
+            )
+        except (ValueError, ImportError) as e:
+            # If no API key or anthropic not available, log warning but continue
+            # Brian will fail at runtime if analysis is attempted
+            logger.warning(
+                "analysis_service_not_available",
+                error=str(e),
+                message="Brian will not be able to analyze prompts without API key"
+            )
+            analysis_service = None  # type: ignore
+
+        # Initialize Brian with analysis service
         brian_persona_path = config_loader.get_agents_path() / "brian.md"
         brian_orchestrator = BrianOrchestrator(
             workflow_registry=workflow_registry,
-            api_key=api_key,
+            analysis_service=analysis_service,
             brian_persona_path=brian_persona_path if brian_persona_path.exists() else None,
         )
 
