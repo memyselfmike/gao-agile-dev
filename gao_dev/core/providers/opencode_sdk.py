@@ -405,17 +405,10 @@ When using the write, edit, or read tools, paths are relative to: {context.proje
             )
             response = self.sdk_client.session.chat(
                 id=self.session_id,
-                provider_id="dummy",  # Ignored, using extra_body
-                model_id="dummy",      # Ignored, using extra_body
-                parts=[],               # Ignored, using extra_body
-                tools=tools_dict if tools_dict else {},  # Enable tools
-                extra_body={
-                    "model": {
-                        "providerID": provider_id,
-                        "modelID": model_id
-                    },
-                    "parts": [{"type": "text", "text": task_with_context}]
-                }
+                provider_id=provider_id,
+                model_id=model_id,
+                parts=[{"type": "text", "text": task_with_context}],
+                tools=tools_dict if tools_dict else {}  # Enable tools
             )
 
             # Extract response content
@@ -519,8 +512,14 @@ When using the write, edit, or read tools, paths are relative to: {context.proje
         # Extract from parts array (OpenCode SDK v0.1.0a36+)
         if hasattr(response, 'parts') and isinstance(response.parts, list):
             for part in response.parts:
+                # Handle dict format
                 if isinstance(part, dict) and part.get('type') == 'text':
                     text = part.get('text', '')
+                    if text:
+                        content_parts.append(text)
+                # Handle object format (pydantic models)
+                elif hasattr(part, 'type') and getattr(part, 'type') == 'text':
+                    text = getattr(part, 'text', '')
                     if text:
                         content_parts.append(text)
 
