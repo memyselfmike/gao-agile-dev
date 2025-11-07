@@ -1,6 +1,72 @@
 # Default GAO-Dev Configuration
 
-# Project Structure
+# ============================================================================
+# Workflow Variable Defaults
+# ============================================================================
+# These defaults provide sensible out-of-the-box values for workflow variables.
+# Workflows will use these defaults when variables are not provided via parameters
+# or defined in workflow.yaml files.
+#
+# Priority order for variable resolution:
+#   1. Parameters (passed to execute method)
+#   2. Workflow.yaml variables section
+#   3. Config defaults (this section)
+#   4. Common variables (date, timestamp)
+#
+# Projects can override these defaults by creating a local gao-dev.yaml file
+# with a workflow_defaults section.
+
+workflow_defaults:
+  # Document locations following GAO-Dev project structure conventions
+
+  # Product Requirements Document location
+  prd_location: "docs/PRD.md"
+
+  # System architecture documentation location
+  architecture_location: "docs/ARCHITECTURE.md"
+
+  # Technical specification document location
+  tech_spec_location: "docs/TECHNICAL_SPEC.md"
+
+  # Directory for development stories
+  dev_story_location: "docs/stories"
+
+  # Epic tracking document location
+  epic_location: "docs/epics.md"
+
+  # Default output folder for all documentation
+  output_folder: "docs"
+
+  # Sprint status tracking file
+  sprint_status_location: "docs/sprint-status.yaml"
+
+  # Workflow status tracking file
+  workflow_status_location: "docs/bmm-workflow-status.md"
+
+  # Context XML folder for story context
+  context_xml_folder: "docs/stories/{epic}/context"
+
+# ============================================================================
+# Document Lifecycle Configuration
+# ============================================================================
+# Configuration for document lifecycle management and tracking.
+
+document_lifecycle:
+  # Directory for archived documents
+  archive_dir: ".archive"
+
+  # Automatically register workflow artifacts
+  auto_register: true
+
+  # Directory for document lifecycle database
+  lifecycle_dir: ".gao-dev"
+
+# ============================================================================
+# Project Structure (Legacy - Deprecated)
+# ============================================================================
+# These top-level config values are deprecated. Use workflow_defaults instead.
+# Kept for backward compatibility.
+
 output_folder: "docs"
 dev_story_location: "docs/stories"
 context_xml_folder: "docs/stories/{epic}/context"
