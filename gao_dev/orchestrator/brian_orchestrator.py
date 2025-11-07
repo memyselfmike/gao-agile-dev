@@ -14,12 +14,16 @@ from pathlib import Path
 import structlog
 import json
 
-from anthropic import Anthropic
-
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.models.workflow import WorkflowInfo
 from ..core.prompt_loader import PromptLoader
 from ..core.config_loader import ConfigLoader
+from ..core.services.ai_analysis_service import AIAnalysisService, AnalysisResult
+from ..core.providers.exceptions import (
+    AnalysisError,
+    AnalysisTimeoutError,
+    InvalidModelError,
+)
 from .models import (
     ScaleLevel,
     ProjectType,
@@ -42,21 +46,23 @@ class BrianOrchestrator:
     def __init__(
         self,
         workflow_registry: WorkflowRegistry,
-        api_key: Optional[str] = None,
+        analysis_service: AIAnalysisService,
         brian_persona_path: Optional[Path] = None,
-        project_root: Optional[Path] = None
+        project_root: Optional[Path] = None,
+        model: Optional[str] = None
     ):
         """
         Initialize Brian Orchestrator.
 
         Args:
             workflow_registry: Registry of available workflows
-            api_key: Anthropic API key (uses env var if not provided)
+            analysis_service: AI analysis service for prompt analysis
             brian_persona_path: Path to Brian's agent definition
             project_root: Project root for PromptLoader (defaults to gao_dev parent)
+            model: Model to use for analysis (defaults to deepseek-r1 from YAML or env)
         """
         self.workflow_registry = workflow_registry
-        self.anthropic = Anthropic(api_key=api_key) if api_key else Anthropic()
+        self.analysis_service = analysis_service
         self.brian_persona_path = brian_persona_path
         self.logger = logger.bind(component="brian_orchestrator", agent="Brian")
 
@@ -72,6 +78,25 @@ class BrianOrchestrator:
             prompts_dir=prompts_dir,
             config_loader=self.config_loader
         )
+
+        # Load model from YAML config if not provided
+        import os
+        if model is None:
+            # Try environment variable first
+            model = os.getenv("GAO_DEV_MODEL")
+            if model is None:
+                # Try to load from Brian's YAML config
+                try:
+                    from ..core.agent_config_loader import AgentConfigLoader
+                    agents_dir = Path(__file__).parent.parent / "agents"
+                    agent_loader = AgentConfigLoader(agents_dir)
+                    brian_config = agent_loader.load_agent_config("brian")
+                    model = brian_config.model if brian_config else "deepseek-r1"
+                except Exception:
+                    model = "deepseek-r1"  # Default to deepseek-r1
+
+        self.model = model
+        self.logger.info("brian_model_configured", model=self.model)
 
     async def assess_and_select_workflows(
         self,
@@ -156,6 +181,9 @@ class BrianOrchestrator:
 
         Returns:
             PromptAnalysis with scale assessment
+
+        Raises:
+            AnalysisError: If analysis fails
         """
         # Load Brian's persona if available
         brian_context = ""
@@ -179,16 +207,20 @@ class BrianOrchestrator:
             # Fallback to inline prompt if template loading fails
             analysis_prompt = self._get_fallback_prompt(prompt, brian_context)
 
-        # Call Claude for analysis
+        # Call analysis service
         try:
-            response = self.anthropic.messages.create(
-                model="claude-sonnet-4-5-20250929",
-                max_tokens=2048,
-                messages=[{"role": "user", "content": analysis_prompt}]
+            self.logger.info("brian_calling_analysis_service", model=self.model)
+
+            # Call analysis service (NOT Anthropic directly)
+            result = await self.analysis_service.analyze(
+                prompt=analysis_prompt,
+                model=self.model,
+                response_format="json",
+                max_tokens=2048
             )
 
             # Extract JSON from response
-            response_text = response.content[0].text
+            response_text = result.response
 
             # Try to parse JSON (handle cases where Claude adds explanation)
             try:
@@ -210,6 +242,14 @@ class BrianOrchestrator:
                 else:
                     raise ValueError("No JSON found in response")
 
+            self.logger.info(
+                "brian_analysis_complete",
+                scale_level=analysis_data.get("scale_level"),
+                model=result.model_used,
+                tokens=result.tokens_used,
+                duration_ms=result.duration_ms
+            )
+
             # Convert to PromptAnalysis
             return PromptAnalysis(
                 scale_level=ScaleLevel(analysis_data["scale_level"]),
@@ -228,9 +268,49 @@ class BrianOrchestrator:
                 clarifying_questions=analysis_data.get("clarifying_questions", [])
             )
 
-        except Exception as e:
-            self.logger.error("brian_analysis_failed", error=str(e))
+        except (AnalysisError, AnalysisTimeoutError, InvalidModelError) as e:
+            self.logger.error(
+                "brian_analysis_failed",
+                error=str(e),
+                error_type=type(e).__name__,
+                model=self.model
+            )
             # Fallback to conservative default
+            return PromptAnalysis(
+                scale_level=ScaleLevel.LEVEL_2,
+                project_type=ProjectType.SOFTWARE,
+                is_greenfield=True,
+                is_brownfield=False,
+                is_game_project=False,
+                estimated_stories=10,
+                estimated_epics=2,
+                technical_complexity="medium",
+                domain_complexity="medium",
+                timeline_hint=None,
+                confidence=0.5,
+                reasoning=f"Analysis failed, using conservative default. Error: {str(e)}",
+                needs_clarification=True,
+                clarifying_questions=[
+                    "What is the approximate scope? (small feature, medium project, large system)",
+                    "Is this a new project or enhancing existing code?",
+                    "What is the estimated timeline?"
+                ]
+            )
+        except json.JSONDecodeError as e:
+            self.logger.error(
+                "brian_response_parse_failed",
+                error=str(e),
+                response=response_text[:200] if 'response_text' in locals() else "N/A"
+            )
+            raise AnalysisError(f"Failed to parse analysis response: {e}") from e
+        except Exception as e:
+            self.logger.error(
+                "brian_analysis_unexpected_error",
+                error=str(e),
+                error_type=type(e).__name__,
+                model=self.model
+            )
+            # Fallback to conservative default for unexpected errors
             return PromptAnalysis(
                 scale_level=ScaleLevel.LEVEL_2,
                 project_type=ProjectType.SOFTWARE,
