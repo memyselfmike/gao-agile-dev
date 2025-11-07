@@ -76,6 +76,7 @@ class WorkflowCoordinator:
         agent_executor: Callable,  # Callback to execute agent task
         project_root: Path,
         doc_manager: Optional['DocumentLifecycleManager'] = None,
+        workflow_executor: Optional['WorkflowExecutor'] = None,
         max_retries: int = 3
     ):
         """
@@ -88,6 +89,7 @@ class WorkflowCoordinator:
             agent_executor: Callback function to execute agent tasks
             project_root: Root directory of the project
             doc_manager: Optional document lifecycle manager for tracking artifacts
+            workflow_executor: Optional workflow executor for variable resolution (Story 18.1)
             max_retries: Maximum retry attempts for failed workflows (default: 3)
         """
         self.workflow_registry = workflow_registry
@@ -96,13 +98,15 @@ class WorkflowCoordinator:
         self.agent_executor = agent_executor
         self.project_root = project_root
         self.doc_manager = doc_manager
+        self.workflow_executor = workflow_executor
         self.max_retries = max_retries
 
         logger.info(
             "workflow_coordinator_initialized",
             max_retries=max_retries,
             project_root=str(project_root),
-            has_doc_manager=doc_manager is not None
+            has_doc_manager=doc_manager is not None,
+            has_workflow_executor=workflow_executor is not None
         )
 
     async def execute_sequence(

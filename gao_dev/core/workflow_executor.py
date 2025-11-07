@@ -189,3 +189,46 @@ class WorkflowExecutor:
             rendered = re.sub(pattern, str(value), rendered)
 
         return rendered
+
+    # ========================================================================
+    # Public API Methods
+    # ========================================================================
+
+    def resolve_variables(self, workflow: WorkflowInfo, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Resolve workflow variables from params, config, and defaults.
+
+        PUBLIC API for orchestrator to resolve variables before execution.
+
+        Priority order:
+        1. Parameters (passed to this method) - highest priority
+        2. Workflow.yaml variables section
+        3. Config defaults (from defaults.yaml)
+        4. Common variables (date, timestamp)
+
+        Args:
+            workflow: Workflow info
+            params: User-provided parameters
+
+        Returns:
+            Resolved variables dictionary
+
+        Raises:
+            ValueError: If required variables are missing
+        """
+        return self._resolve_variables(workflow, params)
+
+    def render_template(self, template: str, variables: Dict[str, Any]) -> str:
+        """
+        Render template with variables using Mustache-style syntax.
+
+        PUBLIC API for orchestrator to render instructions with resolved variables.
+
+        Args:
+            template: Template string with {{variable}} placeholders
+            variables: Variables dictionary
+
+        Returns:
+            Rendered template with all placeholders replaced
+        """
+        return self._render_template(template, variables)

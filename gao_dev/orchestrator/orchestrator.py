@@ -28,6 +28,7 @@ from .brian_orchestrator import (
 )
 from ..core.config_loader import ConfigLoader
 from ..core.workflow_registry import WorkflowRegistry
+from ..core.workflow_executor import WorkflowExecutor
 from ..core.events.event_bus import EventBus
 from ..core.services.workflow_coordinator import WorkflowCoordinator
 from ..core.services.story_lifecycle import StoryLifecycleManager
@@ -185,6 +186,9 @@ class GAODevOrchestrator:
         self.workflow_registry = WorkflowRegistry(self.config_loader)
         self.workflow_registry.index_workflows()
 
+        # Initialize WorkflowExecutor for variable resolution
+        self.workflow_executor = WorkflowExecutor(self.config_loader)
+
         # Initialize PromptLoader for task prompts
         prompts_dir = Path(__file__).parent.parent / "prompts"
         self.prompt_loader = PromptLoader(
@@ -223,6 +227,7 @@ class GAODevOrchestrator:
             agent_executor=self._execute_agent_task_static,  # Now self.process_executor exists
             project_root=self.project_root,
             doc_manager=self.doc_lifecycle,  # Pass document lifecycle manager
+            workflow_executor=self.workflow_executor,
             max_retries=3,
         )
 
@@ -305,6 +310,9 @@ class GAODevOrchestrator:
         workflow_registry = WorkflowRegistry(config_loader)
         workflow_registry.index_workflows()
 
+        # Initialize WorkflowExecutor for variable resolution
+        workflow_executor = WorkflowExecutor(config_loader)
+
         # Get provider from environment (default: claude-code)
         provider_name = os.getenv("AGENT_PROVIDER", "claude-code").lower()
         logger.info("agent_provider_selected", provider=provider_name, mode=mode)
@@ -374,6 +382,7 @@ class GAODevOrchestrator:
             agent_executor=agent_executor_closure,
             project_root=project_root,
             doc_manager=None,  # Orchestrator will update this after doc_lifecycle initialization
+            workflow_executor=workflow_executor,
             max_retries=3,
         )
 
@@ -941,11 +950,18 @@ class GAODevOrchestrator:
         self, workflow_info: "WorkflowInfo", epic: int = 1, story: int = 1
     ) -> AsyncGenerator[str, None]:
         """
-        Execute agent task via ProcessExecutor (used by WorkflowCoordinator).
+        Execute agent task via ProcessExecutor with proper variable resolution.
 
         This method bridges the WorkflowCoordinator's agent_executor callback
-        to the ProcessExecutor service. It loads the workflow instructions from
-        instructions.md and delegates execution to ProcessExecutor.
+        to the ProcessExecutor service. It uses WorkflowExecutor to:
+        1. Resolve workflow variables from workflow.yaml, config, and parameters
+        2. Render instructions template with resolved variables
+        3. Execute the fully resolved instructions via ProcessExecutor
+
+        NEW BEHAVIOR (Story 18.1):
+        - Uses WorkflowExecutor to resolve workflow variables
+        - Renders instructions template with resolved variables
+        - All {{variable}} placeholders replaced before LLM execution
 
         Args:
             workflow_info: Workflow metadata containing path to instructions
@@ -957,12 +973,31 @@ class GAODevOrchestrator:
 
         Raises:
             ProcessExecutionError: If Claude CLI execution fails
-            ValueError: If Claude CLI not found
+            ValueError: If Claude CLI not found or required variables missing
         """
         logger.debug("executing_agent_task", workflow=workflow_info.name, epic=epic, story=story)
 
-        # Load workflow instructions from instructions.md
-        # Ensure installed_path is a Path object (defensive coding for serialization)
+        # STEP 1: Build parameters for variable resolution
+        params = {
+            "epic_num": epic,
+            "story_num": story,
+            "epic": epic,
+            "story": story,
+            "project_name": self.project_root.name,
+            "project_root": str(self.project_root),
+        }
+
+        # STEP 2: Use WorkflowExecutor to resolve variables
+        variables = self.workflow_executor.resolve_variables(workflow_info, params)
+
+        logger.info(
+            "workflow_variables_resolved",
+            workflow=workflow_info.name,
+            variables=variables,
+            variables_used=list(variables.keys())
+        )
+
+        # STEP 3: Load instructions from instructions.md
         installed_path = (
             Path(workflow_info.installed_path)
             if isinstance(workflow_info.installed_path, str)
@@ -972,7 +1007,6 @@ class GAODevOrchestrator:
         if instructions_file.exists():
             task_prompt = instructions_file.read_text(encoding="utf-8")
         else:
-            # Fallback to workflow description if no instructions.md
             task_prompt = workflow_info.description
             logger.warning(
                 "workflow_missing_instructions",
@@ -980,20 +1014,17 @@ class GAODevOrchestrator:
                 path=str(instructions_file),
             )
 
-        # Replace placeholders if this is a story workflow
-        # Support both single {epic} and double {{epic_num}} brace formats
-        replacements = {
-            "{epic}": str(epic),
-            "{story}": str(story),
-            "{{epic_num}}": str(epic),
-            "{{story_num}}": str(story),
-            "{{dev_story_location}}": "docs/stories",  # Default story location
-        }
+        # STEP 4: Render instructions with resolved variables
+        task_prompt = self.workflow_executor.render_template(task_prompt, variables)
 
-        for placeholder, value in replacements.items():
-            if placeholder in task_prompt:
-                task_prompt = task_prompt.replace(placeholder, value)
+        logger.info(
+            "workflow_instructions_rendered",
+            workflow=workflow_info.name,
+            prompt_length=len(task_prompt),
+            variables_used=list(variables.keys())
+        )
 
+        # STEP 5: Execute via ProcessExecutor (existing code continues...)
         logger.info(
             "executing_workflow_via_process_executor",
             workflow=workflow_info.name,
@@ -1003,11 +1034,10 @@ class GAODevOrchestrator:
             prompt_length=len(task_prompt),
         )
 
-        # Execute via ProcessExecutor with default tools
         async for output in self.process_executor.execute_agent_task(
             task=task_prompt,
             tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoWrite"],
-            timeout=None  # Use default timeout from ProcessExecutor
+            timeout=None
         ):
             yield output
 
