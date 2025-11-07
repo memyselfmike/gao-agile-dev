@@ -97,6 +97,12 @@ class OpenCodeSDKProvider(IAgentProvider):
         "gpt-4": ("openai", "gpt-4"),
         "gpt-4-turbo": ("openai", "gpt-4-turbo"),
         "gpt-3.5-turbo": ("openai", "gpt-3.5-turbo"),
+
+        # Ollama models (local)
+        # OpenCode uses "ollama" as provider ID and model names as they appear in Ollama
+        # BaseURL: http://localhost:11434/v1
+        "deepseek-r1:8b": ("ollama", "deepseek-r1:8b"),
+        "deepseek-r1": ("ollama", "deepseek-r1:8b"),  # Alias for convenience
     }
 
     # Tool mapping: GAO-Dev tool name -> OpenCode capability

@@ -11,7 +11,9 @@
       "Bash(NUL)",
       "WebFetch(domain:github.com)",
       "Bash(dir \"C:\\Projects\\gao-agile-dev\\gao_dev\" /B)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

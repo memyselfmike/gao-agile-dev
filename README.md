@@ -739,6 +739,8 @@ Future GAO teams may include:
 - Load prompts and agent configs from YAML files
 - Support custom agents, prompts, and checklists via plugins
 - Resolve references to files, configs, documents, and queries
+- Use any AI provider through abstraction layer (Claude, OpenCode, local models)
+- Run with free local models (Ollama + DeepSeek-R1) for zero-cost development
 
 ### What's Next
 

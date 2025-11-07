@@ -9,6 +9,7 @@ plugin agents.
 from pathlib import Path
 from typing import Dict, List, Optional, Type
 import structlog
+import os
 
 from ..interfaces.agent import IAgent, IAgentFactory
 from ..models.agent import AgentConfig, AgentCapability, CommonCapabilities
@@ -166,13 +167,27 @@ class AgentFactory(IAgentFactory):
             elif agent_type_lower in self._agent_configs:
                 capabilities = self._agent_configs[agent_type_lower].get("capabilities", [])
 
+            # Get model: environment variable > YAML config > default
+            # GAO_DEV_MODEL allows global model override for testing different providers
+            model = os.getenv("GAO_DEV_MODEL")
+            if not model:
+                model = yaml_config.model if yaml_config else "claude-sonnet-4-5-20250929"
+
+            logger.info(
+                "agent_model_selected",
+                agent_type=agent_type,
+                model=model,
+                from_env=bool(os.getenv("GAO_DEV_MODEL")),
+                from_yaml=bool(yaml_config and yaml_config.model)
+            )
+
             # Create agent instance
             agent = agent_class(
                 name=config.name if config else agent_type.capitalize(),
                 role=config.role if config else "",
                 persona=persona,
                 tools=config.tools if config else [],
-                model=yaml_config.model if yaml_config else "claude-sonnet-4-5-20250929",
+                model=model,
                 persona_file=persona_file if persona_file.exists() else None,
                 capabilities=capabilities
             )
