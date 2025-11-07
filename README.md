@@ -244,6 +244,55 @@ qa_enabled: true
 test_coverage_threshold: 80
 ```
 
+## Local Model Support
+
+GAO-Dev now supports **free local models** (Ollama + DeepSeek-R1) as an alternative to paid Anthropic API, enabling zero-cost development and complete privacy.
+
+### Benefits
+
+- **Free**: $0 cost for development vs. $3-15 per million tokens
+- **Private**: All data stays on your machine
+- **Offline**: Work without internet connection
+- **Fast iteration**: Unlimited experimentation
+
+### Quick Setup
+
+```bash
+# 1. Install Ollama
+brew install ollama  # macOS
+# or curl -fsSL https://ollama.ai/install.sh | sh  # Linux
+
+# 2. Start Ollama
+ollama serve
+
+# 3. Pull DeepSeek-R1
+ollama pull deepseek-r1:8b
+
+# 4. Configure environment (for OpenCode provider)
+export AGENT_PROVIDER=opencode-sdk
+export GAO_DEV_MODEL=deepseek-r1:8b
+
+# 5. Run benchmark with local model
+gao-dev sandbox run sandbox/benchmarks/simple-todo-deepseek.yaml
+```
+
+### Performance Comparison
+
+| Metric | Claude Sonnet 4.5 (API) | DeepSeek-R1 8B (Local) |
+|--------|------------------------|------------------------|
+| **Cost per Analysis** | $0.01-0.05 | $0.00 |
+| **Speed** | 2-5 seconds | 5-15 seconds (CPU) |
+| **Quality** | Excellent | Good |
+| **Offline** | No | Yes |
+
+**Recommendation**: Use local models for development, Claude API for production.
+
+### Documentation
+
+- **Setup Guide**: [docs/features/ai-analysis-service/LOCAL_MODELS_SETUP.md](docs/features/ai-analysis-service/LOCAL_MODELS_SETUP.md)
+- **Validation Guide**: [docs/features/ai-analysis-service/DEEPSEEK_R1_VALIDATION_GUIDE.md](docs/features/ai-analysis-service/DEEPSEEK_R1_VALIDATION_GUIDE.md)
+- **AIAnalysisService API**: [docs/features/ai-analysis-service/API_REFERENCE.md](docs/features/ai-analysis-service/API_REFERENCE.md)
+
 ## The 8 Specialized Agents
 
 ### 1. Mary - Engineering Manager
