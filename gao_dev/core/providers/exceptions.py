@@ -704,3 +704,58 @@ class ModelNotSupportedError(ModelNotFoundError):
     """
 
     pass
+
+
+# Analysis Service Exceptions
+# These exceptions are specific to the AIAnalysisService
+
+
+class AnalysisError(Exception):
+    """
+    Base exception for AI analysis errors.
+
+    Raised when AI analysis fails for any reason.
+
+    Example:
+        ```python
+        raise AnalysisError(
+            "Analysis failed: Invalid response format"
+        )
+        ```
+    """
+
+    pass
+
+
+class AnalysisTimeoutError(AnalysisError):
+    """
+    Analysis request timed out.
+
+    Raised when analysis operation exceeds timeout limit.
+
+    Example:
+        ```python
+        raise AnalysisTimeoutError(
+            "Analysis timed out after 60 seconds"
+        )
+        ```
+    """
+
+    pass
+
+
+class InvalidModelError(AnalysisError):
+    """
+    Requested model is invalid or unavailable.
+
+    Raised when model name is not supported by the configured provider.
+
+    Example:
+        ```python
+        raise InvalidModelError(
+            "Model 'gpt-4' not available with provider 'claude-code'"
+        )
+        ```
+    """
+
+    pass
