@@ -1410,4 +1410,167 @@ Epic 15 (weeks 9-10)
 
 ---
 
+## Epic 18: Workflow Variable Resolution and Artifact Tracking
+
+**Goal:** Fix critical architectural flaw where orchestrator bypasses WorkflowExecutor, causing workflow variables to never be resolved and artifacts to never be tracked.
+
+**Owner:** Amelia (Developer) + Bob (Scrum Master)
+**Priority:** P0 (Critical - Fixes Core Workflow Execution Bug)
+**Estimated Duration:** 2-3 weeks
+**Story Points:** 35 points
+
+### Success Criteria
+- All workflow variables ({{prd_location}}, {{dev_story_location}}, etc.) resolved before sending to LLM
+- LLM receives instructions with all variables replaced with actual values
+- Files created at locations defined in workflow.yaml defaults
+- All created/modified files detected after workflow execution
+- All artifacts registered with DocumentLifecycleManager
+- Document types correctly inferred from workflow and path
+- No regression in existing tests or benchmarks
+- Performance overhead <5% for artifact detection
+
+### Stories
+
+#### Story 18.1: WorkflowExecutor Integration
+**Points:** 8 | **Priority:** P0
+
+**Description:** Integrate WorkflowExecutor into orchestrator for proper variable resolution.
+
+**Acceptance Criteria:**
+- [ ] Orchestrator uses WorkflowExecutor to resolve all workflow variables
+- [ ] Instructions.md rendered with resolved variables before sending to LLM
+- [ ] Logs show "workflow_variables_resolved" and "workflow_instructions_rendered"
+- [ ] Unit tests verify variable resolution from workflow.yaml defaults
+- [ ] Integration tests verify end-to-end variable resolution
+
+**Technical Notes:**
+- Add WorkflowExecutor instance to GAODevOrchestrator
+- Refactor `_execute_agent_task_static()` to use WorkflowExecutor
+- Make `_resolve_variables()` and `_render_template()` public in WorkflowExecutor
+- Update WorkflowCoordinator to accept optional workflow_executor parameter
+
+**Dependencies:** Epic 10 (Prompt Abstraction)
+
+---
+
+#### Story 18.2: Artifact Detection System
+**Points:** 8 | **Priority:** P0
+
+**Description:** Detect files created or modified during workflow execution.
+
+**Acceptance Criteria:**
+- [ ] Filesystem snapshots capture file paths, mtimes, and sizes
+- [ ] New files detected correctly
+- [ ] Modified files detected correctly (different mtime/size)
+- [ ] Only tracked directories scanned (ignore .git, node_modules)
+- [ ] Logs show "workflow_artifacts_detected" with artifact list
+- [ ] Unit tests verify snapshot and detection logic
+- [ ] Integration tests verify artifacts detected after workflow
+
+**Technical Notes:**
+- Implement `_snapshot_project_files()` to capture filesystem state
+- Implement `_detect_artifacts()` to find new/modified files
+- Snapshot before and after workflow execution
+- Filter to tracked directories (docs/, src/, gao_dev/)
+
+**Dependencies:** Story 18.1
+
+---
+
+#### Story 18.3: Document Lifecycle Integration
+**Points:** 8 | **Priority:** P0
+
+**Description:** Register detected artifacts with DocumentLifecycleManager.
+
+**Acceptance Criteria:**
+- [ ] All detected artifacts registered with DocumentLifecycleManager
+- [ ] Document types inferred correctly from workflow and path
+- [ ] Author inferred from workflow agent
+- [ ] Metadata includes workflow name, epic, story, phase, variables
+- [ ] Registration failures logged but don't break workflow
+- [ ] Logs show "artifact_registered" for each artifact
+- [ ] Integration tests verify artifacts appear in .gao-dev/documents.db
+
+**Technical Notes:**
+- Implement `_register_artifacts()` to register with DocumentLifecycleManager
+- Implement `_infer_document_type()` to map artifacts to document types
+- Handle registration failures gracefully (log warning, continue)
+
+**Dependencies:** Story 18.2, Epic 12 (Document Lifecycle)
+
+---
+
+#### Story 18.4: Configuration Defaults
+**Points:** 3 | **Priority:** P1
+
+**Description:** Add default workflow variable values in configuration system.
+
+**Acceptance Criteria:**
+- [ ] Configuration file defines prd_location, architecture_location, dev_story_location
+- [ ] Defaults match project conventions (docs/PRD.md, docs/stories, etc.)
+- [ ] WorkflowExecutor reads defaults from config
+- [ ] Documentation explains how to override defaults
+- [ ] Unit tests verify config loading
+
+**Technical Notes:**
+- Create or update `gao_dev/config/defaults.yaml`
+- Add workflow_defaults section with common paths
+- Update ConfigLoader to load workflow defaults
+
+**Dependencies:** None (foundational)
+
+---
+
+#### Story 18.5: Comprehensive Testing
+**Points:** 5 | **Priority:** P0
+
+**Description:** Add comprehensive unit and integration tests for all new functionality.
+
+**Acceptance Criteria:**
+- [ ] >80% test coverage for new code
+- [ ] All unit tests pass
+- [ ] All integration tests pass
+- [ ] Regression tests show no breaking changes
+- [ ] Benchmark suite runs successfully
+
+**Technical Notes:**
+- Unit tests for WorkflowExecutor variable resolution
+- Unit tests for artifact detection
+- Integration test: PRD workflow creates file at correct location
+- Integration test: Story workflow uses dev_story_location variable
+- Integration test: Artifacts registered in document lifecycle
+
+**Dependencies:** Story 18.1, 18.2, 18.3
+
+---
+
+#### Story 18.6: Documentation and Migration
+**Points:** 3 | **Priority:** P1
+
+**Description:** Document architecture changes and provide migration guidance.
+
+**Acceptance Criteria:**
+- [ ] Architecture documentation reflects new flow
+- [ ] Variable resolution process documented with diagrams
+- [ ] Migration guide explains changes and impact
+- [ ] Troubleshooting covers common issues
+- [ ] Examples show how to use workflow variables
+
+**Technical Notes:**
+- Create `VARIABLE_RESOLUTION.md` in feature docs
+- Create `MIGRATION_GUIDE_EPIC_18.md`
+- Update CLAUDE.md with new architecture
+- Update workflow authoring guide
+
+**Dependencies:** Story 18.5
+
+---
+
+### Epic Dependencies
+- **Requires:** Epic 10 (Prompt Abstraction), Epic 12 (Document Lifecycle), Epic 17 (Context Integration)
+- **Blocks:** Advanced workflow features, meta-prompt variable integration
+- **Integrates With:** Orchestrator, WorkflowExecutor, DocumentLifecycleManager
+
+---
+
 *End of Epic Breakdown*

@@ -27,9 +27,18 @@ This document helps you (Claude) quickly understand the GAO-Dev project, its str
 
 ---
 
-## Current Status (As of 2025-11-06)
+## Current Status (As of 2025-11-07)
 
 ### Latest Achievements
+
+✅ **Epic 18: Workflow Variable Resolution and Artifact Tracking** - COMPLETE
+  - Workflow variables properly resolved before sending to LLM
+  - Files created at correct locations (e.g., docs/PRD.md not root)
+  - Automatic artifact detection and registration
+  - Document lifecycle integration with metadata
+  - WorkflowExecutor integration into orchestrator
+  - Comprehensive logging for observability
+  - Migration guide and documentation
 
 ✅ **Epic 20: Project-Scoped Document Lifecycle** - COMPLETE
   - Project-scoped `.gao-dev/` directories for isolated tracking
@@ -74,15 +83,17 @@ This document helps you (Claude) quickly understand the GAO-Dev project, its str
 - Accept a simple prompt
 - Intelligently select appropriate workflows based on scale and context
 - Execute multi-workflow sequences
-- Create real project artifacts with atomic git commits
-- Track comprehensive metrics
+- Resolve workflow variables before sending instructions to LLM
+- Create real project artifacts at correct locations with atomic git commits
+- Automatically detect and register all workflow artifacts
+- Track document lifecycle per-project with isolated `.gao-dev/` directories
+- Auto-detect project context for CLI commands
+- Track comprehensive metrics with structured logging
 - Generate detailed HTML reports
 - Validate results against success criteria
 - Load prompts and agent configs from YAML files
 - Support custom agents and prompts via plugins
 - Resolve references to files and configuration values
-- Track document lifecycle per-project with isolated `.gao-dev/` directories
-- Auto-detect project context for CLI commands
 
 ### What's Next
 
@@ -530,10 +541,40 @@ GAO-Dev supports multiple methodologies through abstraction:
 1. **User provides prompt** → "Build a todo application with user auth"
 2. **Brian agent analyzes** → Determines scale level, project type, requirements
 3. **Workflow selection** → Chooses appropriate workflow sequence
-4. **Orchestration** → Coordinates agent execution (John → Winston → Bob → Amelia)
-5. **Artifact creation** → Real files created with atomic git commits
-6. **Metrics tracking** → Performance, autonomy, quality metrics collected
-7. **Validation** → Results checked against success criteria
+4. **Variable resolution** → WorkflowExecutor resolves variables from workflow.yaml, config, and params
+5. **Template rendering** → Instructions rendered with resolved variables ({{prd_location}} → docs/PRD.md)
+6. **Orchestration** → Coordinates agent execution with resolved instructions (John → Winston → Bob → Amelia)
+7. **Artifact creation** → Real files created at correct locations with atomic git commits
+8. **Artifact detection** → Filesystem snapshots detect all created/modified files
+9. **Document registration** → All artifacts registered with DocumentLifecycleManager
+10. **Metrics tracking** → Performance, autonomy, quality metrics collected
+11. **Validation** → Results checked against success criteria
+
+### Variable Resolution Flow
+
+All workflow variables are now properly resolved before execution:
+
+```
+[workflow.yaml: variables + defaults]
+         ↓
+[WorkflowExecutor.resolve_variables()]  ← Resolve from workflow.yaml, params, config
+         ↓
+[WorkflowExecutor.render_template()]  ← Render {{variable}} → actual values
+         ↓
+[Orchestrator sends RESOLVED instructions to LLM]  ← All variables replaced
+         ↓
+[LLM creates files at correct locations]
+         ↓
+[Post-execution artifact detector]  ← Detect created/modified files
+         ↓
+[DocumentLifecycleManager.register_document()]  ← Track all artifacts
+```
+
+**Variable Priority Order** (highest to lowest):
+1. Runtime parameters (passed at execution)
+2. Workflow YAML defaults (defined in workflow.yaml)
+3. Config defaults (from config/defaults.yaml)
+4. Common variables (auto-generated: date, timestamp, project_name, etc.)
 
 ### Available Workflows (55+)
 
@@ -548,6 +589,37 @@ GAO-Dev supports multiple methodologies through abstraction:
 
 **Phase 4: Implementation**
 - Story creation, story development, code review, testing
+
+### Workflow Variable Conventions
+
+All workflows support variable resolution using Mustache-style syntax (`{{variable}}`):
+
+**Common Variables** (automatically available):
+- `{{date}}` - Current date (YYYY-MM-DD)
+- `{{timestamp}}` - Current timestamp (ISO 8601)
+- `{{project_name}}` - Project directory name
+- `{{project_root}}` - Absolute path to project root
+- `{{epic}}` / `{{epic_num}}` - Epic number
+- `{{story}}` / `{{story_num}}` - Story number
+- `{{agent}}` - Current agent name
+- `{{workflow}}` - Workflow name
+
+**Defining Variables** in workflow.yaml:
+```yaml
+variables:
+  prd_location:
+    description: "Location for PRD file"
+    default: "docs/PRD.md"
+    required: false
+```
+
+**Variable Naming Conventions**:
+- Location variables: `{type}_location` (e.g., `prd_location`, `story_location`)
+- Folder variables: `{type}_folder` (e.g., `output_folder`, `test_folder`)
+- Path variables: `{type}_path` (e.g., `template_path`, `config_path`)
+- Always use `snake_case`
+
+**See Also**: [Variable Resolution Guide](docs/features/document-lifecycle-system/VARIABLE_RESOLUTION.md)
 
 ---
 
@@ -814,6 +886,24 @@ class MyPlugin(BasePlugin):
 - Reinstall: `pip install -e .`
 - Check PATH includes Python scripts directory
 
+**Variable Not Resolved**:
+- Symptom: `{{variable}}` appears in LLM instructions, files created at wrong location
+- Solution: Add variable to workflow.yaml or config/defaults.yaml
+- Check logs: `gao-dev <command> 2>&1 | jq 'select(.event == "workflow_variables_resolved")'`
+- See: [Variable Resolution Guide](docs/features/document-lifecycle-system/VARIABLE_RESOLUTION.md#troubleshooting-guide)
+
+**File Created at Wrong Location**:
+- Symptom: PRD.md created in root instead of docs/
+- Cause: Variable not resolved or LLM ignored instruction
+- Solution: Check variable definitions, make instructions more explicit
+- See: [Troubleshooting Guide](docs/features/document-lifecycle-system/VARIABLE_RESOLUTION.md#issue-2-file-created-at-wrong-location)
+
+**Artifact Not Detected**:
+- Symptom: File created but not registered in .gao-dev/documents.db
+- Cause: File outside tracked directories (docs/, src/, gao_dev/)
+- Solution: Ensure file in tracked directory, check artifact detection logs
+- Manual registration: `gao-dev lifecycle register <path> <type>`
+
 **Benchmark Fails**:
 - Check ANTHROPIC_API_KEY set
 - Verify benchmark config valid: `gao-dev sandbox validate <config>`
@@ -833,6 +923,8 @@ class MyPlugin(BasePlugin):
 | **Check what to do next** | **docs/bmm-workflow-status.md** ← START HERE! |
 | See current story status | docs/sprint-status.yaml |
 | Understand overall system | README.md, this file |
+| Workflow variable resolution | docs/features/document-lifecycle-system/VARIABLE_RESOLUTION.md |
+| Migrate to Epic 18 | docs/MIGRATION_GUIDE_EPIC_18.md |
 | Run benchmarks | docs/SETUP.md, sandbox/benchmarks/ |
 | Understand scale routing | gao_dev/methodologies/adaptive_agile/scale_levels.py |
 | Find agent implementations | gao_dev/agents/ |
@@ -840,6 +932,7 @@ class MyPlugin(BasePlugin):
 | Check code patterns | Existing implementations in gao_dev/ |
 | Plugin development | docs/plugin-development-guide.md |
 | Metrics & reporting | gao_dev/sandbox/metrics/, gao_dev/sandbox/reporting/ |
+| Document lifecycle | docs/features/document-lifecycle-system/ |
 
 ---
 

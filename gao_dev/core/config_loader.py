@@ -1,8 +1,11 @@
 """Configuration loader with defaults and user overrides."""
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 import yaml
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 
 class ConfigLoader:
@@ -116,3 +119,61 @@ class ConfigLoader:
         config = self.defaults.copy()
         config.update(self.user_config)
         return config
+
+    def get_workflow_defaults(self) -> Dict[str, str]:
+        """
+        Get default values for workflow variables.
+
+        Returns dict mapping variable names to default values (all strings).
+        Loads from workflow_defaults section in defaults.yaml and user config.
+
+        Priority order:
+        1. User config workflow_defaults (highest)
+        2. Embedded defaults.yaml workflow_defaults
+
+        Returns:
+            Dict mapping variable names to default values
+        """
+        try:
+            if not hasattr(self, '_workflow_defaults'):
+                # Load embedded defaults first
+                embedded_defaults = self.defaults.get('workflow_defaults', {})
+
+                # Load user config overrides
+                user_defaults = self.user_config.get('workflow_defaults', {})
+
+                # Merge with user config taking priority
+                merged_defaults = embedded_defaults.copy()
+                merged_defaults.update(user_defaults)
+
+                # Validate all defaults are strings (path values)
+                validated_defaults = {}
+                for key, value in merged_defaults.items():
+                    if not isinstance(value, str):
+                        logger.warning(
+                            "workflow_default_invalid_type",
+                            variable=key,
+                            value_type=type(value).__name__,
+                            message="Workflow default must be string - skipping"
+                        )
+                        continue
+                    validated_defaults[key] = value
+
+                self._workflow_defaults = validated_defaults
+
+                logger.debug(
+                    "workflow_defaults_loaded",
+                    defaults_count=len(self._workflow_defaults),
+                    defaults=list(self._workflow_defaults.keys())
+                )
+
+            return self._workflow_defaults.copy()
+
+        except Exception as e:
+            logger.error(
+                "workflow_defaults_load_error",
+                error=str(e),
+                error_type=type(e).__name__,
+                message="Failed to load workflow defaults - using empty dict"
+            )
+            return {}

@@ -4,9 +4,12 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 from datetime import datetime
 import re
+import structlog
 
 from .models.workflow import WorkflowInfo
 from .config_loader import ConfigLoader
+
+logger = structlog.get_logger(__name__)
 
 
 class WorkflowExecutor:
@@ -65,7 +68,13 @@ class WorkflowExecutor:
 
     def _resolve_variables(self, workflow: WorkflowInfo, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Resolve workflow variables from params, config, and defaults.
+        Resolve workflow variables from multiple sources.
+
+        Priority order:
+        1. Parameters (passed to execute method) - highest priority
+        2. Workflow.yaml variables section
+        3. Config defaults (from defaults.yaml)
+        4. Common variables (date, timestamp)
 
         Args:
             workflow: Workflow info
@@ -76,24 +85,53 @@ class WorkflowExecutor:
         """
         variables = {}
 
-        # Process each variable defined in workflow
-        for var_name, var_config in workflow.variables.items():
-            # Priority 1: Explicit parameters
-            if var_name in params:
-                variables[var_name] = params[var_name]
-            # Priority 2: Project config
-            elif var_name in self.config_loader.user_config:
-                variables[var_name] = self.config_loader.user_config[var_name]
-            # Priority 3: Default value
-            elif "default" in var_config:
-                variables[var_name] = var_config["default"]
-            # Required but missing
-            elif var_config.get("required", False):
-                raise ValueError(f"Required variable '{var_name}' not provided")
+        # Layer 1: Config defaults (lowest priority)
+        config_defaults = self.config_loader.get_workflow_defaults()
+        variables.update(config_defaults)
 
-        # Add common variables
+        logger.debug(
+            "variables_from_config_defaults",
+            variables_count=len(config_defaults),
+            variables=list(config_defaults.keys())
+        )
+
+        # Layer 2: Workflow.yaml defaults
+        workflow_defaults = {}
+        for var_name, var_config in workflow.variables.items():
+            if "default" in var_config:
+                workflow_defaults[var_name] = var_config["default"]
+
+        variables.update(workflow_defaults)
+
+        logger.debug(
+            "variables_from_workflow_yaml",
+            variables_count=len(workflow_defaults),
+            variables=list(workflow_defaults.keys())
+        )
+
+        # Layer 3: Parameters (highest priority)
+        variables.update(params)
+
+        logger.debug(
+            "variables_from_params",
+            variables_count=len(params),
+            variables=list(params.keys())
+        )
+
+        # Layer 4: Add common variables (always available)
         variables["date"] = datetime.now().strftime("%Y-%m-%d")
         variables["timestamp"] = datetime.now().isoformat()
+
+        # Validate required variables
+        for var_name, var_config in workflow.variables.items():
+            if var_config.get("required", False) and var_name not in variables:
+                raise ValueError(f"Required variable '{var_name}' not provided")
+
+        logger.debug(
+            "variables_resolved",
+            total_count=len(variables),
+            variables=list(variables.keys())
+        )
 
         return variables
 
@@ -148,6 +186,52 @@ class WorkflowExecutor:
         # Replace {{variable}} with value
         for key, value in variables.items():
             pattern = r"\{\{" + re.escape(str(key)) + r"\}\}"
-            rendered = re.sub(pattern, str(value), rendered)
+            # Escape backslashes in replacement string to avoid regex escape sequence issues
+            # This is critical for Windows paths (C:\Users\... becomes C:\\Users\\...)
+            replacement = str(value).replace("\\", "\\\\")
+            rendered = re.sub(pattern, replacement, rendered)
 
         return rendered
+
+    # ========================================================================
+    # Public API Methods
+    # ========================================================================
+
+    def resolve_variables(self, workflow: WorkflowInfo, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Resolve workflow variables from params, config, and defaults.
+
+        PUBLIC API for orchestrator to resolve variables before execution.
+
+        Priority order:
+        1. Parameters (passed to this method) - highest priority
+        2. Workflow.yaml variables section
+        3. Config defaults (from defaults.yaml)
+        4. Common variables (date, timestamp)
+
+        Args:
+            workflow: Workflow info
+            params: User-provided parameters
+
+        Returns:
+            Resolved variables dictionary
+
+        Raises:
+            ValueError: If required variables are missing
+        """
+        return self._resolve_variables(workflow, params)
+
+    def render_template(self, template: str, variables: Dict[str, Any]) -> str:
+        """
+        Render template with variables using Mustache-style syntax.
+
+        PUBLIC API for orchestrator to render instructions with resolved variables.
+
+        Args:
+            template: Template string with {{variable}} placeholders
+            variables: Variables dictionary
+
+        Returns:
+            Rendered template with all placeholders replaced
+        """
+        return self._render_template(template, variables)
