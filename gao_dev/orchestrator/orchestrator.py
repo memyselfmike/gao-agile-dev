@@ -943,6 +943,123 @@ class GAODevOrchestrator:
         return result
 
     # ========================================================================
+    # Artifact Detection (Story 18.2)
+    # ========================================================================
+
+    def _snapshot_project_files(self) -> set:
+        """
+        Snapshot current project files for artifact detection.
+
+        Captures filesystem state by scanning tracked directories (docs/, src/, gao_dev/)
+        and recording file metadata (path, mtime, size) for later comparison.
+
+        This enables automatic detection of files created or modified during
+        workflow execution without requiring the LLM to explicitly declare outputs.
+
+        Returns:
+            Set of (path, mtime, size) tuples for all tracked files
+
+        Performance:
+            Target: <50ms for typical projects (<1000 files)
+            Uses efficient rglob with ignored directory filtering
+        """
+        import time
+        snapshot_start = time.time()
+        snapshot = set()
+
+        # Only track docs/, src/, and gao_dev/ directories
+        tracked_dirs = [
+            self.project_root / "docs",
+            self.project_root / "src",
+            self.project_root / "gao_dev",  # For internal development
+        ]
+
+        # Directories to ignore (build artifacts, dependencies, internal state)
+        ignored_dirs = {".git", "node_modules", "__pycache__", ".gao-dev", ".archive", "venv", ".venv", "dist", "build", ".pytest_cache", ".mypy_cache", "htmlcov"}
+
+        for tracked_dir in tracked_dirs:
+            if not tracked_dir.exists():
+                continue
+
+            try:
+                for file_path in tracked_dir.rglob("*"):
+                    # Skip if any parent directory is in ignored_dirs
+                    if any(part in ignored_dirs for part in file_path.parts):
+                        continue
+
+                    if file_path.is_file():
+                        try:
+                            stat = file_path.stat()
+                            rel_path = str(file_path.relative_to(self.project_root))
+                            snapshot.add((rel_path, stat.st_mtime, stat.st_size))
+                        except (OSError, ValueError) as e:
+                            # Log warning but continue
+                            logger.warning(
+                                "snapshot_file_error",
+                                file=str(file_path),
+                                error=str(e),
+                                message="Skipping file in snapshot"
+                            )
+            except (OSError, PermissionError) as e:
+                # Log warning if entire directory can't be scanned
+                logger.warning(
+                    "snapshot_directory_error",
+                    directory=str(tracked_dir),
+                    error=str(e),
+                    message="Skipping directory in snapshot"
+                )
+
+        snapshot_duration = (time.time() - snapshot_start) * 1000  # Convert to ms
+        logger.debug(
+            "filesystem_snapshot_complete",
+            files_count=len(snapshot),
+            duration_ms=round(snapshot_duration, 2),
+        )
+
+        return snapshot
+
+    def _detect_artifacts(self, before: set, after: set) -> List[Path]:
+        """
+        Detect artifacts created or modified during workflow execution.
+
+        Compares before and after filesystem snapshots to identify files that
+        were created (new files) or modified (changed mtime/size). This provides
+        automatic artifact tracking without requiring explicit declarations.
+
+        Args:
+            before: Filesystem snapshot before execution (set of tuples)
+            after: Filesystem snapshot after execution (set of tuples)
+
+        Returns:
+            List of artifact paths (relative to project root) that were created or modified
+
+        Detection Logic:
+            - New files: In after but not in before
+            - Modified files: Same path, different mtime or size
+            - Deleted files: Ignored (not considered artifacts)
+        """
+        import time
+        detection_start = time.time()
+
+        # New or modified files: in after but not in before
+        # (different mtime or size means modified)
+        all_artifacts = after - before
+
+        # Convert tuples back to Path objects (relative to project root)
+        artifact_paths = [Path(item[0]) for item in all_artifacts]
+
+        detection_duration = (time.time() - detection_start) * 1000  # Convert to ms
+
+        logger.info(
+            "workflow_artifacts_detected",
+            artifacts_count=len(artifact_paths),
+            artifacts=[str(p) for p in artifact_paths],
+            detection_duration_ms=round(detection_duration, 2),
+        )
+
+        return artifact_paths
+
+    # ========================================================================
     # Agent Execution Bridge
     # ========================================================================
 
@@ -1024,7 +1141,16 @@ class GAODevOrchestrator:
             variables_used=list(variables.keys())
         )
 
-        # STEP 5: Execute via ProcessExecutor (existing code continues...)
+        # STEP 5: Snapshot filesystem before execution (Story 18.2)
+        files_before = self._snapshot_project_files()
+
+        logger.debug(
+            "filesystem_snapshot_before",
+            workflow=workflow_info.name,
+            files_count=len(files_before)
+        )
+
+        # STEP 6: Execute via ProcessExecutor
         logger.info(
             "executing_workflow_via_process_executor",
             workflow=workflow_info.name,
@@ -1034,12 +1160,35 @@ class GAODevOrchestrator:
             prompt_length=len(task_prompt),
         )
 
+        # Collect all output for later use (if needed)
+        execution_output = []
         async for output in self.process_executor.execute_agent_task(
             task=task_prompt,
             tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoWrite"],
             timeout=None
         ):
+            execution_output.append(output)
             yield output
+
+        # STEP 7: Snapshot filesystem after execution (Story 18.2)
+        files_after = self._snapshot_project_files()
+
+        logger.debug(
+            "filesystem_snapshot_after",
+            workflow=workflow_info.name,
+            files_count=len(files_after)
+        )
+
+        # STEP 8: Detect artifacts created during execution (Story 18.2)
+        artifacts = self._detect_artifacts(files_before, files_after)
+
+        # NOTE: Story 18.3 will add artifact registration here
+        logger.info(
+            "workflow_execution_artifacts_summary",
+            workflow=workflow_info.name,
+            artifacts_count=len(artifacts),
+            message="Artifacts detected, registration will be added in Story 18.3"
+        )
 
     def _get_agent_for_workflow(self, workflow_info: "WorkflowInfo") -> str:
         """
