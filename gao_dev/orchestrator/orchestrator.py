@@ -1182,13 +1182,201 @@ class GAODevOrchestrator:
         # STEP 8: Detect artifacts created during execution (Story 18.2)
         artifacts = self._detect_artifacts(files_before, files_after)
 
-        # NOTE: Story 18.3 will add artifact registration here
+        # STEP 9: Register artifacts with DocumentLifecycleManager (Story 18.3)
+        if artifacts:
+            self._register_artifacts(
+                artifacts=artifacts,
+                workflow_info=workflow_info,
+                epic=epic,
+                story=story,
+                variables=variables
+            )
+
         logger.info(
-            "workflow_execution_artifacts_summary",
+            "workflow_execution_complete",
             workflow=workflow_info.name,
             artifacts_count=len(artifacts),
-            message="Artifacts detected, registration will be added in Story 18.3"
         )
+
+    def _infer_document_type(self, path: Path, workflow_info: "WorkflowInfo") -> str:
+        """
+        Infer document type from workflow name and file path.
+
+        Uses a two-stage strategy:
+        1. Primary: Map based on workflow name (most reliable)
+        2. Fallback: Map based on file path patterns
+        3. Default: Return "document" if no pattern matches
+
+        Args:
+            path: Path to artifact file (relative to project root)
+            workflow_info: Workflow metadata with workflow name
+
+        Returns:
+            Document type string (e.g., "product-requirements", "architecture", "story")
+
+        Examples:
+            >>> # From workflow name
+            >>> _infer_document_type(Path("docs/PRD.md"), workflow_with_name("prd"))
+            "product-requirements"
+
+            >>> # From file path (fallback)
+            >>> _infer_document_type(Path("docs/epic-1/story-1.md"), workflow_with_name("dev"))
+            "story"
+
+            >>> # Default for unknown
+            >>> _infer_document_type(Path("docs/notes.md"), workflow_with_name("research"))
+            "document"
+        """
+        path_lower = str(path).lower()
+        workflow_lower = workflow_info.name.lower()
+
+        # Strategy 1: Map based on workflow name (most reliable)
+        # Use DocumentType enum values: prd, architecture, epic, story, adr, postmortem, runbook, qa_report, test_report
+        workflow_type_mapping = {
+            "prd": "prd",
+            "architecture": "architecture",
+            "tech-spec": "architecture",  # Map tech-spec to architecture
+            "epic": "epic",
+            "story": "story",
+            "create-story": "story",
+            "dev-story": "story",
+            "implement": "story",  # Implementation stories
+            "test": "test_report",
+            "qa": "qa_report",
+            "ux": "adr",  # Design decisions -> ADR
+            "design": "adr",
+            "research": "adr",  # Research findings -> ADR
+            "brief": "adr",
+            "postmortem": "postmortem",
+            "runbook": "runbook",
+        }
+
+        for pattern, doc_type in workflow_type_mapping.items():
+            if pattern in workflow_lower:
+                return doc_type
+
+        # Strategy 2: Map based on file path (fallback)
+        path_type_mapping = {
+            "prd": "prd",
+            "architecture": "architecture",
+            "arch": "architecture",
+            "spec": "architecture",
+            "epic": "epic",
+            "story": "story",
+            "test": "test_report",
+            "qa": "qa_report",
+            "adr": "adr",
+            "decision": "adr",
+            "postmortem": "postmortem",
+            "runbook": "runbook",
+        }
+
+        for pattern, doc_type in path_type_mapping.items():
+            if pattern in path_lower:
+                return doc_type
+
+        # Default: use story as generic document type (most flexible)
+        return "story"
+
+    def _register_artifacts(
+        self,
+        artifacts: List[Path],
+        workflow_info: "WorkflowInfo",
+        epic: int,
+        story: int,
+        variables: Dict[str, Any]
+    ) -> None:
+        """
+        Register detected artifacts with DocumentLifecycleManager.
+
+        This method automatically registers all workflow artifacts with comprehensive
+        metadata including document type, author, workflow context, and resolved variables.
+        Registration failures are handled gracefully - logged as warnings without breaking
+        workflow execution.
+
+        Args:
+            artifacts: List of artifact paths (relative to project root)
+            workflow_info: Workflow metadata (name, phase, agent)
+            epic: Epic number for context
+            story: Story number for context
+            variables: Resolved workflow variables from WorkflowExecutor
+
+        Behavior:
+            - Skips registration if DocumentLifecycleManager not available
+            - Infers document type from workflow name (primary) or path (fallback)
+            - Determines author from workflow agent (john, winston, bob, etc.)
+            - Builds comprehensive metadata with workflow context
+            - Logs successful registrations (artifact_registered)
+            - Logs failed registrations as warnings (artifact_registration_failed)
+            - Continues processing remaining artifacts after failures
+
+        Example:
+            >>> artifacts = [Path("docs/PRD.md"), Path("docs/epic-1.md")]
+            >>> _register_artifacts(
+            ...     artifacts=artifacts,
+            ...     workflow_info=prd_workflow,
+            ...     epic=1,
+            ...     story=1,
+            ...     variables={"project_name": "MyApp"}
+            ... )
+            # Logs: artifact_registered for PRD.md as "product-requirements" by "john"
+            # Logs: artifact_registered for epic-1.md as "epic" by "john"
+        """
+        if not self.doc_lifecycle:
+            logger.warning(
+                "document_lifecycle_not_available",
+                message="Cannot register artifacts - DocumentLifecycleManager not initialized"
+            )
+            return
+
+        for artifact_path in artifacts:
+            try:
+                # Determine document type from workflow and path
+                doc_type = self._infer_document_type(artifact_path, workflow_info)
+
+                # Determine author from workflow agent
+                author = self._get_agent_for_workflow(workflow_info).lower()
+
+                # Build comprehensive metadata
+                metadata = {
+                    "workflow": workflow_info.name,
+                    "epic": epic,
+                    "story": story,
+                    "phase": workflow_info.phase,
+                    "created_by_workflow": True,
+                    "variables": variables,
+                    "workflow_phase": workflow_info.phase,
+                }
+
+                # Convert relative path to absolute for registration
+                absolute_path = self.project_root / artifact_path
+
+                # Register with document lifecycle manager
+                doc = self.doc_lifecycle.register_document(
+                    path=absolute_path,
+                    doc_type=doc_type,
+                    author=author,
+                    metadata=metadata
+                )
+
+                logger.info(
+                    "artifact_registered",
+                    artifact=str(artifact_path),
+                    doc_type=doc_type,
+                    doc_id=doc.id,
+                    author=author,
+                    workflow=workflow_info.name
+                )
+
+            except Exception as e:
+                # Log warning but don't fail workflow
+                logger.warning(
+                    "artifact_registration_failed",
+                    artifact=str(artifact_path),
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    message="Continuing without registration"
+                )
 
     def _get_agent_for_workflow(self, workflow_info: "WorkflowInfo") -> str:
         """
