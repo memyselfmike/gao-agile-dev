@@ -190,6 +190,7 @@ class OpenCodeSDKProvider(IAgentProvider):
         self.sdk_client: Optional[Any] = None  # Type: Opencode
         self.session: Optional[Any] = None  # Type: Session (deprecated, kept for compatibility)
         self.session_id: Optional[str] = None  # Active session ID
+        self.last_project_root: Optional[Path] = None  # Track project root for session invalidation
         self.server_process: Optional[subprocess.Popen] = None
         self._initialized = False
 
@@ -345,6 +346,34 @@ class OpenCodeSDKProvider(IAgentProvider):
             )
 
             # Create session if needed
+            # IMPORTANT: If project root changes, we must destroy and recreate the session
+            # because OpenCode sessions lock the working directory at creation time
+            project_root_changed = (
+                self.last_project_root is not None and
+                self.last_project_root != context.project_root
+            )
+
+            if project_root_changed and self.session_id:
+                logger.info(
+                    "opencode_sdk_session_invalidated",
+                    old_project_root=str(self.last_project_root),
+                    new_project_root=str(context.project_root),
+                    session_id=self.session_id
+                )
+                # Delete old session since project root changed
+                try:
+                    self.sdk_client.session.delete(id=self.session_id)
+                    logger.debug("opencode_sdk_session_deleted", session_id=self.session_id)
+                except Exception as e:
+                    logger.warning(
+                        "opencode_sdk_session_delete_failed",
+                        session_id=self.session_id,
+                        error=str(e)
+                    )
+                # Clear session to force recreation
+                self.session = None
+                self.session_id = None
+
             if not self.session:
                 logger.debug(
                     "opencode_sdk_create_session",
@@ -355,8 +384,10 @@ class OpenCodeSDKProvider(IAgentProvider):
                 session_response = self.sdk_client.session.create(
                     extra_body={"cwd": str(context.project_root)}
                 )
-                # Store session ID for subsequent chat calls
+                # Store session for reuse and track project root
+                self.session = session_response
                 self.session_id = getattr(session_response, 'id', session_response.get('id') if isinstance(session_response, dict) else None)
+                self.last_project_root = context.project_root  # Track current project root
                 session_dir = getattr(session_response, 'directory', None)
                 logger.debug(
                     "opencode_sdk_session_created",
@@ -389,10 +420,44 @@ class OpenCodeSDKProvider(IAgentProvider):
             # NOTE: SDK version mismatch - SDK uses snake_case, server expects camelCase nested structure
             # Using extra_body to override SDK's format with server's expected format
             # Prepend working directory context to task
-            # OpenCode sessions don't support changing cwd, so we tell Claude the working directory
-            task_with_context = f"""IMPORTANT: You are working in the directory: {context.project_root}
-All file paths should be relative to this directory, or you can use absolute paths.
-When using the write, edit, or read tools, paths are relative to: {context.project_root}
+            # OpenCode sessions don't support changing cwd, so we MUST use absolute paths
+            task_with_context = f"""CRITICAL: You MUST use ABSOLUTE file paths for ALL file operations AND follow the correct project structure.
+
+Your project directory is: {context.project_root}
+
+REQUIRED PROJECT STRUCTURE:
+- Documentation (PRD, Architecture, Epics, Stories): {context.project_root}\\docs\\
+- Source code: {context.project_root}\\src\\
+- Tests: {context.project_root}\\tests\\
+- Configuration: {context.project_root}\\config\\ (optional)
+- Do NOT put documentation files in the root directory!
+
+ABSOLUTE PATH EXAMPLES:
+- PRD: {context.project_root}\\docs\\PRD.md
+- Architecture: {context.project_root}\\docs\\ARCHITECTURE.md
+- Tech Spec: {context.project_root}\\docs\\TECH_SPEC.md
+- Source: {context.project_root}\\src\\main.py
+- Tests: {context.project_root}\\tests\\test_main.py
+
+WRONG PATHS (DO NOT USE):
+- PRD.md (missing docs/ folder)
+- {context.project_root}\\PRD.md (should be in docs/)
+- ./src/main.py (relative path)
+
+DOCUMENT METADATA (for PRDs, Architecture, etc.):
+Start documentation with metadata block:
+```
+# Document Title
+
+**Version**: 1.0.0
+**Date**: YYYY-MM-DD (use current date)
+**Status**: Draft
+**Author**: [Your Name]
+
+---
+
+## Content starts here...
+```
 
 {task}"""
 
@@ -408,7 +473,9 @@ When using the write, edit, or read tools, paths are relative to: {context.proje
                 provider_id=provider_id,
                 model_id=model_id,
                 parts=[{"type": "text", "text": task_with_context}],
-                tools=tools_dict if tools_dict else {}  # Enable tools
+                tools=tools_dict if tools_dict else {},  # Enable tools
+                # NOTE: Working directory is set at session creation time and cannot be changed per-chat
+                # If the project root changes, the session is automatically deleted and recreated (see above)
             )
 
             # Extract response content
