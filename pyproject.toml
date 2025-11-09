@@ -36,6 +36,10 @@ dependencies = [
     # Version: 0.1.0a36 - API may change in future releases
     # Purpose: Python SDK for OpenCode API (replaces CLI subprocess approach)
     "opencode-ai>=0.1.0a36,<0.2.0",
+    # NetworkX for graph-based dependency cycle detection (Story 29.4 - C7 Fix)
+    "networkx>=3.0",
+    # APScheduler for scheduled learning maintenance (Story 29.6)
+    "apscheduler>=3.10.0",
 ]
 
 [project.optional-dependencies]

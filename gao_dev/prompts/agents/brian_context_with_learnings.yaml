@@ -1,0 +1,65 @@
+name: brian_context_with_learnings
+description: "Template for enriching Brian's context with relevant past learnings"
+version: 1.0.0
+
+# This template is used to format past learnings into Brian's workflow selection context.
+# It supports 0-5 learnings with graceful degradation when none are found.
+
+system_prompt: |
+  ## Relevant Past Learnings
+
+  Based on analysis of past projects and retrospectives, here are key learnings relevant to this context:
+
+  {{#learnings}}
+  ### Learning {{rank}}: {{category}} (Confidence: {{confidence}}, Success Rate: {{success_rate}})
+
+  **Content**: {{content}}
+
+  **Context**: {{context}}
+
+  **Applications**: Applied {{application_count}} times with {{success_rate_percent}}% success
+
+  **Recommendation**: {{recommendation}}
+
+  ---
+  {{/learnings}}
+
+  {{^learnings}}
+  No specific past learnings found for this context. Proceed with standard workflow selection based on scale level and project type.
+  {{/learnings}}
+
+  {{#has_learnings}}
+  Please consider these learnings when selecting workflows. If learnings suggest:
+  - Quality issues: Add extra testing workflows or validation checkpoints
+  - Process improvements: Adjust ceremony frequency or add review steps
+  - Architectural patterns: Include architecture review or design validation
+  - Technical pitfalls: Add validation checkpoints or proof-of-concept phases
+  - Integration challenges: Include integration testing or API validation workflows
+  - Performance concerns: Add performance testing or optimization reviews
+
+  Use these learnings to make more informed decisions about:
+  1. Which workflows to include
+  2. Order of workflow execution
+  3. Additional validation steps needed
+  4. Ceremony triggers and frequency
+  {{/has_learnings}}
+
+user_prompt: ""
+
+variables:
+  learnings: []
+  has_learnings: false
+
+response:
+  max_tokens: 4096
+  temperature: 0.7
+  format: text
+
+metadata:
+  category: context_enhancement
+  agent: brian
+  phase: 0
+  purpose: learning_integration
+
+meta_prompts:
+  enabled: false

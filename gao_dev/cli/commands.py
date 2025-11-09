@@ -32,6 +32,7 @@ from .context_commands import context
 from .db_commands import db
 from .migration_commands import migrate_group
 from .ceremony_commands import ceremony
+from .learning_commands import learning
 
 
 @click.group()
@@ -544,6 +545,13 @@ cli.add_command(migrate_group, name="migrate")
 
 # Register ceremony command group
 cli.add_command(ceremony)
+
+# ============================================================================
+# LEARNING COMMANDS
+# ============================================================================
+
+# Register learning command group
+cli.add_command(learning)
 
 
 if __name__ == "__main__":
