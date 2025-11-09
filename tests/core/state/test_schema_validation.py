@@ -19,6 +19,7 @@ from gao_dev.core.state.migrations.migration_001_create_state_schema import (
     Migration001,
 )
 from gao_dev.core.state.schema_validator import SchemaValidator
+from .conftest import safe_cleanup_db
 
 
 class TestSchemaValidation:
@@ -35,8 +36,7 @@ class TestSchemaValidation:
         yield db_path
 
         # Cleanup
-        if db_path.exists():
-            db_path.unlink()
+        safe_cleanup_db(db_path)
 
     @pytest.fixture
     def empty_db(self):
@@ -51,8 +51,7 @@ class TestSchemaValidation:
         yield db_path
 
         # Cleanup
-        if db_path.exists():
-            db_path.unlink()
+        safe_cleanup_db(db_path)
 
     def test_validate_valid_schema(self, valid_db):
         """Test schema validator passes for valid schema."""

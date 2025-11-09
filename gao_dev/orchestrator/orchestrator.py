@@ -26,6 +26,7 @@ from .brian_orchestrator import (
     WorkflowSequence,
     ScaleLevel,
 )
+from .workflow_execution_engine import WorkflowExecutionEngine
 from ..core.config_loader import ConfigLoader
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.workflow_executor import WorkflowExecutor
@@ -219,6 +220,14 @@ class GAODevOrchestrator:
             api_key=self.api_key,
         )
 
+        # Initialize WorkflowExecutionEngine (Story 22.1)
+        self.workflow_execution_engine = WorkflowExecutionEngine(
+            workflow_registry=self.workflow_registry,
+            workflow_executor=self.workflow_executor,
+            prompt_loader=self.prompt_loader,
+            agent_executor=self._execute_agent_task_static,
+        )
+
         # Initialize or use provided services
         self.workflow_coordinator = workflow_coordinator or WorkflowCoordinator(
             workflow_registry=self.workflow_registry,
@@ -327,6 +336,12 @@ class GAODevOrchestrator:
             provider_config={"api_key": api_key} if api_key else None,
         )
 
+        # Initialize PromptLoader first (needed by WorkflowExecutionEngine)
+        prompts_dir = Path(__file__).parent.parent / "prompts"
+        prompt_loader = PromptLoader(
+            prompts_dir=prompts_dir, config_loader=config_loader, cache_enabled=True
+        )
+
         # Create agent executor closure that captures process_executor
         # This will be used by WorkflowCoordinator to execute agent tasks
         async def agent_executor_closure(
@@ -373,6 +388,14 @@ class GAODevOrchestrator:
                 timeout=None
             ):
                 yield output
+
+        # Initialize WorkflowExecutionEngine (Story 22.1)
+        workflow_execution_engine = WorkflowExecutionEngine(
+            workflow_registry=workflow_registry,
+            workflow_executor=workflow_executor,
+            prompt_loader=prompt_loader,
+            agent_executor=agent_executor_closure,
+        )
 
         # Initialize services
         workflow_coordinator = WorkflowCoordinator(

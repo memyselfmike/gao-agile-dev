@@ -37,9 +37,6 @@ class TestArtifactLifecycleIntegration:
         orchestrator.doc_lifecycle = doc_lifecycle
 
         # Mock ProcessExecutor to avoid actual Claude CLI calls
-        mock_executor = MagicMock()
-        mock_executor.execute_agent_task = AsyncMock()
-
         async def mock_execution(*args, **kwargs):
             # Simulate creating a PRD file during execution
             prd_file = docs_dir / "PRD.md"
@@ -47,7 +44,8 @@ class TestArtifactLifecycleIntegration:
             yield "Creating PRD..."
             yield "PRD created successfully"
 
-        mock_executor.execute_agent_task.side_effect = mock_execution
+        mock_executor = MagicMock()
+        mock_executor.execute_agent_task = Mock(side_effect=lambda *args, **kwargs: mock_execution(*args, **kwargs))
         orchestrator.process_executor = mock_executor
 
         # Create workflow info for PRD
@@ -69,11 +67,11 @@ class TestArtifactLifecycleIntegration:
             outputs.append(output)
 
         # Verify artifact was registered
-        documents = doc_lifecycle.registry.list_documents()
+        documents = doc_lifecycle.registry.query_documents()
         assert len(documents) > 0
 
         # Find PRD document
-        prd_docs = [doc for doc in documents if doc.doc_type == "prd"]
+        prd_docs = [doc for doc in documents if doc.type.value == "prd"]
         assert len(prd_docs) == 1
 
         prd_doc = prd_docs[0]
@@ -99,9 +97,6 @@ class TestArtifactLifecycleIntegration:
         orchestrator.doc_lifecycle = doc_lifecycle
 
         # Mock ProcessExecutor
-        mock_executor = MagicMock()
-        mock_executor.execute_agent_task = AsyncMock()
-
         async def mock_execution(*args, **kwargs):
             # Simulate creating a story file
             story_file = docs_dir / "story-1.1.md"
@@ -109,7 +104,8 @@ class TestArtifactLifecycleIntegration:
             yield "Creating story..."
             yield "Story created successfully"
 
-        mock_executor.execute_agent_task.side_effect = mock_execution
+        mock_executor = MagicMock()
+        mock_executor.execute_agent_task = Mock(side_effect=lambda *args, **kwargs: mock_execution(*args, **kwargs))
         orchestrator.process_executor = mock_executor
 
         # Create workflow info for story
@@ -131,8 +127,8 @@ class TestArtifactLifecycleIntegration:
             outputs.append(output)
 
         # Verify artifact was registered with correct metadata
-        documents = doc_lifecycle.registry.list_documents()
-        story_docs = [doc for doc in documents if doc.doc_type == "story"]
+        documents = doc_lifecycle.registry.query_documents()
+        story_docs = [doc for doc in documents if doc.type.value == "story"]
         assert len(story_docs) == 1
 
         story_doc = story_docs[0]
@@ -160,9 +156,6 @@ class TestArtifactLifecycleIntegration:
         orchestrator.doc_lifecycle = doc_lifecycle
 
         # Mock ProcessExecutor
-        mock_executor = MagicMock()
-        mock_executor.execute_agent_task = AsyncMock()
-
         async def mock_execution(*args, **kwargs):
             # Simulate creating multiple files
             (docs_dir / "PRD.md").write_text("# PRD")
@@ -170,7 +163,8 @@ class TestArtifactLifecycleIntegration:
             yield "Creating documents..."
             yield "Documents created"
 
-        mock_executor.execute_agent_task.side_effect = mock_execution
+        mock_executor = MagicMock()
+        mock_executor.execute_agent_task = Mock(side_effect=lambda *args, **kwargs: mock_execution(*args, **kwargs))
         orchestrator.process_executor = mock_executor
 
         # Create workflow info
@@ -192,7 +186,7 @@ class TestArtifactLifecycleIntegration:
             outputs.append(output)
 
         # Query documents by type
-        all_docs = doc_lifecycle.registry.list_documents()
+        all_docs = doc_lifecycle.registry.query_documents()
         assert len(all_docs) >= 2
 
         # Query by author
@@ -225,16 +219,14 @@ class TestArtifactLifecycleIntegration:
         orchestrator.doc_lifecycle = mock_doc_lifecycle
 
         # Mock ProcessExecutor
-        mock_executor = MagicMock()
-        mock_executor.execute_agent_task = AsyncMock()
-
         async def mock_execution(*args, **kwargs):
             # Simulate creating a file
             (docs_dir / "PRD.md").write_text("# PRD")
             yield "Creating PRD..."
             yield "PRD created"
 
-        mock_executor.execute_agent_task.side_effect = mock_execution
+        mock_executor = MagicMock()
+        mock_executor.execute_agent_task = Mock(side_effect=lambda *args, **kwargs: mock_execution(*args, **kwargs))
         orchestrator.process_executor = mock_executor
 
         # Create workflow info
@@ -277,15 +269,13 @@ class TestArtifactLifecycleIntegration:
         orchestrator.doc_lifecycle = doc_lifecycle
 
         # Mock ProcessExecutor
-        mock_executor = MagicMock()
-        mock_executor.execute_agent_task = AsyncMock()
-
         async def mock_execution(*args, **kwargs):
             # Simulate creating a file
             (docs_dir / "PRD.md").write_text("# PRD")
             yield "Creating PRD..."
 
-        mock_executor.execute_agent_task.side_effect = mock_execution
+        mock_executor = MagicMock()
+        mock_executor.execute_agent_task = Mock(side_effect=lambda *args, **kwargs: mock_execution(*args, **kwargs))
         orchestrator.process_executor = mock_executor
 
         # Mock WorkflowExecutor to return specific variables
@@ -317,7 +307,7 @@ class TestArtifactLifecycleIntegration:
             outputs.append(output)
 
         # Verify variables were included in metadata
-        documents = doc_lifecycle.registry.list_documents()
+        documents = doc_lifecycle.registry.query_documents()
         assert len(documents) > 0
 
         doc = documents[0]
@@ -358,13 +348,15 @@ class TestArtifactLifecycleIntegration:
         ]
 
         for workflow_name, file_name, expected_doc_type, expected_author in test_cases:
-            # Mock execution to create file
-            async def mock_execution(*args, **kwargs):
-                file_path = docs_dir / file_name
-                file_path.write_text(f"# {file_name}")
-                yield f"Creating {file_name}..."
+            # Create a closure to capture file_name correctly
+            def make_mock_execution(fname):
+                async def mock_execution(*args, **kwargs):
+                    file_path = docs_dir / fname
+                    file_path.write_text(f"# {fname}")
+                    yield f"Creating {fname}..."
+                return mock_execution
 
-            mock_executor.execute_agent_task = AsyncMock(side_effect=mock_execution)
+            mock_executor.execute_agent_task = Mock(side_effect=lambda *args, fn=file_name, **kwargs: make_mock_execution(fn)(*args, **kwargs))
 
             # Create workflow info
             workflow_info = WorkflowInfo(
@@ -385,14 +377,14 @@ class TestArtifactLifecycleIntegration:
                 outputs.append(output)
 
         # Verify all documents were registered with correct types and authors
-        documents = doc_lifecycle.registry.list_documents()
+        documents = doc_lifecycle.registry.query_documents()
         assert len(documents) == len(test_cases)
 
         # Check each document type
         for workflow_name, file_name, expected_doc_type, expected_author in test_cases:
             matching_docs = [
                 doc for doc in documents
-                if doc.doc_type == expected_doc_type
+                if doc.type.value == expected_doc_type
                 and doc.author == expected_author
             ]
             assert len(matching_docs) >= 1, f"Expected document type {expected_doc_type} not found"
@@ -415,15 +407,13 @@ class TestArtifactLifecycleIntegration:
         orchestrator.doc_lifecycle = doc_lifecycle
 
         # Mock ProcessExecutor
-        mock_executor = MagicMock()
-        mock_executor.execute_agent_task = AsyncMock()
-
         async def mock_execution(*args, **kwargs):
             # Create test file
             (docs_dir / "PRD.md").write_text("# PRD Content")
             yield "Creating PRD..."
 
-        mock_executor.execute_agent_task.side_effect = mock_execution
+        mock_executor = MagicMock()
+        mock_executor.execute_agent_task = Mock(side_effect=lambda *args, **kwargs: mock_execution(*args, **kwargs))
         orchestrator.process_executor = mock_executor
 
         # Create workflow info

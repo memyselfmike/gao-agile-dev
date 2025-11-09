@@ -427,13 +427,16 @@ class TestChecklistDiscovery:
         assert isinstance(checklists, list)
         assert len(checklists) > 0
 
+        # list_checklists returns tuples of (name, source)
+        checklist_names = [name for name, source in checklists]
+
         # Should include known checklists
-        assert "testing/unit-test-standards" in checklists
-        assert "security/owasp-top-10" in checklists
-        assert "testing/base-testing-standards" in checklists
+        assert "testing/unit-test-standards" in checklist_names
+        assert "security/owasp-top-10" in checklist_names
+        assert "testing/base-testing-standards" in checklist_names
 
         # Should be sorted
-        assert checklists == sorted(checklists)
+        assert checklist_names == sorted(checklist_names)
 
     def test_list_checklists_unique(self, temp_checklist_dir, schema_path):
         """Test that list_checklists returns unique names."""
@@ -461,8 +464,11 @@ class TestChecklistDiscovery:
         loader = ChecklistLoader([dir1, dir2], schema_path)
         checklists = loader.list_checklists()
 
+        # list_checklists returns tuples of (name, source)
+        checklist_names = [name for name, source in checklists]
+
         # Should only appear once
-        assert checklists.count("test") == 1
+        assert checklist_names.count("test") == 1
 
     def test_list_checklists_nested(self, temp_checklist_dir, schema_path):
         """Test discovering checklists in nested directories."""
@@ -483,8 +489,11 @@ class TestChecklistDiscovery:
         loader = ChecklistLoader([temp_checklist_dir], schema_path)
         checklists = loader.list_checklists()
 
+        # list_checklists returns tuples of (name, source)
+        checklist_names = [name for name, source in checklists]
+
         # Should use forward slashes even on Windows
-        assert "category/subcategory/nested" in checklists
+        assert "category/subcategory/nested" in checklist_names
 
 
 class TestChecklistRendering:

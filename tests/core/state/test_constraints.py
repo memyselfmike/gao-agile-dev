@@ -18,6 +18,7 @@ import pytest
 from gao_dev.core.state.migrations.migration_001_create_state_schema import (
     Migration001,
 )
+from .conftest import safe_cleanup_db
 
 
 class TestConstraints:
@@ -34,8 +35,7 @@ class TestConstraints:
         yield db_path
 
         # Cleanup
-        if db_path.exists():
-            db_path.unlink()
+        safe_cleanup_db(db_path)
 
     def test_epic_unique_constraint(self, db):
         """Test UNIQUE constraint on epics.epic_num prevents duplicates."""

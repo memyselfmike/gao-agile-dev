@@ -40,11 +40,26 @@ env/
 # Testing
 .pytest_cache/
 .coverage
+coverage.json
 htmlcov/
 .tox/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+.ruff_cache/
+
+# Test artifacts in root (not in tests/ directory)
+/test_*.py
+/test_*.db
+/test_output.txt
+/*test*.db
+/PRD_test-*.md
+/gao_dev.db
+/gao_devschemas/
+/opencode.json
+/NUL
+/-p/
+/%USERPROFILE%/
 
 # BMAD Method reference (don't commit the full repo)
 BMAD-METHOD/
@@ -52,6 +67,10 @@ BMAD-METHOD/
 # Sandbox test projects (workspace, not source control)
 sandbox/projects/
 sandbox/benchmarks/*.yaml.bak
+
+# GAO-Dev runtime data (project-scoped, not committed)
+.gao-dev/
+.gao/
 
 # Environment variables
 .env

@@ -132,7 +132,7 @@ class TestOperationPerformance:
         sandbox.create_project(
             name="performance-test",
             description="Performance test project",
-            boilerplate_path=None
+            boilerplate_url=None
         )
 
         end_time = time.time()
@@ -171,7 +171,7 @@ class TestOperationPerformance:
         sandbox.create_project(
             name="boilerplate-test",
             description="Boilerplate test project",
-            boilerplate_path=sample_boilerplate
+            boilerplate_url=sample_boilerplate
         )
 
         end_time = time.time()
@@ -205,7 +205,7 @@ class TestOperationPerformance:
 
         # Create 10 projects
         for i in range(10):
-            sandbox.create_project(f"project-{i}", f"Project {i}", None)
+            sandbox.create_project(name=f"project-{i}", description=f"Project {i}")
 
         # Measure list time
         start_time = time.time()
@@ -240,7 +240,7 @@ class TestOperationPerformance:
         """
         # Given: Sandbox manager with project
         sandbox = SandboxManager(sandbox_root=sandbox_test_root)
-        sandbox.create_project("test-project", "Test", None)
+        sandbox.create_project(name="test-project", description="Test")
 
         # Measure get project time
         start_time = time.time()
@@ -326,7 +326,7 @@ class TestMemoryUsage:
         # Create sandbox and multiple projects
         sandbox = SandboxManager(sandbox_root=sandbox_test_root)
         for i in range(5):
-            sandbox.create_project(f"project-{i}", f"Project {i}", None)
+            sandbox.create_project(name=f"project-{i}", description=f"Project {i}")
 
         # Get memory usage
         current, peak = tracemalloc.get_traced_memory()
@@ -459,7 +459,7 @@ class TestStressPerformance:
         start_time = time.time()
 
         for i in range(50):
-            sandbox.create_project(f"stress-project-{i}", f"Project {i}", None)
+            sandbox.create_project(name=f"stress-project-{i}", description=f"Project {i}")
 
         end_time = time.time()
         duration = end_time - start_time

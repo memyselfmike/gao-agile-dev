@@ -17,6 +17,7 @@ from gao_dev.core.state.migrations import get_all_migrations
 from gao_dev.core.state.migrations.migration_001_create_state_schema import (
     Migration001,
 )
+from .conftest import safe_cleanup_db
 
 
 class TestMigrations:
@@ -29,8 +30,7 @@ class TestMigrations:
             db_path = Path(f.name)
         yield db_path
         # Cleanup
-        if db_path.exists():
-            db_path.unlink()
+        safe_cleanup_db(db_path)
 
     def test_migration_001_upgrade(self, temp_db):
         """Test Migration001 applies successfully."""

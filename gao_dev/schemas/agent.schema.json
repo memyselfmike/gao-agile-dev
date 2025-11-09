@@ -74,6 +74,35 @@
           },
           "uniqueItems": true,
           "description": "List of workflows this agent can execute"
+        },
+        "context_api": {
+          "type": "object",
+          "description": "Context API configuration for accessing project documents",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "available_documents": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              ]
+            },
+            "usage": {
+              "type": "string"
+            }
+          }
         }
       },
       "additionalProperties": false,

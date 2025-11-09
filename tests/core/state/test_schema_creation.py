@@ -19,6 +19,7 @@ import pytest
 from gao_dev.core.state.migrations.migration_001_create_state_schema import (
     Migration001,
 )
+from .conftest import safe_cleanup_db
 
 
 class TestSchemaCreation:
@@ -31,8 +32,7 @@ class TestSchemaCreation:
             db_path = Path(f.name)
         yield db_path
         # Cleanup
-        if db_path.exists():
-            db_path.unlink()
+        safe_cleanup_db(db_path)
 
     def test_schema_creation_success(self, temp_db):
         """Test schema creation completes successfully."""
