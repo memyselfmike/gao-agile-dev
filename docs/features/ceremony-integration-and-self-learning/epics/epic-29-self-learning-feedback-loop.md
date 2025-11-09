@@ -2,7 +2,7 @@
 
 **Epic ID**: epic-29
 **Feature**: Ceremony Integration & Self-Learning System
-**Duration**: 2 weeks (38 story points)
+**Duration**: 4 weeks (51 story points) - REVISED from 2 weeks (38 points)
 **Owner**: Amelia (Developer)
 **Status**: Planning
 **Dependencies**: Epic 28 (ceremony integration)
@@ -37,7 +37,7 @@ Enable GAO-Dev to learn from past work and improve workflow selection through a 
 
 ---
 
-## User Stories (7 stories, 38 points)
+## User Stories (7 stories, 51 points - REVISED from 38)
 
 ### Story 29.1: Learning Schema Enhancement
 **Points**: 3
@@ -79,7 +79,7 @@ Enhance learning_index table schema to track application metrics and create lear
 ---
 
 ### Story 29.2: LearningApplicationService
-**Points**: 8
+**Points**: 12 (REVISED from 8 - Complex scoring algorithm + transaction safety)
 **Owner**: Amelia
 **Status**: Pending
 
@@ -208,7 +208,7 @@ Brian.select_workflows_with_learning()
 ---
 
 ### Story 29.4: Workflow Adjustment Logic
-**Points**: 8
+**Points**: 12 (REVISED from 8 - Complex adjustment rules + dependency validation)
 **Owner**: Amelia
 **Status**: Pending
 
@@ -334,7 +334,7 @@ Result: Learning 42 excluded from future queries
 ---
 
 ### Story 29.7: Testing & Validation
-**Points**: 3
+**Points**: 8 (REVISED from 3 - Comprehensive test suite + E2E scenarios + benchmarks)
 **Owner**: Amelia
 **Status**: Pending
 

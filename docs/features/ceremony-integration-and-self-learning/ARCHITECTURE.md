@@ -130,6 +130,13 @@
 
 **Purpose**: Evaluate when ceremonies should trigger based on workflow state
 
+**Safety Mechanisms (C1, C9 Fixes)**:
+- Max 10 ceremonies per epic (prevents infinite loops)
+- 24-hour cooldowns for planning/retrospective, 12-hour for standup
+- 10-minute timeout per ceremony
+- Failure handling policies: ABORT, RETRY, CONTINUE, SKIP
+- Cycle detection to prevent ceremony → learning → more ceremonies loops
+
 **Class Diagram**:
 ```python
 class TriggerType(Enum):
@@ -159,19 +166,32 @@ class TriggerContext:
 
 class CeremonyTriggerEngine:
     """
-    Evaluates trigger conditions for ceremonies.
+    Evaluates trigger conditions for ceremonies with safety mechanisms.
 
     Methods:
         should_trigger_planning(context) -> bool
         should_trigger_standup(context) -> bool
         should_trigger_retrospective(context) -> bool
         evaluate_all_triggers(context) -> List[CeremonyType]
+        check_safety_limits(epic_num) -> bool  # C1 Fix
+        get_last_ceremony_time(epic_num, ceremony_type) -> Optional[datetime]  # C1 Fix
     """
+
+    # C1 Fix: Safety limits
+    MAX_CEREMONIES_PER_EPIC = 10
+    COOLDOWN_HOURS = {
+        "planning": 24,
+        "standup": 12,
+        "retrospective": 24
+    }
+    TIMEOUT_MINUTES = 10
 
     def __init__(self, db_path: Path):
         self.ceremony_service = CeremonyService(db_path)
         self.story_service = StoryStateService(db_path)
         self.epic_service = EpicStateService(db_path)
+        self.ceremony_counts = {}  # Track counts per epic
+        self.last_ceremony_times = {}  # Track last run times
 
     def should_trigger_planning(
         self,
@@ -288,23 +308,53 @@ class CeremonyTriggerEngine:
         context: TriggerContext
     ) -> List[CeremonyType]:
         """
-        Evaluate all trigger conditions and return ceremonies to run.
+        Evaluate all trigger conditions with safety checks (C1 Fix).
+
+        Safety checks:
+        1. Max ceremonies per epic limit
+        2. Cooldown periods
+        3. Cycle detection
 
         Returns:
             List of ceremony types that should trigger
         """
+        # C1 Fix: Check safety limits first
+        if not self._check_safety_limits(context.epic_num):
+            return []  # Hit safety limit
+
         ceremonies = []
 
         if self.should_trigger_planning(context):
-            ceremonies.append(CeremonyType.PLANNING)
+            if self._check_cooldown(context.epic_num, "planning"):
+                ceremonies.append(CeremonyType.PLANNING)
 
         if self.should_trigger_standup(context):
-            ceremonies.append(CeremonyType.STANDUP)
+            if self._check_cooldown(context.epic_num, "standup"):
+                ceremonies.append(CeremonyType.STANDUP)
 
         if self.should_trigger_retrospective(context):
-            ceremonies.append(CeremonyType.RETROSPECTIVE)
+            if self._check_cooldown(context.epic_num, "retrospective"):
+                ceremonies.append(CeremonyType.RETROSPECTIVE)
 
         return ceremonies
+
+    def _check_safety_limits(self, epic_num: int) -> bool:
+        """C1 Fix: Check if epic has hit ceremony limits."""
+        count = self.ceremony_counts.get(epic_num, 0)
+        return count < self.MAX_CEREMONIES_PER_EPIC
+
+    def _check_cooldown(self, epic_num: int, ceremony_type: str) -> bool:
+        """C1 Fix: Check if cooldown period has elapsed."""
+        key = (epic_num, ceremony_type)
+        last_run = self.last_ceremony_times.get(key)
+
+        if last_run is None:
+            return True  # Never run before
+
+        cooldown_hours = self.COOLDOWN_HOURS[ceremony_type]
+        elapsed = (datetime.now() - last_run).total_seconds() / 3600
+
+        return elapsed >= cooldown_hours
 ```
 
 **Integration Points**:
@@ -405,14 +455,17 @@ class LearningApplicationService:
         """
         Calculate relevance score for a learning.
 
-        Formula:
-        score = base_relevance
-                * success_rate
-                * confidence_score
-                * decay_factor
-                * context_similarity
+        Formula (ADDITIVE WEIGHTED - C2 Fix):
+        score = 0.30 * base_relevance
+              + 0.20 * success_rate
+              + 0.20 * confidence_score
+              + 0.15 * decay_factor
+              + 0.15 * context_similarity
 
-        Each factor is 0.0-1.0, so final score is 0.0-1.0
+        This prevents any single low factor from zeroing the entire score
+        (previous multiplicative formula was unstable).
+
+        Each factor is normalized to 0.0-1.0, final score is 0.0-1.0
         """
         # Base relevance (from learning itself)
         base = learning.get('relevance_score', 0.5)
@@ -431,7 +484,16 @@ class LearningApplicationService:
             learning, scale_level, project_type, context
         )
 
-        return base * success * confidence * decay * similarity
+        # ADDITIVE WEIGHTED FORMULA (C2 Fix)
+        score = (
+            0.30 * base +
+            0.20 * success +
+            0.20 * confidence +
+            0.15 * decay +
+            0.15 * similarity
+        )
+
+        return min(max(score, 0.0), 1.0)  # Clamp to [0.0, 1.0]
 
     def _calculate_decay(self, indexed_at: str) -> float:
         """
@@ -467,40 +529,66 @@ class LearningApplicationService:
         context: Dict
     ) -> float:
         """
-        Calculate context similarity score.
+        Calculate context similarity score (C11 Fix - Enhanced Logic).
 
         Compares:
-        - Scale level match
-        - Project type match
-        - Tag overlap
-        - Category relevance
+        - Scale level match (with adjacency bonus)
+        - Project type match (with category fallback)
+        - Tag overlap (Jaccard similarity)
+        - Category relevance (smart scoring)
+        - Temporal context (similar project phases)
         """
         score = 0.0
 
-        # Scale level match (30% weight)
+        # Scale level match (25% weight) - C11 Fix
         learning_scale = learning.get('metadata', {}).get('scale_level')
-        if learning_scale == scale_level.value:
-            score += 0.3
-        elif abs(learning_scale - scale_level.value) == 1:
-            score += 0.15  # Adjacent levels
+        if learning_scale is not None:
+            if learning_scale == scale_level.value:
+                score += 0.25  # Exact match
+            elif abs(learning_scale - scale_level.value) == 1:
+                score += 0.15  # Adjacent levels
+            elif abs(learning_scale - scale_level.value) == 2:
+                score += 0.05  # Near levels
+        else:
+            score += 0.1  # Unknown scale gets base score
 
-        # Project type match (20% weight)
+        # Project type match (20% weight) - C11 Fix
         learning_type = learning.get('metadata', {}).get('project_type')
         if learning_type == project_type:
-            score += 0.2
+            score += 0.20  # Exact match
+        elif learning_type in ['any', 'general']:
+            score += 0.15  # General learnings apply broadly
 
-        # Tag overlap (30% weight)
+        # Tag overlap (30% weight) - Jaccard similarity
         learning_tags = set(learning.get('tags', []))
         context_tags = set(context.get('tags', []))
         if learning_tags and context_tags:
             overlap = len(learning_tags & context_tags)
             total = len(learning_tags | context_tags)
-            score += 0.3 * (overlap / total)
+            score += 0.30 * (overlap / total)  # Jaccard index
+        elif not learning_tags:
+            score += 0.10  # Untagged learnings get small bonus
 
-        # Category relevance (20% weight)
+        # Category relevance (15% weight) - Smart scoring
         learning_category = learning.get('category')
-        if learning_category in ['quality', 'architectural', 'process']:
-            score += 0.2  # Always somewhat relevant
+        category_scores = {
+            'quality': 0.15,      # Always relevant
+            'architectural': 0.15,
+            'process': 0.12,
+            'technical': 0.10,
+            'communication': 0.08,
+            'tooling': 0.05
+        }
+        score += category_scores.get(learning_category, 0.05)
+
+        # Temporal context (10% weight) - Similar phases
+        learning_phase = learning.get('metadata', {}).get('phase')
+        context_phase = context.get('phase')
+        if learning_phase and context_phase:
+            if learning_phase == context_phase:
+                score += 0.10
+            elif learning_phase in ['any', 'all_phases']:
+                score += 0.05
 
         return min(score, 1.0)
 
@@ -963,6 +1051,56 @@ CREATE INDEX idx_learning_applications_applied_at
     ON learning_applications(applied_at);
 ```
 
+### Migration Rollback Strategy (C6 Fix)
+
+**Rollback Capability**: Full rollback supported via table rebuild
+
+**Strategy**:
+```python
+def rollback_migration_006(conn):
+    """
+    Rollback migration 006 by rebuilding tables without new columns.
+
+    Steps:
+    1. Create backup tables with old schema
+    2. Copy data (excluding new columns)
+    3. Drop new tables
+    4. Rename backup tables to original names
+    5. Recreate original indexes
+    6. Git revert migration commit
+    """
+    # Step 1: Create backup with old schema
+    conn.execute("""
+        CREATE TABLE learning_index_backup AS
+        SELECT id, epic_num, story_num, category, content,
+               relevance_score, tags, indexed_at, metadata, active
+        FROM learning_index
+    """)
+
+    # Step 2: Drop new table
+    conn.execute("DROP TABLE learning_applications")
+
+    # Step 3: Drop current table and rename backup
+    conn.execute("DROP TABLE learning_index")
+    conn.execute("ALTER TABLE learning_index_backup RENAME TO learning_index")
+
+    # Step 4: Recreate original indexes
+    conn.execute("""
+        CREATE INDEX idx_learning_index_category
+        ON learning_index(category)
+    """)
+    # ... other indexes ...
+
+    # Step 5: Git revert
+    # Handled by GitMigrationManager.rollback()
+```
+
+**Validation After Rollback**:
+- Verify all learning_index records preserved
+- Confirm indexes recreated
+- Test learning search queries
+- Check no orphaned references
+
 ---
 
 ## Ceremony Trigger System
@@ -990,8 +1128,10 @@ CREATE INDEX idx_learning_applications_applied_at
         ↓
 7. For each ceremony:
    - WorkflowCoordinator invokes CeremonyOrchestrator
+   - C3 Fix: Wrap in GitIntegratedStateManager.transaction()
    - Ceremony executes (transcript, action items, learnings)
-   - Ceremony artifacts committed to git
+   - C3 Fix: All artifacts committed atomically (file + DB + git)
+   - C9 Fix: On failure, apply failure policy (ABORT/RETRY/CONTINUE/SKIP)
         ↓
 8. Continue workflow execution
 ```
@@ -1242,24 +1382,380 @@ doc_mgr.update_global_docs(
 - Simple boolean logic
 
 **Learning Relevance Scoring**: <50ms for 50 candidates
-- Simple arithmetic scoring
+- Simple arithmetic scoring (additive formula)
 - No external API calls
 - Database indexed queries
 
-**Context Augmentation**: <100ms
-- Top 5 learnings only
-- Template rendering cached
-- Minimal string manipulation
+**Context Augmentation**: <500ms (C5 Fix - Realistic Target)
+- Top 5 learnings retrieval: ~50ms
+- Template rendering: ~100ms
+- Brian context building: ~200ms
+- Network RTT for 19K tokens: ~150ms
+- Previous <100ms target was unrealistic
 
 **Document Structure Init**: <500ms
 - File system operations
 - Template instantiation
 - Git commit (batched)
 
+**Ceremony Execution**: 30-120 seconds (user-dependent)
+- C1 Fix: 10-minute timeout enforced
+- Includes LLM API calls and user interaction
+- Atomic git transaction: <1 second
+
 **Overall Overhead**: <2% of workflow execution time
-- Ceremonies: Optional/conditional
-- Learning queries: Once per project
+- Ceremonies: Optional/conditional (max 10 per epic)
+- Learning queries: Once per project (~50ms)
 - Document ops: Batched with git
+- Safety mechanisms: Negligible (<5ms)
+
+---
+
+## Ceremony Failure Handling (C9 Fix)
+
+**Failure Policy Enum**:
+```python
+class CeremonyFailurePolicy(Enum):
+    ABORT = "abort"       # Stop epic execution, escalate to user
+    RETRY = "retry"       # Retry ceremony up to 3 times
+    CONTINUE = "continue" # Log error, continue without ceremony
+    SKIP = "skip"         # Skip this ceremony, mark as skipped
+```
+
+**Policy Assignment by Ceremony Type**:
+```yaml
+failure_policies:
+  planning:
+    policy: ABORT           # Planning failure is critical
+    max_retries: 2
+    escalate: true
+
+  standup:
+    policy: CONTINUE        # Standup failure is non-critical
+    max_retries: 1
+    escalate: false
+
+  retrospective:
+    policy: RETRY           # Retry retro, then SKIP if fails
+    max_retries: 3
+    fallback: SKIP
+    escalate: false
+```
+
+**Failure Handling Flow**:
+```python
+def execute_ceremony_with_policy(ceremony_type, context):
+    """Execute ceremony with failure handling."""
+    policy = FAILURE_POLICIES[ceremony_type]
+
+    for attempt in range(policy.max_retries + 1):
+        try:
+            # C3 Fix: Wrap in transaction
+            with git_state_manager.transaction() as txn:
+                result = ceremony_orchestrator.hold_ceremony(
+                    ceremony_type=ceremony_type,
+                    context=context,
+                    timeout=CeremonyTriggerEngine.TIMEOUT_MINUTES * 60
+                )
+                txn.commit()  # Atomic: files + DB + git
+                return result
+
+        except CeremonyTimeout:
+            if attempt < policy.max_retries:
+                log.warning(f"Ceremony {ceremony_type} timeout, retry {attempt+1}")
+                continue
+            else:
+                return _handle_failure(policy, "timeout")
+
+        except Exception as e:
+            if attempt < policy.max_retries:
+                log.error(f"Ceremony {ceremony_type} error: {e}, retry {attempt+1}")
+                continue
+            else:
+                return _handle_failure(policy, str(e))
+
+def _handle_failure(policy, reason):
+    """Apply failure policy."""
+    if policy.policy == CeremonyFailurePolicy.ABORT:
+        raise CeremonyExecutionError(f"Critical ceremony failed: {reason}")
+
+    elif policy.policy == CeremonyFailurePolicy.CONTINUE:
+        log.warning(f"Ceremony failed but continuing: {reason}")
+        return CeremonyResult(success=False, skipped=False)
+
+    elif policy.policy == CeremonyFailurePolicy.SKIP:
+        log.info(f"Ceremony skipped due to failure: {reason}")
+        return CeremonyResult(success=False, skipped=True)
+
+    elif policy.fallback:
+        log.warning(f"Applying fallback policy: {policy.fallback}")
+        return _handle_failure(PolicyConfig(policy=policy.fallback), reason)
+```
+
+**Error Categories**:
+- **Timeout**: Ceremony exceeds 10-minute limit
+- **LLM Failure**: API errors, rate limits
+- **User Cancellation**: User exits ceremony
+- **Validation Failure**: Ceremony output invalid
+- **Transaction Failure**: Git/DB commit fails (auto-rollback)
+
+---
+
+## Transaction Boundaries (C3 Fix)
+
+**Atomic Ceremony Execution**:
+
+All ceremony operations wrapped in `GitIntegratedStateManager.transaction()` for atomicity:
+
+```python
+# Before (C3 blocker - no atomicity)
+def hold_retrospective(epic_num):
+    transcript_path = save_transcript(transcript)  # File write
+    action_items = extract_action_items(transcript)  # DB insert
+    learnings = extract_learnings(transcript)  # DB insert
+    git_manager.commit("Add retrospective")  # Git commit
+    # PROBLEM: If any step fails, partial state committed!
+
+# After (C3 fix - atomic transaction)
+def hold_retrospective(epic_num):
+    with git_state_manager.transaction() as txn:
+        # All operations atomic - rollback on any failure
+        transcript_path = save_transcript(transcript)
+        action_items = create_action_items_in_db(action_items)
+        learnings = index_learnings_in_db(learnings)
+
+        # Transaction automatically commits: file + DB + git
+        txn.commit()
+        # If ANY operation fails, ALL operations roll back
+```
+
+**Transaction Lifecycle**:
+1. **Begin**: Create git branch `ceremony-temp-{timestamp}`
+2. **Execute**: File writes, DB inserts, state updates
+3. **Validate**: Check all operations succeeded
+4. **Commit**: Atomic git commit with all changes
+5. **Rollback** (on failure): Revert files, rollback DB, delete branch
+
+**Benefits**:
+- No partial ceremony artifacts
+- No orphaned learnings
+- No inconsistent state
+- Automatic cleanup on failure
+
+---
+
+## Learning Maintenance (C10 Fix)
+
+**Decay Maintenance Job**:
+
+Scheduled job to update learning decay factors and deactivate stale learnings.
+
+```python
+class LearningMaintenanceJob:
+    """
+    Periodic maintenance of learning index.
+
+    Runs: Daily at 02:00 UTC
+    Duration: <5 seconds for 1000 learnings
+    """
+
+    def __init__(self, db_path: Path):
+        self.learning_service = LearningIndexService(db_path)
+        self.app_service = LearningApplicationService(db_path)
+
+    def run_maintenance(self):
+        """
+        Run all maintenance tasks.
+
+        Tasks:
+        1. Update decay factors for all learnings
+        2. Deactivate learnings with confidence < 0.2
+        3. Supersede outdated learnings
+        4. Prune learning_applications older than 1 year
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            # Task 1: Update decay factors
+            self._update_decay_factors(conn)
+
+            # Task 2: Deactivate low-confidence learnings
+            self._deactivate_low_confidence(conn)
+
+            # Task 3: Supersede outdated learnings
+            self._supersede_outdated(conn)
+
+            # Task 4: Prune old applications
+            self._prune_old_applications(conn)
+
+    def _update_decay_factors(self, conn):
+        """Update decay_factor for all active learnings."""
+        conn.execute("""
+            UPDATE learning_index
+            SET decay_factor = CASE
+                WHEN julianday('now') - julianday(indexed_at) <= 30 THEN 1.0
+                WHEN julianday('now') - julianday(indexed_at) <= 90 THEN
+                    1.0 - ((julianday('now') - julianday(indexed_at) - 30) / 60 * 0.2)
+                WHEN julianday('now') - julianday(indexed_at) <= 180 THEN
+                    0.8 - ((julianday('now') - julianday(indexed_at) - 90) / 90 * 0.2)
+                ELSE 0.5
+            END
+            WHERE active = 1
+        """)
+
+    def _deactivate_low_confidence(self, conn):
+        """
+        Deactivate learnings with confidence < 0.2.
+
+        Criteria:
+        - confidence_score < 0.2
+        - success_rate < 0.3
+        - application_count >= 5 (enough data)
+        """
+        conn.execute("""
+            UPDATE learning_index
+            SET active = 0,
+                metadata = json_set(
+                    metadata,
+                    '$.deactivation_reason',
+                    'Low confidence after ' || application_count || ' applications'
+                )
+            WHERE active = 1
+              AND confidence_score < 0.2
+              AND success_rate < 0.3
+              AND application_count >= 5
+        """)
+
+    def _supersede_outdated(self, conn):
+        """
+        Mark older learnings as superseded by newer ones.
+
+        Logic:
+        - Same category + similar tags
+        - Newer learning has higher confidence
+        - Older learning gets marked superseded
+        """
+        conn.execute("""
+            UPDATE learning_index AS old
+            SET active = 0,
+                metadata = json_set(
+                    metadata,
+                    '$.superseded_by',
+                    (SELECT id FROM learning_index AS new
+                     WHERE new.category = old.category
+                       AND new.id != old.id
+                       AND new.confidence_score > old.confidence_score + 0.2
+                       AND new.indexed_at > old.indexed_at
+                       AND new.active = 1
+                     LIMIT 1)
+                )
+            WHERE active = 1
+              AND EXISTS (
+                SELECT 1 FROM learning_index AS new
+                WHERE new.category = old.category
+                  AND new.id != old.id
+                  AND new.confidence_score > old.confidence_score + 0.2
+                  AND new.indexed_at > old.indexed_at
+                  AND new.active = 1
+              )
+        """)
+
+    def _prune_old_applications(self, conn):
+        """Delete learning_applications older than 1 year."""
+        conn.execute("""
+            DELETE FROM learning_applications
+            WHERE julianday('now') - julianday(applied_at) > 365
+        """)
+```
+
+**Scheduling**:
+- Triggered by: `gao-dev learning maintain` CLI command
+- Automated: Daily cron job (if daemon mode enabled)
+- On-demand: After major epic completion
+
+---
+
+## Feature Flags
+
+**Configuration** (`config/feature_flags.yaml`):
+```yaml
+feature_flags:
+  # Epic 28: Ceremony Integration
+  enable_ceremony_integration:
+    enabled: true
+    description: "Enable automatic ceremony triggers in workflows"
+    rollout_percentage: 100  # Gradual rollout: 0-100
+
+  enable_planning_ceremony:
+    enabled: true
+    parent: enable_ceremony_integration
+
+  enable_standup_ceremony:
+    enabled: true
+    parent: enable_ceremony_integration
+
+  enable_retrospective_ceremony:
+    enabled: true
+    parent: enable_ceremony_integration
+
+  # Epic 29: Self-Learning
+  enable_self_learning:
+    enabled: true
+    description: "Enable learning feedback loop"
+    rollout_percentage: 100
+
+  enable_learning_application:
+    enabled: true
+    parent: enable_self_learning
+
+  enable_workflow_adjustment:
+    enabled: true
+    parent: enable_self_learning
+
+  enable_learning_decay:
+    enabled: true
+    parent: enable_self_learning
+
+  # Safety Features
+  enforce_ceremony_limits:
+    enabled: true
+    description: "Enforce max 10 ceremonies per epic (C1 fix)"
+
+  enforce_ceremony_cooldowns:
+    enabled: true
+    description: "Enforce cooldown periods between ceremonies (C1 fix)"
+
+  enable_ceremony_timeouts:
+    enabled: true
+    description: "Enforce 10-minute ceremony timeout (C1 fix)"
+
+  # Development Flags
+  debug_ceremony_triggers:
+    enabled: false
+    description: "Log all ceremony trigger evaluations"
+
+  debug_learning_scoring:
+    enabled: false
+    description: "Log learning relevance score calculations"
+```
+
+**Usage**:
+```python
+from gao_dev.core.feature_flags import FeatureFlags
+
+flags = FeatureFlags.load()
+
+# Check if feature enabled
+if flags.is_enabled("enable_ceremony_integration"):
+    ceremonies = trigger_engine.evaluate_all_triggers(context)
+
+# Check with rollout percentage
+if flags.is_enabled_for_project("enable_self_learning", project_id):
+    learnings = learning_app.get_relevant_learnings(...)
+
+# Nested flags (parent must be enabled)
+if flags.is_enabled("enable_planning_ceremony"):
+    # This checks both enable_planning_ceremony AND enable_ceremony_integration
+    hold_planning()
+```
 
 ---
 

@@ -268,42 +268,78 @@ GAO-Dev has built exceptional infrastructure for multi-agent ceremonies, learnin
 
 ---
 
-## Timeline
+## Timeline (REVISED - 8 Weeks Realistic)
 
-### Phase 1: Ceremony Integration (Weeks 1-2)
+**Original Estimate**: 4 weeks (68 points)
+**Revised Estimate**: 8 weeks (86 points) - Updated after critical review
 
-**Week 1**:
-- Story 28.1: Ceremony workflow types (Mon-Tue)
-- Story 28.2: Enhanced workflow selector (Wed-Fri)
+**Rationale for Revision**:
+- Story 28.6 added (DocumentStructureManager) +5 points
+- Story 28.4 complexity underestimated: 5→8 points
+- Story 29.2 complexity underestimated: 8→12 points
+- Story 29.4 complexity underestimated: 8→12 points
+- Story 29.7 scope expanded: 3→8 points
+- Buffer added for integration testing and bug fixes
 
-**Week 2**:
-- Story 28.3: CeremonyTriggerEngine (Mon-Wed)
-- Story 28.4: Orchestrator integration (Thu)
-- Story 28.5: CLI & testing (Fri)
+### Phase 1: Ceremony Integration (Weeks 1-3) - Epic 28
 
-**Milestone**: Ceremonies auto-trigger in workflows
+**Week 1**: Foundation
+- Story 28.1: Ceremony workflow types (Mon-Wed, 5 points)
+- Story 28.2: Enhanced workflow selector (Thu-Fri + Mon, 8 points)
 
-### Phase 2: Self-Learning Loop (Weeks 3-4)
+**Week 2**: Core Engine
+- Story 28.2: Enhanced workflow selector completion (Tue)
+- Story 28.3: CeremonyTriggerEngine (Wed-Fri, 8 points)
+- Story 28.6: DocumentStructureManager (Mon-Tue, 5 points)
 
-**Week 3**:
-- Story 29.1: Learning schema enhancement (Mon)
-- Story 29.2: LearningApplicationService (Tue-Thu)
-- Story 29.3: Brian context augmentation (Fri)
+**Week 3**: Integration & Testing
+- Story 28.4: Orchestrator integration (Wed-Fri, 8 points revised from 5)
+- Story 28.5: CLI & testing (Mon-Tue, 4 points)
+- Buffer: Integration testing and bug fixes (Wed-Fri)
 
-**Week 4**:
-- Story 29.4: Workflow adjustment logic (Mon-Wed)
-- Story 29.5: Action item integration (Thu)
-- Story 29.6: Learning decay & confidence (Fri)
-- Story 29.7: Testing & validation (Fri)
+**Milestone Week 3**: Ceremonies auto-trigger in workflows + comprehensive test coverage
 
-**Milestone**: Self-learning loop operational
+### Phase 2: Self-Learning Loop (Weeks 4-7) - Epic 29
 
-### Total Duration
+**Week 4**: Schema & Core Service
+- Story 29.1: Learning schema enhancement (Mon-Tue, 3 points)
+- Story 29.2: LearningApplicationService (Wed-Fri + Mon, 12 points revised from 8)
 
-**4 weeks** (68 story points total)
-- Epic 28: 1.5 weeks (30 points)
-- Epic 29: 2 weeks (38 points)
-- Testing & validation: 0.5 weeks (included in epics)
+**Week 5**: Application & Adjustment
+- Story 29.2: LearningApplicationService completion (Tue)
+- Story 29.3: Brian context augmentation (Wed-Fri, 8 points)
+- Story 29.4: Workflow adjustment logic (Mon, 12 points start)
+
+**Week 6**: Integration Services
+- Story 29.4: Workflow adjustment logic completion (Tue-Thu, 12 points revised from 8)
+- Story 29.5: Action item integration (Fri-Mon, 5 points)
+
+**Week 7**: Maintenance & Testing
+- Story 29.6: Learning decay & confidence (Tue-Wed, 3 points)
+- Story 29.7: Comprehensive testing & validation (Thu-Fri, 8 points revised from 3)
+
+**Milestone Week 7**: Self-learning loop operational with high confidence
+
+### Phase 3: Validation & Refinement (Week 8)
+
+**Week 8**: End-to-End Validation
+- Run 3 benchmark projects with full ceremony integration
+- Measure performance overhead (<2% target)
+- Validate learning application accuracy
+- Bug fixes and polish
+- Documentation updates
+- Prepare for production release
+
+**Milestone Week 8**: Feature complete, validated, ready for production
+
+### Total Duration (REVISED)
+
+**8 weeks** (86 story points total) - REVISED from 4 weeks (68 points)
+
+**Breakdown**:
+- Epic 28: 3 weeks (35 points, revised from 30)
+- Epic 29: 4 weeks (51 points, revised from 38)
+- Validation: 1 week (buffer and E2E testing)
 
 ---
 
@@ -403,6 +439,75 @@ This feature establishes clear patterns for all work types:
 - Cache learning queries
 - Limit to top 5 learnings
 - Async loading where possible
+
+### Risk 6: Migration Failures & Rollback Issues
+
+**Impact**: High (data loss)
+**Probability**: Low (with C6 fix)
+
+**Mitigation (C6 Fix Applied)**:
+- Full rollback capability via table rebuild
+- 4-phase migration: tables → epics → stories → validate
+- Git checkpoint after each phase
+- Automatic rollback on any phase failure
+- Migration branch isolation (no impact on main)
+- Comprehensive validation after migration
+- Dry-run mode for testing
+
+### Risk 7: Dependency Cycle in Workflow Adjustments
+
+**Impact**: High (system hang)
+**Probability**: Medium
+
+**Mitigation (C7 Fix Applied)**:
+- Dependency validation using NetworkX
+- Cycle detection before workflow execution
+- Maximum adjustment depth limit (3 levels)
+- Clear error messages identifying cycles
+- Manual override for complex cases
+- Comprehensive tests for dependency scenarios
+
+### Risk 8: Ceremony Infinite Loops
+
+**Impact**: Critical (resource exhaustion)
+**Probability**: Medium (without mitigation)
+
+**Mitigation (C1 & C9 Fixes Applied)**:
+- Max 10 ceremonies per epic (hard limit)
+- Cooldown periods: 24h (planning/retro), 12h (standup)
+- 10-minute timeout per ceremony
+- Cycle detection: prevent ceremony → learning → more ceremonies
+- Failure policies: ABORT (planning), RETRY (retro), CONTINUE (standup)
+- Comprehensive logging and alerting
+- Circuit breaker pattern for repeated failures
+
+### Risk 9: LLM Ceremony Quality Issues
+
+**Impact**: Medium (low-quality learnings)
+**Probability**: Medium
+
+**Mitigation**:
+- Structured ceremony prompts with examples
+- Validation of ceremony outputs (schema checks)
+- Minimum quality thresholds for learnings
+- Manual review option for critical learnings
+- Feedback loop: track learning success rates
+- Simulated ceremonies in tests to validate prompts
+- Gradual rollout with monitoring
+
+### Risk 10: Multi-Project Test Infrastructure Complexity
+
+**Impact**: Medium (test flakiness)
+**Probability**: Medium
+
+**Mitigation (C12 Fix Applied)**:
+- Shared test fixtures for multi-project scenarios
+- Project isolation (separate .gao-dev directories)
+- Cleanup between tests (pytest fixtures)
+- Deterministic learning ordering in tests
+- Mock time-based triggers for reproducibility
+- Comprehensive test documentation
+- CI/CD integration for continuous validation
 
 ---
 

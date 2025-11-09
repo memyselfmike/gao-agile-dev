@@ -2,7 +2,7 @@
 
 **Epic ID**: epic-28
 **Feature**: Ceremony Integration & Self-Learning System
-**Duration**: 1.5 weeks (30 story points)
+**Duration**: 2 weeks (35 story points) - Updated from 1.5 weeks (C4 Fix)
 **Owner**: Amelia (Developer)
 **Status**: Planning
 **Dependencies**: Epics 22-27 (ceremony infrastructure complete)
@@ -38,7 +38,7 @@ Integrate ceremonies into workflow orchestration so they trigger automatically b
 
 ---
 
-## User Stories (5 stories, 30 points)
+## User Stories (6 stories, 35 points - Updated C4 Fix)
 
 ### Story 28.1: Ceremony Workflow Types
 **Points**: 5
@@ -175,7 +175,7 @@ Level 4:
 ---
 
 ### Story 28.4: Orchestrator Integration
-**Points**: 5
+**Points**: 8 (REVISED from 5 - C4 Fix: Transaction boundaries + failure handling)
 **Owner**: Amelia
 **Status**: Pending
 
@@ -269,24 +269,170 @@ Git commit: docs(epic-5): retrospective ceremony complete
 
 ---
 
+### Story 28.6: DocumentStructureManager (C4 Fix - Missing Component)
+**Points**: 5
+**Owner**: Amelia
+**Status**: Pending
+
+**Description**:
+Create `DocumentStructureManager` service to systematically initialize and maintain document structure based on work type and scale level. This component was missing from the original plan but is required by Epic 29.5 (Action Item Integration).
+
+**Acceptance Criteria**:
+- [ ] Create `gao_dev/core/services/document_structure_manager.py` (~300 LOC)
+- [ ] Implement `initialize_feature_folder(feature_name, scale_level)`:
+  - Level 0 (Chore): No folder created
+  - Level 1 (Bug): Optional `docs/bugs/<bug-id>.md`
+  - Level 2 (Small Feature): `docs/features/<name>/` with PRD, stories/, CHANGELOG.md
+  - Level 3 (Medium Feature): + ARCHITECTURE.md, epics/, retrospectives/
+  - Level 4 (Greenfield): + ceremonies/, MIGRATION_GUIDE.md
+- [ ] Implement `update_global_docs(feature_name, epic_num, update_type)`:
+  - Update `docs/PRD.md` with feature status
+  - Update `docs/CHANGELOG.md` with epic completion
+  - Link to feature folder
+- [ ] Document template system:
+  - PRD template (lightweight vs. full)
+  - ARCHITECTURE template
+  - CHANGELOG template
+- [ ] Integration with `DocumentLifecycleManager`:
+  - Auto-register all created documents
+  - Track document metadata (feature, scale_level)
+- [ ] Git commit after folder initialization
+- [ ] 8 unit tests:
+  - Folder initialization for each scale level (5 tests)
+  - Global doc updates (2 tests)
+  - Template rendering (1 test)
+
+**Technical Details**:
+```python
+class DocumentStructureManager:
+    """
+    Manages document structure based on work type and scale level.
+
+    Responsibilities:
+    - Initialize feature folders with correct structure
+    - Create document templates (PRD, ARCHITECTURE, etc.)
+    - Update global docs (PRD.md, CHANGELOG.md)
+    - Enforce structure consistency
+    """
+
+    def __init__(
+        self,
+        project_root: Path,
+        doc_lifecycle: DocumentLifecycleManager,
+        git_manager: GitManager
+    ):
+        self.project_root = project_root
+        self.doc_lifecycle = doc_lifecycle
+        self.git = git_manager
+
+    def initialize_feature_folder(
+        self,
+        feature_name: str,
+        scale_level: ScaleLevel
+    ) -> Optional[Path]:
+        """
+        Initialize feature folder based on scale level.
+
+        Returns:
+            Path to created folder, or None for Level 0
+        """
+        if scale_level == ScaleLevel.LEVEL_0_CHORE:
+            return None
+
+        # Level 1: Optional bug report
+        if scale_level == ScaleLevel.LEVEL_1_BUG_FIX:
+            bug_path = self.project_root / "docs" / "bugs"
+            bug_path.mkdir(parents=True, exist_ok=True)
+            return bug_path
+
+        # Level 2+: Feature folder
+        feature_path = self.project_root / "docs" / "features" / feature_name
+        feature_path.mkdir(parents=True, exist_ok=True)
+
+        # Create structure based on level
+        if scale_level >= ScaleLevel.LEVEL_2_SMALL_FEATURE:
+            self._create_file(
+                feature_path / "PRD.md",
+                self._prd_template(feature_name, "lightweight")
+            )
+            (feature_path / "stories").mkdir(exist_ok=True)
+            (feature_path / "CHANGELOG.md").write_text("# Changelog\n\n## Unreleased\n")
+
+        if scale_level >= ScaleLevel.LEVEL_3_MEDIUM_FEATURE:
+            self._create_file(
+                feature_path / "ARCHITECTURE.md",
+                self._architecture_template(feature_name)
+            )
+            (feature_path / "epics").mkdir(exist_ok=True)
+            (feature_path / "retrospectives").mkdir(exist_ok=True)
+
+        if scale_level == ScaleLevel.LEVEL_4_GREENFIELD:
+            (feature_path / "ceremonies").mkdir(exist_ok=True)
+            (feature_path / "MIGRATION_GUIDE.md").write_text("# Migration Guide\n\nTBD\n")
+
+        # Register with document lifecycle
+        self.doc_lifecycle.register_document(
+            path=feature_path / "PRD.md",
+            doc_type=DocumentType.PRD,
+            metadata={
+                "feature": feature_name,
+                "scale_level": scale_level.value
+            }
+        )
+
+        # Git commit
+        self.git.add_all()
+        self.git.commit(
+            f"docs({feature_name}): initialize feature folder (Level {scale_level.value})"
+        )
+
+        return feature_path
+
+    def update_global_docs(
+        self,
+        feature_name: str,
+        epic_num: int,
+        update_type: str  # 'planned', 'architected', 'completed'
+    ) -> None:
+        """Update global PRD and ARCHITECTURE docs."""
+        if update_type == 'planned':
+            self._update_global_prd(feature_name, epic_num, status="Planned")
+        elif update_type == 'architected':
+            self._update_global_architecture(feature_name, epic_num)
+        elif update_type == 'completed':
+            self._update_global_prd(feature_name, epic_num, status="Completed")
+            self._update_changelog(feature_name, epic_num)
+```
+
+**Dependencies**:
+- DocumentLifecycleManager (Epic 20)
+- GitManager (Epic 23)
+- Template rendering system
+
+**Required By**:
+- Story 29.5: Action Item Integration (depends on DocumentStructureManager)
+
+---
+
 ## Epic Deliverables
 
-### Code (1,000+ LOC)
+### Code (1,300+ LOC - Updated C4 Fix)
 1. `gao_dev/workflows/5-ceremonies/` - 3 ceremony workflows (~150 LOC YAML)
 2. `gao_dev/core/services/ceremony_trigger_engine.py` - Trigger evaluation (~350 LOC)
 3. `gao_dev/methodologies/adaptive_agile/workflow_selector.py` - Enhanced (~200 LOC added)
 4. `gao_dev/core/services/workflow_coordinator.py` - Integration updates (~100 LOC)
 5. `gao_dev/cli/ceremony_commands.py` - CLI commands (~200 LOC)
+6. `gao_dev/core/services/document_structure_manager.py` - Document structure (~300 LOC) **NEW - C4 Fix**
 
-### Tests (500+ LOC)
-- Unit tests: 38 tests
+### Tests (550+ LOC - Updated C4 Fix)
+- Unit tests: 46 tests (+8 for DocumentStructureManager)
 - Integration tests: 8 tests
 - E2E tests: 3 scenarios
 - CLI tests: 5 tests
 
 ### Documentation
 - Epic document (this file)
-- 5 story files
+- 6 story files (updated from 5 - C4 Fix)
 - CLI help text
 - ARCHITECTURE.md updates
 
@@ -320,9 +466,10 @@ Git commit: docs(epic-5): retrospective ceremony complete
 
 ## Testing Strategy
 
-### Unit Tests (38 tests)
+### Unit Tests (46 tests - Updated C4 Fix)
 - CeremonyTriggerEngine: 15 tests
 - Enhanced WorkflowSelector: 10 tests
+- DocumentStructureManager: 8 tests **NEW - C4 Fix**
 - Workflow loading: 5 tests
 - CLI commands: 5 tests
 - Utility functions: 3 tests
@@ -349,10 +496,11 @@ Git commit: docs(epic-5): retrospective ceremony complete
 Epic 28 is **COMPLETE** when:
 
 1. **Ceremony Integration**:
-   - [ ] All 5 stories completed and tested
+   - [ ] All 6 stories completed and tested (updated from 5 - C4 Fix)
    - [ ] Ceremonies trigger automatically in Level 2-4 workflows
    - [ ] CLI commands work for manual invocation
-   - [ ] 54+ tests passing (38 unit + 8 integration + 5 CLI + 3 E2E)
+   - [ ] DocumentStructureManager creates correct folder structures **NEW - C4 Fix**
+   - [ ] 62+ tests passing (46 unit + 8 integration + 5 CLI + 3 E2E) - updated from 54
 
 2. **Validation**:
    - [ ] Benchmark run with Level 2 feature shows ceremonies triggering
@@ -376,4 +524,4 @@ After Epic 28 completion → **Epic 29: Self-Learning Feedback Loop**
 
 **Status**: Ready for Story Breakdown and Implementation
 **Start Date**: TBD
-**Target Completion**: TBD + 1.5 weeks
+**Target Completion**: TBD + 2 weeks (updated from 1.5 weeks - C4 Fix)
