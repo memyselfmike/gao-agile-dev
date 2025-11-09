@@ -7,7 +7,6 @@ batch operations, and performance requirements.
 
 import json
 import sqlite3
-import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -1004,10 +1003,3 @@ class TestEdgeCases:
             "size": 12345,
             "format": "png",
         }
-
-
-@pytest.fixture
-def tmp_path():
-    """Provide a temporary directory for test databases."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        yield Path(tmpdir)

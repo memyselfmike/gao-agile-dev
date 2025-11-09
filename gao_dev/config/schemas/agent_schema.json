@@ -7,7 +7,7 @@
   "properties": {
     "agent": {
       "type": "object",
-      "required": ["metadata", "persona", "tools", "configuration"],
+      "required": ["metadata", "tools"],
       "properties": {
         "metadata": {
           "type": "object",
@@ -24,8 +24,13 @@
             "version": {
               "type": "string",
               "description": "Configuration version (semantic versioning)"
+            },
+            "icon": {
+              "type": "string",
+              "description": "Optional emoji icon for the agent"
             }
-          }
+          },
+          "additionalProperties": false
         },
         "persona": {
           "type": "object",
@@ -58,9 +63,49 @@
           },
           "description": "List of tool names available to the agent (e.g., 'Read', 'Write', 'Bash')"
         },
+        "persona_file": {
+          "type": "string",
+          "description": "Path to markdown file containing agent persona (alternative to inline persona)"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of agent capabilities (e.g., 'implementation', 'code-review')"
+        },
+        "workflows": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of workflow names this agent can execute"
+        },
+        "model": {
+          "type": "string",
+          "description": "Model name at root level (for simpler config). Either this or configuration.model required."
+        },
+        "context_api": {
+          "type": "object",
+          "description": "Context API configuration for accessing project documents",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "string"
+            },
+            "available_documents": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "usage": {
+              "type": "string"
+            }
+          }
+        },
         "configuration": {
           "type": "object",
-          "required": ["model", "max_tokens", "temperature"],
           "properties": {
             "provider": {
               "type": "string",
@@ -89,7 +134,8 @@
             }
           }
         }
-      }
+      },
+      "additionalProperties": true
     }
   }
 }

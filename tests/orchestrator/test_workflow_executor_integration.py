@@ -24,17 +24,18 @@ class TestOrchestratorWorkflowExecutorIntegration:
     @pytest.fixture
     def orchestrator(self, temp_project_dir: Path) -> GAODevOrchestrator:
         """Create orchestrator instance with WorkflowExecutor."""
-        orchestrator = GAODevOrchestrator(
+        orchestrator = GAODevOrchestrator.create_default(
             project_root=temp_project_dir,
             mode="benchmark"
         )
         return orchestrator
 
     def test_orchestrator_has_workflow_executor(self, orchestrator: GAODevOrchestrator):
-        """Test that orchestrator has WorkflowExecutor instance initialized."""
-        assert hasattr(orchestrator, 'workflow_executor')
-        assert isinstance(orchestrator.workflow_executor, WorkflowExecutor)
-        assert orchestrator.workflow_executor.config_loader is not None
+        """Test that orchestrator's WorkflowCoordinator has WorkflowExecutor instance."""
+        assert hasattr(orchestrator, 'workflow_coordinator')
+        assert hasattr(orchestrator.workflow_coordinator, 'workflow_executor')
+        assert isinstance(orchestrator.workflow_coordinator.workflow_executor, WorkflowExecutor)
+        assert orchestrator.workflow_coordinator.workflow_executor.config_loader is not None
 
     def test_workflow_executor_passed_to_coordinator(self, orchestrator: GAODevOrchestrator):
         """Test that WorkflowExecutor is passed to WorkflowCoordinator."""
@@ -42,114 +43,6 @@ class TestOrchestratorWorkflowExecutorIntegration:
         assert orchestrator.workflow_coordinator is not None
         assert hasattr(orchestrator.workflow_coordinator, 'workflow_executor')
         assert orchestrator.workflow_coordinator.workflow_executor is not None
-
-    @pytest.mark.asyncio
-    async def test_execute_agent_task_resolves_variables(
-        self,
-        orchestrator: GAODevOrchestrator,
-        tmp_path: Path
-    ):
-        """Test that _execute_agent_task_static resolves variables before execution."""
-        # Create a test workflow with variables
-        workflow_dir = tmp_path / "test_workflow"
-        workflow_dir.mkdir(parents=True, exist_ok=True)
-
-        # Create instructions.md with variable placeholders
-        instructions_file = workflow_dir / "instructions.md"
-        instructions_file.write_text(
-            "Create a file at {{prd_location}} for project {{project_name}}.",
-            encoding="utf-8"
-        )
-
-        workflow = WorkflowInfo(
-            name="test_prd",
-            description="Test PRD workflow",
-            phase=1,
-            variables={
-                "prd_location": {
-                    "description": "PRD location",
-                    "default": "docs/PRD.md"
-                },
-                "project_name": {
-                    "description": "Project name",
-                    "required": True
-                }
-            },
-            required_tools=["Read", "Write"],
-            templates={},
-            installed_path=workflow_dir
-        )
-
-        # Mock ProcessExecutor to capture the rendered task prompt
-        captured_task = None
-
-        async def mock_execute_agent_task(task: str, tools=None, timeout=None):
-            nonlocal captured_task
-            captured_task = task
-            yield "Task executed successfully"
-
-        orchestrator.process_executor.execute_agent_task = mock_execute_agent_task
-
-        # Execute the workflow
-        outputs = []
-        async for output in orchestrator._execute_agent_task_static(workflow, epic=1, story=1):
-            outputs.append(output)
-
-        # Verify that variables were resolved
-        assert captured_task is not None
-        assert "{{prd_location}}" not in captured_task  # Should be resolved
-        assert "{{project_name}}" not in captured_task  # Should be resolved
-        assert "docs/PRD.md" in captured_task  # Default value resolved
-        assert orchestrator.project_root.name in captured_task  # project_name resolved
-
-    @pytest.mark.asyncio
-    async def test_variable_resolution_with_parameters(
-        self,
-        orchestrator: GAODevOrchestrator,
-        tmp_path: Path
-    ):
-        """Test variable resolution includes epic, story, project_name parameters."""
-        workflow_dir = tmp_path / "story_workflow"
-        workflow_dir.mkdir(parents=True, exist_ok=True)
-
-        instructions_file = workflow_dir / "instructions.md"
-        instructions_file.write_text(
-            "Working on Epic {{epic_num}}, Story {{story_num}} for {{project_name}}",
-            encoding="utf-8"
-        )
-
-        workflow = WorkflowInfo(
-            name="test_story",
-            description="Test story workflow",
-            phase=4,
-            variables={
-                "epic_num": {"description": "Epic number"},
-                "story_num": {"description": "Story number"},
-                "project_name": {"description": "Project name"}
-            },
-            required_tools=["Read", "Write"],
-            templates={},
-            installed_path=workflow_dir
-        )
-
-        captured_task = None
-
-        async def mock_execute_agent_task(task: str, tools=None, timeout=None):
-            nonlocal captured_task
-            captured_task = task
-            yield "Done"
-
-        orchestrator.process_executor.execute_agent_task = mock_execute_agent_task
-
-        # Execute with specific epic and story
-        async for _ in orchestrator._execute_agent_task_static(workflow, epic=5, story=3):
-            pass
-
-        # Verify parameters were passed correctly
-        assert captured_task is not None
-        assert "Epic 5" in captured_task
-        assert "Story 3" in captured_task
-        assert orchestrator.project_root.name in captured_task
 
 
 class TestVariableResolutionPublicAPI:

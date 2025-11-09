@@ -65,7 +65,7 @@ class TestOrchestratorSandboxIntegration:
         sandbox = SandboxManager(sandbox_root=sandbox_test_root)
 
         # Create sandbox project
-        sandbox.create_project("test-project", "Test", None)
+        sandbox.create_project(name="test-project", description="Test")
         project_path = sandbox.get_project_path("test-project")
 
         # Then: Orchestrator can work with sandbox paths
@@ -135,7 +135,7 @@ class TestStateConsistency:
         """
         # Given: Sandbox manager
         sandbox1 = SandboxManager(sandbox_root=sandbox_test_root)
-        sandbox1.create_project("test-project", "Test", None)
+        sandbox1.create_project(name="test-project", description="Test")
 
         # When: Create new manager instance
         sandbox2 = SandboxManager(sandbox_root=sandbox_test_root)
@@ -183,7 +183,7 @@ class TestErrorPropagation:
 
         # When/Then: Invalid operations raise appropriate errors
         with pytest.raises(ValueError):
-            sandbox.create_project("invalid name", "Test", None)
+            sandbox.create_project(name="invalid name", description="Test")
 
         with pytest.raises(ValueError):
             sandbox.get_project("nonexistent")
@@ -303,7 +303,7 @@ class TestResourceCleanup:
         """
         # Given: Sandbox with project
         sandbox = SandboxManager(sandbox_root=sandbox_test_root)
-        sandbox.create_project("test-project", "Test", sample_boilerplate)
+        sandbox.create_project(name="test-project", description="Test", boilerplate_url=sample_boilerplate)
 
         project_path = sandbox.get_project_path("test-project")
         assert project_path.exists()

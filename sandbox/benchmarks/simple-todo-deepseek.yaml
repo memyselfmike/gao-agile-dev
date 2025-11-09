@@ -1,0 +1,78 @@
+# Simple Todo App Benchmark - DeepSeek R1 Test
+#
+# Testing OpenCode + Ollama + deepseek-r1:8b integration
+# This is a simplified version to test local model capabilities
+
+benchmark:
+  name: "simple-todo-deepseek"
+  description: "Simple todo app for testing OpenCode + deepseek-r1 local model"
+  version: "1.0.0"
+
+  # Simple prompt suitable for local model
+  initial_prompt: |
+    Create a minimal but functional todo application.
+
+    Requirements:
+    - Backend: Python with FastAPI
+    - Simple in-memory storage (no database required)
+    - REST API with these endpoints:
+      * POST /todos - Create a todo
+      * GET /todos - List all todos
+      * GET /todos/{id} - Get a specific todo
+      * PUT /todos/{id} - Update a todo
+      * DELETE /todos/{id} - Delete a todo
+    - Todo model: id, title, description, completed (boolean), created_at
+    - Type hints on all functions
+    - Basic error handling (404 for not found, 422 for validation)
+    - Tests for all endpoints using pytest
+    - Simple README.md with usage instructions
+
+    Keep it minimal and focused. No authentication, no database, no frontend needed.
+    Just a working REST API that can be tested with curl or Postman.
+
+    SUCCESS CRITERIA: A working API with passing tests that can be run with:
+    - uvicorn main:app --reload (to start the server)
+    - pytest (to run tests)
+
+  # Scale level - small/simple feature
+  scale_level: 1
+
+  # Expected duration for local model (may be slower than cloud models)
+  expected_duration_minutes: 45
+
+  # Timeout - give it more time for local model
+  timeout_seconds: 3600  # 1 hour
+
+  # Success criteria (relaxed for testing)
+  success_criteria:
+    min_test_coverage: 70.0
+    max_manual_interventions: 0
+    max_errors: 5  # Allow some errors for testing
+
+    required_features:
+      - "main.py OR app.py OR api.py"
+      - "test_*.py OR *_test.py"
+      - "README.md"
+
+    quality_gates:
+      tests_must_pass: true
+      build_must_succeed: false  # No build needed for Python
+      min_commits: 1
+
+  # Metadata
+  metadata:
+    project_type: "greenfield"
+    complexity: "simple"
+    language: "python"
+    framework: "fastapi"
+    model: "deepseek-r1:8b"
+    provider: "opencode-sdk"
+    test_mode: "local-model-test"
+
+    tags:
+      - opencode
+      - ollama
+      - deepseek-r1
+      - local-model
+      - simple-todo
+      - fastapi

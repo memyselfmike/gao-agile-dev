@@ -14,6 +14,7 @@ import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import Mock, MagicMock
+from datetime import timedelta
 
 from gao_dev.core.meta_prompts.resolvers.context_resolver import ContextResolver
 from gao_dev.core.context.context_cache import ContextCache
@@ -37,7 +38,7 @@ class TestContextResolver:
     @pytest.fixture
     def cache(self):
         """Create cache instance."""
-        return ContextCache(ttl_seconds=300)
+        return ContextCache(ttl=timedelta(seconds=300))
 
     @pytest.fixture
     def tracker(self, temp_db):
@@ -446,5 +447,5 @@ Some notes
         assert result2 == result1
 
         # Verify cache was used
-        stats = cache.get_stats()
+        stats = cache.get_statistics()
         assert stats['hits'] == 1

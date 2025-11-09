@@ -1,3 +1,3 @@
- ok we're ready to implement epic 16 in document-lifecycle-manager you shouild follow our pattern of    
- using the task tool to call the dev agent and then qa agent in turn to implent and check each story implementation workinn through each 
-story in the    sequence until the epic is complete. we should pull a feature branch and ensure we commit each story atomicly.
+ ok we're ready to implement epic 22 onwards in docs/features/git-integrated-hybrid-wisdom/ you shouild follow our pattern of    
+ using the task tool to call the dev agent and then qa agent in turn to implent and check each story implementation working through each 
+story in the sequence until the epic is complete. we should pull a feature branch and ensure we commit each story atomicly. and we must run our test suite across all relevent tests to ensure no regression during the implementation. once you have compelted epic 22 continue to the next epic until all epics in this project are complete. e sure to check all documentation between epics to ensure alignment and focus.

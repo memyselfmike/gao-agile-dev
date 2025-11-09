@@ -18,6 +18,7 @@ import pytest
 from gao_dev.core.state.migrations.migration_001_create_state_schema import (
     Migration001,
 )
+from .conftest import safe_cleanup_db
 
 
 class TestTriggers:
@@ -34,8 +35,7 @@ class TestTriggers:
         yield db_path
 
         # Cleanup
-        if db_path.exists():
-            db_path.unlink()
+        safe_cleanup_db(db_path)
 
     def test_epic_updated_at_trigger(self, db):
         """Test updated_at timestamp auto-updated on epic UPDATE."""

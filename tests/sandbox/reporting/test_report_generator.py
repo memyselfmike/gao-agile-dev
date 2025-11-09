@@ -11,8 +11,8 @@ from gao_dev.sandbox.reporting.report_generator import (
     TemplateNotFoundError,
     ChangeDirection,
 )
+from gao_dev.sandbox.models import BenchmarkRun
 from gao_dev.sandbox.metrics.models import (
-    BenchmarkRun,
     PerformanceMetrics,
     QualityMetrics,
     WorkflowMetrics,

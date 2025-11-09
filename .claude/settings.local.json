@@ -13,7 +13,17 @@
       "Bash(dir \"C:\\Projects\\gao-agile-dev\\gao_dev\" /B)",
       "Bash(python:*)",
       "Bash(git add:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(pytest:*)",
+      "Bash(pip install:*)",
+      "Bash(tee:*)",
+      "Bash(findstr:*)",
+      "Bash(timeout 10 python -m pytest:*)",
+      "Bash(timeout 120 python -m pytest:*)",
+      "Bash(timeout 180 python -m pytest:*)",
+      "Bash(dir \"C:\\Projects\\gao-agile-dev\\docs\\analysis\" /B)",
+      "Bash(dir \"docs\\analysis\" /B 2)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []

@@ -68,9 +68,10 @@ class TestCoreLibraryValidation:
 
     def test_checklists_have_required_fields(self, loader, checklists_dir):
         """Test that all checklists have required fields."""
-        checklist_names = loader.list_checklists()
+        checklists = loader.list_checklists()
 
-        for name in checklist_names:
+        # list_checklists returns tuples of (name, source)
+        for name, source in checklists:
             checklist = loader.load_checklist(name)
 
             # Required fields
@@ -89,7 +90,9 @@ class TestCoreLibraryCategories:
     def test_testing_checklists(self, loader):
         """Test that testing category has expected checklists."""
         all_checklists = loader.list_checklists()
-        testing_checklists = [c for c in all_checklists if c.startswith("testing/")]
+        # list_checklists returns tuples of (name, source)
+        checklist_names = [name for name, source in all_checklists]
+        testing_checklists = [c for c in checklist_names if c.startswith("testing/")]
 
         # Should have 4 testing checklists
         assert len(testing_checklists) == 4, f"Expected 4 testing checklists, found {len(testing_checklists)}"
@@ -107,7 +110,9 @@ class TestCoreLibraryCategories:
     def test_code_quality_checklists(self, loader):
         """Test that code-quality category has expected checklists."""
         all_checklists = loader.list_checklists()
-        code_quality_checklists = [c for c in all_checklists if c.startswith("code-quality/")]
+        # list_checklists returns tuples of (name, source)
+        checklist_names = [name for name, source in all_checklists]
+        code_quality_checklists = [c for c in checklist_names if c.startswith("code-quality/")]
 
         # Should have 5 code-quality checklists
         assert len(code_quality_checklists) == 5, f"Expected 5 code-quality checklists, found {len(code_quality_checklists)}"
@@ -126,7 +131,9 @@ class TestCoreLibraryCategories:
     def test_security_checklists(self, loader):
         """Test that security category has expected checklists."""
         all_checklists = loader.list_checklists()
-        security_checklists = [c for c in all_checklists if c.startswith("security/")]
+        # list_checklists returns tuples of (name, source)
+        checklist_names = [name for name, source in all_checklists]
+        security_checklists = [c for c in checklist_names if c.startswith("security/")]
 
         # Should have 4 security checklists
         assert len(security_checklists) == 4, f"Expected 4 security checklists, found {len(security_checklists)}"
@@ -144,7 +151,9 @@ class TestCoreLibraryCategories:
     def test_deployment_checklists(self, loader):
         """Test that deployment category has expected checklists."""
         all_checklists = loader.list_checklists()
-        deployment_checklists = [c for c in all_checklists if c.startswith("deployment/")]
+        # list_checklists returns tuples of (name, source)
+        checklist_names = [name for name, source in all_checklists]
+        deployment_checklists = [c for c in checklist_names if c.startswith("deployment/")]
 
         # Should have 4 deployment checklists
         assert len(deployment_checklists) == 4, f"Expected 4 deployment checklists, found {len(deployment_checklists)}"
@@ -162,7 +171,9 @@ class TestCoreLibraryCategories:
     def test_operations_checklists(self, loader):
         """Test that operations category has expected checklists."""
         all_checklists = loader.list_checklists()
-        operations_checklists = [c for c in all_checklists if c.startswith("operations/")]
+        # list_checklists returns tuples of (name, source)
+        checklist_names = [name for name, source in all_checklists]
+        operations_checklists = [c for c in checklist_names if c.startswith("operations/")]
 
         # Should have 4 operations checklists
         assert len(operations_checklists) == 4, f"Expected 4 operations checklists, found {len(operations_checklists)}"
@@ -180,7 +191,9 @@ class TestCoreLibraryCategories:
     def test_general_checklists(self, loader):
         """Test that general category has expected checklists."""
         all_checklists = loader.list_checklists()
-        general_checklists = [c for c in all_checklists if c.startswith("general/")]
+        # list_checklists returns tuples of (name, source)
+        checklist_names = [name for name, source in all_checklists]
+        general_checklists = [c for c in checklist_names if c.startswith("general/")]
 
         # Should have 4 general checklists
         assert len(general_checklists) == 4, f"Expected 4 general checklists, found {len(general_checklists)}"
@@ -248,7 +261,8 @@ class TestChecklistContent:
         """Test that checklists have 5-15 items (focused, not overwhelming)."""
         all_checklists = loader.list_checklists()
 
-        for name in all_checklists:
+        # list_checklists returns tuples of (name, source)
+        for name, source in all_checklists:
             checklist = loader.load_checklist(name)
             item_count = len(checklist.items)
 
@@ -259,7 +273,8 @@ class TestChecklistContent:
         """Test that checklists use severity levels appropriately."""
         all_checklists = loader.list_checklists()
 
-        for name in all_checklists:
+        # list_checklists returns tuples of (name, source)
+        for name, source in all_checklists:
             checklist = loader.load_checklist(name)
 
             severity_counts = {"critical": 0, "high": 0, "medium": 0, "low": 0}
@@ -275,7 +290,8 @@ class TestChecklistContent:
         """Test that all critical items have help_text."""
         all_checklists = loader.list_checklists()
 
-        for name in all_checklists:
+        # list_checklists returns tuples of (name, source)
+        for name, source in all_checklists:
             checklist = loader.load_checklist(name)
 
             for item in checklist.items:
@@ -302,7 +318,8 @@ class TestChecklistContent:
         """Test that metadata fields are populated."""
         all_checklists = loader.list_checklists()
 
-        for name in all_checklists:
+        # list_checklists returns tuples of (name, source)
+        for name, source in all_checklists:
             checklist = loader.load_checklist(name)
 
             # Should have metadata
@@ -329,7 +346,8 @@ class TestPerformance:
         start_time = time.time()
 
         all_checklists = loader.list_checklists()
-        for name in all_checklists:
+        # list_checklists returns tuples of (name, source)
+        for name, source in all_checklists:
             loader.load_checklist(name)
 
         elapsed_time = time.time() - start_time
@@ -357,7 +375,8 @@ class TestChecklistUsability:
         """Test that checklists have descriptions."""
         all_checklists = loader.list_checklists()
 
-        for name in all_checklists:
+        # list_checklists returns tuples of (name, source)
+        for name, source in all_checklists:
             checklist = loader.load_checklist(name)
             assert checklist.description, f"{name}: missing description"
 
@@ -365,7 +384,8 @@ class TestChecklistUsability:
         """Test that item IDs follow kebab-case convention."""
         all_checklists = loader.list_checklists()
 
-        for name in all_checklists:
+        # list_checklists returns tuples of (name, source)
+        for name, source in all_checklists:
             checklist = loader.load_checklist(name)
 
             for item in checklist.items:
@@ -376,7 +396,8 @@ class TestChecklistUsability:
         """Test that there are no duplicate item IDs within a checklist."""
         all_checklists = loader.list_checklists()
 
-        for name in all_checklists:
+        # list_checklists returns tuples of (name, source)
+        for name, source in all_checklists:
             checklist = loader.load_checklist(name)
 
             item_ids = [item.id for item in checklist.items]
@@ -388,7 +409,9 @@ class TestChecklistUsability:
         """Test that checklists can be rendered to markdown."""
         all_checklists = loader.list_checklists()
 
-        for name in all_checklists[:5]:  # Test a few
+        # list_checklists returns tuples of (name, source)
+        # Test a few
+        for name, source in all_checklists[:5]:
             checklist = loader.load_checklist(name)
             markdown = loader.render_checklist(checklist)
 

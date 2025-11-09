@@ -10,7 +10,7 @@ from gao_dev.orchestrator import GAODevOrchestrator
 @pytest.fixture
 def orchestrator_cli(tmp_path):
     """Create orchestrator in CLI mode."""
-    return GAODevOrchestrator(
+    return GAODevOrchestrator.create_default(
         project_root=tmp_path,
         api_key="test-key",
         mode="cli"
@@ -20,7 +20,7 @@ def orchestrator_cli(tmp_path):
 @pytest.fixture
 def orchestrator_benchmark(tmp_path):
     """Create orchestrator in benchmark mode."""
-    return GAODevOrchestrator(
+    return GAODevOrchestrator.create_default(
         project_root=tmp_path,
         api_key="test-key",
         mode="benchmark"
@@ -30,7 +30,7 @@ def orchestrator_benchmark(tmp_path):
 @pytest.fixture
 def orchestrator_api(tmp_path):
     """Create orchestrator in API mode."""
-    return GAODevOrchestrator(
+    return GAODevOrchestrator.create_default(
         project_root=tmp_path,
         api_key="test-key",
         mode="api"
@@ -40,15 +40,15 @@ def orchestrator_api(tmp_path):
 def test_orchestrator_mode_detection(tmp_path):
     """Test that orchestrator correctly sets execution mode."""
     # CLI mode (default)
-    cli_orch = GAODevOrchestrator(project_root=tmp_path)
+    cli_orch = GAODevOrchestrator.create_default(project_root=tmp_path)
     assert cli_orch.mode == "cli"
 
     # Benchmark mode
-    bench_orch = GAODevOrchestrator(project_root=tmp_path, mode="benchmark")
+    bench_orch = GAODevOrchestrator.create_default(project_root=tmp_path, mode="benchmark")
     assert bench_orch.mode == "benchmark"
 
     # API mode
-    api_orch = GAODevOrchestrator(project_root=tmp_path, mode="api")
+    api_orch = GAODevOrchestrator.create_default(project_root=tmp_path, mode="api")
     assert api_orch.mode == "api"
 
 

@@ -32,7 +32,7 @@ class TestOrchestratorLifecycle:
     def test_orchestrator_initializes_lifecycle(self, project_dir):
         """Test that orchestrator initializes document lifecycle."""
         # Create orchestrator
-        orchestrator = GAODevOrchestrator(project_root=project_dir)
+        orchestrator = GAODevOrchestrator.create_default(project_root=project_dir)
 
         try:
             # Verify document lifecycle initialized
@@ -50,7 +50,7 @@ class TestOrchestratorLifecycle:
 
     def test_workflow_coordinator_has_doc_manager(self, project_dir):
         """Test that workflow coordinator receives document manager."""
-        orchestrator = GAODevOrchestrator(project_root=project_dir)
+        orchestrator = GAODevOrchestrator.create_default(project_root=project_dir)
 
         try:
             # Verify workflow_coordinator has doc_manager
@@ -62,16 +62,13 @@ class TestOrchestratorLifecycle:
                 orchestrator.doc_lifecycle.registry.close()
 
     def test_get_document_manager(self, project_dir):
-        """Test get_document_manager method."""
-        orchestrator = GAODevOrchestrator(project_root=project_dir)
+        """Test doc_lifecycle property (replaces get_document_manager method)."""
+        orchestrator = GAODevOrchestrator.create_default(project_root=project_dir)
 
         try:
-            doc_manager = orchestrator.get_document_manager()
+            doc_manager = orchestrator.doc_lifecycle
             assert doc_manager is not None
             assert doc_manager.project_root == project_dir
-
-            # Verify it's the same instance
-            assert doc_manager == orchestrator.doc_lifecycle
         finally:
             self._cleanup_orchestrator(orchestrator)
 
@@ -83,8 +80,8 @@ class TestOrchestratorLifecycle:
         project2.mkdir()
 
         # Create two orchestrators
-        orch1 = GAODevOrchestrator(project_root=project1)
-        orch2 = GAODevOrchestrator(project_root=project2)
+        orch1 = GAODevOrchestrator.create_default(project_root=project1)
+        orch2 = GAODevOrchestrator.create_default(project_root=project2)
 
         try:
             # Verify isolated
@@ -111,7 +108,7 @@ class TestOrchestratorLifecycle:
         """Test orchestrator with default project root uses current directory."""
         # Create orchestrator without project_root
         # Note: This will create .gao-dev in current directory
-        orchestrator = GAODevOrchestrator(project_root=Path.cwd())
+        orchestrator = GAODevOrchestrator.create_default(project_root=Path.cwd())
 
         try:
             assert orchestrator.project_root == Path.cwd()
@@ -127,7 +124,7 @@ class TestOrchestratorLifecycle:
         invalid_path.touch()  # Create file, not directory
 
         # Should not crash, but doc_lifecycle will be None
-        orchestrator = GAODevOrchestrator(project_root=invalid_path)
+        orchestrator = GAODevOrchestrator.create_default(project_root=invalid_path)
 
         # Orchestrator should still be created
         assert orchestrator is not None
@@ -136,9 +133,6 @@ class TestOrchestratorLifecycle:
         # But doc_lifecycle should be None due to initialization failure
         assert orchestrator.doc_lifecycle is None
 
-        # get_document_manager should return None
-        assert orchestrator.get_document_manager() is None
-
     def test_orchestrator_with_existing_gao_dev(self, project_dir):
         """Test orchestrator with existing .gao-dev directory."""
         # Pre-create .gao-dev directory
@@ -146,7 +140,7 @@ class TestOrchestratorLifecycle:
         gao_dev_dir.mkdir(parents=True, exist_ok=True)
 
         # Create orchestrator
-        orchestrator = GAODevOrchestrator(project_root=project_dir)
+        orchestrator = GAODevOrchestrator.create_default(project_root=project_dir)
 
         try:
             # Should initialize successfully
@@ -157,7 +151,7 @@ class TestOrchestratorLifecycle:
 
     def test_document_lifecycle_project_paths(self, project_dir):
         """Test that document lifecycle uses correct project paths."""
-        orchestrator = GAODevOrchestrator(project_root=project_dir)
+        orchestrator = GAODevOrchestrator.create_default(project_root=project_dir)
 
         try:
             # Verify paths
@@ -181,7 +175,7 @@ class TestOrchestratorLifecycle:
         assert not ProjectDocumentLifecycle.is_initialized(project_dir)
 
         # Create orchestrator
-        orchestrator = GAODevOrchestrator(project_root=project_dir)
+        orchestrator = GAODevOrchestrator.create_default(project_root=project_dir)
 
         try:
             # After creating orchestrator
@@ -192,7 +186,7 @@ class TestOrchestratorLifecycle:
 
     def test_workflow_coordinator_doc_manager_consistency(self, project_dir):
         """Test that workflow coordinator's doc_manager stays consistent."""
-        orchestrator = GAODevOrchestrator(project_root=project_dir)
+        orchestrator = GAODevOrchestrator.create_default(project_root=project_dir)
 
         try:
             # Verify initial state
@@ -219,7 +213,7 @@ class TestOrchestratorLifecycle:
         project_dir.mkdir()
 
         # Create orchestrator as benchmark would
-        orchestrator = GAODevOrchestrator(project_root=project_dir)
+        orchestrator = GAODevOrchestrator.create_default(project_root=project_dir)
 
         try:
             # Verify lifecycle is initialized in the correct location

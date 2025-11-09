@@ -15,9 +15,16 @@ from gao_dev.core.state.state_tracker import StateTracker
 
 
 @pytest.fixture
-def db_path(tmp_path):
+def db_path(tmp_path, monkeypatch):
     """Create temporary database with schema."""
-    db_file = tmp_path / "gao-dev-state.db"
+    db_file = tmp_path / "gao_dev.db"
+
+    # Set database path via environment variable
+    monkeypatch.setenv("GAO_DEV_DB_PATH", str(db_file))
+
+    # Reset the singleton to pick up new environment variable
+    from gao_dev.core.config import DatabaseConfig
+    DatabaseConfig.reset_default()
 
     # Create schema
     conn = sqlite3.connect(str(db_file))
@@ -279,10 +286,14 @@ class TestInitCommand:
         """Test init command creates database."""
         monkeypatch.chdir(tmp_path)
 
+        # Reset config to pick up current directory
+        from gao_dev.core.config import DatabaseConfig
+        DatabaseConfig.reset_default()
+
         result = runner.invoke(state, ["init"])
         assert result.exit_code == 0
 
-        db_path = tmp_path / "gao-dev-state.db"
+        db_path = tmp_path / "gao_dev.db"
         assert db_path.exists()
 
     def test_init_with_existing_database(self, runner, db_path, monkeypatch):
@@ -297,6 +308,7 @@ class TestInitCommand:
         """Test init command with --force flag."""
         monkeypatch.chdir(db_path.parent)
 
+        # Config is already set by db_path fixture, so force should work
         result = runner.invoke(state, ["init", "--force"])
         assert result.exit_code == 0
 

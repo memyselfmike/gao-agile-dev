@@ -30,11 +30,10 @@ def mock_workflow_info(tmp_path):
     return WorkflowInfo(
         name="test-workflow",
         description="Test workflow",
-        installed_path=str(workflow_dir),
-        workflow_type="task",
-        phase="implementation",
-        tools=["Read", "Write"],
-        agents=["Amelia"],
+        installed_path=workflow_dir,  # Path object, not string
+        phase=4,  # Integer phase (implementation phase)
+        required_tools=["Read", "Write"],
+        tags=["task", "implementation", "amelia"],  # Use tags for categorization
     )
 
 

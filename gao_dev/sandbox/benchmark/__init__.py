@@ -57,6 +57,11 @@ from .timeout import (
     TimeoutStatus,
     TimeoutContext,
 )
+from ..benchmark_loader import (
+    BenchmarkError,
+    load_benchmark,
+    validate_benchmark_file,
+)
 
 __all__ = [
     "BenchmarkConfig",
@@ -96,4 +101,7 @@ __all__ = [
     "TimeoutInfo",
     "TimeoutStatus",
     "TimeoutContext",
+    "BenchmarkError",
+    "load_benchmark",
+    "validate_benchmark_file",
 ]
