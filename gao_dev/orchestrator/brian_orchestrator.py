@@ -28,6 +28,8 @@ from ..core.providers.exceptions import (
     AnalysisTimeoutError,
     InvalidModelError,
 )
+from ..lifecycle.exceptions import WorkflowDependencyCycleError
+from ..methodologies.adaptive_agile.workflow_adjuster import WorkflowAdjuster
 from .models import (
     ScaleLevel,
     ProjectType,
@@ -54,7 +56,8 @@ class BrianOrchestrator:
         brian_persona_path: Optional[Path] = None,
         project_root: Optional[Path] = None,
         model: Optional[str] = None,
-        learning_service: Optional[LearningApplicationService] = None
+        learning_service: Optional[LearningApplicationService] = None,
+        workflow_adjuster: Optional[WorkflowAdjuster] = None
     ):
         """
         Initialize Brian Orchestrator.
@@ -66,11 +69,13 @@ class BrianOrchestrator:
             project_root: Project root for PromptLoader (defaults to gao_dev parent)
             model: Model to use for analysis (defaults to deepseek-r1 from YAML or env)
             learning_service: Optional LearningApplicationService for context enrichment
+            workflow_adjuster: Optional WorkflowAdjuster for adjusting workflows based on learnings
         """
         self.workflow_registry = workflow_registry
         self.analysis_service = analysis_service
         self.brian_persona_path = brian_persona_path
         self.learning_service = learning_service
+        self.workflow_adjuster = workflow_adjuster
         self.logger = logger.bind(component="brian_orchestrator", agent="Brian")
 
         # Initialize PromptLoader
@@ -180,22 +185,25 @@ class BrianOrchestrator:
     async def select_workflows_with_learning(
         self,
         user_prompt: str,
-        force_scale_level: Optional[ScaleLevel] = None
+        force_scale_level: Optional[ScaleLevel] = None,
+        epic_num: Optional[int] = None
     ) -> WorkflowSequence:
         """
         Select workflows with learning-enriched context (Epic 29 integration).
 
         This method extends the standard workflow selection by:
         1. Analyzing complexity (existing)
-        2. Building enriched context with learnings (NEW)
-        3. Selecting workflows with enriched context (existing)
+        2. Building enriched context with learnings (Story 29.3)
+        3. Selecting base workflows (existing)
+        4. Adjusting workflows based on learnings (Story 29.4 - NEW)
 
         Args:
             user_prompt: User's initial request
             force_scale_level: Optional override for scale level
+            epic_num: Optional epic number for tracking adjustments
 
         Returns:
-            WorkflowSequence with selected workflows
+            WorkflowSequence with selected and adjusted workflows
         """
         self.logger.info(
             "select_workflows_with_learning_started",
@@ -209,18 +217,30 @@ class BrianOrchestrator:
         if force_scale_level:
             analysis.scale_level = force_scale_level
 
-        # Phase 2: Build enriched context with learnings (NEW)
+        # Phase 2: Build enriched context with learnings (Story 29.3)
         learning_context = self._build_context_with_learnings(
             scale_level=analysis.scale_level,
             project_type=analysis.project_type.value,
             user_prompt=user_prompt
         )
 
+        # Get relevant learnings for workflow adjustment
+        learnings = []
+        if self.learning_service:
+            context = self._extract_context_from_prompt(user_prompt)
+            learnings = self.learning_service.get_relevant_learnings(
+                scale_level=analysis.scale_level,
+                project_type=analysis.project_type.value,
+                context=context,
+                limit=5
+            )
+
         # Log learning context status
         if learning_context:
             self.logger.info(
                 "learning_context_added",
                 context_length=len(learning_context),
+                learnings_count=len(learnings),
                 scale_level=analysis.scale_level.value
             )
         else:
@@ -229,10 +249,56 @@ class BrianOrchestrator:
                 scale_level=analysis.scale_level.value
             )
 
-        # Phase 3: Build workflow sequence (existing logic)
-        # Note: learning_context is informational for now, will be used in
-        # Story 29.4 for workflow adjustment
+        # Phase 3: Build base workflow sequence (existing logic)
         workflow_sequence = self._build_workflow_sequence(analysis)
+
+        # Phase 4: Adjust workflows based on learnings (Story 29.4 - NEW)
+        if learnings and self.workflow_adjuster:
+            try:
+                from ..methodologies.adaptive_agile.workflow_adjuster import WorkflowStep
+
+                # Convert WorkflowInfo to WorkflowStep for adjustment
+                workflow_steps = [
+                    WorkflowStep(
+                        workflow_name=wf.name,
+                        phase=self._get_phase_name(wf.phase),
+                        depends_on=[],  # Dependencies not tracked in WorkflowInfo
+                        metadata=wf.metadata
+                    )
+                    for wf in workflow_sequence.workflows
+                ]
+
+                # Adjust workflows
+                adjusted_steps = self.workflow_adjuster.adjust_workflows(
+                    workflows=workflow_steps,
+                    learnings=learnings,
+                    scale_level=analysis.scale_level,
+                    epic_num=epic_num
+                )
+
+                # Log adjustments
+                if len(adjusted_steps) > len(workflow_steps):
+                    self.logger.info(
+                        "workflows_adjusted",
+                        original_count=len(workflow_steps),
+                        adjusted_count=len(adjusted_steps),
+                        workflows_added=len(adjusted_steps) - len(workflow_steps)
+                    )
+
+            except WorkflowDependencyCycleError as e:
+                self.logger.error(
+                    "workflow_adjustment_cycle_detected",
+                    error=str(e),
+                    cycles=getattr(e, "cycles", [])
+                )
+                # Fallback to original workflows on cycle detection
+            except Exception as e:
+                self.logger.error(
+                    "workflow_adjustment_failed",
+                    error=str(e),
+                    exc_info=True
+                )
+                # Fallback to original workflows on any error
 
         self.logger.info(
             "select_workflows_with_learning_completed",
@@ -593,6 +659,26 @@ class BrianOrchestrator:
             ScaleLevel.LEVEL_4: "Enterprise system (40+ stories, 5+ epics) - enterprise platform or large system"
         }
         return descriptions.get(scale_level, "Unknown scale level")
+
+    def _get_phase_name(self, phase: int) -> str:
+        """
+        Convert phase number to phase name.
+
+        Args:
+            phase: Phase number (0-4)
+
+        Returns:
+            Phase name string
+        """
+        phase_names = {
+            0: "analysis",
+            1: "planning",
+            2: "planning",
+            3: "solutioning",
+            4: "implementation",
+            5: "ceremonies"
+        }
+        return phase_names.get(phase, "implementation")
 
     def _extract_context_from_prompt(self, user_prompt: str) -> Dict[str, Any]:
         """

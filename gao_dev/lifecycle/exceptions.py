@@ -120,3 +120,47 @@ class InvalidStateTransition(DocumentLifecycleError):
         self.from_state = from_state
         self.to_state = to_state
         self.doc_id = doc_id
+
+
+class WorkflowDependencyCycleError(DocumentLifecycleError):
+    """Raised when circular dependencies are detected in workflow steps.
+
+    This exception is raised by WorkflowAdjuster when dependency cycle
+    detection (C7 fix) finds circular dependencies in workflow sequences.
+
+    Story: 29.4 - Workflow Adjustment Logic
+    """
+
+    def __init__(self, message: str, cycles: list = None):
+        """
+        Initialize WorkflowDependencyCycleError.
+
+        Args:
+            message: Error message describing the cycle
+            cycles: Optional list of cycle descriptions
+        """
+        super().__init__(message)
+        self.cycles = cycles or []
+
+
+class MaxAdjustmentsExceededError(DocumentLifecycleError):
+    """Raised when maximum workflow adjustments limit is exceeded.
+
+    This exception is raised by WorkflowAdjuster when the adjustment
+    limits (C1 fix) are exceeded to prevent infinite adjustment loops.
+
+    Story: 29.4 - Workflow Adjustment Logic
+    """
+
+    def __init__(self, message: str, epic_num: int = None, adjustment_count: int = None):
+        """
+        Initialize MaxAdjustmentsExceededError.
+
+        Args:
+            message: Error message
+            epic_num: Optional epic number
+            adjustment_count: Optional current adjustment count
+        """
+        super().__init__(message)
+        self.epic_num = epic_num
+        self.adjustment_count = adjustment_count
