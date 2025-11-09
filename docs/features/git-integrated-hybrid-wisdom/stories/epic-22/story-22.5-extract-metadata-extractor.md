@@ -5,7 +5,7 @@
 **Priority**: P2
 **Estimate**: 3 hours
 **Owner**: Amelia
-**Status**: Todo
+**Status**: Done
 
 ---
 
@@ -19,13 +19,13 @@ This extraction further refines the separation of concerns, keeping ArtifactMana
 
 ## Acceptance Criteria
 
-- [ ] Create `MetadataExtractor` utility (~80 LOC)
-- [ ] Move feature name extraction logic (~27 LOC)
-- [ ] Move epic/story number extraction logic (~30 LOC)
-- [ ] Add metadata parsing helpers (~23 LOC)
-- [ ] ArtifactManager uses MetadataExtractor
-- [ ] 8 unit tests for extractor
-- [ ] All metadata extraction works correctly
+- [x] Create `MetadataExtractor` utility (~80 LOC)
+- [x] Move feature name extraction logic (~27 LOC)
+- [x] Move epic/story number extraction logic (~30 LOC)
+- [x] Add metadata parsing helpers (~23 LOC)
+- [x] ArtifactManager uses MetadataExtractor
+- [x] 8 unit tests for extractor (29 tests created)
+- [x] All metadata extraction works correctly
 
 ---
 

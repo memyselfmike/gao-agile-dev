@@ -16,6 +16,7 @@ import structlog
 import time
 
 from ..lifecycle.document_manager import DocumentLifecycleManager
+from .metadata_extractor import MetadataExtractor
 
 logger = structlog.get_logger()
 
@@ -274,6 +275,44 @@ class ArtifactManager:
 
         # Default: use story as generic document type (most flexible)
         return "story"
+
+    def extract_metadata(self, path: Path) -> Dict[str, Any]:
+        """
+        Extract metadata from artifact path using MetadataExtractor.
+
+        This method uses MetadataExtractor to parse feature names, epic numbers,
+        and story numbers from file paths. It's useful for enriching artifact
+        metadata during registration.
+
+        Args:
+            path: Path to artifact file (relative or absolute)
+
+        Returns:
+            Dictionary with extracted metadata (feature, epic, story)
+
+        Examples:
+            >>> manager = ArtifactManager(Path("my-project"))
+            >>> metadata = manager.extract_metadata(Path("docs/features/sandbox-system/epic-1.md"))
+            >>> print(metadata)
+            {"feature": "sandbox-system", "epic": 1, "story": None}
+
+            >>> metadata = manager.extract_metadata(Path("docs/stories/epic-5/story-5.3.md"))
+            >>> print(metadata)
+            {"feature": None, "epic": 5, "story": (5, 3)}
+        """
+        metadata = {
+            "feature": MetadataExtractor.extract_feature_name(path),
+            "epic": MetadataExtractor.extract_epic_number(path),
+            "story": MetadataExtractor.extract_story_number(path),
+        }
+
+        logger.debug(
+            "metadata_extracted_from_path",
+            path=str(path),
+            metadata=metadata,
+        )
+
+        return metadata
 
     def register(
         self,

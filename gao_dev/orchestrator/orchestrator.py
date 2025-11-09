@@ -31,6 +31,7 @@ from .workflow_execution_engine import WorkflowExecutionEngine
 from .artifact_manager import ArtifactManager
 from .agent_coordinator import AgentCoordinator
 from .ceremony_orchestrator import CeremonyOrchestrator
+from .metadata_extractor import MetadataExtractor
 from ..core.config_loader import ConfigLoader
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.workflow_executor import WorkflowExecutor
@@ -1297,6 +1298,8 @@ class GAODevOrchestrator:
 
         This is a simple extraction that takes the first few words
         or falls back to a generic name. Can be enhanced with NLP later.
+
+        Note: For path-based feature extraction, use MetadataExtractor.extract_feature_name()
 
         Args:
             prompt: Initial user prompt
