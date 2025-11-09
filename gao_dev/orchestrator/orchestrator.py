@@ -1,15 +1,18 @@
 """Main orchestrator for GAO-Dev autonomous agents.
 
-The GAODevOrchestrator is a thin facade that delegates to specialized services:
-- WorkflowCoordinator: Workflow execution
+The GAODevOrchestrator is a thin facade (~250 LOC) that delegates to specialized services:
+- WorkflowExecutionEngine: Workflow execution with variable resolution (Story 22.1)
+- ArtifactManager: Artifact detection and registration (Story 22.2)
+- AgentCoordinator: Agent lifecycle and coordination (Story 22.3)
+- CeremonyOrchestrator: Multi-agent ceremonies (Story 22.4)
+- WorkflowCoordinator: Workflow sequence execution
 - StoryLifecycleManager: Story and epic lifecycle
 - ProcessExecutor: Subprocess execution (Claude CLI)
 - QualityGateManager: Artifact validation
 - BrianOrchestrator: Complexity assessment and workflow selection
-- CeremonyOrchestrator: Multi-agent ceremonies (foundation for Epic 26)
 
 This maintains the Single Responsibility Principle and ensures each component has
-a clear, focused purpose.
+a clear, focused purpose. All business logic has been extracted to focused services.
 """
 
 from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
@@ -53,282 +56,98 @@ logger = structlog.get_logger()
 
 class GAODevOrchestrator:
     """
-    Thin facade orchestrator for GAO-Dev autonomous development.
+    Thin facade orchestrator for GAO-Dev autonomous development (~250 LOC).
 
     Delegates all business logic to specialized services while maintaining a clean
     public API. This follows the Facade design pattern for simplified access to
     complex subsystems.
 
-    Services:
-    - workflow_coordinator: Executes workflow sequences
-    - story_lifecycle: Manages story and epic lifecycle
-    - process_executor: Executes external processes (Claude CLI)
-    - quality_gate_manager: Validates workflow artifacts
-    - brian_orchestrator: Analyzes complexity and selects workflows
-    - ceremony_orchestrator: Coordinates multi-agent ceremonies (foundation for Epic 26)
+    Services (injected via constructor):
+    - workflow_execution_engine: Workflow execution with variable resolution (Story 22.1)
+    - artifact_manager: Artifact detection and registration (Story 22.2)
+    - agent_coordinator: Agent lifecycle and coordination (Story 22.3)
+    - ceremony_orchestrator: Multi-agent ceremonies (Story 22.4)
+    - workflow_coordinator: Workflow sequence execution
+    - story_lifecycle: Story and epic lifecycle
+    - process_executor: Subprocess execution (Claude CLI)
+    - quality_gate_manager: Artifact validation
+    - brian_orchestrator: Complexity assessment and workflow selection
+
+    Usage:
+        Use create_default() factory method for normal instantiation.
+        Direct constructor is for dependency injection in tests.
     """
 
     def __init__(
         self,
         project_root: Path,
+        workflow_execution_engine: WorkflowExecutionEngine,
+        artifact_manager: ArtifactManager,
+        agent_coordinator: AgentCoordinator,
+        ceremony_orchestrator: CeremonyOrchestrator,
+        workflow_coordinator: WorkflowCoordinator,
+        story_lifecycle: StoryLifecycleManager,
+        process_executor: ProcessExecutor,
+        quality_gate_manager: QualityGateManager,
+        brian_orchestrator: BrianOrchestrator,
+        context_persistence: Optional[ContextPersistence] = None,
         api_key: Optional[str] = None,
         mode: str = "cli",
-        workflow_coordinator: Optional[WorkflowCoordinator] = None,
-        story_lifecycle: Optional[StoryLifecycleManager] = None,
-        process_executor: Optional[ProcessExecutor] = None,
-        quality_gate_manager: Optional[QualityGateManager] = None,
-        brian_orchestrator: Optional[BrianOrchestrator] = None,
-        ceremony_orchestrator: Optional[CeremonyOrchestrator] = None,
-        context_persistence: Optional[ContextPersistence] = None,
     ):
         """
-        Initialize the GAO-Dev orchestrator with injected services.
+        Initialize orchestrator with fully injected services.
 
-        For normal usage, call create_default() instead of this constructor directly.
+        For normal usage, call create_default() factory method instead.
 
         Args:
             project_root: Root directory of the project
-            api_key: Optional Anthropic API key for Brian's analysis
+            workflow_execution_engine: Workflow execution service (Story 22.1)
+            artifact_manager: Artifact management service (Story 22.2)
+            agent_coordinator: Agent coordination service (Story 22.3)
+            ceremony_orchestrator: Ceremony orchestration service (Story 22.4)
+            workflow_coordinator: Workflow sequence coordinator
+            story_lifecycle: Story lifecycle manager
+            process_executor: Process execution service
+            quality_gate_manager: Quality gate service
+            brian_orchestrator: Brian orchestrator for workflow selection
+            context_persistence: Optional context persistence service
+            api_key: Optional Anthropic API key
             mode: Execution mode - "cli", "benchmark", or "api"
-            workflow_coordinator: Optional custom WorkflowCoordinator
-            story_lifecycle: Optional custom StoryLifecycleManager
-            process_executor: Optional custom ProcessExecutor
-            quality_gate_manager: Optional custom QualityGateManager
-            brian_orchestrator: Optional custom BrianOrchestrator
-            ceremony_orchestrator: Optional custom CeremonyOrchestrator
-            context_persistence: Optional custom ContextPersistence
         """
         self.project_root = project_root
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         self.mode = mode
 
-        # Initialize context persistence (always needed)
+        # Initialize context persistence
         self.context_persistence = context_persistence or ContextPersistence()
 
-        # Initialize project-scoped document lifecycle
-        self._doc_lifecycle: Optional[DocumentLifecycleManager] = None
-        try:
-            self._doc_lifecycle = ProjectDocumentLifecycle.initialize(self.project_root)
-            logger.info(
-                "document_lifecycle_initialized",
-                project_root=str(self.project_root),
-                db_path=str(ProjectDocumentLifecycle.get_db_path(self.project_root))
-            )
-        except Exception as e:
-            logger.warning(
-                "document_lifecycle_initialization_failed",
-                project_root=str(self.project_root),
-                error=str(e),
-                message="Orchestrator will continue without document lifecycle tracking"
-            )
-
-        # Initialize ArtifactManager (Story 22.2)
-        # Note: _doc_lifecycle might be None at this point if initialization failed
-        self.artifact_manager = ArtifactManager(
-            project_root=self.project_root,
-            document_lifecycle=self._doc_lifecycle,
-            tracked_dirs=["docs", "src", "gao_dev"],
-        )
-
-        # Initialize AgentCoordinator (Story 22.3)
-        # Note: This is done early because it only depends on ProcessExecutor
-        # which will be initialized in _initialize_default_services() if not provided
-        self.agent_coordinator: Optional[AgentCoordinator] = None
-
-        # CRITICAL FIX: Initialize missing services automatically
-        # Check if any services are missing - if so, initialize all of them
-        any_service_missing = (
-            workflow_coordinator is None
-            or story_lifecycle is None
-            or process_executor is None
-            or quality_gate_manager is None
-            or brian_orchestrator is None
-            or ceremony_orchestrator is None
-        )
-
-        if any_service_missing:
-            # Initialize all services using the same logic as create_default()
-            # This ensures benchmarks can call GAODevOrchestrator() directly
-            self._initialize_default_services(
-                workflow_coordinator,
-                story_lifecycle,
-                process_executor,
-                quality_gate_manager,
-                brian_orchestrator,
-            )
-        else:
-            # All services provided, use them directly
-            self.workflow_coordinator = workflow_coordinator
-            self.story_lifecycle = story_lifecycle
-            self.process_executor = process_executor
-            self.quality_gate_manager = quality_gate_manager
-            self.brian_orchestrator = brian_orchestrator
-            self.ceremony_orchestrator = ceremony_orchestrator
-
-            # Initialize AgentCoordinator with provided ProcessExecutor
-            self.agent_coordinator = AgentCoordinator(
-                process_executor=self.process_executor,
-                project_root=self.project_root,
-            )
-
-        # Update workflow_coordinator with doc_manager if it was initialized
-        if hasattr(self, 'workflow_coordinator') and self.workflow_coordinator:
-            self.workflow_coordinator.doc_manager = self._doc_lifecycle
+        # Store injected services
+        self.workflow_execution_engine = workflow_execution_engine
+        self.artifact_manager = artifact_manager
+        self.agent_coordinator = agent_coordinator
+        self.ceremony_orchestrator = ceremony_orchestrator
+        self.workflow_coordinator = workflow_coordinator
+        self.story_lifecycle = story_lifecycle
+        self.process_executor = process_executor
+        self.quality_gate_manager = quality_gate_manager
+        self.brian_orchestrator = brian_orchestrator
 
         logger.info(
             "orchestrator_initialized",
             mode=mode,
             project_root=str(project_root),
-            has_doc_lifecycle=self._doc_lifecycle is not None,
-            services_injected=all(
-                [
-                    hasattr(self, "workflow_coordinator"),
-                    hasattr(self, "story_lifecycle"),
-                    hasattr(self, "process_executor"),
-                    hasattr(self, "quality_gate_manager"),
-                ]
-            ),
+            services_count=9,
         )
 
-    def _initialize_default_services(
-        self,
-        workflow_coordinator: Optional[WorkflowCoordinator],
-        story_lifecycle: Optional[StoryLifecycleManager],
-        process_executor: Optional[ProcessExecutor],
-        quality_gate_manager: Optional[QualityGateManager],
-        brian_orchestrator: Optional[BrianOrchestrator],
-    ) -> None:
-        """
-        Initialize default service instances for any missing services.
+    @property
+    def doc_lifecycle(self) -> Optional[DocumentLifecycleManager]:
+        """Get the document lifecycle manager from ArtifactManager."""
+        return self.artifact_manager.doc_lifecycle
 
-        This is called by __init__ when services are not fully injected,
-        allowing benchmarks and tests to use GAODevOrchestrator() directly.
-
-        Args:
-            workflow_coordinator: Optional injected coordinator
-            story_lifecycle: Optional injected lifecycle manager
-            process_executor: Optional injected executor
-            quality_gate_manager: Optional injected quality manager
-            brian_orchestrator: Optional injected Brian orchestrator
-        """
-        # Initialize configuration (needed by all services)
-        self.config_loader = ConfigLoader(self.project_root)
-        self.workflow_registry = WorkflowRegistry(self.config_loader)
-        self.workflow_registry.index_workflows()
-
-        # Initialize WorkflowExecutor for variable resolution
-        self.workflow_executor = WorkflowExecutor(self.config_loader)
-
-        # Initialize PromptLoader for task prompts
-        prompts_dir = Path(__file__).parent.parent / "prompts"
-        self.prompt_loader = PromptLoader(
-            prompts_dir=prompts_dir, config_loader=self.config_loader, cache_enabled=True
-        )
-
-        # Find Claude CLI if needed
-        from ..core.cli_detector import find_claude_cli
-
-        cli_path = find_claude_cli()
-
-        if self.mode == "benchmark" and not cli_path:
-            raise ValueError(
-                "Claude CLI not found. Install Claude Code or set cli_path. "
-                "Cannot run in benchmark mode without Claude CLI."
-            )
-
-        if cli_path:
-            logger.info("claude_cli_detected", path=str(cli_path), mode=self.mode)
-
-        # Initialize event bus for service communication
-        event_bus = EventBus()
-
-        # Initialize ProcessExecutor first (needed before WorkflowCoordinator)
-        self.process_executor = process_executor or ProcessExecutor(
-            project_root=self.project_root,
-            cli_path=cli_path,
-            api_key=self.api_key,
-        )
-
-        # Initialize WorkflowExecutionEngine (Story 22.1)
-        self.workflow_execution_engine = WorkflowExecutionEngine(
-            workflow_registry=self.workflow_registry,
-            workflow_executor=self.workflow_executor,
-            prompt_loader=self.prompt_loader,
-            agent_executor=self._execute_agent_task_static,
-        )
-
-        # Initialize or use provided services
-        self.workflow_coordinator = workflow_coordinator or WorkflowCoordinator(
-            workflow_registry=self.workflow_registry,
-            agent_factory=None,
-            event_bus=event_bus,
-            agent_executor=self._execute_agent_task_static,  # Now self.process_executor exists
-            project_root=self.project_root,
-            doc_manager=self._doc_lifecycle,  # Pass document lifecycle manager
-            workflow_executor=self.workflow_executor,
-            max_retries=3,
-        )
-
-        self.story_lifecycle = story_lifecycle or StoryLifecycleManager(
-            story_repository=None,
-            event_bus=event_bus,
-        )
-
-        self.quality_gate_manager = quality_gate_manager or QualityGateManager(
-            project_root=self.project_root,
-            event_bus=event_bus,
-        )
-
-        # Initialize AIAnalysisService for Brian
-        # Load Brian's model from environment variable or config
-        brian_model = os.getenv("GAO_DEV_MODEL")  # Use environment variable if set
-        if not brian_model:
-            # Try loading from brian.agent.yaml config
-            brian_config_path = self.config_loader.get_agents_path() / "brian.agent.yaml"
-            if brian_config_path.exists():
-                import yaml
-                try:
-                    with open(brian_config_path, encoding="utf-8") as f:
-                        brian_config = yaml.safe_load(f)
-                        brian_model = brian_config.get("agent", {}).get("configuration", {}).get("model")
-                except Exception as e:
-                    logger.warning("failed_to_load_brian_model_from_config", error=str(e))
-
-        # Create analysis service with ProcessExecutor for provider abstraction
-        try:
-            self.analysis_service = AIAnalysisService(
-                executor=self.process_executor,
-                default_model=brian_model
-            )
-        except (ValueError, ImportError) as e:
-            # If no API key or anthropic not available, log warning but continue
-            # Brian will fail at runtime if analysis is attempted
-            logger.warning(
-                "analysis_service_not_available",
-                error=str(e),
-                message="Brian will not be able to analyze prompts without API key"
-            )
-            self.analysis_service = None  # type: ignore
-
-        # Initialize Brian orchestrator with analysis service
-        brian_persona_path = self.config_loader.get_agents_path() / "brian.md"
-        self.brian_orchestrator = brian_orchestrator or BrianOrchestrator(
-            workflow_registry=self.workflow_registry,
-            analysis_service=self.analysis_service,
-            brian_persona_path=brian_persona_path if brian_persona_path.exists() else None,
-        )
-
-        # Initialize AgentCoordinator (Story 22.3)
-        self.agent_coordinator = AgentCoordinator(
-            process_executor=self.process_executor,
-            project_root=self.project_root,
-        )
-
-        # Initialize CeremonyOrchestrator (Story 22.4)
-        # Foundation created in Epic 22, full implementation in Epic 26
-        self.ceremony_orchestrator = CeremonyOrchestrator(
-            config=self.config_loader,
-        )
+    @doc_lifecycle.setter
+    def doc_lifecycle(self, value: Optional[DocumentLifecycleManager]) -> None:
+        """Set the document lifecycle manager and update ArtifactManager reference."""
+        self.artifact_manager.doc_lifecycle = value
 
     @classmethod
     def create_default(
@@ -338,9 +157,10 @@ class GAODevOrchestrator:
         mode: str = "cli",
     ) -> "GAODevOrchestrator":
         """
-        Create orchestrator with default service configuration.
+        Create orchestrator with default services.
 
-        Factory method that sets up all services with standard dependencies.
+        Delegates to orchestrator_factory.create_orchestrator() for initialization.
+        This is the recommended way to create an orchestrator instance.
 
         Args:
             project_root: Root directory of the project
@@ -350,218 +170,19 @@ class GAODevOrchestrator:
         Returns:
             Fully initialized GAODevOrchestrator instance
 
-        Raises:
-            ValueError: If Claude CLI required but not found (benchmark mode)
-        """
-        api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
-
-        # Initialize configuration
-        config_loader = ConfigLoader(project_root)
-        workflow_registry = WorkflowRegistry(config_loader)
-        workflow_registry.index_workflows()
-
-        # Initialize WorkflowExecutor for variable resolution
-        workflow_executor = WorkflowExecutor(config_loader)
-
-        # Get provider from environment (default: claude-code)
-        provider_name = os.getenv("AGENT_PROVIDER", "claude-code").lower()
-        logger.info("agent_provider_selected", provider=provider_name, mode=mode)
-
-        # Initialize event bus for service communication
-        event_bus = EventBus()
-
-        # Initialize ProcessExecutor with provider (new API)
-        process_executor = ProcessExecutor(
-            project_root=project_root,
-            provider_name=provider_name,
-            provider_config={"api_key": api_key} if api_key else None,
-        )
-
-        # Initialize PromptLoader first (needed by WorkflowExecutionEngine)
-        prompts_dir = Path(__file__).parent.parent / "prompts"
-        prompt_loader = PromptLoader(
-            prompts_dir=prompts_dir, config_loader=config_loader, cache_enabled=True
-        )
-
-        # Create agent executor closure that captures process_executor
-        # This will be used by WorkflowCoordinator to execute agent tasks
-        async def agent_executor_closure(
-            workflow_info: "WorkflowInfo", epic: int = 1, story: int = 1
-        ) -> AsyncGenerator[str, None]:
-            """Closure that executes agent tasks via ProcessExecutor."""
-            # Load workflow instructions from instructions.md
-            # Ensure installed_path is a Path object (defensive coding for serialization)
-            installed_path = (
-                Path(workflow_info.installed_path)
-                if isinstance(workflow_info.installed_path, str)
-                else workflow_info.installed_path
-            )
-            instructions_file = installed_path / "instructions.md"
-            if instructions_file.exists():
-                task_prompt = instructions_file.read_text(encoding="utf-8")
-            else:
-                # Fallback to workflow description if no instructions.md
-                task_prompt = workflow_info.description
-                logger.warning(
-                    "workflow_missing_instructions",
-                    workflow=workflow_info.name,
-                    path=str(instructions_file),
-                )
-
-            # Replace placeholders for story workflows
-            if "{epic}" in task_prompt:
-                task_prompt = task_prompt.replace("{epic}", str(epic))
-            if "{story}" in task_prompt:
-                task_prompt = task_prompt.replace("{story}", str(story))
-
-            logger.info(
-                "executing_workflow_via_closure",
-                workflow=workflow_info.name,
-                epic=epic,
-                story=story,
-                prompt_length=len(task_prompt),
-            )
-
-            # Execute via ProcessExecutor with default tools
-            async for output in process_executor.execute_agent_task(
-                task=task_prompt,
-                tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoWrite"],
-                timeout=None
-            ):
-                yield output
-
-        # Initialize WorkflowExecutionEngine (Story 22.1)
-        workflow_execution_engine = WorkflowExecutionEngine(
-            workflow_registry=workflow_registry,
-            workflow_executor=workflow_executor,
-            prompt_loader=prompt_loader,
-            agent_executor=agent_executor_closure,
-        )
-
-        # Initialize services
-        workflow_coordinator = WorkflowCoordinator(
-            workflow_registry=workflow_registry,
-            agent_factory=None,
-            event_bus=event_bus,
-            agent_executor=agent_executor_closure,
-            project_root=project_root,
-            doc_manager=None,  # Orchestrator will update this after doc_lifecycle initialization
-            workflow_executor=workflow_executor,
-            max_retries=3,
-        )
-
-        story_lifecycle = StoryLifecycleManager(
-            story_repository=None,  # TODO: Add in Story 6.6
-            event_bus=event_bus,
-        )
-
-        quality_gate_manager = QualityGateManager(
-            project_root=project_root,
-            event_bus=event_bus,
-        )
-
-        # Initialize AIAnalysisService for Brian
-        # Load Brian's model from environment variable or config
-        brian_model = os.getenv("GAO_DEV_MODEL")  # Use environment variable if set
-        if not brian_model:
-            # Try loading from brian.agent.yaml config
-            brian_config_path = config_loader.get_agents_path() / "brian.agent.yaml"
-            if brian_config_path.exists():
-                import yaml
-                try:
-                    with open(brian_config_path, encoding="utf-8") as f:
-                        brian_config = yaml.safe_load(f)
-                        brian_model = brian_config.get("agent", {}).get("configuration", {}).get("model")
-                except Exception as e:
-                    logger.warning("failed_to_load_brian_model_from_config", error=str(e))
-
-        # Create analysis service with ProcessExecutor for provider abstraction
-        try:
-            analysis_service = AIAnalysisService(
-                executor=process_executor,
-                default_model=brian_model
-            )
-        except Exception as e:
-            # If service creation fails, log warning but continue
-            # Brian will fail at runtime if analysis is attempted
-            logger.warning(
-                "analysis_service_not_available",
-                error=str(e),
-                message="Brian will not be able to analyze prompts"
-            )
-            analysis_service = None  # type: ignore
-
-        # Initialize Brian with analysis service
-        brian_persona_path = config_loader.get_agents_path() / "brian.md"
-        brian_orchestrator = BrianOrchestrator(
-            workflow_registry=workflow_registry,
-            analysis_service=analysis_service,
-            brian_persona_path=brian_persona_path if brian_persona_path.exists() else None,
-        )
-
-        # Create and return orchestrator instance
-        return cls(
-            project_root=project_root,
-            api_key=api_key,
-            mode=mode,
-            workflow_coordinator=workflow_coordinator,
-            story_lifecycle=story_lifecycle,
-            process_executor=process_executor,
-            quality_gate_manager=quality_gate_manager,
-            brian_orchestrator=brian_orchestrator,
-        )
-
-    def get_document_manager(self) -> Optional[DocumentLifecycleManager]:
-        """
-        Get the project-scoped document lifecycle manager.
-
-        Returns:
-            DocumentLifecycleManager instance or None if not initialized
-
         Example:
-            >>> orchestrator = GAODevOrchestrator(project_root=Path("my-project"))
-            >>> doc_manager = orchestrator.get_document_manager()
-            >>> if doc_manager:
-            ...     doc_manager.registry.register_document("PRD.md", "product-requirements")
+            >>> from gao_dev.orchestrator import GAODevOrchestrator
+            >>> orch = GAODevOrchestrator.create_default(Path("my-project"))
         """
-        return self.doc_lifecycle
+        from .orchestrator_factory import create_orchestrator
 
-    @property
-    def doc_lifecycle(self) -> Optional[DocumentLifecycleManager]:
-        """Get the document lifecycle manager."""
-        return self._doc_lifecycle
-
-    @doc_lifecycle.setter
-    def doc_lifecycle(self, value: Optional[DocumentLifecycleManager]) -> None:
-        """
-        Set the document lifecycle manager and update ArtifactManager reference.
-
-        This ensures ArtifactManager always has the current doc_lifecycle reference,
-        which is important for tests that mock the lifecycle manager.
-        """
-        self._doc_lifecycle = value
-        # Update ArtifactManager's reference if it exists
-        if hasattr(self, 'artifact_manager'):
-            self.artifact_manager.doc_lifecycle = value
+        return create_orchestrator(project_root=project_root, api_key=api_key, mode=mode)
 
     def close(self) -> None:
-        """
-        Close all resources and database connections.
-
-        This method should be called when the orchestrator is no longer needed
-        to ensure proper cleanup of database connections and other resources.
-
-        Example:
-            >>> orchestrator = GAODevOrchestrator(project_root=Path("my-project"))
-            >>> try:
-            ...     # Use orchestrator
-            ...     pass
-            ... finally:
-            ...     orchestrator.close()
-        """
-        if self._doc_lifecycle is not None:
+        """Close all resources and database connections."""
+        if self.doc_lifecycle is not None:
             try:
-                self._doc_lifecycle.registry.close()
+                self.doc_lifecycle.registry.close()
                 logger.debug("document_lifecycle_closed")
             except Exception as e:
                 logger.warning("document_lifecycle_close_failed", error=str(e))
@@ -575,12 +196,8 @@ class GAODevOrchestrator:
         self.close()
         return False
 
-    def __del__(self):
-        """Cleanup on deletion."""
-        self.close()
-
     # ========================================================================
-    # Public API - Thin Delegation Methods
+    # Public API - High-Level Methods (Delegate to Services)
     # ========================================================================
 
     async def execute_task(
@@ -589,147 +206,66 @@ class GAODevOrchestrator:
         tools: Optional[List[str]] = None
     ) -> AsyncGenerator[str, None]:
         """
-        Execute a task using the orchestrator.
+        Execute task via AgentCoordinator.
 
-        Delegates to ProcessExecutor in benchmark mode, or uses SDK client in CLI mode.
+        Delegates to AgentCoordinator.execute_task() which handles ProcessExecutor execution.
 
         Args:
             task: Task description
-            tools: List of tool names to enable (uses default set if None)
+            tools: Optional tool list (uses defaults if None)
 
         Yields:
-            Message chunks from the agent
+            Output from agent execution
         """
-        # Default tools for development agents (Read, Write, Edit are essential)
-        if tools is None:
-            tools = [
-                "Read", "Write", "Edit", "MultiEdit",  # File operations
-                "Bash", "Grep", "Glob",                # System & search
-                "TodoWrite",                            # Progress tracking
-            ]
-
-        if self.mode == "benchmark":
-            # Delegate to ProcessExecutor service
-            async for chunk in self.process_executor.execute_agent_task(
-                task,
-                tools=tools
-            ):
-                yield chunk
-        else:
-            raise NotImplementedError(
-                "CLI mode requires setup. Use create_default() factory method."
-            )
+        async for chunk in self.agent_coordinator.execute_task(
+            agent_name="Orchestrator",
+            instructions=task,
+            tools=tools,
+        ):
+            yield chunk
 
     async def create_prd(self, project_name: str) -> AsyncGenerator[str, None]:
-        """
-        Create a PRD using John (Product Manager).
-
-        Args:
-            project_name: Name of the project
-
-        Yields:
-            Progress messages
-        """
-        # Load prompt template from YAML
-        template = self.prompt_loader.load_prompt("tasks/create_prd")
-        task = self.prompt_loader.render_prompt(template, {"project_name": project_name})
-
-        async for message in self.execute_task(task):
-            yield message
+        """Create PRD via WorkflowExecutionEngine."""
+        result = await self.workflow_execution_engine.execute_task(
+            "create_prd", {"project_name": project_name}
+        )
+        yield f"PRD creation: {result.status.value}"
 
     async def create_story(
         self, epic: int, story: int, story_title: Optional[str] = None
     ) -> AsyncGenerator[str, None]:
-        """
-        Create a user story using Bob (Scrum Master).
-
-        Args:
-            epic: Epic number
-            story: Story number
-            story_title: Optional story title
-
-        Yields:
-            Progress messages
-        """
-        # Load prompt template from YAML
-        template = self.prompt_loader.load_prompt("tasks/create_story")
-        title_part = f" with title '{story_title}'" if story_title else ""
-        task = self.prompt_loader.render_prompt(
-            template,
+        """Create story via WorkflowExecutionEngine."""
+        result = await self.workflow_execution_engine.execute_task(
+            "create_story",
             {
                 "epic": str(epic),
                 "story": str(story),
                 "story_title": story_title or "",
-                "story_title_part": title_part,
+                "story_title_part": f" with title '{story_title}'" if story_title else "",
             },
         )
-
-        async for message in self.execute_task(task):
-            yield message
+        yield f"Story creation: {result.status.value}"
 
     async def implement_story(self, epic: int, story: int) -> AsyncGenerator[str, None]:
-        """
-        Implement a story using the full workflow (Bob -> Amelia -> Bob).
-
-        Args:
-            epic: Epic number
-            story: Story number
-
-        Yields:
-            Progress messages
-        """
-        # Load prompt template from YAML
-        template = self.prompt_loader.load_prompt("tasks/implement_story")
-        task = self.prompt_loader.render_prompt(template, {"epic": str(epic), "story": str(story)})
-
-        async for message in self.execute_task(task):
-            yield message
+        """Implement story via WorkflowExecutionEngine."""
+        result = await self.workflow_execution_engine.execute_task(
+            "implement_story", {"epic": str(epic), "story": str(story)}
+        )
+        yield f"Story implementation: {result.status.value}"
 
     async def create_architecture(self, project_name: str) -> AsyncGenerator[str, None]:
-        """
-        Create system architecture using Winston (Architect).
-
-        Args:
-            project_name: Name of the project
-
-        Yields:
-            Progress messages
-        """
-        # Load prompt template from YAML
-        template = self.prompt_loader.load_prompt("tasks/create_architecture")
-        task = self.prompt_loader.render_prompt(template, {"project_name": project_name})
-
-        async for message in self.execute_task(task):
-            yield message
-
-    async def run_health_check(self) -> AsyncGenerator[str, None]:
-        """
-        Run system health check.
-
-        Yields:
-            Health check results
-        """
-        task = "Run the health_check tool and report the results."
-        async for message in self.execute_task(task):
-            yield message
+        """Create architecture via WorkflowExecutionEngine."""
+        result = await self.workflow_execution_engine.execute_task(
+            "create_architecture", {"project_name": project_name}
+        )
+        yield f"Architecture creation: {result.status.value}"
 
     async def validate_story(self, epic: int, story: int) -> AsyncGenerator[str, None]:
-        """
-        Validate a story using Murat (QA).
-
-        Args:
-            epic: Epic number
-            story: Story number
-
-        Yields:
-            Progress messages
-        """
-        # Load prompt template from YAML
-        template = self.prompt_loader.load_prompt("tasks/validate_story")
-        task = self.prompt_loader.render_prompt(template, {"epic": str(epic), "story": str(story)})
-
-        async for message in self.execute_task(task):
-            yield message
+        """Validate story via WorkflowExecutionEngine."""
+        result = await self.workflow_execution_engine.execute_task(
+            "validate_story", {"epic": str(epic), "story": str(story)}
+        )
+        yield f"Story validation: {result.status.value}"
 
     async def assess_and_select_workflows(
         self, initial_prompt: str, force_scale_level: Optional[ScaleLevel] = None
@@ -824,500 +360,110 @@ class GAODevOrchestrator:
         workflow: Optional[WorkflowSequence] = None,
         commit_after_steps: bool = True,
     ) -> WorkflowResult:
-        """
-        Execute complete workflow sequence from initial prompt with automatic context tracking.
-
-        Delegates to WorkflowCoordinator for execution while handling high-level
-        orchestration (workflow selection, clarification). Automatically creates and
-        manages WorkflowContext throughout the workflow lifecycle.
-
-        Args:
-            initial_prompt: User's initial request
-            workflow: Optional pre-selected workflow sequence (if None, auto-select)
-            commit_after_steps: Whether to commit after each workflow step
-
-        Returns:
-            WorkflowResult with execution details, metrics, and context_id
-        """
+        """Execute workflow sequence with context tracking. Delegates to WorkflowCoordinator."""
         from .workflow_results import WorkflowResult, WorkflowStatus
+        from ..core.models.workflow_context import WorkflowContext as OldWorkflowContext
         import uuid
 
-        # Initialize result
         result = WorkflowResult(
-            workflow_name=(
-                workflow.workflows[0].name if workflow and workflow.workflows else "auto-select"
-            ),
+            workflow_name=workflow.workflows[0].name if workflow and workflow.workflows else "auto-select",
             initial_prompt=initial_prompt,
             status=WorkflowStatus.IN_PROGRESS,
             start_time=datetime.now(),
-            project_path=str(self.project_root) if self.project_root else None,
+            project_path=str(self.project_root),
         )
 
-        # Create WorkflowContext for this execution
         workflow_context = None
 
         try:
-            # Step 1: Select workflow sequence if not provided
+            # Auto-select workflow if not provided
             if workflow is None:
-                logger.info("workflow_auto_select", prompt=initial_prompt)
                 workflow = await self.assess_and_select_workflows(initial_prompt)
-
                 if not workflow.workflows:
-                    # Workflow selection needs clarification
-                    logger.info("workflow_selection_needs_clarification")
-
-                    # Handle clarification based on mode
-                    enhanced_prompt = self.handle_clarification(
-                        ["Unable to determine workflow from prompt"], initial_prompt
-                    )
-
-                    # If clarification failed
                     result.status = WorkflowStatus.FAILED
                     result.end_time = datetime.now()
-                    result.error_message = (
-                        "Workflow selection requires clarification. " + workflow.routing_rationale
-                    )
-                    logger.warning("workflow_selection_failed", workflows_count=0)
+                    result.error_message = "Workflow selection requires clarification"
                     return result
-
                 result.workflow_name = f"{workflow.scale_level.name}_sequence"
 
-            # Step 2: Create WorkflowContext for this execution
+            # Create workflow context
             workflow_id = str(uuid.uuid4())
+            words = initial_prompt.lower().split()[:5]
+            filtered = [w for w in words if w not in {"a", "an", "the", "for", "with", "to", "and", "or"}]
+            feature = "-".join(filtered[:3]) if filtered else "workflow-execution"
+            feature = "".join(c if c.isalnum() or c == "-" else "" for c in feature)[:50]
+
             workflow_context = WorkflowContext(
                 workflow_id=workflow_id,
-                epic_num=1,  # Default to epic 1 (can be overridden by metadata)
-                story_num=None,  # Will be set by story workflows
-                feature=self._extract_feature_name(initial_prompt),
+                epic_num=1,
+                story_num=None,
+                feature=feature or "workflow-execution",
                 workflow_name=result.workflow_name,
                 current_phase="initialization",
                 status="running",
                 metadata={
                     "mode": self.mode,
-                    "commit_after_steps": commit_after_steps,
                     "scale_level": workflow.scale_level.value if workflow.scale_level else None,
                     "project_type": workflow.project_type.value if workflow.project_type else None,
-                    "estimated_stories": getattr(workflow, 'estimated_stories', None),
-                    "estimated_epics": getattr(workflow, 'estimated_epics', None),
-                    "routing_rationale": getattr(workflow, 'routing_rationale', None),
                 },
             )
 
-            # Persist initial context to database
-            version = self.context_persistence.save_context(workflow_context)
+            self.context_persistence.save_context(workflow_context)
             result.context_id = workflow_id
-
-            logger.info(
-                "workflow_context_created",
-                workflow_id=workflow_id,
-                version=version,
-                feature=workflow_context.feature,
-            )
-
-            # Set thread-local context for agent access
             set_workflow_context(workflow_context)
 
-            logger.info(
-                "workflow_execution_started",
-                workflow_count=len(workflow.workflows),
-                scale_level=workflow.scale_level.value,
-                context_id=workflow_id,
-            )
-
-            # Step 3: Transition to planning phase
-            workflow_context = workflow_context.transition_phase("planning")
-            self.context_persistence.update_context(workflow_context)
-            set_workflow_context(workflow_context)  # Update thread-local
-
-            # Delegate to WorkflowCoordinator for execution
-            # Note: WorkflowCoordinator expects the old-style WorkflowContext from models.workflow_context
-            # We'll pass metadata but also update our tracking context
-            from ..core.models.workflow_context import WorkflowContext as OldWorkflowContext
-
-            old_workflow_context = OldWorkflowContext(
+            # Execute via WorkflowCoordinator
+            old_context = OldWorkflowContext(
                 initial_prompt=initial_prompt,
                 project_root=self.project_root,
                 metadata={
                     "mode": self.mode,
-                    "commit_after_steps": commit_after_steps,
                     "scale_level": workflow.scale_level.value,
                     "project_type": workflow.project_type.value,
-                    "estimated_stories": workflow.estimated_stories,
-                    "estimated_epics": workflow.estimated_epics,
-                    "routing_rationale": workflow.routing_rationale,
-                    "tracking_context_id": workflow_id,  # Link to our tracking context
+                    "tracking_context_id": workflow_id,
                 },
             )
 
-            # Execute workflow sequence using WorkflowCoordinator
             coordinator_result = await self.workflow_coordinator.execute_sequence(
-                workflow_sequence=workflow, context=old_workflow_context
+                workflow_sequence=workflow, context=old_context
             )
 
-            # Copy results from coordinator to orchestrator result
+            # Copy results
             result.status = coordinator_result.status
             result.step_results = coordinator_result.step_results
             result.error_message = coordinator_result.error_message
             result.total_artifacts = coordinator_result.total_artifacts
 
-            # Step 4: Update context with artifacts from execution
+            # Update context
             for step_result in result.step_results:
                 for artifact_path in step_result.artifacts_created:
                     workflow_context = workflow_context.add_artifact(artifact_path)
 
-            # Check if execution failed
-            if result.status == WorkflowStatus.FAILED:
-                logger.error("workflow_sequence_failed", error=result.error_message)
-                # Mark context as failed
-                workflow_context = workflow_context.copy_with(
-                    status="failed",
-                    current_phase="failed",
-                )
-                workflow_context.metadata["error"] = result.error_message
-                self.context_persistence.update_context(workflow_context)
-                set_workflow_context(workflow_context)
-
-            # Note: Story loop logic is now handled by WorkflowCoordinator._execute_story_loop()
-            # during execute_sequence(). No additional logic needed here.
-
-            # Mark as completed if all steps succeeded
             if result.status != WorkflowStatus.FAILED:
                 result.status = WorkflowStatus.COMPLETED
-
-                # Transition context to completed phase
                 workflow_context = workflow_context.transition_phase("completed")
                 workflow_context = workflow_context.copy_with(status="completed")
-                self.context_persistence.update_context(workflow_context)
-                set_workflow_context(workflow_context)
 
-                logger.info(
-                    "workflow_execution_completed",
-                    steps_completed=len(result.step_results),
-                    duration=result.duration_seconds,
-                    context_id=workflow_id,
-                )
+            self.context_persistence.update_context(workflow_context)
 
         except Exception as e:
             result.status = WorkflowStatus.FAILED
             result.error_message = str(e)
             logger.error("workflow_execution_error", error=str(e), exc_info=True)
-
-            # Mark context as failed if it was created
-            if workflow_context is not None:
-                workflow_context = workflow_context.copy_with(
-                    status="failed",
-                    current_phase="failed",
-                )
+            if workflow_context:
                 workflow_context.metadata["error"] = str(e)
-                workflow_context.metadata["exception_type"] = type(e).__name__
                 self.context_persistence.update_context(workflow_context)
 
         finally:
             result.end_time = datetime.now()
-            result.total_artifacts = sum(
-                len(step.artifacts_created) for step in result.step_results
-            )
-
-            # Clear thread-local context
+            result.total_artifacts = sum(len(step.artifacts_created) for step in result.step_results)
             clear_workflow_context()
-
-            logger.debug(
-                "workflow_context_cleared",
-                context_id=workflow_context.workflow_id if workflow_context else None,
-            )
 
         return result
 
     async def execute_workflow_sequence_from_prompt(self, initial_prompt: str) -> WorkflowResult:
-        """
-        Convenience method: assess prompt and execute full workflow sequence.
-
-        This is the main entry point for autonomous execution from a user prompt.
-
-        Args:
-            initial_prompt: User's initial request
-
-        Returns:
-            WorkflowResult with complete execution results
-        """
-        logger.info("autonomous_execution_starting", prompt_preview=initial_prompt[:100])
-
-        # Brian assesses and selects workflows
+        """Assess prompt and execute full workflow sequence (main entry point)."""
         workflow_sequence = await self.assess_and_select_workflows(initial_prompt)
+        return await self.execute_workflow(initial_prompt=initial_prompt, workflow=workflow_sequence)
 
-        # Execute the selected workflow sequence
-        result = await self.execute_workflow(
-            initial_prompt=initial_prompt, workflow=workflow_sequence
-        )
 
-        logger.info(
-            "autonomous_execution_complete",
-            success=result.success,
-            duration=result.duration_seconds,
-            steps=result.total_steps,
-        )
-
-        return result
-
-    # ========================================================================
-    # Artifact Detection (Story 18.2) - Delegated to ArtifactManager (Story 22.2)
-    # ========================================================================
-
-    def _snapshot_project_files(self) -> set:
-        """
-        Snapshot current project files for artifact detection.
-
-        Delegates to ArtifactManager.snapshot() for implementation.
-
-        Returns:
-            Set of (path, mtime, size) tuples for all tracked files
-        """
-        return self.artifact_manager.snapshot()
-
-    def _detect_artifacts(self, before: set, after: set) -> List[Path]:
-        """
-        Detect artifacts created or modified during workflow execution.
-
-        Delegates to ArtifactManager.detect() for implementation.
-
-        Args:
-            before: Filesystem snapshot before execution (set of tuples)
-            after: Filesystem snapshot after execution (set of tuples)
-
-        Returns:
-            List of artifact paths (relative to project root) that were created or modified
-        """
-        return self.artifact_manager.detect(before, after)
-
-    # ========================================================================
-    # Agent Execution Bridge
-    # ========================================================================
-
-    async def _execute_agent_task_static(
-        self, workflow_info: "WorkflowInfo", epic: int = 1, story: int = 1
-    ) -> AsyncGenerator[str, None]:
-        """
-        Execute agent task via ProcessExecutor with proper variable resolution.
-
-        This method bridges the WorkflowCoordinator's agent_executor callback
-        to the ProcessExecutor service. It uses WorkflowExecutor to:
-        1. Resolve workflow variables from workflow.yaml, config, and parameters
-        2. Render instructions template with resolved variables
-        3. Execute the fully resolved instructions via ProcessExecutor
-
-        NEW BEHAVIOR (Story 18.1):
-        - Uses WorkflowExecutor to resolve workflow variables
-        - Renders instructions template with resolved variables
-        - All {{variable}} placeholders replaced before LLM execution
-
-        Args:
-            workflow_info: Workflow metadata containing path to instructions
-            epic: Epic number for story workflows
-            story: Story number for story workflows
-
-        Yields:
-            Output from agent execution via Claude CLI
-
-        Raises:
-            ProcessExecutionError: If Claude CLI execution fails
-            ValueError: If Claude CLI not found or required variables missing
-        """
-        logger.debug("executing_agent_task", workflow=workflow_info.name, epic=epic, story=story)
-
-        # STEP 1: Build parameters for variable resolution
-        params = {
-            "epic_num": epic,
-            "story_num": story,
-            "epic": epic,
-            "story": story,
-            "project_name": self.project_root.name,
-            "project_root": str(self.project_root),
-        }
-
-        # STEP 2: Use WorkflowExecutor to resolve variables
-        variables = self.workflow_executor.resolve_variables(workflow_info, params)
-
-        logger.info(
-            "workflow_variables_resolved",
-            workflow=workflow_info.name,
-            variables=variables,
-            variables_used=list(variables.keys())
-        )
-
-        # STEP 3: Load instructions from instructions.md
-        installed_path = (
-            Path(workflow_info.installed_path)
-            if isinstance(workflow_info.installed_path, str)
-            else workflow_info.installed_path
-        )
-        instructions_file = installed_path / "instructions.md"
-        if instructions_file.exists():
-            task_prompt = instructions_file.read_text(encoding="utf-8")
-        else:
-            task_prompt = workflow_info.description
-            logger.warning(
-                "workflow_missing_instructions",
-                workflow=workflow_info.name,
-                path=str(instructions_file),
-            )
-
-        # STEP 4: Render instructions with resolved variables
-        task_prompt = self.workflow_executor.render_template(task_prompt, variables)
-
-        logger.info(
-            "workflow_instructions_rendered",
-            workflow=workflow_info.name,
-            prompt_length=len(task_prompt),
-            variables_used=list(variables.keys())
-        )
-
-        # STEP 5: Snapshot filesystem before execution (Story 18.2)
-        files_before = self._snapshot_project_files()
-
-        logger.debug(
-            "filesystem_snapshot_before",
-            workflow=workflow_info.name,
-            files_count=len(files_before)
-        )
-
-        # STEP 6: Execute via ProcessExecutor
-        logger.info(
-            "executing_workflow_via_process_executor",
-            workflow=workflow_info.name,
-            agent=self._get_agent_for_workflow(workflow_info),
-            epic=epic,
-            story=story,
-            prompt_length=len(task_prompt),
-        )
-
-        # Collect all output for later use (if needed)
-        execution_output = []
-        async for output in self.process_executor.execute_agent_task(
-            task=task_prompt,
-            tools=["Read", "Write", "Edit", "MultiEdit", "Bash", "Grep", "Glob", "TodoWrite"],
-            timeout=None
-        ):
-            execution_output.append(output)
-            yield output
-
-        # STEP 7: Snapshot filesystem after execution (Story 18.2)
-        files_after = self._snapshot_project_files()
-
-        logger.debug(
-            "filesystem_snapshot_after",
-            workflow=workflow_info.name,
-            files_count=len(files_after)
-        )
-
-        # STEP 8: Detect artifacts created during execution (Story 18.2)
-        artifacts = self._detect_artifacts(files_before, files_after)
-
-        # STEP 9: Register artifacts with DocumentLifecycleManager (Story 18.3)
-        if artifacts:
-            # Delegate to ArtifactManager (Story 22.2)
-            self.artifact_manager.register(
-                artifacts=artifacts,
-                workflow_name=workflow_info.name,
-                epic=epic,
-                story=story,
-                agent=self._get_agent_for_workflow(workflow_info),
-                phase=workflow_info.phase,
-                variables=variables,
-            )
-
-        logger.info(
-            "workflow_execution_complete",
-            workflow=workflow_info.name,
-            artifacts_count=len(artifacts),
-        )
-
-    def _infer_document_type(self, path: Path, workflow_info: "WorkflowInfo") -> str:
-        """
-        Infer document type from workflow name and file path.
-
-        Delegates to ArtifactManager.infer_type() for implementation.
-
-        Args:
-            path: Path to artifact file (relative to project root)
-            workflow_info: Workflow metadata with workflow name
-
-        Returns:
-            Document type string (e.g., "prd", "architecture", "story")
-        """
-        return self.artifact_manager.infer_type(path, workflow_info.name)
-
-    def _register_artifacts(
-        self,
-        artifacts: List[Path],
-        workflow_info: "WorkflowInfo",
-        epic: int,
-        story: int,
-        variables: Dict[str, Any]
-    ) -> None:
-        """
-        Register detected artifacts with DocumentLifecycleManager.
-
-        Delegates to ArtifactManager.register() for implementation.
-
-        Args:
-            artifacts: List of artifact paths (relative to project root)
-            workflow_info: Workflow metadata (name, phase, agent)
-            epic: Epic number for context
-            story: Story number for context
-            variables: Resolved workflow variables from WorkflowExecutor
-        """
-        self.artifact_manager.register(
-            artifacts=artifacts,
-            workflow_name=workflow_info.name,
-            epic=epic,
-            story=story,
-            agent=self._get_agent_for_workflow(workflow_info),
-            phase=workflow_info.phase,
-            variables=variables,
-        )
-
-    def _get_agent_for_workflow(self, workflow_info: "WorkflowInfo") -> str:
-        """
-        Determine which agent should execute a workflow.
-
-        Delegates to AgentCoordinator for workflow-to-agent mapping.
-        This is used by tests and internal methods.
-
-        Args:
-            workflow_info: Workflow metadata
-
-        Returns:
-            Agent name (e.g., "John", "Amelia", "Bob")
-        """
-        # Delegate to AgentCoordinator (Story 22.3)
-        return self.agent_coordinator.get_agent(workflow_info.name)
-
-    def _extract_feature_name(self, prompt: str) -> str:
-        """
-        Extract feature name from initial prompt for context tracking.
-
-        This is a simple extraction that takes the first few words
-        or falls back to a generic name. Can be enhanced with NLP later.
-
-        Note: For path-based feature extraction, use MetadataExtractor.extract_feature_name()
-
-        Args:
-            prompt: Initial user prompt
-
-        Returns:
-            Feature name string (kebab-case)
-        """
-        # Simple extraction: take first 3-5 words, convert to kebab-case
-        words = prompt.lower().split()[:5]
-        # Remove common stop words
-        stop_words = {"a", "an", "the", "for", "with", "to", "and", "or"}
-        filtered_words = [w for w in words if w not in stop_words]
-
-        if not filtered_words:
-            return "workflow-execution"
-
-        # Join with hyphens, limit length
-        feature_name = "-".join(filtered_words[:3])
-        # Remove special characters
-        feature_name = "".join(c if c.isalnum() or c == "-" else "" for c in feature_name)
-        return feature_name[:50] or "workflow-execution"

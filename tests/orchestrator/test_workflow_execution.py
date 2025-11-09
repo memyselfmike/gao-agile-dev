@@ -58,11 +58,19 @@ def mock_orchestrator(mock_project_root):
     mock_quality_gate_manager = Mock()
     mock_brian_orchestrator = Mock()
     mock_brian_orchestrator.assess_and_select_workflows = AsyncMock()
+    mock_workflow_execution_engine = Mock()
+    mock_artifact_manager = Mock()
+    mock_agent_coordinator = Mock()
+    mock_ceremony_orchestrator = Mock()
 
     # Create orchestrator with injected mocks
     orchestrator = GAODevOrchestrator(
         project_root=mock_project_root,
         api_key="test-key",
+        workflow_execution_engine=mock_workflow_execution_engine,
+        artifact_manager=mock_artifact_manager,
+        agent_coordinator=mock_agent_coordinator,
+        ceremony_orchestrator=mock_ceremony_orchestrator,
         workflow_coordinator=mock_workflow_coordinator,
         story_lifecycle=mock_story_lifecycle,
         process_executor=mock_process_executor,
@@ -222,45 +230,6 @@ async def test_execute_workflow_empty_sequence(mock_orchestrator):
     # Verify workflow completed with no steps
     # (Empty workflow sequence should complete successfully, just with 0 steps)
     assert result.total_steps == 0
-
-
-def test_get_agent_for_workflow(mock_orchestrator):
-    """Test agent mapping for workflows."""
-    # Test PRD workflow -> John
-    prd_workflow = WorkflowInfo(
-        name="prd",
-        description="Create PRD",
-        phase=2,
-        installed_path=Path("/fake")
-    )
-    assert mock_orchestrator._get_agent_for_workflow(prd_workflow) == "John"
-
-    # Test architecture workflow -> Winston
-    arch_workflow = WorkflowInfo(
-        name="architecture",
-        description="Create Architecture",
-        phase=3,
-        installed_path=Path("/fake")
-    )
-    assert mock_orchestrator._get_agent_for_workflow(arch_workflow) == "Winston"
-
-    # Test story creation workflow -> Bob
-    story_workflow = WorkflowInfo(
-        name="create-story",
-        description="Create Story",
-        phase=4,
-        installed_path=Path("/fake")
-    )
-    assert mock_orchestrator._get_agent_for_workflow(story_workflow) == "Bob"
-
-    # Test implementation workflow -> Amelia
-    impl_workflow = WorkflowInfo(
-        name="dev-story",
-        description="Implement Story",
-        phase=4,
-        installed_path=Path("/fake")
-    )
-    assert mock_orchestrator._get_agent_for_workflow(impl_workflow) == "Amelia"
 
 
 def test_workflow_result_properties():
