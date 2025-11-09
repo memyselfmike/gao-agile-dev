@@ -23,7 +23,8 @@
       "Bash(timeout 180 python -m pytest:*)",
       "Bash(dir \"C:\\Projects\\gao-agile-dev\\docs\\analysis\" /B)",
       "Bash(dir \"docs\\analysis\" /B 2)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

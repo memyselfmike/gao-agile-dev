@@ -31,6 +31,7 @@ from .state_commands import state
 from .context_commands import context
 from .db_commands import db
 from .migration_commands import migrate_group
+from .ceremony_commands import ceremony
 
 
 @click.group()
@@ -536,6 +537,13 @@ cli.add_command(db)
 
 # Register migration command group (migrate, consistency-check, consistency-repair)
 cli.add_command(migrate_group, name="migrate")
+
+# ============================================================================
+# CEREMONY COMMANDS
+# ============================================================================
+
+# Register ceremony command group
+cli.add_command(ceremony)
 
 
 if __name__ == "__main__":
