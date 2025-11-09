@@ -30,6 +30,7 @@ from .lifecycle_commands import lifecycle
 from .state_commands import state
 from .context_commands import context
 from .db_commands import db
+from .migration_commands import migrate_group
 
 
 @click.group()
@@ -528,6 +529,13 @@ cli.add_command(context)
 # Register db command group
 # ============================================================================
 cli.add_command(db)
+
+# ============================================================================
+# MIGRATION COMMANDS
+# ============================================================================
+
+# Register migration command group (migrate, consistency-check, consistency-repair)
+cli.add_command(migrate_group, name="migrate")
 
 
 if __name__ == "__main__":
