@@ -164,3 +164,26 @@ class MaxAdjustmentsExceededError(DocumentLifecycleError):
         super().__init__(message)
         self.epic_num = epic_num
         self.adjustment_count = adjustment_count
+
+
+class MaxConversionsExceededError(DocumentLifecycleError):
+    """Raised when maximum action item conversions limit is exceeded.
+
+    This exception is raised by ActionItemIntegrationService when the C8 fix
+    limit (max 1 action item conversion per epic) is exceeded to prevent noise.
+
+    Story: 29.5 - Action Item Integration
+    """
+
+    def __init__(self, message: str, epic_num: int = None, adjustment_count: int = None):
+        """
+        Initialize MaxConversionsExceededError.
+
+        Args:
+            message: Error message
+            epic_num: Optional epic number
+            adjustment_count: Optional current conversion count (always 1 for C8 fix)
+        """
+        super().__init__(message)
+        self.epic_num = epic_num
+        self.adjustment_count = adjustment_count

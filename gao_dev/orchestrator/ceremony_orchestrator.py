@@ -47,6 +47,7 @@ from ..core.services.ceremony_service import CeremonyService
 from ..core.services.action_item_service import ActionItemService
 from ..core.services.learning_index_service import LearningIndexService
 from ..core.services.git_integrated_state_manager import GitIntegratedStateManager
+from ..core.services.action_item_integration_service import ActionItemIntegrationService
 
 logger = structlog.get_logger()
 
@@ -109,6 +110,14 @@ class CeremonyOrchestrator:
         self.ceremony_service = CeremonyService(db_path=self.db_path)
         self.action_service = ActionItemService(db_path=self.db_path)
         self.learning_service = LearningIndexService(db_path=self.db_path)
+
+        # Epic 29.5: Action item integration service
+        git_manager = git_state_manager.git_manager if git_state_manager else None
+        self.action_item_integration = ActionItemIntegrationService(
+            db_path=self.db_path,
+            project_root=self.project_root,
+            git_manager=git_manager
+        )
 
         self.logger = logger.bind(service="ceremony_orchestrator")
         self.logger.info(
@@ -783,6 +792,26 @@ class CeremonyOrchestrator:
                 )
                 learnings_indexed.append(learning)
 
+        # Epic 29.5: Process action items for auto-conversion
+        conversion_result = {"converted": 0, "tracked": 0}
+        if action_items_created:
+            try:
+                conversion_result = self.action_item_integration.process_action_items(
+                    ceremony_id=ceremony_record["id"]
+                )
+                self.logger.info(
+                    "action_items_processed",
+                    ceremony_id=ceremony_record["id"],
+                    converted=conversion_result["converted"],
+                    tracked=conversion_result["tracked"]
+                )
+            except Exception as e:
+                self.logger.error(
+                    "action_item_processing_failed",
+                    ceremony_id=ceremony_record["id"],
+                    error=str(e)
+                )
+
         duration_ms = (datetime.now() - start_time).total_seconds() * 1000
         self.logger.info(
             "ceremony_record_completed",
@@ -790,7 +819,9 @@ class CeremonyOrchestrator:
             ceremony_id=ceremony_record["id"],
             duration_ms=duration_ms,
             action_items_count=len(action_items_created),
-            learnings_count=len(learnings_indexed)
+            learnings_count=len(learnings_indexed),
+            action_items_converted=conversion_result["converted"],
+            action_items_tracked=conversion_result["tracked"]
         )
 
         return {
@@ -798,7 +829,9 @@ class CeremonyOrchestrator:
             "transcript_path": str(transcript_path),
             "action_items": action_items_created,
             "learnings": learnings_indexed,
-            "summary": results["summary"]
+            "summary": results["summary"],
+            "action_items_converted": conversion_result["converted"],
+            "action_items_tracked": conversion_result["tracked"]
         }
 
     # -------------------------------------------------------------------------
@@ -1124,6 +1157,7 @@ Planning agenda:
         self.ceremony_service.close()
         self.action_service.close()
         self.learning_service.close()
+        self.action_item_integration.close()
 
     def __enter__(self):
         """Context manager entry."""
