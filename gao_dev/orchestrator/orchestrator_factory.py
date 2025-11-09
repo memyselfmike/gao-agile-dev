@@ -101,18 +101,26 @@ def create_orchestrator(
     gao_dev_dir.mkdir(parents=True, exist_ok=True)
     db_path = gao_dev_dir / "documents.db"
 
-    # Initialize CeremonyOrchestrator with db_path
-    ceremony_orchestrator = CeremonyOrchestrator(
-        config=config_loader,
-        db_path=db_path,
-        project_root=project_root
-    )
-
     # Initialize GitIntegratedStateManager (Epic 27.1)
     git_state_manager = GitIntegratedStateManager(
         db_path=db_path,
         project_path=project_root,
         auto_commit=True
+    )
+
+    # Epic 28.4: Initialize ceremony components
+    from ..core.services.ceremony_trigger_engine import CeremonyTriggerEngine
+    from ..core.services.ceremony_failure_handler import CeremonyFailureHandler
+
+    ceremony_trigger_engine = CeremonyTriggerEngine(db_path=db_path)
+    ceremony_failure_handler = CeremonyFailureHandler()
+
+    # Initialize CeremonyOrchestrator with git_state_manager (Epic 28.4: C3 fix)
+    ceremony_orchestrator = CeremonyOrchestrator(
+        config=config_loader,
+        db_path=db_path,
+        project_root=project_root,
+        git_state_manager=git_state_manager  # Epic 28.4: For atomic transactions
     )
 
     # Create agent executor closure for workflow execution
@@ -154,6 +162,12 @@ def create_orchestrator(
         doc_manager=doc_lifecycle,
         workflow_executor=workflow_executor,
         max_retries=3,
+        # Epic 28.4: Ceremony integration
+        ceremony_trigger_engine=ceremony_trigger_engine,
+        ceremony_orchestrator=ceremony_orchestrator,
+        ceremony_failure_handler=ceremony_failure_handler,
+        git_state_manager=git_state_manager,
+        db_path=db_path,
     )
 
     story_lifecycle = StoryLifecycleManager(

@@ -1,0 +1,192 @@
+# Planning Ceremony Workflow
+#
+# Coordinates multi-agent planning ceremony for epic kickoff.
+# Participants: John (Product), Winston (Architect), Bob (Scrum Master)
+#
+# This ceremony is automatically triggered at epic_start for Scale Level 3+ projects.
+# It ensures the team is aligned on epic goals, architecture, and story breakdown.
+#
+# Ceremony Flow:
+#   1. Bob loads epic context (PRD, architecture)
+#   2. CeremonyOrchestrator coordinates planning discussion
+#   3. Team discusses epic scope, risks, dependencies
+#   4. Planning transcript saved to feature folder
+#   5. Action items extracted for epic kickoff
+#
+# Expected Outcomes:
+#   - Planning transcript: docs/features/{feature_name}/ceremonies/planning-{epic_num}.md
+#   - Action items: High-priority tasks for epic start
+#   - Team alignment: Shared understanding of epic goals
+
+name: planning-ceremony
+description: Hold planning ceremony for epic kickoff with John, Winston, and Bob
+category: ceremonies
+phase: 5
+agent: Bob
+non_interactive: false
+autonomous: true
+iterative: false
+web_bundle: false
+
+# Ceremony-specific metadata
+metadata:
+  ceremony_type: planning
+  participants:
+    - John
+    - Winston
+    - Bob
+  trigger: epic_start
+  required_for_levels:
+    - 3
+    - 4
+  duration_estimate: "15-30 minutes"
+  success_criteria:
+    - Planning transcript saved
+    - Action items extracted
+    - Team aligned on epic goals
+
+variables:
+  epic_num:
+    description: Epic number for planning ceremony
+    type: integer
+    required: true
+  feature_name:
+    description: Feature name for ceremony artifact storage
+    type: string
+    required: true
+  ceremony_output_folder:
+    description: Folder for ceremony artifacts
+    type: string
+    default: "docs/features/{{feature_name}}/ceremonies"
+  prd_location:
+    description: Path to PRD file
+    type: string
+    default: "docs/features/{{feature_name}}/PRD.md"
+  architecture_location:
+    description: Path to architecture document
+    type: string
+    default: "docs/features/{{feature_name}}/ARCHITECTURE.md"
+
+required_tools:
+  - read_file
+  - write_file
+  - ceremony_orchestrator
+
+output_file: "{{ceremony_output_folder}}/planning-{{epic_num}}.md"
+
+templates:
+  main: |
+    # Planning Ceremony - Epic {{epic_num}}
+
+    **Objective**: Hold planning ceremony to kickoff Epic {{epic_num}} ({{feature_name}})
+
+    ## Instructions for Bob (Scrum Master)
+
+    You are orchestrating the planning ceremony for Epic {{epic_num}}. This ceremony brings together
+    John (Product Manager), Winston (Technical Architect), and yourself to ensure the team is aligned
+    on epic goals, architecture, and story breakdown.
+
+    ### Step 1: Load Epic Context
+
+    Read the following documents to prepare for the ceremony:
+    - PRD: {{prd_location}}
+    - Architecture: {{architecture_location}}
+
+    Understand:
+    - Epic goals and success criteria
+    - Technical approach and architecture patterns
+    - Story breakdown and dependencies
+    - Estimated timeline and complexity
+
+    ### Step 2: Execute Planning Ceremony
+
+    Invoke CeremonyOrchestrator to hold the planning ceremony:
+
+    ```python
+    from gao_dev.orchestrator.ceremony_orchestrator import CeremonyOrchestrator
+
+    result = ceremony_orchestrator.hold_ceremony(
+        ceremony_type="planning",
+        epic_num={{epic_num}},
+        participants=["John", "Winston", "Bob"],
+        additional_context={
+            "feature_name": "{{feature_name}}",
+            "prd_path": "{{prd_location}}",
+            "architecture_path": "{{architecture_location}}"
+        }
+    )
+    ```
+
+    ### Step 3: Planning Discussion Topics
+
+    Guide the team through these discussion topics:
+
+    **Epic Goals Review** (John leads):
+    - What problem are we solving?
+    - What are the success criteria?
+    - What is the scope (in scope / out of scope)?
+    - What are the key user stories?
+
+    **Architecture Review** (Winston leads):
+    - What is the technical approach?
+    - What are the key architectural decisions?
+    - What are the technical risks?
+    - What are the dependencies on other systems?
+
+    **Story Breakdown** (Bob leads):
+    - How many stories in this epic?
+    - What is the estimated effort per story?
+    - What is the story dependency order?
+    - What is the critical path?
+
+    **Risk Assessment** (Team):
+    - What could go wrong?
+    - What are our mitigation strategies?
+    - What are the key assumptions?
+    - What are the open questions?
+
+    ### Step 4: Generate Planning Summary
+
+    CeremonyOrchestrator will automatically:
+    - Generate planning transcript
+    - Save to: {{ceremony_output_folder}}/planning-{{epic_num}}.md
+    - Extract action items for epic kickoff
+    - Record ceremony outcomes in database
+
+    ### Step 5: Review Action Items
+
+    Review the extracted action items and ensure they include:
+    - Any PRD clarifications needed (assign to John)
+    - Any architecture refinements needed (assign to Winston)
+    - Any environment setup tasks (assign to Amelia)
+    - Any test strategy discussions (assign to Murat)
+
+    ## Success Criteria
+
+    - [ ] Planning transcript saved to {{ceremony_output_folder}}/planning-{{epic_num}}.md
+    - [ ] 3-8 action items extracted with clear owners
+    - [ ] All risks identified and documented
+    - [ ] Team has shared understanding of epic goals
+    - [ ] Story dependencies mapped
+
+    ## Expected Artifacts
+
+    1. **Planning Transcript**: Full ceremony conversation
+       - Location: {{ceremony_output_folder}}/planning-{{epic_num}}.md
+       - Format: Markdown with agent dialogues
+
+    2. **Action Items**: Database records for follow-up tasks
+       - Created by: CeremonyOrchestrator
+       - Queryable via: ActionItemService
+
+    3. **Ceremony Summary**: High-level outcome summary
+       - Included in transcript header
+       - Key decisions and next steps
+
+    ## Notes
+
+    - This ceremony is required for Scale Level 3+ projects
+    - Typical duration: 15-30 minutes
+    - Focus on alignment, not implementation details
+    - Action items should be concrete and actionable
+    - If major risks identified, consider adding mitigation stories

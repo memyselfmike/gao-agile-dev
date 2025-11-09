@@ -67,15 +67,24 @@ class WorkflowRegistry:
             if not data or "name" not in data:
                 return None
 
-            # Determine phase from directory path
-            phase = self._determine_phase(workflow_file.parent)
+            # Determine phase from directory path or YAML
+            phase = data.get("phase", self._determine_phase(workflow_file.parent))
 
-            return WorkflowInfo(
+            # Load category and metadata
+            category = data.get("category")
+            metadata = data.get("metadata", {})
+
+            # Validate ceremony workflows
+            if category == "ceremonies":
+                if not self._validate_ceremony_metadata(metadata, data["name"]):
+                    return None
+
+            workflow_info = WorkflowInfo(
                 name=data["name"],
                 description=data.get("description", ""),
                 phase=phase,
                 installed_path=workflow_file.parent,
-                author=data.get("author"),
+                author=data.get("agent") or data.get("author"),  # Ceremony workflows use 'agent'
                 tags=data.get("tags", []),
                 variables=data.get("variables", {}),
                 required_tools=data.get("required_tools", []),
@@ -85,10 +94,79 @@ class WorkflowRegistry:
                 web_bundle=data.get("web_bundle", False),
                 output_file=data.get("output_file"),
                 templates=data.get("templates", {}),
+                category=category,
+                metadata=metadata,
             )
+            return workflow_info
         except Exception as e:
             print(f"Error loading workflow {workflow_file}: {e}")
             return None
+
+    def _validate_ceremony_metadata(self, metadata: dict, workflow_name: str) -> bool:
+        """
+        Validate ceremony-specific metadata.
+
+        Args:
+            metadata: Ceremony metadata dictionary
+            workflow_name: Name of the workflow (for error messages)
+
+        Returns:
+            True if valid, False otherwise
+        """
+        if not metadata:
+            print(f"Ceremony workflow '{workflow_name}' missing metadata field")
+            return False
+
+        # Check required fields
+        if "ceremony_type" not in metadata:
+            print(f"Ceremony workflow '{workflow_name}' missing ceremony_type in metadata")
+            return False
+
+        if "participants" not in metadata:
+            print(f"Ceremony workflow '{workflow_name}' missing participants in metadata")
+            return False
+
+        if "trigger" not in metadata:
+            print(f"Ceremony workflow '{workflow_name}' missing trigger in metadata")
+            return False
+
+        # Validate ceremony_type
+        valid_ceremony_types = ["planning", "standup", "retrospective"]
+        if metadata["ceremony_type"] not in valid_ceremony_types:
+            print(
+                f"Ceremony workflow '{workflow_name}' has invalid ceremony_type: "
+                f"{metadata['ceremony_type']}"
+            )
+            return False
+
+        # Validate participants is a list
+        if not isinstance(metadata["participants"], list):
+            print(f"Ceremony workflow '{workflow_name}' participants must be a list")
+            return False
+
+        # Validate participants are non-empty
+        if not metadata["participants"]:
+            print(f"Ceremony workflow '{workflow_name}' participants cannot be empty")
+            return False
+
+        # Validate trigger
+        valid_triggers = [
+            "epic_start",
+            "epic_completion",
+            "mid_epic_checkpoint",
+            "story_interval",
+            "story_count_threshold",
+            "quality_gate_failure",
+            "repeated_failure",
+            "timeout_exceeded",
+            "daily",
+            "phase_end",
+        ]
+        if metadata["trigger"] not in valid_triggers:
+            print(f"Ceremony workflow '{workflow_name}' has invalid trigger: {metadata['trigger']}")
+            return False
+
+        return True
 
     def _determine_phase(self, workflow_path: Path) -> int:
         """
@@ -98,7 +176,7 @@ class WorkflowRegistry:
             workflow_path: Path to workflow directory
 
         Returns:
-            Phase number (0-4)
+            Phase number (0-5, 5 is for ceremonies)
         """
         # Look for phase number in parent directories
         for parent in workflow_path.parents:
@@ -112,6 +190,8 @@ class WorkflowRegistry:
                 return 3
             elif parent.name.startswith("4-"):
                 return 4
+            elif parent.name.startswith("5-"):
+                return 5
         return 0
 
     def get_workflow(self, name: str) -> Optional[WorkflowInfo]:
@@ -128,12 +208,17 @@ class WorkflowRegistry:
             self.index_workflows()
         return self._workflows.get(name)
 
-    def list_workflows(self, phase: Optional[int] = None) -> List[WorkflowInfo]:
+    def list_workflows(
+        self,
+        phase: Optional[int] = None,
+        category: Optional[str] = None
+    ) -> List[WorkflowInfo]:
         """
-        List workflows, optionally filtered by phase.
+        List workflows, optionally filtered by phase and/or category.
 
         Args:
-            phase: Phase number to filter by (0-4), None for all
+            phase: Phase number to filter by (0-5), None for all
+            category: Category to filter by (e.g., "ceremonies"), None for all
 
         Returns:
             List of WorkflowInfo objects
@@ -142,8 +227,12 @@ class WorkflowRegistry:
             self.index_workflows()
 
         workflows = list(self._workflows.values())
+
         if phase is not None:
             workflows = [w for w in workflows if w.phase == phase]
+
+        if category is not None:
+            workflows = [w for w in workflows if w.category == category]
 
         # Sort by phase, then by name
         workflows.sort(key=lambda w: (w.phase, w.name))

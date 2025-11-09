@@ -1,0 +1,24 @@
+# Ceremony Safety Limits Configuration
+# See docs/features/ceremony-integration-and-self-learning/CRITICAL_FIXES.md C1 for rationale
+#
+# Epic: 28 - Ceremony-Driven Workflow Integration
+# Story: 28.3 - CeremonyTriggerEngine
+
+# Hard limit: Max 10 ceremonies per epic
+# Prevents infinite loops from retrospective -> learning -> more ceremonies
+max_per_epic: 10
+
+# Cooldown periods in hours
+# Minimum time between ceremonies of the same type
+cooldown_hours:
+  planning: 24      # Min 24 hours between planning ceremonies
+  standup: 12       # Min 12 hours between standups
+  retrospective: 24 # Min 24 hours between retrospectives
+
+# Timeout in minutes
+# Maximum duration for a single ceremony execution
+timeout_minutes: 10
+
+# Circuit breaker threshold
+# Number of consecutive failures before disabling ceremonies
+circuit_breaker_threshold: 3
