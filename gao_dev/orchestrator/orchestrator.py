@@ -6,6 +6,7 @@ The GAODevOrchestrator is a thin facade that delegates to specialized services:
 - ProcessExecutor: Subprocess execution (Claude CLI)
 - QualityGateManager: Artifact validation
 - BrianOrchestrator: Complexity assessment and workflow selection
+- CeremonyOrchestrator: Multi-agent ceremonies (foundation for Epic 26)
 
 This maintains the Single Responsibility Principle and ensures each component has
 a clear, focused purpose.
@@ -29,6 +30,7 @@ from .brian_orchestrator import (
 from .workflow_execution_engine import WorkflowExecutionEngine
 from .artifact_manager import ArtifactManager
 from .agent_coordinator import AgentCoordinator
+from .ceremony_orchestrator import CeremonyOrchestrator
 from ..core.config_loader import ConfigLoader
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.workflow_executor import WorkflowExecutor
@@ -62,6 +64,7 @@ class GAODevOrchestrator:
     - process_executor: Executes external processes (Claude CLI)
     - quality_gate_manager: Validates workflow artifacts
     - brian_orchestrator: Analyzes complexity and selects workflows
+    - ceremony_orchestrator: Coordinates multi-agent ceremonies (foundation for Epic 26)
     """
 
     def __init__(
@@ -74,6 +77,7 @@ class GAODevOrchestrator:
         process_executor: Optional[ProcessExecutor] = None,
         quality_gate_manager: Optional[QualityGateManager] = None,
         brian_orchestrator: Optional[BrianOrchestrator] = None,
+        ceremony_orchestrator: Optional[CeremonyOrchestrator] = None,
         context_persistence: Optional[ContextPersistence] = None,
     ):
         """
@@ -90,6 +94,7 @@ class GAODevOrchestrator:
             process_executor: Optional custom ProcessExecutor
             quality_gate_manager: Optional custom QualityGateManager
             brian_orchestrator: Optional custom BrianOrchestrator
+            ceremony_orchestrator: Optional custom CeremonyOrchestrator
             context_persistence: Optional custom ContextPersistence
         """
         self.project_root = project_root
@@ -137,6 +142,7 @@ class GAODevOrchestrator:
             or process_executor is None
             or quality_gate_manager is None
             or brian_orchestrator is None
+            or ceremony_orchestrator is None
         )
 
         if any_service_missing:
@@ -156,6 +162,7 @@ class GAODevOrchestrator:
             self.process_executor = process_executor
             self.quality_gate_manager = quality_gate_manager
             self.brian_orchestrator = brian_orchestrator
+            self.ceremony_orchestrator = ceremony_orchestrator
 
             # Initialize AgentCoordinator with provided ProcessExecutor
             self.agent_coordinator = AgentCoordinator(
@@ -314,6 +321,12 @@ class GAODevOrchestrator:
         self.agent_coordinator = AgentCoordinator(
             process_executor=self.process_executor,
             project_root=self.project_root,
+        )
+
+        # Initialize CeremonyOrchestrator (Story 22.4)
+        # Foundation created in Epic 22, full implementation in Epic 26
+        self.ceremony_orchestrator = CeremonyOrchestrator(
+            config=self.config_loader,
         )
 
     @classmethod
