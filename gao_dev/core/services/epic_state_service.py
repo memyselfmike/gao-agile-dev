@@ -358,6 +358,44 @@ class EpicStateService:
 
             return [dict(row) for row in cursor.fetchall()]
 
+    def list(self) -> List[Dict[str, Any]]:
+        """
+        List all epics (including archived).
+
+        Returns:
+            List of all epic records
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT * FROM epic_state
+                ORDER BY epic_num ASC
+                """
+            )
+
+            return [dict(row) for row in cursor.fetchall()]
+
+    def delete(self, epic_num: int) -> None:
+        """
+        Delete an epic record.
+
+        Args:
+            epic_num: Epic number to delete
+
+        Raises:
+            ValueError: If epic not found
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("DELETE FROM epic_state WHERE epic_num = ?", (epic_num,))
+
+            if cursor.rowcount == 0:
+                raise ValueError(f"Epic {epic_num} not found")
+
+            self.logger.info("epic_deleted", epic_num=epic_num)
+
     def close(self) -> None:
         """Close database connection for current thread."""
         if hasattr(self._local, "conn"):

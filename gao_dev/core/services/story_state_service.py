@@ -365,6 +365,48 @@ class StoryStateService:
 
             return [dict(row) for row in cursor.fetchall()]
 
+    def list(self) -> List[Dict[str, Any]]:
+        """
+        List all stories.
+
+        Returns:
+            List of all story records
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT * FROM story_state
+                ORDER BY epic_num ASC, story_num ASC
+                """
+            )
+
+            return [dict(row) for row in cursor.fetchall()]
+
+    def delete(self, epic_num: int, story_num: int) -> None:
+        """
+        Delete a story record.
+
+        Args:
+            epic_num: Epic number
+            story_num: Story number
+
+        Raises:
+            ValueError: If story not found
+        """
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "DELETE FROM story_state WHERE epic_num = ? AND story_num = ?",
+                (epic_num, story_num)
+            )
+
+            if cursor.rowcount == 0:
+                raise ValueError(f"Story {epic_num}.{story_num} not found")
+
+            self.logger.info("story_deleted", epic_num=epic_num, story_num=story_num)
+
     def close(self) -> None:
         """Close database connection for current thread."""
         if hasattr(self._local, "conn"):
