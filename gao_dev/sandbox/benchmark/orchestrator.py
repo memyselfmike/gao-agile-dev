@@ -134,7 +134,12 @@ class WorkflowOrchestrator:
         self.git_commit_manager = None
         self.artifact_verifier = None
         if execution_mode == "agent":
-            self.gao_orchestrator = GAODevOrchestrator(project_root=self.project_path)
+            # Use create_default() factory to get all services including GitIntegratedStateManager (Epic 27.1)
+            self.gao_orchestrator = GAODevOrchestrator.create_default(
+                project_root=self.project_path,
+                api_key=self.api_key,
+                mode="benchmark"
+            )
             self.artifact_parser = ArtifactParser(project_root=self.project_path)
             self.git_commit_manager = GitCommitManager(
                 project_root=self.project_path,
