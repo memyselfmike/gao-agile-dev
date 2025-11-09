@@ -259,7 +259,7 @@ def create_prd(name: str):
     click.echo(">> Delegating to John (Product Manager)...\n")
 
     project_root = Path.cwd()
-    orchestrator = GAODevOrchestrator(project_root)
+    orchestrator = GAODevOrchestrator.create_default(project_root)
 
     async def run():
         async for message in orchestrator.create_prd(name):
@@ -268,9 +268,13 @@ def create_prd(name: str):
     try:
         asyncio.run(run())
         click.echo("\n\n[OK] PRD creation complete!")
+        if orchestrator.git_state_manager:
+            click.echo("[INFO] Changes committed via git transaction")
     except Exception as e:
         click.echo(f"\n[ERROR] {e}", err=True)
         sys.exit(1)
+    finally:
+        orchestrator.close()
 
 
 @cli.command("create-story")
@@ -285,7 +289,7 @@ def create_story(epic: int, story: int, title: str):
     click.echo(">> Delegating to Bob (Scrum Master)...\n")
 
     project_root = Path.cwd()
-    orchestrator = GAODevOrchestrator(project_root)
+    orchestrator = GAODevOrchestrator.create_default(project_root)
 
     async def run():
         async for message in orchestrator.create_story(epic, story, title):
@@ -294,9 +298,13 @@ def create_story(epic: int, story: int, title: str):
     try:
         asyncio.run(run())
         click.echo("\n\n[OK] Story creation complete!")
+        if orchestrator.git_state_manager:
+            click.echo("[INFO] Changes committed via git transaction")
     except Exception as e:
         click.echo(f"\n[ERROR] {e}", err=True)
         sys.exit(1)
+    finally:
+        orchestrator.close()
 
 
 @cli.command("implement-story")
@@ -308,7 +316,7 @@ def implement_story(epic: int, story: int):
     click.echo(">> Coordinating Bob (Scrum Master) and Amelia (Developer)...\n")
 
     project_root = Path.cwd()
-    orchestrator = GAODevOrchestrator(project_root)
+    orchestrator = GAODevOrchestrator.create_default(project_root)
 
     async def run():
         async for message in orchestrator.implement_story(epic, story):
@@ -317,9 +325,13 @@ def implement_story(epic: int, story: int):
     try:
         asyncio.run(run())
         click.echo("\n\n[OK] Story implementation complete!")
+        if orchestrator.git_state_manager:
+            click.echo("[INFO] Changes committed via git transaction")
     except Exception as e:
         click.echo(f"\n[ERROR] {e}", err=True)
         sys.exit(1)
+    finally:
+        orchestrator.close()
 
 
 @cli.command("create-architecture")
@@ -330,7 +342,7 @@ def create_architecture(name: str):
     click.echo(">> Delegating to Winston (Technical Architect)...\n")
 
     project_root = Path.cwd()
-    orchestrator = GAODevOrchestrator(project_root)
+    orchestrator = GAODevOrchestrator.create_default(project_root)
 
     async def run():
         async for message in orchestrator.create_architecture(name):
@@ -339,9 +351,13 @@ def create_architecture(name: str):
     try:
         asyncio.run(run())
         click.echo("\n\n[OK] Architecture creation complete!")
+        if orchestrator.git_state_manager:
+            click.echo("[INFO] Changes committed via git transaction")
     except Exception as e:
         click.echo(f"\n[ERROR] {e}", err=True)
         sys.exit(1)
+    finally:
+        orchestrator.close()
 
 
 @cli.command("run-health-check")

@@ -25,6 +25,7 @@ from ..core.services.story_lifecycle import StoryLifecycleManager
 from ..core.services.process_executor import ProcessExecutor
 from ..core.services.quality_gate import QualityGateManager
 from ..core.services.ai_analysis_service import AIAnalysisService
+from ..core.services.git_integrated_state_manager import GitIntegratedStateManager
 from ..lifecycle.project_lifecycle import ProjectDocumentLifecycle
 
 logger = structlog.get_logger()
@@ -95,7 +96,24 @@ def create_orchestrator(
         project_root=project_root,
     )
 
-    ceremony_orchestrator = CeremonyOrchestrator(config=config_loader)
+    # Initialize database path for state management
+    gao_dev_dir = project_root / ".gao-dev"
+    gao_dev_dir.mkdir(parents=True, exist_ok=True)
+    db_path = gao_dev_dir / "documents.db"
+
+    # Initialize CeremonyOrchestrator with db_path
+    ceremony_orchestrator = CeremonyOrchestrator(
+        config=config_loader,
+        db_path=db_path,
+        project_root=project_root
+    )
+
+    # Initialize GitIntegratedStateManager (Epic 27.1)
+    git_state_manager = GitIntegratedStateManager(
+        db_path=db_path,
+        project_path=project_root,
+        auto_commit=True
+    )
 
     # Create agent executor closure for workflow execution
     async def agent_executor(
@@ -177,7 +195,7 @@ def create_orchestrator(
         brian_persona_path=brian_persona_path if brian_persona_path.exists() else None,
     )
 
-    # Step 7: Create orchestrator with all services
+    # Step 7: Create orchestrator with all services (including GitIntegratedStateManager)
     return GAODevOrchestrator(
         project_root=project_root,
         workflow_execution_engine=workflow_execution_engine,
@@ -189,6 +207,7 @@ def create_orchestrator(
         process_executor=process_executor,
         quality_gate_manager=quality_gate_manager,
         brian_orchestrator=brian_orchestrator,
+        git_state_manager=git_state_manager,  # Epic 27.1
         api_key=api_key,
         mode=mode,
     )

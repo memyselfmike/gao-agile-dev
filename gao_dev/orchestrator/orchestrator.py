@@ -50,6 +50,7 @@ from ..core.context.workflow_context import WorkflowContext
 from ..core.context.context_api import set_workflow_context, clear_workflow_context
 from ..lifecycle.project_lifecycle import ProjectDocumentLifecycle
 from ..lifecycle.document_manager import DocumentLifecycleManager
+from ..core.services.git_integrated_state_manager import GitIntegratedStateManager
 
 logger = structlog.get_logger()
 
@@ -72,6 +73,7 @@ class GAODevOrchestrator:
     - process_executor: Subprocess execution (Claude CLI)
     - quality_gate_manager: Artifact validation
     - brian_orchestrator: Complexity assessment and workflow selection
+    - git_state_manager: Git-integrated state management with atomic commits (Epic 27.1)
 
     Usage:
         Use create_default() factory method for normal instantiation.
@@ -90,6 +92,7 @@ class GAODevOrchestrator:
         process_executor: ProcessExecutor,
         quality_gate_manager: QualityGateManager,
         brian_orchestrator: BrianOrchestrator,
+        git_state_manager: Optional[GitIntegratedStateManager] = None,
         context_persistence: Optional[ContextPersistence] = None,
         api_key: Optional[str] = None,
         mode: str = "cli",
@@ -110,6 +113,7 @@ class GAODevOrchestrator:
             process_executor: Process execution service
             quality_gate_manager: Quality gate service
             brian_orchestrator: Brian orchestrator for workflow selection
+            git_state_manager: Git-integrated state manager (Epic 27.1)
             context_persistence: Optional context persistence service
             api_key: Optional Anthropic API key
             mode: Execution mode - "cli", "benchmark", or "api"
@@ -131,12 +135,13 @@ class GAODevOrchestrator:
         self.process_executor = process_executor
         self.quality_gate_manager = quality_gate_manager
         self.brian_orchestrator = brian_orchestrator
+        self.git_state_manager = git_state_manager  # Epic 27.1
 
         logger.info(
             "orchestrator_initialized",
             mode=mode,
             project_root=str(project_root),
-            services_count=9,
+            services_count=10,  # Updated from 9 to 10 (added git_state_manager)
         )
 
     @property
@@ -186,6 +191,14 @@ class GAODevOrchestrator:
                 logger.debug("document_lifecycle_closed")
             except Exception as e:
                 logger.warning("document_lifecycle_close_failed", error=str(e))
+
+        # Close git_state_manager (Epic 27.1)
+        if self.git_state_manager is not None:
+            try:
+                self.git_state_manager.close()
+                logger.debug("git_state_manager_closed")
+            except Exception as e:
+                logger.warning("git_state_manager_close_failed", error=str(e))
 
     def __enter__(self):
         """Context manager entry."""
