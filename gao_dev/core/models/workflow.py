@@ -7,7 +7,6 @@ This module contains value objects and models for workflows.
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from enum import Enum
 
 
 @dataclass(frozen=True)
@@ -339,7 +338,7 @@ class WorkflowInfo:
     Attributes:
         name: Workflow name (e.g., "create-story", "prd")
         description: Human-readable description
-        phase: BMAD phase (0-4) when applicable
+        phase: BMAD phase (0-4) when applicable, 5 for ceremonies
         installed_path: Path where workflow is installed
         author: Optional author name
         tags: List of classification tags
@@ -351,6 +350,8 @@ class WorkflowInfo:
         web_bundle: Whether workflow has web components
         output_file: Optional output file path template
         templates: Dictionary of template mappings
+        category: Optional workflow category (e.g., "ceremonies")
+        metadata: Optional workflow-specific metadata (e.g., ceremony info)
     """
 
     name: str
@@ -367,6 +368,8 @@ class WorkflowInfo:
     web_bundle: bool = False
     output_file: Optional[str] = None
     templates: Dict[str, str] = field(default_factory=dict)
+    category: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -385,4 +388,6 @@ class WorkflowInfo:
             "web_bundle": self.web_bundle,
             "output_file": self.output_file,
             "templates": self.templates,
+            "category": self.category,
+            "metadata": self.metadata,
         }

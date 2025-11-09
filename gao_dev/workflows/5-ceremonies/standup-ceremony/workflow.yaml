@@ -1,0 +1,207 @@
+# Daily Standup Ceremony Workflow
+#
+# Coordinates daily standup ceremony during epic execution.
+# Participants: Bob (Scrum Master), Amelia (Developer), Murat (Test Architect)
+#
+# This ceremony is triggered at story intervals or after quality gate failures.
+# It identifies blockers, tracks progress, and creates action items for issues.
+#
+# Ceremony Flow:
+#   1. Bob loads current sprint context (active stories, blockers)
+#   2. CeremonyOrchestrator coordinates standup discussion
+#   3. Each agent reports: what's done, what's next, blockers
+#   4. Standup transcript saved with date
+#   5. Action items created for blockers and dependencies
+#
+# Expected Outcomes:
+#   - Standup transcript: docs/features/{feature_name}/ceremonies/standup-{epic_num}-{date}.md
+#   - Blockers identified and tracked
+#   - Action items for high-priority issues
+
+name: standup-ceremony
+description: Hold daily standup ceremony with Bob, Amelia, and Murat
+category: ceremonies
+phase: 5
+agent: Bob
+non_interactive: false
+autonomous: true
+iterative: false
+web_bundle: false
+
+# Ceremony-specific metadata
+metadata:
+  ceremony_type: standup
+  participants:
+    - Bob
+    - Amelia
+    - Murat
+  trigger: story_interval
+  additional_triggers:
+    - quality_gate_failure
+  interval_by_level:
+    2: 3  # Every 3 stories for Level 2
+    3: 2  # Every 2 stories for Level 3
+    4: 1  # Every story for Level 4
+  duration_estimate: "5-10 minutes"
+  success_criteria:
+    - Standup transcript saved
+    - Blockers identified
+    - Action items created for issues
+
+variables:
+  epic_num:
+    description: Epic number for standup context
+    type: integer
+    required: true
+  feature_name:
+    description: Feature name for ceremony artifact storage
+    type: string
+    required: true
+  date:
+    description: Date of standup (YYYY-MM-DD)
+    type: string
+    required: true
+  ceremony_output_folder:
+    description: Folder for ceremony artifacts
+    type: string
+    default: "docs/features/{{feature_name}}/ceremonies"
+  stories_completed:
+    description: Number of stories completed
+    type: integer
+    default: 0
+  total_stories:
+    description: Total stories in epic
+    type: integer
+    default: 0
+
+required_tools:
+  - read_file
+  - write_file
+  - ceremony_orchestrator
+
+output_file: "{{ceremony_output_folder}}/standup-{{epic_num}}-{{date}}.md"
+
+templates:
+  main: |
+    # Daily Standup - Epic {{epic_num}} ({{date}})
+
+    **Objective**: Hold daily standup to sync on Epic {{epic_num}} progress and identify blockers
+
+    ## Instructions for Bob (Scrum Master)
+
+    You are orchestrating the daily standup for Epic {{epic_num}}. This is a quick sync
+    to ensure the team is making progress, identify blockers, and create action items.
+
+    ### Step 1: Load Sprint Context
+
+    Query the current sprint state to understand:
+    - Active stories (in progress, ready for review)
+    - Completed stories ({{stories_completed}} / {{total_stories}})
+    - Quality gate status (tests passing, linting clean)
+    - Previous action items (from last standup)
+
+    Use FastContextLoader for fast context retrieval:
+
+    ```python
+    from gao_dev.core.services.fast_context_loader import FastContextLoader
+
+    context = fast_context_loader.load_epic_context(epic_num={{epic_num}})
+    active_stories = [s for s in context['stories'] if s['status'] in ['in_progress', 'ready_for_review']]
+    blockers = [s for s in context['stories'] if s.get('blocked', False)]
+    ```
+
+    ### Step 2: Execute Standup Ceremony
+
+    Invoke CeremonyOrchestrator to hold the standup:
+
+    ```python
+    from gao_dev.orchestrator.ceremony_orchestrator import CeremonyOrchestrator
+
+    result = ceremony_orchestrator.hold_ceremony(
+        ceremony_type="standup",
+        epic_num={{epic_num}},
+        participants=["Bob", "Amelia", "Murat"],
+        additional_context={
+            "feature_name": "{{feature_name}}",
+            "date": "{{date}}",
+            "stories_completed": {{stories_completed}},
+            "total_stories": {{total_stories}},
+            "active_stories": active_stories,
+            "blockers": blockers
+        }
+    )
+    ```
+
+    ### Step 3: Standup Discussion Format
+
+    Guide each agent through the three standup questions:
+
+    **Amelia (Developer):**
+    - What did I complete since last standup?
+    - What am I working on now?
+    - Any blockers or dependencies?
+
+    **Murat (Test Architect):**
+    - What tests did I write/review?
+    - What testing is in progress?
+    - Any quality concerns or blockers?
+
+    **Bob (Scrum Master):**
+    - Sprint progress ({{stories_completed}}/{{total_stories}} stories)
+    - Action items from previous standup
+    - Any process improvements needed?
+
+    ### Step 4: Identify Blockers
+
+    Listen for blockers and dependencies:
+    - **Technical blockers**: Architecture unclear, API not ready, environment issues
+    - **Process blockers**: Waiting for review, unclear requirements, missing test data
+    - **External blockers**: Third-party API down, waiting for design assets
+
+    For each blocker:
+    1. Document clearly
+    2. Identify owner to resolve
+    3. Estimate impact (hours/days)
+    4. Create action item if needed
+
+    ### Step 5: Generate Standup Summary
+
+    CeremonyOrchestrator will automatically:
+    - Generate standup transcript
+    - Save to: {{ceremony_output_folder}}/standup-{{epic_num}}-{{date}}.md
+    - Extract action items for blockers
+    - Record ceremony outcomes in database
+
+    ## Success Criteria
+
+    - [ ] Standup transcript saved to {{ceremony_output_folder}}/standup-{{epic_num}}-{{date}}.md
+    - [ ] All blockers identified and documented
+    - [ ] Action items created for high-priority issues
+    - [ ] Team has clarity on next 24 hours
+
+    ## Expected Artifacts
+
+    1. **Standup Transcript**: Full ceremony conversation
+       - Location: {{ceremony_output_folder}}/standup-{{epic_num}}-{{date}}.md
+       - Format: Markdown with agent updates
+
+    2. **Action Items**: Database records for blockers
+       - Created by: CeremonyOrchestrator
+       - Priority: Based on blocker severity
+       - Owner: Assigned to specific agent
+
+    3. **Sprint Status Update**: Progress summary
+       - Stories completed: {{stories_completed}}/{{total_stories}}
+       - Active stories: Listed in transcript
+       - Blockers: Count and severity
+
+    ## Notes
+
+    - Keep standup short (5-10 minutes max)
+    - Focus on blockers and dependencies, not implementation details
+    - Action items should resolve blockers
+    - Trigger frequency varies by scale level:
+      - Level 2: Every 3 stories
+      - Level 3: Every 2 stories
+      - Level 4: Every story
+    - Also triggers on quality gate failures

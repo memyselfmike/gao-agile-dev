@@ -1,0 +1,319 @@
+# Retrospective Ceremony Workflow
+#
+# Coordinates team retrospective ceremony after epic completion or at mid-epic checkpoints.
+# Participants: All team members (John, Winston, Sally, Bob, Amelia, Murat)
+#
+# This ceremony is automatically triggered at epic_completion or mid_epic_checkpoint for Level 2+ projects.
+# It extracts learnings, creates improvement action items, and feeds into the self-learning system.
+#
+# Ceremony Flow:
+#   1. Bob loads epic completion data (stories, quality metrics, timeline)
+#   2. CeremonyOrchestrator coordinates retrospective discussion
+#   3. Team discusses: what went well, what to improve, action items
+#   4. Learnings extracted and indexed with relevance scores
+#   5. Retrospective transcript saved to feature folder
+#   6. Action items created for improvements
+#
+# Expected Outcomes:
+#   - Retrospective transcript: docs/features/{feature_name}/retrospectives/retro-{epic_num}.md
+#   - 3-10 learnings extracted and indexed
+#   - Action items for improvements
+#   - Learning relevance scores assigned
+
+name: retrospective-ceremony
+description: Hold retrospective ceremony with all team members to capture learnings
+category: ceremonies
+phase: 5
+agent: Bob
+non_interactive: false
+autonomous: true
+iterative: false
+web_bundle: false
+
+# Ceremony-specific metadata
+metadata:
+  ceremony_type: retrospective
+  participants:
+    - John
+    - Winston
+    - Sally
+    - Bob
+    - Amelia
+    - Murat
+  trigger: epic_completion
+  additional_triggers:
+    - mid_epic_checkpoint
+  required_for_levels:
+    - 2
+    - 3
+    - 4
+  duration_estimate: "20-45 minutes"
+  success_criteria:
+    - Retrospective transcript saved
+    - 3-10 learnings extracted
+    - Action items created
+    - Learnings indexed with relevance scores
+
+variables:
+  epic_num:
+    description: Epic number for retrospective
+    type: integer
+    required: true
+  feature_name:
+    description: Feature name for ceremony artifact storage
+    type: string
+    required: true
+  retrospective_output_folder:
+    description: Folder for retrospective artifacts
+    type: string
+    default: "docs/features/{{feature_name}}/retrospectives"
+  is_mid_epic:
+    description: Is this a mid-epic checkpoint retrospective?
+    type: boolean
+    default: false
+  stories_completed:
+    description: Number of stories completed
+    type: integer
+    required: true
+  total_stories:
+    description: Total stories in epic
+    type: integer
+    required: true
+  quality_metrics:
+    description: Quality metrics for epic (JSON string)
+    type: string
+    default: "{}"
+
+required_tools:
+  - read_file
+  - write_file
+  - ceremony_orchestrator
+  - learning_index_service
+
+output_file: "{{retrospective_output_folder}}/retro-{{epic_num}}.md"
+
+templates:
+  main: |
+    # Retrospective Ceremony - Epic {{epic_num}}
+
+    **Objective**: Hold retrospective to capture learnings and improvements for Epic {{epic_num}}
+
+    ## Instructions for Bob (Scrum Master)
+
+    You are facilitating the retrospective ceremony for Epic {{epic_num}}. This ceremony
+    brings together all team members to reflect on what went well, what to improve, and
+    capture learnings for future projects.
+
+    {% if is_mid_epic %}
+    **Note**: This is a mid-epic checkpoint retrospective. Focus on course correction.
+    {% else %}
+    **Note**: This is an epic completion retrospective. Focus on comprehensive learnings.
+    {% endif %}
+
+    ### Step 1: Load Epic Completion Data
+
+    Gather data about the epic to inform the retrospective:
+
+    ```python
+    from gao_dev.core.services.fast_context_loader import FastContextLoader
+    from gao_dev.core.services.story_state_service import StoryStateService
+
+    context = fast_context_loader.load_epic_context(epic_num={{epic_num}})
+
+    # Story completion data
+    stories = context['stories']
+    completed = [s for s in stories if s['status'] == 'done']
+    blocked = [s for s in stories if s.get('blocked', False)]
+
+    # Timeline data
+    epic_duration = context['epic']['duration_days']
+    estimated_duration = context['epic']['estimated_duration_days']
+
+    # Quality metrics
+    test_coverage = context['quality_metrics'].get('test_coverage', 0)
+    linting_errors = context['quality_metrics'].get('linting_errors', 0)
+    quality_gates_passed = context['quality_metrics'].get('gates_passed', True)
+    ```
+
+    **Key Data Points**:
+    - Stories completed: {{stories_completed}} / {{total_stories}}
+    - Quality metrics: {{quality_metrics}}
+    - Epic duration vs estimate
+    - Blockers encountered
+    - Quality gate failures
+
+    ### Step 2: Execute Retrospective Ceremony
+
+    Invoke CeremonyOrchestrator to hold the retrospective:
+
+    ```python
+    from gao_dev.orchestrator.ceremony_orchestrator import CeremonyOrchestrator
+
+    result = ceremony_orchestrator.hold_ceremony(
+        ceremony_type="retrospective",
+        epic_num={{epic_num}},
+        participants=["John", "Winston", "Sally", "Bob", "Amelia", "Murat"],
+        additional_context={
+            "feature_name": "{{feature_name}}",
+            "is_mid_epic": {{is_mid_epic}},
+            "stories_completed": {{stories_completed}},
+            "total_stories": {{total_stories}},
+            "quality_metrics": {{quality_metrics}},
+            "epic_data": context['epic'],
+            "stories_data": stories
+        }
+    )
+    ```
+
+    ### Step 3: Retrospective Discussion Format
+
+    Guide the team through the retrospective using the Start-Stop-Continue format:
+
+    **What Went Well (Continue)**:
+    - Ask each agent to share 1-2 things that went well
+    - Focus on processes, patterns, and practices that worked
+    - Examples:
+      - John: "PRD was clear and comprehensive"
+      - Winston: "Architecture decision records helped track choices"
+      - Amelia: "TDD approach caught bugs early"
+      - Murat: "Integration tests prevented regressions"
+
+    **What to Improve (Start/Stop)**:
+    - Ask each agent to identify 1-2 improvement areas
+    - Focus on actionable changes, not blame
+    - Examples:
+      - John: "PRD could include more edge cases"
+      - Winston: "Need earlier performance testing in architecture phase"
+      - Amelia: "Better branch naming conventions needed"
+      - Murat: "Test data setup was time-consuming, need fixtures"
+
+    **Learnings & Insights**:
+    - Extract 3-10 key learnings that apply to future projects
+    - For each learning, identify:
+      - **Context**: What situation triggered this learning?
+      - **Learning**: What did we learn?
+      - **Application**: When should this apply in the future?
+      - **Confidence**: How confident are we in this learning?
+    - Examples:
+      - "For Level 3+ projects with external APIs, always create integration test mocks early"
+      - "When using TypeScript, enable strict mode from day 1 to avoid refactoring pain"
+      - "Architecture reviews should include performance considerations for data-heavy features"
+
+    **Action Items**:
+    - Identify 3-7 concrete action items
+    - Assign owners for each action item
+    - Set priority (P0-P2)
+    - Examples:
+      - [P0] Create PRD template with edge case checklist (John)
+      - [P1] Add performance testing to architecture workflow (Winston)
+      - [P1] Document branch naming conventions (Amelia)
+      - [P2] Create test fixture library (Murat)
+
+    ### Step 4: Extract and Index Learnings
+
+    CeremonyOrchestrator will automatically:
+    - Extract 3-10 learnings from the retrospective conversation
+    - Index learnings with LearningIndexService
+    - Assign relevance scores based on:
+      - Learning category (technical, process, quality)
+      - Project context (scale level, technology)
+      - Success impact (high/medium/low)
+    - Link learnings to epic and stories
+
+    Expected learning categories:
+    - **Technical**: Architecture patterns, technology choices, code practices
+    - **Process**: Workflow improvements, ceremony effectiveness, communication
+    - **Quality**: Testing strategies, code review, performance optimization
+    - **Estimation**: Story sizing, timeline accuracy, capacity planning
+    - **Risk Management**: What risks materialized, how we mitigated
+
+    ### Step 5: Generate Retrospective Summary
+
+    CeremonyOrchestrator will automatically:
+    - Generate retrospective transcript
+    - Save to: {{retrospective_output_folder}}/retro-{{epic_num}}.md
+    - Create action items in database
+    - Index learnings for future use
+    - Record ceremony outcomes
+
+    ### Step 6: Review Learning Relevance Scores
+
+    After indexing, review the learning relevance scores:
+
+    ```python
+    from gao_dev.core.services.learning_index_service import LearningIndexService
+
+    learning_service = LearningIndexService(db_path)
+    learnings = learning_service.get_learnings_for_epic(epic_num={{epic_num}})
+
+    for learning in learnings:
+        print(f"Learning: {learning['content']}")
+        print(f"  Relevance: {learning['relevance_score']}")
+        print(f"  Confidence: {learning['confidence_score']}")
+        print(f"  Category: {learning['category']}")
+    ```
+
+    Ensure relevance scores are reasonable:
+    - High relevance (0.8-1.0): Broadly applicable learnings
+    - Medium relevance (0.5-0.8): Context-specific learnings
+    - Low relevance (0.0-0.5): Edge case or project-specific learnings
+
+    ## Success Criteria
+
+    - [ ] Retrospective transcript saved to {{retrospective_output_folder}}/retro-{{epic_num}}.md
+    - [ ] 3-10 learnings extracted and indexed in database
+    - [ ] All learnings have relevance scores assigned
+    - [ ] 3-7 action items created with owners and priorities
+    - [ ] Team has shared understanding of improvements
+    - [ ] Learnings queryable for future workflow selection
+
+    ## Expected Artifacts
+
+    1. **Retrospective Transcript**: Full ceremony conversation
+       - Location: {{retrospective_output_folder}}/retro-{{epic_num}}.md
+       - Format: Markdown with sections for What Went Well, What to Improve, Learnings, Action Items
+
+    2. **Learnings**: Database records in learning_index table
+       - Fields: content, category, relevance_score, confidence_score, context
+       - Queryable by: LearningIndexService
+       - Used by: Brian for workflow selection enhancement
+
+    3. **Action Items**: Database records for improvements
+       - Fields: description, owner, priority, status
+       - Queryable by: ActionItemService
+       - Flow into: Next sprint planning
+
+    4. **Ceremony Summary**: High-level outcome summary
+       - Key learnings count
+       - Action items count
+       - Overall sentiment (positive/neutral/needs-improvement)
+
+    ## Integration with Self-Learning System
+
+    The learnings from this retrospective will feed into the self-learning system:
+
+    1. **Brian Context Augmentation** (Story 29.3):
+       - When Brian analyzes a new project, relevant learnings are added to his context
+       - Learnings influence workflow selection
+       - Example: If past projects with external APIs had integration issues,
+         Brian may add extra integration testing workflows
+
+    2. **Workflow Adjustment** (Story 29.4):
+       - High-confidence learnings trigger workflow adjustments
+       - Example: If testing learnings indicate performance issues,
+         add performance testing workflow to Level 3+ projects
+
+    3. **Learning Decay** (Story 29.6):
+       - Learnings decay over time if not applied
+       - Successful applications increase confidence
+       - Failed applications decrease confidence
+
+    ## Notes
+
+    - This ceremony is required for Scale Level 2+ projects
+    - Typical duration: 20-45 minutes (depends on epic size)
+    - Focus on actionable learnings, not just celebration
+    - Learnings should be specific enough to guide future decisions
+    - Action items should flow into next sprint planning (Story 29.5)
+    - Mid-epic retrospectives are shorter, focus on course correction
+    - Epic completion retrospectives are comprehensive, capture all learnings
