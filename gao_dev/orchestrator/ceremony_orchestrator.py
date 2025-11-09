@@ -46,8 +46,14 @@ from ..core.services.fast_context_loader import FastContextLoader
 from ..core.services.ceremony_service import CeremonyService
 from ..core.services.action_item_service import ActionItemService
 from ..core.services.learning_index_service import LearningIndexService
+from ..core.services.git_integrated_state_manager import GitIntegratedStateManager
 
 logger = structlog.get_logger()
+
+
+class CeremonyExecutionError(Exception):
+    """Raised when ceremony execution fails."""
+    pass
 
 
 class CeremonyOrchestrator:
@@ -81,7 +87,8 @@ class CeremonyOrchestrator:
         self,
         config: ConfigLoader,
         db_path: Path,
-        project_root: Optional[Path] = None
+        project_root: Optional[Path] = None,
+        git_state_manager: Optional[GitIntegratedStateManager] = None
     ):
         """
         Initialize ceremony orchestrator.
@@ -90,10 +97,12 @@ class CeremonyOrchestrator:
             config: Configuration loader for ceremony settings
             db_path: Path to state database (.gao-dev/documents.db)
             project_root: Project root directory (for artifact storage)
+            git_state_manager: Optional git-integrated state manager for atomic transactions (Epic 27.1)
         """
         self.config = config
         self.db_path = Path(db_path)
         self.project_root = Path(project_root) if project_root else Path.cwd()
+        self.git_state_manager = git_state_manager  # Epic 28.4: For atomic transactions
 
         # Initialize services
         self.context_loader = FastContextLoader(db_path=self.db_path)
@@ -105,7 +114,8 @@ class CeremonyOrchestrator:
         self.logger.info(
             "ceremony_orchestrator_initialized",
             db_path=str(self.db_path),
-            project_root=str(self.project_root)
+            project_root=str(self.project_root),
+            has_git_state_manager=git_state_manager is not None
         )
 
     def hold_ceremony(
@@ -119,10 +129,15 @@ class CeremonyOrchestrator:
         """
         Generic method to hold any type of ceremony.
 
-        Implements the three-phase ceremony lifecycle:
+        Implements the three-phase ceremony lifecycle with atomic transactions (C3 Fix):
         1. Prepare: Load context and prepare participants
         2. Execute: Run ceremony conversation (simulated in Epic 26)
-        3. Record: Save artifacts and outcomes
+        3. Record: Save artifacts and outcomes (ATOMIC: file + DB + git)
+
+        Epic 28.4: Atomic transaction wrapper added
+        - All operations (file + DB + git) are atomic
+        - On failure, ALL operations roll back
+        - No partial ceremony artifacts in repository
 
         Args:
             ceremony_type: Type of ceremony (standup, retrospective, planning)
@@ -138,6 +153,10 @@ class CeremonyOrchestrator:
             - action_items: List of created action items
             - learnings: List of indexed learnings (retrospective only)
             - summary: Ceremony summary text
+            - ceremony_type: Type of ceremony
+
+        Raises:
+            CeremonyExecutionError: If ceremony execution fails
 
         Example:
             ```python
@@ -159,6 +178,170 @@ class CeremonyOrchestrator:
             participants=participants
         )
 
+        # C3 Fix: Wrap in atomic transaction if git_state_manager available
+        if self.git_state_manager is not None:
+            return self._hold_ceremony_with_transaction(
+                ceremony_type,
+                epic_num,
+                participants,
+                story_num,
+                additional_context,
+                start_time
+            )
+        else:
+            # Fallback: Execute without transaction (backward compatibility)
+            return self._hold_ceremony_impl(
+                ceremony_type,
+                epic_num,
+                participants,
+                story_num,
+                additional_context,
+                start_time
+            )
+
+    def _hold_ceremony_with_transaction(
+        self,
+        ceremony_type: str,
+        epic_num: int,
+        participants: List[str],
+        story_num: Optional[int],
+        additional_context: Optional[Dict[str, Any]],
+        start_time: datetime
+    ) -> Dict[str, Any]:
+        """
+        Hold ceremony with atomic transaction boundary (C3 Fix).
+
+        All operations are atomic: transcript file + DB records + git commit.
+        On any failure, ALL operations roll back (no partial artifacts).
+
+        Args:
+            ceremony_type: Type of ceremony
+            epic_num: Epic number
+            participants: List of participant names
+            story_num: Optional story number
+            additional_context: Optional additional context
+            start_time: Ceremony start time
+
+        Returns:
+            Ceremony record dictionary
+
+        Raises:
+            CeremonyExecutionError: If ceremony fails (after rollback)
+        """
+        self.logger.info(
+            "ceremony_transaction_starting",
+            ceremony_type=ceremony_type,
+            epic_num=epic_num
+        )
+
+        # Save checkpoint (git HEAD SHA before transaction)
+        from ..core.services.git_integrated_state_manager import WorkingTreeDirtyError
+
+        try:
+            # Pre-flight check: working tree must be clean
+            if not self.git_state_manager.git_manager.is_working_tree_clean():
+                raise WorkingTreeDirtyError(
+                    "Git working tree has uncommitted changes. "
+                    "Commit or stash changes before holding ceremony."
+                )
+
+            checkpoint_sha = self.git_state_manager.git_manager.get_head_sha()
+
+            # Execute ceremony (all operations)
+            result = self._hold_ceremony_impl(
+                ceremony_type,
+                epic_num,
+                participants,
+                story_num,
+                additional_context,
+                start_time
+            )
+
+            # Git commit (if auto_commit enabled)
+            if self.git_state_manager.auto_commit:
+                commit_message = (
+                    f"ceremony({ceremony_type}): epic {epic_num}\n\n"
+                    f"{ceremony_type.capitalize()} ceremony for epic {epic_num}\n"
+                    f"Participants: {', '.join(participants)}\n"
+                    f"Action items: {len(result.get('action_items', []))}\n"
+                    f"Learnings: {len(result.get('learnings', []))}"
+                )
+
+                self.git_state_manager.git_manager.add_all()
+                commit_sha = self.git_state_manager.git_manager.commit(commit_message)
+
+                self.logger.info(
+                    "ceremony_committed",
+                    ceremony_type=ceremony_type,
+                    epic_num=epic_num,
+                    ceremony_id=result.get("ceremony_id"),
+                    commit_sha=commit_sha
+                )
+
+            return result
+
+        except Exception as e:
+            # Rollback on error
+            self.logger.error(
+                "ceremony_failed_rolling_back",
+                ceremony_type=ceremony_type,
+                epic_num=epic_num,
+                error=str(e),
+                exc_info=True
+            )
+
+            # Attempt rollback
+            try:
+                # Rollback git (hard reset to checkpoint)
+                if self.git_state_manager is not None:
+                    self.git_state_manager.git_manager.reset_hard(checkpoint_sha)
+
+                    self.logger.info(
+                        "ceremony_rollback_successful",
+                        ceremony_type=ceremony_type,
+                        epic_num=epic_num,
+                        checkpoint_sha=checkpoint_sha
+                    )
+            except Exception as rollback_error:
+                self.logger.error(
+                    "ceremony_rollback_failed",
+                    ceremony_type=ceremony_type,
+                    epic_num=epic_num,
+                    error=str(rollback_error)
+                )
+                # Continue - original error is more important
+
+            # Re-raise as CeremonyExecutionError
+            raise CeremonyExecutionError(
+                f"Ceremony {ceremony_type} failed for epic {epic_num}: {e}"
+            ) from e
+
+    def _hold_ceremony_impl(
+        self,
+        ceremony_type: str,
+        epic_num: int,
+        participants: List[str],
+        story_num: Optional[int],
+        additional_context: Optional[Dict[str, Any]],
+        start_time: datetime
+    ) -> Dict[str, Any]:
+        """
+        Implementation of ceremony execution (without transaction wrapper).
+
+        This is the core ceremony logic that can be called with or without
+        transaction support.
+
+        Args:
+            ceremony_type: Type of ceremony
+            epic_num: Epic number
+            participants: List of participant names
+            story_num: Optional story number
+            additional_context: Optional additional context
+            start_time: Ceremony start time
+
+        Returns:
+            Ceremony record dictionary
+        """
         # Phase 1: Prepare
         context = self._prepare_ceremony(ceremony_type, epic_num, story_num)
         if additional_context:
@@ -170,6 +353,9 @@ class CeremonyOrchestrator:
 
         # Phase 3: Record
         ceremony_record = self._record_ceremony(ceremony_type, epic_num, story_num, results)
+
+        # Add ceremony_type to result
+        ceremony_record["ceremony_type"] = ceremony_type
 
         duration = (datetime.now() - start_time).total_seconds()
         self.logger.info(
