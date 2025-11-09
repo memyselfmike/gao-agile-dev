@@ -1,0 +1,114 @@
+# Ceremony Trigger Configuration
+# See ARCHITECTURE.md "Ceremony Trigger System" for specifications
+#
+# This configuration defines when and how ceremonies (planning, standup, retrospective)
+# are automatically injected into workflow sequences based on scale level.
+#
+# Trigger Types:
+#   - epic_start: At the beginning of an epic (after PRD/epics creation)
+#   - epic_completion: At the end of an epic (after testing/review)
+#   - mid_epic_checkpoint: At specified progress points (e.g., 50%)
+#   - story_interval: After N stories completed
+#   - story_count_threshold: Only if total stories > threshold
+#   - quality_gate_failure: When quality checks fail
+#   - repeated_failure: After N consecutive failures
+#   - daily: Every day (for Level 4)
+#   - phase_end: At the end of workflow phases
+
+triggers:
+  # Planning Ceremony Configuration
+  # Purpose: Sprint planning, story review, capacity allocation
+  planning:
+    level_2:
+      required: false
+      trigger: epic_start
+      participants: [John, Winston, Bob]
+      description: "Optional planning for small features"
+
+    level_3:
+      required: true
+      trigger: epic_start
+      participants: [John, Winston, Bob]
+      description: "Required planning for medium features"
+
+    level_4:
+      required: true
+      trigger: epic_start
+      participants: [team]
+      description: "Full team planning for greenfield projects"
+
+  # Standup Ceremony Configuration
+  # Purpose: Daily/periodic sync, blocker identification, progress updates
+  standup:
+    level_2:
+      interval: 3          # Every 3 stories
+      threshold: 3         # Only if >3 total stories
+      participants: [Bob, Amelia, Murat]
+      description: "Periodic standup for small features with 3+ stories"
+
+    level_3:
+      interval: 2          # Every 2 stories
+      quality_gate_trigger: true
+      participants: [Bob, Amelia, Murat]
+      description: "Frequent standup for medium features"
+
+    level_4:
+      interval: 1          # Every story
+      daily: true          # Or daily, whichever first
+      participants: [team]
+      description: "Daily standup for greenfield projects"
+
+  # Retrospective Ceremony Configuration
+  # Purpose: Reflection, improvement, learning capture
+  retrospective:
+    level_1:
+      trigger: repeated_failure
+      failure_threshold: 2
+      participants: [team]
+      description: "Retrospective on repeated bug fix failures"
+
+    level_2:
+      trigger: epic_completion
+      required: true
+      participants: [team]
+      description: "Epic retrospective for small features"
+
+    level_3:
+      triggers:
+        - mid_epic_checkpoint: 0.5  # At 50% progress
+        - epic_completion: 1.0       # At 100% completion
+      required: true
+      participants: [team]
+      description: "Mid-epic and completion retrospectives"
+
+    level_4:
+      triggers:
+        - phase_end:
+            - analysis
+            - planning
+            - solutioning
+            - implementation
+        - epic_completion: 1.0
+      required: true
+      participants: [team]
+      description: "Phase-end and epic retrospectives"
+
+# Feature Flags
+# Controls whether ceremony integration is enabled globally
+features:
+  enable_ceremony_integration: true
+
+# Override Settings
+# Projects can override these in their local gao-dev.yaml
+overrides:
+  # Disable specific ceremonies
+  disable_planning: false
+  disable_standup: false
+  disable_retrospective: false
+
+  # Adjust trigger intervals (multiplier)
+  standup_interval_multiplier: 1.0
+
+  # Change scale level requirements
+  planning_required_level: 3  # Planning required at level 3+
+  retrospective_required_level: 2  # Retrospective required at level 2+

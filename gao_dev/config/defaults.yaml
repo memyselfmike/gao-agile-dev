@@ -106,6 +106,10 @@ features:
   # Set to true after Phase 1 validation complete
   provider_abstraction_enabled: false
 
+  # Ceremony integration (Epic 28)
+  # Automatically inject ceremonies into workflow sequences
+  enable_ceremony_integration: true
+
 # Provider Configuration (Epic 11)
 providers:
   # Default provider for all agents (can be overridden per-agent)
