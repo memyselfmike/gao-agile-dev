@@ -27,6 +27,7 @@ from .brian_orchestrator import (
     ScaleLevel,
 )
 from .workflow_execution_engine import WorkflowExecutionEngine
+from .artifact_manager import ArtifactManager
 from ..core.config_loader import ConfigLoader
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.workflow_executor import WorkflowExecutor
@@ -98,9 +99,9 @@ class GAODevOrchestrator:
         self.context_persistence = context_persistence or ContextPersistence()
 
         # Initialize project-scoped document lifecycle
-        self.doc_lifecycle: Optional[DocumentLifecycleManager] = None
+        self._doc_lifecycle: Optional[DocumentLifecycleManager] = None
         try:
-            self.doc_lifecycle = ProjectDocumentLifecycle.initialize(self.project_root)
+            self._doc_lifecycle = ProjectDocumentLifecycle.initialize(self.project_root)
             logger.info(
                 "document_lifecycle_initialized",
                 project_root=str(self.project_root),
@@ -113,6 +114,14 @@ class GAODevOrchestrator:
                 error=str(e),
                 message="Orchestrator will continue without document lifecycle tracking"
             )
+
+        # Initialize ArtifactManager (Story 22.2)
+        # Note: _doc_lifecycle might be None at this point if initialization failed
+        self.artifact_manager = ArtifactManager(
+            project_root=self.project_root,
+            document_lifecycle=self._doc_lifecycle,
+            tracked_dirs=["docs", "src", "gao_dev"],
+        )
 
         # CRITICAL FIX: Initialize missing services automatically
         # Check if any services are missing - if so, initialize all of them
@@ -144,13 +153,13 @@ class GAODevOrchestrator:
 
         # Update workflow_coordinator with doc_manager if it was initialized
         if hasattr(self, 'workflow_coordinator') and self.workflow_coordinator:
-            self.workflow_coordinator.doc_manager = self.doc_lifecycle
+            self.workflow_coordinator.doc_manager = self._doc_lifecycle
 
         logger.info(
             "orchestrator_initialized",
             mode=mode,
             project_root=str(project_root),
-            has_doc_lifecycle=self.doc_lifecycle is not None,
+            has_doc_lifecycle=self._doc_lifecycle is not None,
             services_injected=all(
                 [
                     hasattr(self, "workflow_coordinator"),
@@ -235,7 +244,7 @@ class GAODevOrchestrator:
             event_bus=event_bus,
             agent_executor=self._execute_agent_task_static,  # Now self.process_executor exists
             project_root=self.project_root,
-            doc_manager=self.doc_lifecycle,  # Pass document lifecycle manager
+            doc_manager=self._doc_lifecycle,  # Pass document lifecycle manager
             workflow_executor=self.workflow_executor,
             max_retries=3,
         )
@@ -485,6 +494,24 @@ class GAODevOrchestrator:
         """
         return self.doc_lifecycle
 
+    @property
+    def doc_lifecycle(self) -> Optional[DocumentLifecycleManager]:
+        """Get the document lifecycle manager."""
+        return self._doc_lifecycle
+
+    @doc_lifecycle.setter
+    def doc_lifecycle(self, value: Optional[DocumentLifecycleManager]) -> None:
+        """
+        Set the document lifecycle manager and update ArtifactManager reference.
+
+        This ensures ArtifactManager always has the current doc_lifecycle reference,
+        which is important for tests that mock the lifecycle manager.
+        """
+        self._doc_lifecycle = value
+        # Update ArtifactManager's reference if it exists
+        if hasattr(self, 'artifact_manager'):
+            self.artifact_manager.doc_lifecycle = value
+
     def close(self) -> None:
         """
         Close all resources and database connections.
@@ -500,9 +527,9 @@ class GAODevOrchestrator:
             ... finally:
             ...     orchestrator.close()
         """
-        if self.doc_lifecycle is not None:
+        if self._doc_lifecycle is not None:
             try:
-                self.doc_lifecycle.registry.close()
+                self._doc_lifecycle.registry.close()
                 logger.debug("document_lifecycle_closed")
             except Exception as e:
                 logger.warning("document_lifecycle_close_failed", error=str(e))
@@ -1001,88 +1028,25 @@ class GAODevOrchestrator:
         return result
 
     # ========================================================================
-    # Artifact Detection (Story 18.2)
+    # Artifact Detection (Story 18.2) - Delegated to ArtifactManager (Story 22.2)
     # ========================================================================
 
     def _snapshot_project_files(self) -> set:
         """
         Snapshot current project files for artifact detection.
 
-        Captures filesystem state by scanning tracked directories (docs/, src/, gao_dev/)
-        and recording file metadata (path, mtime, size) for later comparison.
-
-        This enables automatic detection of files created or modified during
-        workflow execution without requiring the LLM to explicitly declare outputs.
+        Delegates to ArtifactManager.snapshot() for implementation.
 
         Returns:
             Set of (path, mtime, size) tuples for all tracked files
-
-        Performance:
-            Target: <50ms for typical projects (<1000 files)
-            Uses efficient rglob with ignored directory filtering
         """
-        import time
-        snapshot_start = time.time()
-        snapshot = set()
-
-        # Only track docs/, src/, and gao_dev/ directories
-        tracked_dirs = [
-            self.project_root / "docs",
-            self.project_root / "src",
-            self.project_root / "gao_dev",  # For internal development
-        ]
-
-        # Directories to ignore (build artifacts, dependencies, internal state)
-        ignored_dirs = {".git", "node_modules", "__pycache__", ".gao-dev", ".archive", "venv", ".venv", "dist", "build", ".pytest_cache", ".mypy_cache", "htmlcov"}
-
-        for tracked_dir in tracked_dirs:
-            if not tracked_dir.exists():
-                continue
-
-            try:
-                for file_path in tracked_dir.rglob("*"):
-                    # Skip if any parent directory is in ignored_dirs
-                    if any(part in ignored_dirs for part in file_path.parts):
-                        continue
-
-                    if file_path.is_file():
-                        try:
-                            stat = file_path.stat()
-                            rel_path = str(file_path.relative_to(self.project_root))
-                            snapshot.add((rel_path, stat.st_mtime, stat.st_size))
-                        except (OSError, ValueError) as e:
-                            # Log warning but continue
-                            logger.warning(
-                                "snapshot_file_error",
-                                file=str(file_path),
-                                error=str(e),
-                                message="Skipping file in snapshot"
-                            )
-            except (OSError, PermissionError) as e:
-                # Log warning if entire directory can't be scanned
-                logger.warning(
-                    "snapshot_directory_error",
-                    directory=str(tracked_dir),
-                    error=str(e),
-                    message="Skipping directory in snapshot"
-                )
-
-        snapshot_duration = (time.time() - snapshot_start) * 1000  # Convert to ms
-        logger.debug(
-            "filesystem_snapshot_complete",
-            files_count=len(snapshot),
-            duration_ms=round(snapshot_duration, 2),
-        )
-
-        return snapshot
+        return self.artifact_manager.snapshot()
 
     def _detect_artifacts(self, before: set, after: set) -> List[Path]:
         """
         Detect artifacts created or modified during workflow execution.
 
-        Compares before and after filesystem snapshots to identify files that
-        were created (new files) or modified (changed mtime/size). This provides
-        automatic artifact tracking without requiring explicit declarations.
+        Delegates to ArtifactManager.detect() for implementation.
 
         Args:
             before: Filesystem snapshot before execution (set of tuples)
@@ -1090,32 +1054,8 @@ class GAODevOrchestrator:
 
         Returns:
             List of artifact paths (relative to project root) that were created or modified
-
-        Detection Logic:
-            - New files: In after but not in before
-            - Modified files: Same path, different mtime or size
-            - Deleted files: Ignored (not considered artifacts)
         """
-        import time
-        detection_start = time.time()
-
-        # New or modified files: in after but not in before
-        # (different mtime or size means modified)
-        all_artifacts = after - before
-
-        # Convert tuples back to Path objects (relative to project root)
-        artifact_paths = [Path(item[0]) for item in all_artifacts]
-
-        detection_duration = (time.time() - detection_start) * 1000  # Convert to ms
-
-        logger.info(
-            "workflow_artifacts_detected",
-            artifacts_count=len(artifact_paths),
-            artifacts=[str(p) for p in artifact_paths],
-            detection_duration_ms=round(detection_duration, 2),
-        )
-
-        return artifact_paths
+        return self.artifact_manager.detect(before, after)
 
     # ========================================================================
     # Agent Execution Bridge
@@ -1242,12 +1182,15 @@ class GAODevOrchestrator:
 
         # STEP 9: Register artifacts with DocumentLifecycleManager (Story 18.3)
         if artifacts:
-            self._register_artifacts(
+            # Delegate to ArtifactManager (Story 22.2)
+            self.artifact_manager.register(
                 artifacts=artifacts,
-                workflow_info=workflow_info,
+                workflow_name=workflow_info.name,
                 epic=epic,
                 story=story,
-                variables=variables
+                agent=self._get_agent_for_workflow(workflow_info),
+                phase=workflow_info.phase,
+                variables=variables,
             )
 
         logger.info(
@@ -1260,81 +1203,16 @@ class GAODevOrchestrator:
         """
         Infer document type from workflow name and file path.
 
-        Uses a two-stage strategy:
-        1. Primary: Map based on workflow name (most reliable)
-        2. Fallback: Map based on file path patterns
-        3. Default: Return "document" if no pattern matches
+        Delegates to ArtifactManager.infer_type() for implementation.
 
         Args:
             path: Path to artifact file (relative to project root)
             workflow_info: Workflow metadata with workflow name
 
         Returns:
-            Document type string (e.g., "product-requirements", "architecture", "story")
-
-        Examples:
-            >>> # From workflow name
-            >>> _infer_document_type(Path("docs/PRD.md"), workflow_with_name("prd"))
-            "product-requirements"
-
-            >>> # From file path (fallback)
-            >>> _infer_document_type(Path("docs/epic-1/story-1.md"), workflow_with_name("dev"))
-            "story"
-
-            >>> # Default for unknown
-            >>> _infer_document_type(Path("docs/notes.md"), workflow_with_name("research"))
-            "document"
+            Document type string (e.g., "prd", "architecture", "story")
         """
-        path_lower = str(path).lower()
-        workflow_lower = workflow_info.name.lower()
-
-        # Strategy 1: Map based on workflow name (most reliable)
-        # Use DocumentType enum values: prd, architecture, epic, story, adr, postmortem, runbook, qa_report, test_report
-        workflow_type_mapping = {
-            "prd": "prd",
-            "architecture": "architecture",
-            "tech-spec": "architecture",  # Map tech-spec to architecture
-            "epic": "epic",
-            "story": "story",
-            "create-story": "story",
-            "dev-story": "story",
-            "implement": "story",  # Implementation stories
-            "test": "test_report",
-            "qa": "qa_report",
-            "ux": "adr",  # Design decisions -> ADR
-            "design": "adr",
-            "research": "adr",  # Research findings -> ADR
-            "brief": "adr",
-            "postmortem": "postmortem",
-            "runbook": "runbook",
-        }
-
-        for pattern, doc_type in workflow_type_mapping.items():
-            if pattern in workflow_lower:
-                return doc_type
-
-        # Strategy 2: Map based on file path (fallback)
-        path_type_mapping = {
-            "prd": "prd",
-            "architecture": "architecture",
-            "arch": "architecture",
-            "spec": "architecture",
-            "epic": "epic",
-            "story": "story",
-            "test": "test_report",
-            "qa": "qa_report",
-            "adr": "adr",
-            "decision": "adr",
-            "postmortem": "postmortem",
-            "runbook": "runbook",
-        }
-
-        for pattern, doc_type in path_type_mapping.items():
-            if pattern in path_lower:
-                return doc_type
-
-        # Default: use story as generic document type (most flexible)
-        return "story"
+        return self.artifact_manager.infer_type(path, workflow_info.name)
 
     def _register_artifacts(
         self,
@@ -1347,10 +1225,7 @@ class GAODevOrchestrator:
         """
         Register detected artifacts with DocumentLifecycleManager.
 
-        This method automatically registers all workflow artifacts with comprehensive
-        metadata including document type, author, workflow context, and resolved variables.
-        Registration failures are handled gracefully - logged as warnings without breaking
-        workflow execution.
+        Delegates to ArtifactManager.register() for implementation.
 
         Args:
             artifacts: List of artifact paths (relative to project root)
@@ -1358,83 +1233,16 @@ class GAODevOrchestrator:
             epic: Epic number for context
             story: Story number for context
             variables: Resolved workflow variables from WorkflowExecutor
-
-        Behavior:
-            - Skips registration if DocumentLifecycleManager not available
-            - Infers document type from workflow name (primary) or path (fallback)
-            - Determines author from workflow agent (john, winston, bob, etc.)
-            - Builds comprehensive metadata with workflow context
-            - Logs successful registrations (artifact_registered)
-            - Logs failed registrations as warnings (artifact_registration_failed)
-            - Continues processing remaining artifacts after failures
-
-        Example:
-            >>> artifacts = [Path("docs/PRD.md"), Path("docs/epic-1.md")]
-            >>> _register_artifacts(
-            ...     artifacts=artifacts,
-            ...     workflow_info=prd_workflow,
-            ...     epic=1,
-            ...     story=1,
-            ...     variables={"project_name": "MyApp"}
-            ... )
-            # Logs: artifact_registered for PRD.md as "product-requirements" by "john"
-            # Logs: artifact_registered for epic-1.md as "epic" by "john"
         """
-        if not self.doc_lifecycle:
-            logger.warning(
-                "document_lifecycle_not_available",
-                message="Cannot register artifacts - DocumentLifecycleManager not initialized"
-            )
-            return
-
-        for artifact_path in artifacts:
-            try:
-                # Determine document type from workflow and path
-                doc_type = self._infer_document_type(artifact_path, workflow_info)
-
-                # Determine author from workflow agent
-                author = self._get_agent_for_workflow(workflow_info).lower()
-
-                # Build comprehensive metadata
-                metadata = {
-                    "workflow": workflow_info.name,
-                    "epic": epic,
-                    "story": story,
-                    "phase": workflow_info.phase,
-                    "created_by_workflow": True,
-                    "variables": variables,
-                    "workflow_phase": workflow_info.phase,
-                }
-
-                # Convert relative path to absolute for registration
-                absolute_path = self.project_root / artifact_path
-
-                # Register with document lifecycle manager
-                doc = self.doc_lifecycle.register_document(
-                    path=absolute_path,
-                    doc_type=doc_type,
-                    author=author,
-                    metadata=metadata
-                )
-
-                logger.info(
-                    "artifact_registered",
-                    artifact=str(artifact_path),
-                    doc_type=doc_type,
-                    doc_id=doc.id,
-                    author=author,
-                    workflow=workflow_info.name
-                )
-
-            except Exception as e:
-                # Log warning but don't fail workflow
-                logger.warning(
-                    "artifact_registration_failed",
-                    artifact=str(artifact_path),
-                    error=str(e),
-                    error_type=type(e).__name__,
-                    message="Continuing without registration"
-                )
+        self.artifact_manager.register(
+            artifacts=artifacts,
+            workflow_name=workflow_info.name,
+            epic=epic,
+            story=story,
+            agent=self._get_agent_for_workflow(workflow_info),
+            phase=workflow_info.phase,
+            variables=variables,
+        )
 
     def _get_agent_for_workflow(self, workflow_info: "WorkflowInfo") -> str:
         """
