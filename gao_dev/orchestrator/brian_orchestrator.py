@@ -13,12 +13,16 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 import structlog
 import json
+import hashlib
+import time
+from datetime import datetime, timedelta
 
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.models.workflow import WorkflowInfo
 from ..core.prompt_loader import PromptLoader
 from ..core.config_loader import ConfigLoader
-from ..core.services.ai_analysis_service import AIAnalysisService, AnalysisResult
+from ..core.services.ai_analysis_service import AIAnalysisService
+from ..core.services.learning_application_service import LearningApplicationService
 from ..core.providers.exceptions import (
     AnalysisError,
     AnalysisTimeoutError,
@@ -49,7 +53,8 @@ class BrianOrchestrator:
         analysis_service: AIAnalysisService,
         brian_persona_path: Optional[Path] = None,
         project_root: Optional[Path] = None,
-        model: Optional[str] = None
+        model: Optional[str] = None,
+        learning_service: Optional[LearningApplicationService] = None
     ):
         """
         Initialize Brian Orchestrator.
@@ -60,10 +65,12 @@ class BrianOrchestrator:
             brian_persona_path: Path to Brian's agent definition
             project_root: Project root for PromptLoader (defaults to gao_dev parent)
             model: Model to use for analysis (defaults to deepseek-r1 from YAML or env)
+            learning_service: Optional LearningApplicationService for context enrichment
         """
         self.workflow_registry = workflow_registry
         self.analysis_service = analysis_service
         self.brian_persona_path = brian_persona_path
+        self.learning_service = learning_service
         self.logger = logger.bind(component="brian_orchestrator", agent="Brian")
 
         # Initialize PromptLoader
@@ -78,6 +85,10 @@ class BrianOrchestrator:
             prompts_dir=prompts_dir,
             config_loader=self.config_loader
         )
+
+        # Learning context cache (TTL: 1 hour)
+        self._learning_cache: Dict[str, tuple[str, datetime]] = {}
+        self._cache_ttl = timedelta(hours=1)
 
         # Load model from YAML config if not provided
         import os
@@ -162,6 +173,72 @@ class BrianOrchestrator:
             scale_level=analysis.scale_level.value,
             total_workflows=len(workflow_sequence.workflows),
             phases=list(workflow_sequence.phase_breakdown.keys())
+        )
+
+        return workflow_sequence
+
+    async def select_workflows_with_learning(
+        self,
+        user_prompt: str,
+        force_scale_level: Optional[ScaleLevel] = None
+    ) -> WorkflowSequence:
+        """
+        Select workflows with learning-enriched context (Epic 29 integration).
+
+        This method extends the standard workflow selection by:
+        1. Analyzing complexity (existing)
+        2. Building enriched context with learnings (NEW)
+        3. Selecting workflows with enriched context (existing)
+
+        Args:
+            user_prompt: User's initial request
+            force_scale_level: Optional override for scale level
+
+        Returns:
+            WorkflowSequence with selected workflows
+        """
+        self.logger.info(
+            "select_workflows_with_learning_started",
+            prompt_preview=user_prompt[:100]
+        )
+
+        # Phase 1: Analyze the prompt (existing)
+        analysis = await self._analyze_prompt(user_prompt)
+
+        # Override scale level if forced (for testing/debugging)
+        if force_scale_level:
+            analysis.scale_level = force_scale_level
+
+        # Phase 2: Build enriched context with learnings (NEW)
+        learning_context = self._build_context_with_learnings(
+            scale_level=analysis.scale_level,
+            project_type=analysis.project_type.value,
+            user_prompt=user_prompt
+        )
+
+        # Log learning context status
+        if learning_context:
+            self.logger.info(
+                "learning_context_added",
+                context_length=len(learning_context),
+                scale_level=analysis.scale_level.value
+            )
+        else:
+            self.logger.info(
+                "no_learning_context_added",
+                scale_level=analysis.scale_level.value
+            )
+
+        # Phase 3: Build workflow sequence (existing logic)
+        # Note: learning_context is informational for now, will be used in
+        # Story 29.4 for workflow adjustment
+        workflow_sequence = self._build_workflow_sequence(analysis)
+
+        self.logger.info(
+            "select_workflows_with_learning_completed",
+            scale_level=analysis.scale_level.value,
+            total_workflows=len(workflow_sequence.workflows),
+            learning_context_length=len(learning_context)
         )
 
         return workflow_sequence
@@ -516,6 +593,238 @@ class BrianOrchestrator:
             ScaleLevel.LEVEL_4: "Enterprise system (40+ stories, 5+ epics) - enterprise platform or large system"
         }
         return descriptions.get(scale_level, "Unknown scale level")
+
+    def _extract_context_from_prompt(self, user_prompt: str) -> Dict[str, Any]:
+        """
+        Extract context clues from user prompt using keyword matching.
+
+        This method identifies relevant tags, requirements, technologies, and project phase
+        from the user's prompt to help find relevant learnings.
+
+        Args:
+            user_prompt: Original user request
+
+        Returns:
+            Dict with keys: tags, requirements, technologies, phase
+        """
+        context: Dict[str, Any] = {
+            "tags": [],
+            "requirements": [],
+            "technologies": [],
+            "phase": "unknown"
+        }
+
+        prompt_lower = user_prompt.lower()
+
+        # Extract feature tags
+        feature_keywords = [
+            "authentication", "auth", "login", "api", "rest", "graphql",
+            "database", "db", "storage", "cache", "search", "testing",
+            "ui", "frontend", "backend", "admin", "user", "payment",
+            "notification", "email", "messaging", "analytics", "reporting"
+        ]
+        context["tags"] = [kw for kw in feature_keywords if kw in prompt_lower]
+
+        # Extract requirements
+        requirement_keywords = {
+            "security": ["security", "secure", "auth", "encryption", "ssl", "tls"],
+            "performance": ["performance", "fast", "optimize", "cache", "speed"],
+            "scalability": ["scalability", "scale", "distributed", "cluster", "load"]
+        }
+        for req, keywords in requirement_keywords.items():
+            if any(kw in prompt_lower for kw in keywords):
+                context["requirements"].append(req)
+
+        # Extract technologies
+        tech_keywords = [
+            "python", "javascript", "typescript", "react", "vue", "angular",
+            "django", "flask", "fastapi", "postgres", "mysql", "mongodb",
+            "redis", "elasticsearch", "jwt", "oauth", "docker", "kubernetes"
+        ]
+        context["technologies"] = [tech for tech in tech_keywords if tech in prompt_lower]
+
+        # Detect phase
+        if any(word in prompt_lower for word in ["build", "create", "new", "from scratch"]):
+            context["phase"] = "greenfield"
+        elif any(word in prompt_lower for word in ["add", "enhance", "extend", "improve"]):
+            context["phase"] = "enhancement"
+        elif any(word in prompt_lower for word in ["fix", "bug", "issue", "error"]):
+            context["phase"] = "bugfix"
+
+        self.logger.debug(
+            "context_extracted_from_prompt",
+            tags=context["tags"],
+            requirements=context["requirements"],
+            technologies=context["technologies"],
+            phase=context["phase"]
+        )
+
+        return context
+
+    def _build_context_with_learnings(
+        self,
+        scale_level: ScaleLevel,
+        project_type: str,
+        user_prompt: str
+    ) -> str:
+        """
+        Build Brian's analysis context enriched with relevant past learnings.
+
+        This method:
+        1. Extracts context from user prompt
+        2. Checks cache for existing learning context
+        3. Queries LearningApplicationService for relevant learnings
+        4. Renders learning context using Mustache template
+        5. Caches result for future use
+        6. Returns enriched context
+
+        Args:
+            scale_level: Detected scale level
+            project_type: Project type (greenfield, enhancement, bugfix, etc.)
+            user_prompt: Original user request
+
+        Returns:
+            Enriched context string for Brian's analysis (empty string if no learnings or error)
+        """
+        # Early return if no learning service configured
+        if not self.learning_service:
+            self.logger.debug("no_learning_service_configured")
+            return ""
+
+        start_time = time.time()
+
+        try:
+            # Extract context from prompt
+            context = self._extract_context_from_prompt(user_prompt)
+
+            # Build cache key
+            context_hash = hashlib.md5(
+                json.dumps(context, sort_keys=True).encode()
+            ).hexdigest()[:8]
+            cache_key = f"learning_context_{scale_level.value}_{project_type}_{context_hash}"
+
+            # Check cache
+            if cache_key in self._learning_cache:
+                cached_context, cached_at = self._learning_cache[cache_key]
+                if datetime.now() - cached_at < self._cache_ttl:
+                    elapsed_ms = (time.time() - start_time) * 1000
+                    self.logger.info(
+                        "learning_context_cache_hit",
+                        cache_key=cache_key,
+                        elapsed_ms=round(elapsed_ms, 2)
+                    )
+                    return cached_context
+
+            # Query for relevant learnings
+            learnings = self.learning_service.get_relevant_learnings(
+                scale_level=scale_level,
+                project_type=project_type,
+                context=context,
+                limit=5
+            )
+
+            # If no learnings found, return empty (graceful degradation)
+            if not learnings:
+                self.logger.info("no_relevant_learnings_found", scale_level=scale_level.value)
+                return ""
+
+            # Format learnings for template
+            formatted_learnings = []
+            for idx, learning in enumerate(learnings, start=1):
+                formatted_learnings.append({
+                    "rank": idx,
+                    "category": learning.category.title(),
+                    "confidence": f"{learning.confidence_score:.2f}",
+                    "success_rate": f"{learning.success_rate:.2f}",
+                    "success_rate_percent": f"{learning.success_rate * 100:.0f}",
+                    "content": learning.learning,
+                    "context": learning.metadata.get("context", "General application"),
+                    "application_count": learning.application_count,
+                    "recommendation": learning.metadata.get(
+                        "recommendation",
+                        "Consider applying this learning to current context"
+                    )
+                })
+
+            # Render template using prompt loader (Mustache template)
+            try:
+                template = self.prompt_loader.load_prompt("agents/brian_context_with_learnings")
+                learning_context = self.prompt_loader.render_prompt(
+                    template,
+                    variables={
+                        "learnings": formatted_learnings,
+                        "has_learnings": len(formatted_learnings) > 0
+                    }
+                )
+            except Exception as e:
+                self.logger.warning(
+                    "failed_to_load_learning_template",
+                    error=str(e),
+                    exc_info=True
+                )
+                # Fallback to simple formatting
+                learning_context = self._format_learnings_fallback(formatted_learnings)
+
+            # Cache the result
+            self._learning_cache[cache_key] = (learning_context, datetime.now())
+
+            # Log performance
+            elapsed_ms = (time.time() - start_time) * 1000
+            self.logger.info(
+                "learning_context_built",
+                learnings_count=len(learnings),
+                elapsed_ms=round(elapsed_ms, 2),
+                cache_key=cache_key,
+                scale_level=scale_level.value,
+                project_type=project_type
+            )
+
+            return learning_context
+
+        except Exception as e:
+            # Graceful fallback on any error
+            elapsed_ms = (time.time() - start_time) * 1000
+            self.logger.warning(
+                "failed_to_build_learning_context",
+                error=str(e),
+                elapsed_ms=round(elapsed_ms, 2),
+                exc_info=True
+            )
+            return ""
+
+    def _format_learnings_fallback(self, formatted_learnings: List[Dict[str, Any]]) -> str:
+        """
+        Fallback formatting for learnings when template loading fails.
+
+        Args:
+            formatted_learnings: List of formatted learning dicts
+
+        Returns:
+            Simple text-formatted learning context
+        """
+        if not formatted_learnings:
+            return ""
+
+        lines = ["## Relevant Past Learnings\n"]
+        lines.append("Based on analysis of past projects, here are key learnings:\n")
+
+        for learning in formatted_learnings:
+            lines.append(
+                f"\n### Learning {learning['rank']}: {learning['category']} "
+                f"(Confidence: {learning['confidence']}, Success Rate: {learning['success_rate']})\n"
+            )
+            lines.append(f"**Content**: {learning['content']}\n")
+            lines.append(f"**Context**: {learning['context']}\n")
+            lines.append(
+                f"**Applications**: Applied {learning['application_count']} times "
+                f"with {learning['success_rate_percent']}% success\n"
+            )
+            lines.append(f"**Recommendation**: {learning['recommendation']}\n")
+            lines.append("---\n")
+
+        lines.append("\nPlease consider these learnings when selecting workflows.\n")
+
+        return "".join(lines)
 
     def _get_fallback_prompt(self, prompt: str, brian_context: str) -> str:
         """
