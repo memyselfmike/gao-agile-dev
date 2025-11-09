@@ -28,6 +28,7 @@ from .brian_orchestrator import (
 )
 from .workflow_execution_engine import WorkflowExecutionEngine
 from .artifact_manager import ArtifactManager
+from .agent_coordinator import AgentCoordinator
 from ..core.config_loader import ConfigLoader
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.workflow_executor import WorkflowExecutor
@@ -123,6 +124,11 @@ class GAODevOrchestrator:
             tracked_dirs=["docs", "src", "gao_dev"],
         )
 
+        # Initialize AgentCoordinator (Story 22.3)
+        # Note: This is done early because it only depends on ProcessExecutor
+        # which will be initialized in _initialize_default_services() if not provided
+        self.agent_coordinator: Optional[AgentCoordinator] = None
+
         # CRITICAL FIX: Initialize missing services automatically
         # Check if any services are missing - if so, initialize all of them
         any_service_missing = (
@@ -150,6 +156,12 @@ class GAODevOrchestrator:
             self.process_executor = process_executor
             self.quality_gate_manager = quality_gate_manager
             self.brian_orchestrator = brian_orchestrator
+
+            # Initialize AgentCoordinator with provided ProcessExecutor
+            self.agent_coordinator = AgentCoordinator(
+                process_executor=self.process_executor,
+                project_root=self.project_root,
+            )
 
         # Update workflow_coordinator with doc_manager if it was initialized
         if hasattr(self, 'workflow_coordinator') and self.workflow_coordinator:
@@ -296,6 +308,12 @@ class GAODevOrchestrator:
             workflow_registry=self.workflow_registry,
             analysis_service=self.analysis_service,
             brian_persona_path=brian_persona_path if brian_persona_path.exists() else None,
+        )
+
+        # Initialize AgentCoordinator (Story 22.3)
+        self.agent_coordinator = AgentCoordinator(
+            process_executor=self.process_executor,
+            project_root=self.project_root,
         )
 
     @classmethod
@@ -1248,9 +1266,8 @@ class GAODevOrchestrator:
         """
         Determine which agent should execute a workflow.
 
-        Maps workflow names to agent names based on workflow type.
-        This is used by tests and is delegated to WorkflowCoordinator for
-        actual execution.
+        Delegates to AgentCoordinator for workflow-to-agent mapping.
+        This is used by tests and internal methods.
 
         Args:
             workflow_info: Workflow metadata
@@ -1258,26 +1275,8 @@ class GAODevOrchestrator:
         Returns:
             Agent name (e.g., "John", "Amelia", "Bob")
         """
-        workflow_name_lower = workflow_info.name.lower()
-
-        # Map workflow patterns to agents
-        if "prd" in workflow_name_lower:
-            return "John"
-        elif "architecture" in workflow_name_lower or "tech-spec" in workflow_name_lower:
-            return "Winston"
-        elif "story" in workflow_name_lower and "create" in workflow_name_lower:
-            return "Bob"
-        elif "implement" in workflow_name_lower or "dev" in workflow_name_lower:
-            return "Amelia"
-        elif "test" in workflow_name_lower or "qa" in workflow_name_lower:
-            return "Murat"
-        elif "ux" in workflow_name_lower or "design" in workflow_name_lower:
-            return "Sally"
-        elif "brief" in workflow_name_lower or "research" in workflow_name_lower:
-            return "Mary"
-        else:
-            # Default to orchestrator
-            return "Orchestrator"
+        # Delegate to AgentCoordinator (Story 22.3)
+        return self.agent_coordinator.get_agent(workflow_info.name)
 
     def _extract_feature_name(self, prompt: str) -> str:
         """
