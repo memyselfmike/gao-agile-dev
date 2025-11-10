@@ -1,7 +1,7 @@
 """Tests for ChatREPL interactive REPL."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch, Mock
 from pathlib import Path
 
 from gao_dev.cli.chat_repl import ChatREPL
@@ -310,3 +310,66 @@ async def test_display_error_formatting(tmp_project: Path, mock_prompt_session):
     assert repl.console.print.called
     # Verify at least 2 calls (for formatting)
     assert repl.console.print.call_count >= 2
+
+
+@pytest.mark.asyncio
+@patch("gao_dev.cli.chat_repl.ProjectStatusReporter")
+async def test_greeting_includes_project_status(mock_status_reporter_class, tmp_project: Path, mock_prompt_session):
+    """Test that greeting includes project status (Story 30.2 integration test)."""
+    # Create .gao-dev/ directory
+    gao_dev_dir = tmp_project / ".gao-dev"
+    gao_dev_dir.mkdir()
+
+    # Mock ProjectStatusReporter
+    mock_reporter = Mock()
+    mock_status_reporter_class.return_value = mock_reporter
+
+    # Mock status
+    mock_status = Mock()
+    mock_status.exists = True
+    mock_status.project_name = "test-project"
+    mock_status.epic_count = 5
+    mock_status.story_count = 25
+    mock_status.is_greenfield = False
+    mock_reporter.get_status.return_value = mock_status
+    mock_reporter.format_status.return_value = "Project: test-project\nEpics: 5 | Stories: 25"
+
+    # Create REPL
+    repl = ChatREPL(project_root=tmp_project)
+
+    # Display greeting (don't need to capture output, just verify methods called)
+    await repl._show_greeting()
+
+    # Verify get_status was called
+    mock_reporter.get_status.assert_called_once()
+
+    # Verify format_status was called with status
+    mock_reporter.format_status.assert_called_once_with(mock_status)
+
+
+@pytest.mark.asyncio
+@patch("gao_dev.cli.chat_repl.ProjectStatusReporter")
+async def test_greeting_includes_greenfield_status(mock_status_reporter_class, tmp_project: Path, mock_prompt_session):
+    """Test that greeting shows greenfield message for projects without .gao-dev/"""
+    # Don't create .gao-dev/ directory
+
+    # Mock ProjectStatusReporter
+    mock_reporter = Mock()
+    mock_status_reporter_class.return_value = mock_reporter
+
+    # Mock greenfield status
+    mock_status = Mock()
+    mock_status.exists = False
+    mock_status.is_greenfield = True
+    mock_reporter.get_status.return_value = mock_status
+    mock_reporter.format_status.return_value = "No GAO-Dev project detected"
+
+    # Create REPL
+    repl = ChatREPL(project_root=tmp_project)
+
+    # Display greeting (don't need to capture output, just verify methods called)
+    await repl._show_greeting()
+
+    # Verify status was queried
+    mock_reporter.get_status.assert_called_once()
+    mock_reporter.format_status.assert_called_once()

@@ -10,6 +10,8 @@ from rich.markdown import Markdown
 import asyncio
 import structlog
 
+from gao_dev.cli.project_status import ProjectStatusReporter
+
 logger = structlog.get_logger()
 
 
@@ -40,6 +42,9 @@ class ChatREPL:
         self.history = InMemoryHistory()
         self.prompt_session: PromptSession[str] = PromptSession(history=self.history)
         self.logger = logger.bind(component="chat_repl")
+
+        # Initialize status reporter
+        self.status_reporter = ProjectStatusReporter(self.project_root)
 
     async def start(self) -> None:
         """
@@ -96,11 +101,18 @@ class ChatREPL:
         self.logger.info("chat_repl_stopped")
 
     async def _show_greeting(self) -> None:
-        """Display welcome greeting."""
-        greeting = """
+        """Display welcome greeting with project status."""
+        # Get project status
+        status = self.status_reporter.get_status()
+
+        # Format greeting with status
+        greeting_text = f"""
 # Welcome to GAO-Dev!
 
 I'm Brian, your AI Engineering Manager.
+
+{self.status_reporter.format_status(status)}
+
 Type your requests in natural language, or type 'help' for available commands.
 Type 'exit', 'quit', or 'bye' to end the session.
         """.strip()
@@ -108,7 +120,7 @@ Type 'exit', 'quit', or 'bye' to end the session.
         self.console.print()
         self.console.print(
             Panel(
-                Markdown(greeting),
+                Markdown(greeting_text),
                 title="[bold green]Brian[/bold green]",
                 border_style="green",
             )
