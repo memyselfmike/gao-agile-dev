@@ -1,0 +1,91 @@
+# CLI Tool Domain Question Library
+# For command-line tools, terminal applications, scripts
+
+general:
+  - "What is the primary purpose of this CLI tool?"
+  - "Who are the target users? (developers, sysadmins, end users)"
+  - "Will this be a single command or multi-command tool? (like git with subcommands)"
+  - "Preferred programming language? (Python, Go, Rust, Node.js, Bash)"
+  - "Operating systems to support? (Linux, macOS, Windows)"
+  - "Installation method? (pip, npm, brew, cargo, binary download)"
+
+commands:
+  - "What are the main commands or operations?"
+  - "Command structure? (flat commands vs. nested subcommands)"
+  - "Required vs. optional arguments?"
+  - "Flag/option naming conventions? (short: -v, long: --verbose)"
+  - "Command chaining or piping support?"
+  - "Interactive mode needed? (prompts, wizards)"
+
+configuration:
+  - "Configuration file support? (YAML, JSON, TOML, INI)"
+  - "Where to store config? (~/.config, project-local, both)"
+  - "Environment variable support?"
+  - "Config file auto-generation or init command?"
+  - "Multiple configuration profiles?"
+  - "Secrets management? (API keys, tokens)"
+
+input_output:
+  - "Input sources? (files, stdin, API, database)"
+  - "Output formats? (plain text, JSON, YAML, table)"
+  - "Output format customization? (--format flag)"
+  - "Colored output or styling?"
+  - "Progress indicators for long operations?"
+  - "Verbose and debug modes?"
+  - "Quiet mode to suppress output?"
+
+features:
+  - "File operations? (read, write, watch, glob patterns)"
+  - "Network operations? (HTTP requests, API calls)"
+  - "Database connectivity?"
+  - "Shell command execution?"
+  - "Daemon or background process mode?"
+  - "Scheduled tasks or cron integration?"
+  - "Plugin or extension system?"
+
+error_handling:
+  - "Error message style? (friendly, technical, both)"
+  - "Exit codes for different error types?"
+  - "Retry logic for transient failures?"
+  - "Logging to file or syslog?"
+  - "Stack traces in debug mode?"
+
+user_experience:
+  - "Help text and documentation style?"
+  - "Auto-completion support? (bash, zsh, fish)"
+  - "Man pages or --help output?"
+  - "Examples in help text?"
+  - "Confirmation prompts for destructive operations?"
+  - "Dry-run or preview mode?"
+  - "Interactive configuration wizard?"
+
+performance:
+  - "Performance requirements? (startup time, operation speed)"
+  - "Large file handling? (streaming, chunking)"
+  - "Parallel processing or concurrency?"
+  - "Memory usage constraints?"
+  - "Caching to speed up repeated operations?"
+
+distribution:
+  - "Package managers to support? (apt, yum, brew, chocolatey, winget)"
+  - "Binary releases for each platform?"
+  - "Auto-update mechanism?"
+  - "Version checking?"
+  - "Telemetry or usage analytics? (opt-in)"
+
+testing:
+  - "Unit test coverage goals?"
+  - "Integration tests with real files/APIs?"
+  - "Cross-platform testing needs?"
+  - "End-to-end CLI tests?"
+
+technical:
+  - "CLI framework? (Click, Typer for Python; Commander for Node; Cobra for Go)"
+  - "Argument parsing library?"
+  - "Configuration library?"
+  - "HTTP client library?"
+  - "Testing framework?"
+
+focus_discovery:
+  - "Which area needs most clarity: command structure, configuration, I/O, features, UX, or distribution?"
+  - "Are there specific workflows or use cases to explore in depth?"

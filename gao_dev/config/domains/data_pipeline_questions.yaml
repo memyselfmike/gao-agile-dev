@@ -1,0 +1,98 @@
+# Data Pipeline Domain Question Library
+# For ETL, data processing, batch jobs, streaming pipelines
+
+general:
+  - "Batch processing, stream processing, or both?"
+  - "Data sources? (databases, APIs, files, message queues, streaming)"
+  - "Data destinations? (data warehouse, database, files, analytics platform)"
+  - "Expected data volume? (GB, TB, PB per day)"
+  - "Processing frequency? (real-time, hourly, daily, weekly)"
+  - "Pipeline orchestration needed? (Airflow, Prefect, Dagster, custom)"
+
+data_sources:
+  - "What are the data sources? (PostgreSQL, S3, Kafka, REST APIs, etc.)"
+  - "Source data formats? (CSV, JSON, Parquet, Avro, XML)"
+  - "Full data load or incremental updates?"
+  - "Change Data Capture (CDC) needed?"
+  - "Source system reliability? (retry logic needed)"
+  - "API rate limits or throttling to handle?"
+
+data_transformation:
+  - "What transformations are needed? (filtering, aggregation, enrichment, deduplication)"
+  - "Business logic complexity? (simple mapping vs. complex rules)"
+  - "Data quality checks? (validation, completeness, accuracy)"
+  - "Data normalization or standardization?"
+  - "Derived metrics or calculated fields?"
+  - "Data masking or anonymization for PII?"
+
+data_destinations:
+  - "Where does the data go? (data warehouse, database, data lake, BI tool)"
+  - "Destination data format? (Parquet, Delta Lake, Iceberg, relational tables)"
+  - "Upsert/merge logic or append-only?"
+  - "Partitioning strategy? (by date, by region, etc.)"
+  - "Indexing or optimization needs?"
+
+architecture:
+  - "ETL (Extract-Transform-Load) or ELT (Extract-Load-Transform)?"
+  - "Batch processing framework? (Spark, Dask, Pandas, custom)"
+  - "Stream processing framework? (Kafka Streams, Flink, Storm)"
+  - "Data lake or data warehouse? (S3 + Athena, Snowflake, BigQuery, Redshift)"
+  - "Compute platform? (Databricks, AWS EMR, GCP Dataflow, on-prem cluster)"
+
+scheduling:
+  - "Pipeline scheduling? (cron, event-driven, manual trigger)"
+  - "Dependencies between pipelines?"
+  - "Backfill strategy for historical data?"
+  - "Retry logic for failed tasks?"
+  - "Alerting on pipeline failures?"
+
+performance:
+  - "Processing time SLA? (data freshness requirements)"
+  - "Parallel processing strategy? (partitioning, distributed computing)"
+  - "Resource constraints? (memory, CPU, cost)"
+  - "Data compression for efficiency?"
+  - "Incremental processing to reduce load?"
+
+monitoring:
+  - "Data quality monitoring? (schema drift, data anomalies)"
+  - "Pipeline observability? (logs, metrics, traces)"
+  - "Data lineage tracking?"
+  - "Cost monitoring and optimization?"
+  - "SLA monitoring and alerting?"
+  - "Data freshness metrics?"
+
+data_quality:
+  - "Data validation rules?"
+  - "Handling of null or missing values?"
+  - "Duplicate detection and deduplication?"
+  - "Data type validation and coercion?"
+  - "Referential integrity checks?"
+  - "Statistical outlier detection?"
+  - "Data profiling requirements?"
+
+error_handling:
+  - "Handling of malformed or invalid records? (skip, quarantine, fail)"
+  - "Dead letter queue for failed records?"
+  - "Retry strategy for transient failures?"
+  - "Error notification and alerting?"
+  - "Error data inspection and debugging?"
+
+compliance:
+  - "Data retention policies?"
+  - "Data encryption in transit and at rest?"
+  - "Access control and auditing?"
+  - "Compliance requirements? (GDPR, HIPAA, SOX)"
+  - "Data masking or tokenization?"
+  - "Right to be forgotten (data deletion)?"
+
+technical:
+  - "Infrastructure? (cloud: AWS/Azure/GCP, on-prem, hybrid)"
+  - "Infrastructure as Code? (Terraform, CloudFormation)"
+  - "Containerization? (Docker, Kubernetes)"
+  - "CI/CD for pipeline deployments?"
+  - "Version control for pipeline code?"
+  - "Testing strategy? (unit tests, integration tests, data validation tests)"
+
+focus_discovery:
+  - "Which area needs most clarity: data sources, transformations, architecture, scheduling, performance, or data quality?"
+  - "Are there specific technical challenges or scaling concerns to discuss?"

@@ -1,0 +1,451 @@
+"""Vision Summary data models for Mary's vision elicitation workflows.
+
+This module defines data structures for capturing vision elicitation results
+from various techniques (vision canvas, problem-solution fit, outcome mapping, 5W1H).
+"""
+
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict, Any
+from pathlib import Path
+from datetime import datetime
+
+
+@dataclass
+class VisionCanvas:
+    """Vision Canvas elicitation results."""
+
+    target_users: str = ""
+    user_needs: str = ""
+    product_vision: str = ""
+    key_features: List[str] = field(default_factory=list)
+    success_metrics: List[str] = field(default_factory=list)
+    differentiators: str = ""
+
+
+@dataclass
+class ProblemSolutionFit:
+    """Problem-Solution Fit elicitation results."""
+
+    problem_definition: str = ""
+    current_solutions: str = ""
+    gaps_pain_points: List[str] = field(default_factory=list)
+    proposed_solution: str = ""
+    value_proposition: str = ""
+
+
+@dataclass
+class OutcomeMap:
+    """Outcome Mapping elicitation results."""
+
+    desired_outcomes: List[str] = field(default_factory=list)
+    leading_indicators: List[str] = field(default_factory=list)
+    lagging_indicators: List[str] = field(default_factory=list)
+    stakeholders: List[str] = field(default_factory=list)
+
+
+@dataclass
+class FiveWOneH:
+    """5W1H analysis results."""
+
+    who: str = ""  # Who are the users/stakeholders
+    what: str = ""  # What are we building/solving
+    when: str = ""  # When is this needed
+    where: str = ""  # Where will it be used
+    why: str = ""  # Why does this matter
+    how: str = ""  # How will we build it
+
+
+@dataclass
+class VisionSummary:
+    """
+    Comprehensive vision summary from elicitation session.
+
+    Contains results from whichever technique was used, plus metadata
+    about the session and output file location.
+    """
+
+    # Original request and context
+    user_request: str
+    technique_used: str  # vision_canvas, problem_solution_fit, outcome_mapping, 5w1h
+    project_context: str = ""
+
+    # Technique-specific results (only one will be populated)
+    vision_canvas: Optional[VisionCanvas] = None
+    problem_solution_fit: Optional[ProblemSolutionFit] = None
+    outcome_map: Optional[OutcomeMap] = None
+    five_w_one_h: Optional[FiveWOneH] = None
+
+    # Metadata
+    created_at: datetime = field(default_factory=datetime.now)
+    duration_minutes: Optional[float] = None
+    turn_count: Optional[int] = None
+    file_path: Optional[Path] = None
+
+    def to_prompt(self) -> str:
+        """
+        Convert vision summary to prompt format for Brian.
+
+        This creates a concise summary that Brian can use for workflow selection.
+
+        Returns:
+            Formatted string for Brian's context
+        """
+        lines = [
+            "# Vision Elicitation Summary",
+            "",
+            f"**Original Request**: {self.user_request}",
+            f"**Technique Used**: {self.technique_used}",
+            f"**Date**: {self.created_at.strftime('%Y-%m-%d %H:%M')}",
+            "",
+        ]
+
+        if self.vision_canvas:
+            lines.extend(self._format_vision_canvas())
+        elif self.problem_solution_fit:
+            lines.extend(self._format_problem_solution_fit())
+        elif self.outcome_map:
+            lines.extend(self._format_outcome_map())
+        elif self.five_w_one_h:
+            lines.extend(self._format_5w1h())
+
+        return "\n".join(lines)
+
+    def to_markdown(self) -> str:
+        """
+        Convert vision summary to markdown document.
+
+        This creates a comprehensive markdown file for storage in
+        .gao-dev/mary/vision-documents/
+
+        Returns:
+            Formatted markdown string
+        """
+        lines = [
+            "# Vision Elicitation Summary",
+            "",
+            f"**Original Request**: {self.user_request}",
+            f"**Technique**: {self.technique_used}",
+            f"**Date**: {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}",
+        ]
+
+        if self.project_context:
+            lines.extend(["", f"**Project Context**: {self.project_context}"])
+
+        if self.duration_minutes:
+            lines.append(f"**Duration**: {self.duration_minutes:.1f} minutes")
+
+        if self.turn_count:
+            lines.append(f"**Conversation Turns**: {self.turn_count}")
+
+        lines.extend(["", "---", ""])
+
+        if self.vision_canvas:
+            lines.extend(self._format_vision_canvas_markdown())
+        elif self.problem_solution_fit:
+            lines.extend(self._format_problem_solution_fit_markdown())
+        elif self.outcome_map:
+            lines.extend(self._format_outcome_map_markdown())
+        elif self.five_w_one_h:
+            lines.extend(self._format_5w1h_markdown())
+
+        lines.extend(
+            [
+                "",
+                "---",
+                "",
+                "**Generated by**: Mary (Business Analyst)",
+                f"**File**: {self.file_path.name if self.file_path else 'N/A'}",
+            ]
+        )
+
+        return "\n".join(lines)
+
+    def _format_vision_canvas(self) -> List[str]:
+        """Format vision canvas for prompt (concise)."""
+        canvas = self.vision_canvas
+        if not canvas:
+            return []
+
+        lines = [
+            "## Vision Canvas",
+            "",
+            f"**Target Users**: {canvas.target_users}",
+            f"**User Needs**: {canvas.user_needs}",
+            f"**Vision**: {canvas.product_vision}",
+            "",
+            "**Key Features**:",
+        ]
+        for feature in canvas.key_features:
+            lines.append(f"- {feature}")
+
+        lines.extend(["", "**Success Metrics**:"])
+        for metric in canvas.success_metrics:
+            lines.append(f"- {metric}")
+
+        lines.extend(["", f"**Differentiators**: {canvas.differentiators}"])
+
+        return lines
+
+    def _format_vision_canvas_markdown(self) -> List[str]:
+        """Format vision canvas for markdown document (detailed)."""
+        canvas = self.vision_canvas
+        if not canvas:
+            return []
+
+        lines = [
+            "## Vision Canvas Results",
+            "",
+            "### Target Users",
+            canvas.target_users,
+            "",
+            "### User Needs",
+            canvas.user_needs,
+            "",
+            "### Product Vision",
+            canvas.product_vision,
+            "",
+            "### Key Features",
+        ]
+
+        if canvas.key_features:
+            for idx, feature in enumerate(canvas.key_features, 1):
+                lines.append(f"{idx}. {feature}")
+        else:
+            lines.append("*Not specified*")
+
+        lines.extend(["", "### Success Metrics"])
+
+        if canvas.success_metrics:
+            for metric in canvas.success_metrics:
+                lines.append(f"- {metric}")
+        else:
+            lines.append("*Not specified*")
+
+        lines.extend(["", "### Differentiators", canvas.differentiators or "*Not specified*"])
+
+        return lines
+
+    def _format_problem_solution_fit(self) -> List[str]:
+        """Format problem-solution fit for prompt (concise)."""
+        psf = self.problem_solution_fit
+        if not psf:
+            return []
+
+        lines = [
+            "## Problem-Solution Fit",
+            "",
+            f"**Problem**: {psf.problem_definition}",
+            f"**Current Solutions**: {psf.current_solutions}",
+            "",
+            "**Key Gaps**:",
+        ]
+        for gap in psf.gaps_pain_points:
+            lines.append(f"- {gap}")
+
+        lines.extend(
+            [
+                "",
+                f"**Proposed Solution**: {psf.proposed_solution}",
+                f"**Value Proposition**: {psf.value_proposition}",
+            ]
+        )
+
+        return lines
+
+    def _format_problem_solution_fit_markdown(self) -> List[str]:
+        """Format problem-solution fit for markdown document (detailed)."""
+        psf = self.problem_solution_fit
+        if not psf:
+            return []
+
+        lines = [
+            "## Problem-Solution Fit Results",
+            "",
+            "### Problem Definition",
+            psf.problem_definition,
+            "",
+            "### Current Solutions",
+            psf.current_solutions or "*Not specified*",
+            "",
+            "### Gaps & Pain Points",
+        ]
+
+        if psf.gaps_pain_points:
+            for gap in psf.gaps_pain_points:
+                lines.append(f"- {gap}")
+        else:
+            lines.append("*Not specified*")
+
+        lines.extend(
+            [
+                "",
+                "### Proposed Solution",
+                psf.proposed_solution or "*Not specified*",
+                "",
+                "### Value Proposition",
+                psf.value_proposition or "*Not specified*",
+            ]
+        )
+
+        return lines
+
+    def _format_outcome_map(self) -> List[str]:
+        """Format outcome map for prompt (concise)."""
+        omap = self.outcome_map
+        if not omap:
+            return []
+
+        lines = ["## Outcome Map", "", "**Desired Outcomes**:"]
+        for outcome in omap.desired_outcomes:
+            lines.append(f"- {outcome}")
+
+        lines.extend(["", "**Leading Indicators**:"])
+        for indicator in omap.leading_indicators:
+            lines.append(f"- {indicator}")
+
+        lines.extend(["", "**Lagging Indicators**:"])
+        for indicator in omap.lagging_indicators:
+            lines.append(f"- {indicator}")
+
+        return lines
+
+    def _format_outcome_map_markdown(self) -> List[str]:
+        """Format outcome map for markdown document (detailed)."""
+        omap = self.outcome_map
+        if not omap:
+            return []
+
+        lines = ["## Outcome Map Results", "", "### Desired Outcomes"]
+
+        if omap.desired_outcomes:
+            for outcome in omap.desired_outcomes:
+                lines.append(f"- {outcome}")
+        else:
+            lines.append("*Not specified*")
+
+        lines.extend(["", "### Leading Indicators"])
+
+        if omap.leading_indicators:
+            for indicator in omap.leading_indicators:
+                lines.append(f"- {indicator}")
+        else:
+            lines.append("*Not specified*")
+
+        lines.extend(["", "### Lagging Indicators"])
+
+        if omap.lagging_indicators:
+            for indicator in omap.lagging_indicators:
+                lines.append(f"- {indicator}")
+        else:
+            lines.append("*Not specified*")
+
+        lines.extend(["", "### Stakeholders"])
+
+        if omap.stakeholders:
+            for stakeholder in omap.stakeholders:
+                lines.append(f"- {stakeholder}")
+        else:
+            lines.append("*Not specified*")
+
+        return lines
+
+    def _format_5w1h(self) -> List[str]:
+        """Format 5W1H for prompt (concise)."""
+        five_w = self.five_w_one_h
+        if not five_w:
+            return []
+
+        return [
+            "## 5W1H Analysis",
+            "",
+            f"**Who**: {five_w.who}",
+            f"**What**: {five_w.what}",
+            f"**When**: {five_w.when}",
+            f"**Where**: {five_w.where}",
+            f"**Why**: {five_w.why}",
+            f"**How**: {five_w.how}",
+        ]
+
+    def _format_5w1h_markdown(self) -> List[str]:
+        """Format 5W1H for markdown document (detailed)."""
+        five_w = self.five_w_one_h
+        if not five_w:
+            return []
+
+        return [
+            "## 5W1H Analysis Results",
+            "",
+            "### Who (Users & Stakeholders)",
+            five_w.who or "*Not specified*",
+            "",
+            "### What (Product & Problem)",
+            five_w.what or "*Not specified*",
+            "",
+            "### When (Timeline & Urgency)",
+            five_w.when or "*Not specified*",
+            "",
+            "### Where (Context & Environment)",
+            five_w.where or "*Not specified*",
+            "",
+            "### Why (Strategic Rationale)",
+            five_w.why or "*Not specified*",
+            "",
+            "### How (Approach & Methodology)",
+            five_w.how or "*Not specified*",
+        ]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert to dictionary for JSON serialization.
+
+        Returns:
+            Dictionary representation
+        """
+        result: Dict[str, Any] = {
+            "user_request": self.user_request,
+            "technique_used": self.technique_used,
+            "project_context": self.project_context,
+            "created_at": self.created_at.isoformat(),
+            "duration_minutes": self.duration_minutes,
+            "turn_count": self.turn_count,
+            "file_path": str(self.file_path) if self.file_path else None,
+        }
+
+        if self.vision_canvas:
+            result["vision_canvas"] = {
+                "target_users": self.vision_canvas.target_users,
+                "user_needs": self.vision_canvas.user_needs,
+                "product_vision": self.vision_canvas.product_vision,
+                "key_features": self.vision_canvas.key_features,
+                "success_metrics": self.vision_canvas.success_metrics,
+                "differentiators": self.vision_canvas.differentiators,
+            }
+
+        if self.problem_solution_fit:
+            result["problem_solution_fit"] = {
+                "problem_definition": self.problem_solution_fit.problem_definition,
+                "current_solutions": self.problem_solution_fit.current_solutions,
+                "gaps_pain_points": self.problem_solution_fit.gaps_pain_points,
+                "proposed_solution": self.problem_solution_fit.proposed_solution,
+                "value_proposition": self.problem_solution_fit.value_proposition,
+            }
+
+        if self.outcome_map:
+            result["outcome_map"] = {
+                "desired_outcomes": self.outcome_map.desired_outcomes,
+                "leading_indicators": self.outcome_map.leading_indicators,
+                "lagging_indicators": self.outcome_map.lagging_indicators,
+                "stakeholders": self.outcome_map.stakeholders,
+            }
+
+        if self.five_w_one_h:
+            result["five_w_one_h"] = {
+                "who": self.five_w_one_h.who,
+                "what": self.five_w_one_h.what,
+                "when": self.five_w_one_h.when,
+                "where": self.five_w_one_h.where,
+                "why": self.five_w_one_h.why,
+                "how": self.five_w_one_h.how,
+            }
+
+        return result

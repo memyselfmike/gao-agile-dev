@@ -1,0 +1,40 @@
+name: moscow-prioritization
+description: Prioritize requirements using MoSCoW method (Must, Should, Could, Won't)
+phase: 1
+author: Mary (Business Analyst)
+non_interactive: false
+autonomous: true
+iterative: false
+
+variables:
+  requirements:
+    description: List of requirements to prioritize
+    type: list
+    required: true
+
+  product_vision:
+    description: Product vision for context
+    type: string
+    default: ""
+
+  timeline:
+    description: Project timeline
+    type: string
+    default: ""
+
+  timestamp:
+    description: Timestamp for output file
+    type: string
+    required: false
+
+required_tools:
+  - analysis_service
+
+output_file: ".gao-dev/mary/requirements-analysis/moscow-{{timestamp}}.md"
+
+metadata:
+  category: requirements_analysis
+  domain: business_analysis
+  technique: moscow
+  typical_duration: 5-10  # minutes
+  output_format: markdown

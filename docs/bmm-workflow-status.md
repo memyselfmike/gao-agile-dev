@@ -11,10 +11,10 @@ project_name: GAO-Dev - Complete System
 ## Current State
 
 **Phase**: 4 - Implementation
-**Scale Level**: 3 (Level 3: 12-40 stories, 2-5 epics - we have 30 completed epics)
+**Scale Level**: 3 (Level 3: 12-40 stories, 2-5 epics - we have 31 completed epics)
 **Project Type**: Software - Python Development Framework
-**Current Epic**: Epic 30 - Interactive Brian Chat Interface ✅ COMPLETE
-**Status**: ALL 7 stories complete (32/32 points, 100% done)
+**Current Epic**: Epic 31 - Full Mary (Business Analyst) Integration ✅ COMPLETE
+**Status**: ALL 5 core stories complete (28/28 points, 100% done) | All 8 GAO-Dev agents operational
 
 ## Project Overview
 
@@ -498,6 +498,124 @@ This tests the ACTUAL autonomous development capability, not just comparison to 
 
 **Replacement**: `sandbox/benchmarks/workflow-driven-todo.yaml` - Let GAO-Dev BUILD it!
 
+## Current Epic: Epic 30 - Interactive Brian Chat Interface ✅ COMPLETE
+
+**Goal**: Transform GAO-Dev into conversational partner via `gao-dev start` REPL interface, bringing together all capabilities from Epics 22-29.
+
+**Status**: COMPLETE (All 7 stories implemented, 32 story points)
+
+**Key Documents**:
+- PRD: `docs/features/interactive-brian-chat/PRD.md`
+- Architecture: `docs/features/interactive-brian-chat/ARCHITECTURE.md`
+- User Guide: `docs/features/interactive-brian-chat/USER_GUIDE.md`
+- Stories: `docs/features/interactive-brian-chat/stories/epic-30/`
+
+**Success Criteria**: All achieved ✅
+- ✅ `gao-dev start` launches successfully (<2s startup)
+- ✅ Brian greets with project status
+- ✅ Natural language input works
+- ✅ Multi-turn conversations supported
+- ✅ All existing commands accessible
+- ✅ Greenfield & brownfield initialization works
+- ✅ 20+ integration tests passing
+- ✅ No regressions in existing functionality
+
+**Completed Stories** (32 story points total):
+1. ✅ Story 30.1: Brian REPL Command (5 points) - Infinite loop, Rich UI, exit logic
+2. ✅ Story 30.2: Project Auto-Detection (3 points) - Auto-detect `.gao-dev/`, display status
+3. ✅ Story 30.3: Conversational Brian (8 points) - Natural language → analysis → dialogue
+4. ✅ Story 30.4: Command Routing (5 points) - Route intents to existing commands
+5. ✅ Story 30.5: Session State (3 points) - Conversation history and context
+6. ✅ Story 30.6: Greenfield & Brownfield Init (5 points) - Guide new/existing projects
+7. ✅ Story 30.7: Testing & Documentation (3 points) - 20+ tests, user guide, QA checklist
+
+**Total**: 32 story points, 7 stories - ALL COMPLETE
+
+**Achievement**:
+GAO-Dev now has a conversational interface accessible via `gao-dev start`. Users can chat naturally with Brian instead of memorizing CLI commands. The REPL auto-detects projects, maintains conversation context, and routes intents seamlessly.
+
+**Key Deliverables**:
+- `gao_dev/cli/chat_repl.py` - ChatREPL with prompt-toolkit and Rich
+- `gao_dev/orchestrator/chat_session.py` - Session state management
+- `gao_dev/orchestrator/conversational_brian.py` - Natural language wrapper
+- `gao_dev/cli/command_router.py` - Intent routing
+- `gao_dev/cli/project_status.py` - Auto-detection and status display
+- `gao_dev/cli/greenfield_initializer.py` - New/existing project setup
+- 20+ integration tests
+- Comprehensive user guide (400+ lines)
+- Demo script and QA checklist
+
+## Current Epic: Epic 31 - Full Mary (Business Analyst) Integration ✅ COMPLETE
+
+**Goal**: Integrate Mary as GAO-Dev's 8th agent - a Business Analyst who helps clarify vague ideas into clear product visions through structured discovery techniques.
+
+**Status**: COMPLETE (5 core stories implemented, 28 story points)
+
+**Key Documents**:
+- PRD: `docs/features/interactive-brian-chat/PRD.md` (includes Mary)
+- Architecture: `docs/features/interactive-brian-chat/ARCHITECTURE.md` (includes Mary)
+- User Guide: `docs/features/interactive-brian-chat/USER_GUIDE_MARY.md`
+- Examples: `docs/features/interactive-brian-chat/examples/mary-examples.md`
+- Demo Script: `docs/features/interactive-brian-chat/DEMO_SCRIPT.md`
+- Stories: `docs/features/interactive-brian-chat/stories/epic-31/`
+
+**Success Criteria**: All achieved ✅
+- ✅ 20+ integration tests covering all Mary workflows
+- ✅ All tests verify Epic 10 prompt loading and rendering
+- ✅ End-to-end tests: Brian → Mary → all strategies
+- ✅ Performance validation (all targets met)
+- ✅ User guide complete with 5+ examples
+- ✅ All Mary workflows use PromptLoader (Epic 10)
+- ✅ All 24 prompts use `@file:` and `{{variable}}` syntax
+- ✅ Document lifecycle integration working
+- ✅ No CSV dependencies (BMAD independence confirmed)
+- ✅ All 8 GAO-Dev agents operational
+
+**Completed Stories** (28 story points total):
+1. ✅ Story 31.1: Vision Elicitation Workflows (5 points)
+   - 4 prompts: Vision Canvas, Problem-Solution Fit, Outcome Mapping, 5W1H
+   - Converts vague ideas to structured visions
+2. ✅ Story 31.2: Brainstorming Workflows (8 points)
+   - 10 prompts: SCAMPER, Mind Mapping, What-If, First Principles, Five Whys, Yes-And, Constraints, Reversal, Stakeholders, Reverse
+   - AI-facilitated creative thinking
+3. ✅ Story 31.3: Requirements Analysis (5 points)
+   - 5 prompts: MoSCoW, Kano, Dependency, Risk, Constraint
+   - Data-driven prioritization and risk analysis
+4. ✅ Story 31.4: Domain Intelligence (5 points)
+   - 5 prompts: Web App, Mobile App, API Service, CLI Tool, Data Pipeline
+   - Domain-specific questions (15-20 per domain)
+5. ✅ Story 31.5: Integration & Documentation (5 points)
+   - 20+ integration tests
+   - Complete user guide with 5+ examples
+   - Demo script
+
+**Total**: 28 story points, 5 stories - ALL COMPLETE (Story 31.6 optional)
+
+**Achievement**:
+GAO-Dev now has a complete Business Analyst agent. Mary helps users with vague ideas articulate clear product visions through proven techniques. All 24 Mary prompts follow Epic 10 format for full customization. All 8 GAO-Dev agents are now operational.
+
+**Key Deliverables**:
+- `gao_dev/orchestrator/mary_orchestrator.py` - Mary's main orchestrator
+- `gao_dev/orchestrator/brainstorming_engine.py` - Brainstorming facilitation
+- `gao_dev/orchestrator/requirements_analyzer.py` - Requirements analysis
+- `gao_dev/orchestrator/domain_question_library.py` - Domain-specific questions
+- 24 prompts in `gao_dev/config/prompts/agents/mary_*.yaml`
+- 4 data models (vision, brainstorming, requirements, domain)
+- 60+ tests total (14 + 16 + 13 + 11 + 20+)
+- Comprehensive user guide (250+ lines)
+- 5+ complete examples
+- Demo script (15-20 min walkthrough)
+
+**All 8 GAO-Dev Agents Now Operational**:
+1. **Brian** - Workflow Coordinator (Epic 7.2)
+2. **John** - Product Manager (Core agent)
+3. **Winston** - Technical Architect (Core agent)
+4. **Sally** - UX Designer (Core agent)
+5. **Bob** - Scrum Master (Core agent)
+6. **Amelia** - Software Developer (Core agent)
+7. **Murat** - Test Architect (Core agent)
+8. **Mary** - Business Analyst (Epic 31) ✅ NEW!
+
 ## Next Actions
 
 ### Immediate: Real-World Testing & Domain Expansion
@@ -764,6 +882,11 @@ GAO-Dev now has a production-ready document lifecycle management system with int
 - **2025-11-10**: Epic 30 COMPLETE - All 7 stories done! (32/32 points, 100%)
 - **2025-11-10**: Story 30.7 complete: 20+ integration tests, User Guide (400+ lines), Demo script, QA checklist
 - **2025-11-10**: Interactive Brian Chat fully operational - `gao-dev start` brings conversational interface to life
+- **2025-11-10**: Epic 31 COMPLETE - Full Mary (Business Analyst) Integration (28/28 points, 100%)
+- **2025-11-10**: Story 31.5 complete: 20+ integration tests, User Guide, 5+ examples, Demo Script
+- **2025-11-10**: All 8 GAO-Dev agents now operational: Brian, John, Winston, Sally, Bob, Amelia, Murat, Mary
+- **2025-11-10**: 24 Mary prompts following Epic 10 format, 4 workflows, 60+ tests total across Epic 31
+- **2025-11-10**: Mary capabilities: Vision Elicitation (4 techniques), Brainstorming (10 techniques), Requirements Analysis (5 analyses), Domain Intelligence (5 domains)
 
 ---
 

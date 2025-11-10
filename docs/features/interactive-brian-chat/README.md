@@ -1,8 +1,8 @@
 # Interactive Brian Chat Interface
 
-**Epic**: 30 (Chat REPL)
-**Status**: COMPLETE (7/7 stories, 32/32 points - 100%)
-**Story Points**: 32 points (2 weeks actual)
+**Epics**: 30 (Chat REPL) + 31 (Full Mary Integration)
+**Status**: BOTH COMPLETE (100%)
+**Story Points**: 60 points total (32 for Epic 30, 28 for Epic 31)
 **Owner**: Amelia (Developer)
 **Completion Date**: 2025-11-10
 
@@ -10,7 +10,9 @@
 
 ## Overview
 
-Epic 30 adds the final 5% layer that brings together all capabilities from Epics 22-29 into a unified **conversational interface**. Users can now chat with Brian interactively instead of memorizing CLI commands.
+**Epic 30** adds the final 5% layer that brings together all capabilities from Epics 22-29 into a unified **conversational interface**. Users can now chat with Brian interactively instead of memorizing CLI commands.
+
+**Epic 31** adds **Mary (Business Analyst)** - GAO-Dev's 8th agent who helps clarify vague ideas into clear product visions through structured discovery techniques. Mary integrates seamlessly with Brian and uses Epic 10's prompt system for full customization.
 
 ### What You Get
 
@@ -97,34 +99,41 @@ You: bye
 
 ### User Documentation
 
+**Epic 30 (Brian Chat)**:
 - **[USER_GUIDE.md](./USER_GUIDE.md)** - Complete user guide with examples and troubleshooting
 - **[QA_CHECKLIST.md](./QA_CHECKLIST.md)** - Manual QA checklist covering all user paths
 - **[Demo Script](../../examples/interactive_brian_demo.py)** - Interactive demo showcasing all features
 
+**Epic 31 (Mary Integration)**:
+- **[USER_GUIDE_MARY.md](./USER_GUIDE_MARY.md)** - Working with Mary (Business Analyst)
+- **[examples/mary-examples.md](./examples/mary-examples.md)** - 5+ complete examples
+- **[DEMO_SCRIPT.md](./DEMO_SCRIPT.md)** - Mary demo walkthrough
+
 ### Story Files
 
-All 7 stories are documented in `stories/epic-30/`:
+**Epic 30 Stories** (7 stories, 32 points) - All documented in `stories/epic-30/`:
 
 1. **[Story 30.1](./stories/epic-30/story-30.1.md)** - Brian REPL Command (5 pts) - ✅ COMPLETE
-   - Foundation: Infinite loop, input/output, exit handling
-
 2. **[Story 30.2](./stories/epic-30/story-30.2.md)** - Project Auto-Detection (3 pts) - ✅ COMPLETE
-   - Auto-detect `.gao-dev/`, display project status on startup
-
 3. **[Story 30.3](./stories/epic-30/story-30.3.md)** - Conversational Brian (8 pts) - ✅ COMPLETE
-   - Natural language → Brian analysis → Conversational responses
-
 4. **[Story 30.4](./stories/epic-30/story-30.4.md)** - Command Routing (5 pts) - ✅ COMPLETE
-   - Route intents to existing commands, stream progress
-
 5. **[Story 30.5](./stories/epic-30/story-30.5.md)** - Session State (3 pts) - ✅ COMPLETE
-   - Remember conversation history and context
-
 6. **[Story 30.6](./stories/epic-30/story-30.6.md)** - Greenfield & Brownfield Init (5 pts) - ✅ COMPLETE
-   - Guide new users through project setup (new or existing)
-
 7. **[Story 30.7](./stories/epic-30/story-30.7.md)** - Testing & Docs (3 pts) - ✅ COMPLETE
-   - 20+ integration tests, comprehensive user guide, demo script, QA checklist
+
+**Epic 31 Stories** (6 stories, 28 points) - All documented in `stories/epic-31/`:
+
+1. **[Story 31.1](./stories/epic-31/story-31.1-vision-elicitation-workflows.md)** - Vision Elicitation Workflows (5 pts) - ✅ COMPLETE
+   - 4 prompts: Vision Canvas, Problem-Solution Fit, Outcome Mapping, 5W1H
+2. **[Story 31.2](./stories/epic-31/story-31.2-brainstorming-workflows-prompts.md)** - Brainstorming Workflows (8 pts) - ✅ COMPLETE
+   - 10 prompts: SCAMPER, Mind Mapping, What-If, First Principles, Five Whys, etc.
+3. **[Story 31.3](./stories/epic-31/story-31.3-requirements-analysis-workflows-prompts.md)** - Requirements Analysis (5 pts) - ✅ COMPLETE
+   - 5 prompts: MoSCoW, Kano, Dependency, Risk, Constraint
+4. **[Story 31.4](./stories/epic-31/story-31.4-domain-specific-requirements-workflows-prompts.md)** - Domain Intelligence (5 pts) - ✅ COMPLETE
+   - 5 prompts: Web App, Mobile App, API Service, CLI Tool, Data Pipeline
+5. **[Story 31.5](./stories/epic-31/story-31.5-integration-documentation.md)** - Integration & Documentation (5 pts) - ✅ COMPLETE
+   - 20+ integration tests, User Guide, Examples, Demo Script
+6. **[Story 31.6](./stories/epic-31/story-31.6-mary-john-handoff.md)** - Mary → John Handoff - ⏳ OPTIONAL
 
 ---
 
@@ -429,6 +438,7 @@ You: how do I create a PRD?
 | 2025-11-10 | 1.0 | Initial documentation created | Amelia (Developer) |
 | 2025-11-10 | 1.1 | Updated with Stories 30.1-30.3 complete, Story 30.6 expanded for brownfield | Bob (Scrum Master) |
 | 2025-11-10 | 2.0 | Epic 30 COMPLETE - All 7 stories done, comprehensive testing & docs | Amelia (Developer) |
+| 2025-11-10 | 3.0 | Epic 31 COMPLETE - Mary (Business Analyst) fully integrated, all 8 agents operational | Amelia (Developer) |
 
 ---
 
@@ -454,4 +464,141 @@ You: how do I create a PRD?
 - Greenfield and brownfield initialization flows
 - Comprehensive testing and documentation
 
-**What's Next**: Epic 31 - Full Mary Integration (optional enhancement)
+**What's Next**: Epic 31 - Full Mary Integration - ✅ NOW COMPLETE!
+
+---
+
+## Epic 31 - Mary (Business Analyst) Integration ✅ COMPLETE
+
+**Completion Date**: 2025-11-10
+**Total Story Points**: 28 points (5 stories implemented, 1 optional)
+**Total Stories**: 5 core stories + 1 optional
+**Duration**: 2 weeks
+
+### Overview
+
+Epic 31 adds **Mary**, GAO-Dev's 8th agent - a Business Analyst who helps users clarify vague ideas into clear product visions. Mary seamlessly integrates with Brian and uses proven business analysis techniques.
+
+### Key Capabilities
+
+**Vision Elicitation** (Story 31.1):
+- 4 techniques: Vision Canvas, Problem-Solution Fit, Outcome Mapping, 5W1H
+- Converts vague ideas into structured visions
+- Outputs ready for PRD creation
+
+**Brainstorming Facilitation** (Story 31.2):
+- 10 techniques: SCAMPER, Mind Mapping, What-If, First Principles, Five Whys, Yes-And, Constraints, Reversal, Stakeholders, Reverse Engineering
+- AI-facilitated creative thinking
+- Generates mind maps and insights
+
+**Requirements Analysis** (Story 31.3):
+- 5 analyses: MoSCoW prioritization, Kano model, Dependency mapping, Risk identification, Constraint analysis
+- Data-driven prioritization
+- Risk-aware planning
+
+**Domain Intelligence** (Story 31.4):
+- 5 domains: Web App, Mobile App, API Service, CLI Tool, Data Pipeline
+- Domain-specific questions (15-20 per domain)
+- Contextual requirements gathering
+
+**Integration & Documentation** (Story 31.5):
+- 20+ integration tests covering all workflows
+- Comprehensive user guide (250+ lines)
+- 5+ complete examples
+- Demo script for showcasing
+
+### Epic 10 Integration
+
+All 24 Mary prompts use Epic 10's prompt system:
+- Externalized to YAML files (`gao_dev/config/prompts/agents/mary_*.yaml`)
+- `@file:` reference resolution for persona injection
+- `{{variable}}` syntax for dynamic substitution
+- Fully customizable without code changes
+
+### Usage
+
+```bash
+# Start interactive chat
+gao-dev start
+
+# Mary automatically joins when Brian detects vagueness
+You: "I want to build something for teams"
+Brian: "This is vague. Let me bring in Mary..."
+Mary: "Let's clarify your vision using Vision Canvas..."
+
+# Or explicitly request Mary
+You: "Mary, help me brainstorm authentication ideas"
+You: "Mary, can we analyze these requirements?"
+```
+
+### Files Created
+
+**Core Implementation**:
+- `gao_dev/orchestrator/mary_orchestrator.py` - Mary's main orchestrator
+- `gao_dev/orchestrator/brainstorming_engine.py` - Brainstorming facilitation
+- `gao_dev/orchestrator/requirements_analyzer.py` - Requirements analysis
+- `gao_dev/orchestrator/domain_question_library.py` - Domain questions
+- `gao_dev/core/models/vision_summary.py` - Vision data models
+- `gao_dev/core/models/brainstorming_summary.py` - Brainstorming data models
+- `gao_dev/core/models/requirements_analysis.py` - Requirements data models
+- `gao_dev/core/models/domain_requirements.py` - Domain requirements models
+
+**Prompts** (24 total):
+- 4 vision elicitation prompts
+- 10 brainstorming prompts
+- 5 requirements analysis prompts
+- 5 domain-specific prompts
+
+**Tests**:
+- `tests/orchestrator/test_mary_vision_elicitation.py` - 14 tests
+- `tests/orchestrator/test_mary_brainstorming.py` - 16 tests (Story 31.2)
+- `tests/orchestrator/test_mary_requirements.py` - 13 tests (Story 31.3)
+- `tests/orchestrator/test_mary_domain_integration.py` - 11 tests (Story 31.4)
+- `tests/integration/test_mary_integration.py` - 20+ integration tests
+
+**Documentation**:
+- `docs/features/interactive-brian-chat/USER_GUIDE_MARY.md` - Complete user guide
+- `docs/features/interactive-brian-chat/examples/mary-examples.md` - 5+ examples
+- `docs/features/interactive-brian-chat/DEMO_SCRIPT.md` - Demo walkthrough
+
+### All 8 GAO-Dev Agents Now Operational
+
+With Mary's integration, GAO-Dev now has a complete team:
+
+1. **Brian** - Workflow Coordinator (Epic 7.2)
+2. **John** - Product Manager (Core agent)
+3. **Winston** - Technical Architect (Core agent)
+4. **Sally** - UX Designer (Core agent)
+5. **Bob** - Scrum Master (Core agent)
+6. **Amelia** - Software Developer (Core agent)
+7. **Murat** - Test Architect (Core agent)
+8. **Mary** - Business Analyst (Epic 31) ✅ NEW!
+
+### Success Criteria - All Achieved ✅
+
+- ✅ 20+ integration tests covering all Mary workflows
+- ✅ All tests verify Epic 10 prompt loading and rendering
+- ✅ End-to-end tests: Brian → Mary → all strategies
+- ✅ Performance validation (all targets met)
+- ✅ User guide complete with examples
+- ✅ All Mary workflows use PromptLoader
+- ✅ All prompts use `@file:` and `{{variable}}` syntax
+- ✅ Document lifecycle integration working
+- ✅ No CSV dependencies (BMAD independence confirmed)
+- ✅ All 8 GAO-Dev agents operational
+
+### Resources
+
+**Documentation**:
+- [User Guide - Working with Mary](./USER_GUIDE_MARY.md)
+- [Examples - 5+ Complete Scenarios](./examples/mary-examples.md)
+- [Demo Script - Interactive Walkthrough](./DEMO_SCRIPT.md)
+
+**Story Files**:
+- [Story 31.1 - Vision Elicitation](./stories/epic-31/story-31.1-vision-elicitation-workflows.md)
+- [Story 31.2 - Brainstorming](./stories/epic-31/story-31.2-brainstorming-workflows-prompts.md)
+- [Story 31.3 - Requirements Analysis](./stories/epic-31/story-31.3-requirements-analysis-workflows-prompts.md)
+- [Story 31.4 - Domain Intelligence](./stories/epic-31/story-31.4-domain-specific-requirements-workflows-prompts.md)
+- [Story 31.5 - Integration & Documentation](./stories/epic-31/story-31.5-integration-documentation.md)
+
+**Epic 31 Achievement**: GAO-Dev now has a full business analyst capability. Users can start with the vaguest ideas and Mary will help them articulate clear, actionable product visions ready for implementation.

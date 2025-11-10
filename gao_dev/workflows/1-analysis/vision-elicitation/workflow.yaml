@@ -1,0 +1,52 @@
+name: vision-elicitation
+description: Elicit product vision through structured discovery
+phase: 1
+author: Mary (Business Analyst)
+non_interactive: false
+autonomous: false
+iterative: true
+
+variables:
+  user_request:
+    description: Original vague request
+    type: string
+    required: true
+
+  technique:
+    description: Vision elicitation technique to use
+    type: string
+    required: true
+    allowed_values:
+      - vision_canvas
+      - problem_solution_fit
+      - outcome_mapping
+      - 5w1h
+
+  project_context:
+    description: Optional project context
+    type: string
+    default: ""
+
+  timestamp:
+    description: Timestamp for output file
+    type: string
+    required: false
+
+required_tools:
+  - conversation_manager
+  - analysis_service
+
+output_file: ".gao-dev/mary/vision-documents/vision-{{technique}}-{{timestamp}}.md"
+
+# Reference prompts by name (Epic 10 pattern)
+prompts:
+  vision_canvas: "mary_vision_canvas"
+  problem_solution_fit: "mary_vision_problem_solution_fit"
+  outcome_mapping: "mary_vision_outcome_mapping"
+  5w1h: "mary_vision_5w1h"
+
+metadata:
+  category: vision_elicitation
+  domain: business_analysis
+  techniques_available: 4
+  typical_duration: 15-20  # minutes
