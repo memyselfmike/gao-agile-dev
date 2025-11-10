@@ -1,0 +1,31 @@
+name: dependency-mapping
+description: Map dependencies between requirements to identify build order
+phase: 1
+author: Mary (Business Analyst)
+non_interactive: false
+autonomous: true
+iterative: false
+
+variables:
+  requirements:
+    description: List of requirements to map dependencies
+    type: list
+    required: true
+
+  timestamp:
+    description: Timestamp for output file
+    type: string
+    required: false
+
+required_tools:
+  - analysis_service
+
+output_file: ".gao-dev/mary/requirements-analysis/dependencies-{{timestamp}}.md"
+
+metadata:
+  category: requirements_analysis
+  domain: business_analysis
+  technique: dependency_mapping
+  typical_duration: 5-10  # minutes
+  output_format: markdown
+  produces: dependency_graph

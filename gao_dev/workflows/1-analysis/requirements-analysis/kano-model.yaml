@@ -1,0 +1,36 @@
+name: kano-model
+description: Categorize requirements using Kano model (Basic, Performance, Excitement, Indifferent, Reverse)
+phase: 1
+author: Mary (Business Analyst)
+non_interactive: false
+autonomous: true
+iterative: false
+
+variables:
+  requirements:
+    description: List of requirements to categorize
+    type: list
+    required: true
+
+  timestamp:
+    description: Timestamp for output file
+    type: string
+    required: false
+
+required_tools:
+  - analysis_service
+
+output_file: ".gao-dev/mary/requirements-analysis/kano-{{timestamp}}.md"
+
+metadata:
+  category: requirements_analysis
+  domain: business_analysis
+  technique: kano_model
+  typical_duration: 5-10  # minutes
+  output_format: markdown
+  categories:
+    - basic
+    - performance
+    - excitement
+    - indifferent
+    - reverse

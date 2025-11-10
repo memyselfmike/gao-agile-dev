@@ -1,0 +1,56 @@
+name: constraint-analysis
+description: Analyze time, budget, technical, compliance, and resource constraints
+phase: 1
+author: Mary (Business Analyst)
+non_interactive: false
+autonomous: true
+iterative: false
+
+variables:
+  requirements:
+    description: List of requirements to analyze for constraints
+    type: list
+    required: true
+
+  timeline:
+    description: Project timeline constraint
+    type: string
+    default: ""
+
+  budget:
+    description: Project budget constraint
+    type: string
+    default: ""
+
+  technical_stack:
+    description: Technical stack constraints
+    type: string
+    default: ""
+
+  team_size:
+    description: Team size resource constraint
+    type: string
+    default: ""
+
+  timestamp:
+    description: Timestamp for output file
+    type: string
+    required: false
+
+required_tools:
+  - analysis_service
+
+output_file: ".gao-dev/mary/requirements-analysis/constraints-{{timestamp}}.md"
+
+metadata:
+  category: requirements_analysis
+  domain: business_analysis
+  technique: constraint_analysis
+  typical_duration: 5-10  # minutes
+  output_format: markdown
+  constraint_categories:
+    - time
+    - budget
+    - technical
+    - compliance
+    - resource

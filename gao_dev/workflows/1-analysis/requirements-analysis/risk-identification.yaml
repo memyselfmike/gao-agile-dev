@@ -1,0 +1,55 @@
+name: risk-identification
+description: Identify technical, resource, timeline, scope, and external risks
+phase: 1
+author: Mary (Business Analyst)
+non_interactive: false
+autonomous: true
+iterative: false
+
+variables:
+  requirements:
+    description: List of requirements to analyze for risks
+    type: list
+    required: true
+
+  team_size:
+    description: Team size for resource risk assessment
+    type: string
+    default: ""
+
+  timeline:
+    description: Project timeline for timeline risk assessment
+    type: string
+    default: ""
+
+  technical_stack:
+    description: Technical stack for technical risk assessment
+    type: string
+    default: ""
+
+  timestamp:
+    description: Timestamp for output file
+    type: string
+    required: false
+
+required_tools:
+  - analysis_service
+
+output_file: ".gao-dev/mary/requirements-analysis/risks-{{timestamp}}.md"
+
+metadata:
+  category: requirements_analysis
+  domain: business_analysis
+  technique: risk_identification
+  typical_duration: 10-15  # minutes
+  output_format: markdown
+  risk_categories:
+    - technical
+    - resource
+    - timeline
+    - scope
+    - external
+  severity_levels:
+    - high
+    - medium
+    - low

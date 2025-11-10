@@ -30,8 +30,10 @@ from ..core.models.brainstorming_summary import (
     BrainstormingSummary,
     Idea,
 )
+from ..core.models.requirements_analysis import RequirementsAnalysis
 from .conversation_manager import ConversationManager
 from .brainstorming_engine import BrainstormingEngine, BrainstormingGoal
+from .requirements_analyzer import RequirementsAnalyzer
 
 
 logger = structlog.get_logger()
@@ -88,6 +90,9 @@ class MaryOrchestrator:
         self.brainstorming_engine = BrainstormingEngine(
             analysis_service=analysis_service, conversation_manager=conversation_manager
         )
+
+        # Initialize requirements analyzer
+        self.requirements_analyzer = RequirementsAnalyzer(analysis_service=analysis_service)
 
         self.logger.info("mary_orchestrator_initialized", project_root=str(project_root))
 
@@ -568,5 +573,103 @@ class MaryOrchestrator:
         except Exception as e:
             self.logger.error("brainstorming_save_failed", path=str(output_path), error=str(e))
             raise IOError(f"Failed to save brainstorming summary: {e}")
+
+        return output_path
+
+    async def analyze_requirements(
+        self,
+        requirements: List[str],
+        context: Optional[Dict[str, Any]] = None,
+    ) -> RequirementsAnalysis:
+        """
+        Perform comprehensive requirements analysis.
+
+        Uses professional BA techniques:
+        - MoSCoW prioritization (Must, Should, Could, Won't)
+        - Kano model categorization (Basic, Performance, Excitement)
+        - Dependency mapping
+        - Risk identification
+        - Constraint analysis
+
+        Args:
+            requirements: List of requirement strings to analyze
+            context: Optional context dict with product_vision, timeline, team_size, etc.
+
+        Returns:
+            RequirementsAnalysis with all analysis results
+
+        Raises:
+            ValueError: If requirements list is empty
+        """
+        if not requirements:
+            raise ValueError("Requirements list cannot be empty")
+
+        if context is None:
+            context = {}
+
+        self.logger.info(
+            "requirements_analysis_started",
+            req_count=len(requirements),
+            has_context=bool(context),
+        )
+
+        from datetime import datetime
+
+        start_time = datetime.now()
+
+        # Perform full analysis
+        analysis = await self.requirements_analyzer.analyze_all(requirements, context)
+
+        # Calculate duration
+        duration = (datetime.now() - start_time).total_seconds()
+
+        # Save to .gao-dev/mary/requirements-analysis/
+        output_path = await self._save_requirements_analysis(analysis)
+        analysis.file_path = output_path
+
+        self.logger.info(
+            "requirements_analysis_complete",
+            duration_seconds=round(duration, 2),
+            output_path=str(output_path),
+            must_count=len([m for m in analysis.moscow if m.category.lower() == "must"]),
+            risk_count=len(analysis.risks),
+        )
+
+        return analysis
+
+    async def _save_requirements_analysis(
+        self, analysis: RequirementsAnalysis
+    ) -> Path:
+        """
+        Save requirements analysis to .gao-dev/mary/requirements-analysis/.
+
+        Args:
+            analysis: RequirementsAnalysis to save
+
+        Returns:
+            Path to saved file
+
+        Raises:
+            IOError: If file save fails
+        """
+        # Create output directory
+        output_dir = self.project_root / ".gao-dev" / "mary" / "requirements-analysis"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate filename
+        timestamp = analysis.created_at.strftime("%Y%m%d-%H%M%S")
+        filename = f"requirements-analysis-{timestamp}.md"
+        output_path = output_dir / filename
+
+        # Write markdown
+        try:
+            markdown_content = analysis.to_markdown()
+            output_path.write_text(markdown_content, encoding="utf-8")
+            self.logger.info("requirements_analysis_saved", path=str(output_path))
+        except Exception as e:
+            self.logger.error(
+                "requirements_analysis_save_failed", path=str(output_path), error=str(e)
+            )
+            raise IOError(f"Failed to save requirements analysis: {e}")
 
         return output_path
