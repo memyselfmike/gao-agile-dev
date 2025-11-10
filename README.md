@@ -6,6 +6,7 @@ GAO-Dev is an autonomous AI development orchestration system that manages the co
 
 ## Features
 
+- **NEW! Interactive Chat Interface**: Natural language conversational mode via `gao-dev start` - the easiest way to use GAO-Dev
 - **Autonomous Development**: 8 specialized Claude agents (Mary, Brian, John, Winston, Sally, Bob, Amelia, Murat)
 - **Project-Scoped Document Lifecycle**: Isolated `.gao-dev/` per project for document tracking, context, and metrics
 - **Context System Integration**: Automatic context injection, meta-prompts, and state persistence
@@ -77,6 +78,32 @@ python -m gao_dev.cli.commands --help
 **See [docs/SETUP.md](docs/SETUP.md) for API key configuration and autonomous benchmark setup.**
 
 ## Quick Start
+
+### NEW! Interactive Chat (Easiest Way to Get Started)
+
+The fastest way to use GAO-Dev is through the interactive chat interface:
+
+```bash
+gao-dev start
+```
+
+This launches Brian, your AI Engineering Manager, in conversational mode where you can:
+- Make natural language requests: "I want to build a todo app with authentication"
+- Initialize new projects or add GAO-Dev to existing codebases
+- Have multi-turn conversations with context preservation
+- Get contextual help and guidance
+- See project status automatically
+
+**Features**:
+- Auto-detect project status on startup
+- Natural language understanding
+- Session history saved automatically
+- Graceful error handling (Ctrl+C continues chat)
+- Support for greenfield and brownfield projects (9 languages: Node.js, Python, Rust, Go, Java, Ruby, PHP, etc.)
+
+**See [docs/features/interactive-brian-chat/USER_GUIDE.md](docs/features/interactive-brian-chat/USER_GUIDE.md) for complete documentation.**
+
+### Traditional Workflow Commands
 
 ### 1. Initialize a Project
 
@@ -164,6 +191,7 @@ gao-dev sandbox status
 ### Core Commands
 
 ```bash
+gao-dev start                        # NEW! Start interactive chat (recommended)
 gao-dev --version                    # Show version
 gao-dev --help                       # Show help
 gao-dev init --name "Project"        # Initialize project
