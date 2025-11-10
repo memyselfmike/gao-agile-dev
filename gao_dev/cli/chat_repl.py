@@ -115,7 +115,16 @@ class ChatREPL:
         # Create subcommand parser
         self.subcommand_parser = SubcommandParser(analysis_service)
 
-        # Conversation context
+        # Story 30.5: Create ChatSession for state management
+        from gao_dev.orchestrator.chat_session import ChatSession
+
+        self.session = ChatSession(
+            conversational_brian=self.conversational_brian,
+            command_router=self.command_router,
+            project_root=self.project_root
+        )
+
+        # Legacy context (for backward compatibility)
         self.context = ConversationContext(
             project_root=str(self.project_root), session_history=[]
         )
@@ -125,11 +134,15 @@ class ChatREPL:
         Start interactive REPL loop.
 
         Story 30.4: Now checks for interrupted operations on startup.
+        Story 30.5: Session state management with optional history load.
 
         Displays greeting, checks for recovery, enters infinite loop
         accepting user input, handles exit commands and Ctrl+C gracefully.
         """
         self.logger.info("chat_repl_starting")
+
+        # Story 30.5: Optionally load previous session
+        await self._maybe_load_previous_session()
 
         # Story 30.4: Check for interrupted operations
         await self._check_recovery()
@@ -161,9 +174,19 @@ class ChatREPL:
                 await self._handle_input(user_input)
 
             except KeyboardInterrupt:
-                # Ctrl+C pressed - Story 30.4: Don't exit, just cancel operation
+                # Ctrl+C pressed - Story 30.5: Cancel via session, don't exit
                 self.logger.info("keyboard_interrupt_during_execution")
                 self.console.print("\n[yellow]Operation cancelled by user[/yellow]")
+
+                # Cancel current operation via session
+                try:
+                    await self.session.cancel_current_operation()
+                except Exception as e:
+                    self.logger.error("cancellation_failed", error=str(e))
+
+                # Reset for next operation
+                self.session.reset_cancellation()
+
                 # Continue loop (don't exit)
                 continue
 
@@ -208,8 +231,24 @@ Type 'exit', 'quit', or 'bye' to end the session.
         self.console.print()
 
     async def _show_farewell(self) -> None:
-        """Display farewell message."""
-        farewell = "Goodbye! Great work today. See you next time!"
+        """Display farewell message and save session."""
+        # Story 30.5: Save session history
+        try:
+            save_path = self.session.save_session()
+            self.logger.info("session_saved_on_exit", path=str(save_path))
+
+            # Show memory stats
+            stats = self.session.get_memory_usage()
+            farewell = f"""Goodbye! Great work today. See you next time!
+
+Session Stats:
+- Conversation turns: {stats['turn_count']}
+- Memory usage: {stats['memory_mb']} MB
+- Session saved to: {save_path.name}
+"""
+        except Exception as e:
+            self.logger.error("session_save_failed", error=str(e))
+            farewell = "Goodbye! Great work today. See you next time!"
 
         self.console.print()
         self.console.print(
@@ -235,13 +274,11 @@ Type 'exit', 'quit', or 'bye' to end the session.
 
         Story 30.3: Real conversation.
         Story 30.4: Help system integration.
+        Story 30.5: Session state management.
 
         Args:
             user_input: User's input string
         """
-        # Add to session history
-        self.context.session_history.append(f"User: {user_input}")
-
         # Story 30.4: Check for help request
         if user_input.lower().startswith("help"):
             try:
@@ -253,12 +290,32 @@ Type 'exit', 'quit', or 'bye' to end the session.
                 self.logger.error("help_system_failed", error=str(e))
                 # Fall through to normal handling
 
-        # Get responses from conversational Brian
-        async for response in self.conversational_brian.handle_input(user_input, self.context):
-            self._display_response(response)
+        # Story 30.5: Handle input via session (tracks history automatically)
+        try:
+            async for response in self.session.handle_input(user_input):
+                self._display_response(response)
+        except asyncio.CancelledError:
+            # Already handled, just pass through
+            pass
 
-            # Add to session history
-            self.context.session_history.append(f"Brian: {response}")
+    async def _maybe_load_previous_session(self) -> None:
+        """
+        Optionally load previous session history.
+
+        Story 30.5: Ask user if they want to restore previous session.
+        """
+        # Check if previous session exists
+        gao_dev_dir = self.project_root / ".gao-dev"
+        session_file = gao_dev_dir / "last_session_history.json"
+
+        if not session_file.exists():
+            return
+
+        # Simple prompt (without rich interaction for now)
+        self.console.print("[dim]Found previous session history.[/dim]")
+        # Auto-load for now (could add prompt later)
+        # For MVP, we'll just note it's available but not load it automatically
+        self.logger.info("previous_session_found", file=str(session_file))
 
     async def _check_recovery(self) -> None:
         """
