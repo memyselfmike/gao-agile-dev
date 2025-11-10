@@ -38,16 +38,24 @@ class ConversationalBrian:
     Transforms Brian's analytical capabilities into natural dialogue.
     Handles intent parsing, workflow analysis formatting, and
     confirmation flows.
+
+    Story 30.4: Now integrates CommandRouter for actual execution.
     """
 
-    def __init__(self, brian_orchestrator: BrianOrchestrator):
+    def __init__(
+        self,
+        brian_orchestrator: BrianOrchestrator,
+        command_router: Optional[Any] = None  # CommandRouter
+    ):
         """
         Initialize conversational Brian.
 
         Args:
             brian_orchestrator: BrianOrchestrator instance
+            command_router: Optional CommandRouter for execution
         """
         self.brian = brian_orchestrator
+        self.command_router = command_router
         self.intent_parser = IntentParser()
         self.logger = logger.bind(component="conversational_brian")
 
@@ -213,6 +221,8 @@ I've analyzed your request. Here's what I found:
         """
         Handle confirmation response.
 
+        Story 30.4: Now actually executes workflows via CommandRouter.
+
         Args:
             intent: Parsed confirmation intent
             context: Conversation context
@@ -225,11 +235,25 @@ I've analyzed your request. Here's what I found:
             return
 
         if intent.is_positive:
-            # User confirmed - execution will happen in Story 30.4
+            # User confirmed - EXECUTE!
             yield "Great! I'll coordinate with the team to get started..."
-            # NOTE: Actual execution will be handled by CommandRouter in Story 30.4
-            # For now, just acknowledge
-            yield "(Execution will be implemented in Story 30.4)"
+
+            # Story 30.4: Actually execute workflows via CommandRouter
+            if self.command_router:
+                try:
+                    from pathlib import Path
+                    async for message in self.command_router.execute_workflow_sequence(
+                        context.pending_confirmation,
+                        Path(context.project_root)
+                    ):
+                        yield message
+                except Exception as e:
+                    self.logger.exception("execution_failed", error=str(e))
+                    yield f"\nExecution failed: {str(e)}"
+                    yield "Would you like to try a different approach?"
+            else:
+                # No router configured (shouldn't happen in production)
+                yield "(CommandRouter not configured - execution skipped)"
 
             # Clear pending confirmation
             context.pending_confirmation = None

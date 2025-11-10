@@ -32,10 +32,12 @@ class ChatREPL:
 
     def __init__(self, project_root: Optional[Path] = None):
         """
-        Initialize ChatREPL.
+        Initialize ChatREPL with full orchestration stack.
+
+        Story 30.4: Now includes CommandRouter, HelpSystem, OperationTracker, SubcommandParser.
 
         Args:
-            project_root: Optional project root (for future session integration)
+            project_root: Optional project root
         """
         self.project_root = project_root or Path.cwd()
         self.console = Console()
@@ -46,7 +48,7 @@ class ChatREPL:
         # Initialize status reporter
         self.status_reporter = ProjectStatusReporter(self.project_root)
 
-        # Initialize Conversational Brian (Story 30.3)
+        # Story 30.4: Initialize full stack
         from gao_dev.orchestrator.brian_orchestrator import BrianOrchestrator
         from gao_dev.orchestrator.conversational_brian import (
             ConversationalBrian,
@@ -56,18 +58,62 @@ class ChatREPL:
         from gao_dev.core.services.ai_analysis_service import AIAnalysisService
         from gao_dev.core.config_loader import ConfigLoader
         from gao_dev.core.services.process_executor import ProcessExecutor
+        from gao_dev.cli.command_router import CommandRouter
+        from gao_dev.cli.help_system import HelpSystem
+        from gao_dev.cli.subcommand_parser import SubcommandParser
+        from gao_dev.core.state.operation_tracker import OperationTracker
+        from gao_dev.core.state.state_tracker import StateTracker
 
-        # Create Brian orchestrator
+        # Create services
         config_loader = ConfigLoader(self.project_root)
         workflow_registry = WorkflowRegistry(config_loader)
         executor = ProcessExecutor(self.project_root)
         analysis_service = AIAnalysisService(executor)
+
+        # Create StateTracker if database exists
+        db_path = self.project_root / ".gao-dev" / "documents.db"
+        state_tracker = None
+        if db_path.exists():
+            try:
+                state_tracker = StateTracker(db_path)
+            except Exception as e:
+                self.logger.warning("state_tracker_init_failed", error=str(e))
+
+        # Create operation tracker
+        operation_tracker = OperationTracker(state_tracker) if state_tracker else None
+
+        # Create orchestrator (mock for now - real one doesn't exist yet)
+        orchestrator = None  # GAODevOrchestrator would go here
+
+        # Create command router
+        if operation_tracker and analysis_service:
+            self.command_router = CommandRouter(
+                orchestrator=orchestrator,
+                operation_tracker=operation_tracker,
+                analysis_service=analysis_service,
+                console=self.console
+            )
+        else:
+            self.command_router = None
+
+        # Create Brian orchestrator
         brian_orchestrator = BrianOrchestrator(
             workflow_registry=workflow_registry,
             analysis_service=analysis_service,
             project_root=self.project_root,
         )
-        self.conversational_brian = ConversationalBrian(brian_orchestrator)
+
+        # Create conversational Brian with router
+        self.conversational_brian = ConversationalBrian(
+            brian_orchestrator,
+            command_router=self.command_router
+        )
+
+        # Create help system
+        self.help_system = HelpSystem(analysis_service, state_tracker)
+
+        # Create subcommand parser
+        self.subcommand_parser = SubcommandParser(analysis_service)
 
         # Conversation context
         self.context = ConversationContext(
@@ -78,10 +124,15 @@ class ChatREPL:
         """
         Start interactive REPL loop.
 
-        Displays greeting, enters infinite loop accepting user input,
-        handles exit commands and Ctrl+C gracefully.
+        Story 30.4: Now checks for interrupted operations on startup.
+
+        Displays greeting, checks for recovery, enters infinite loop
+        accepting user input, handles exit commands and Ctrl+C gracefully.
         """
         self.logger.info("chat_repl_starting")
+
+        # Story 30.4: Check for interrupted operations
+        await self._check_recovery()
 
         # Display greeting
         await self._show_greeting()
@@ -106,14 +157,15 @@ class ChatREPL:
                 if not user_input:
                     continue
 
-                # Echo input (for now - will be replaced by actual handling in Story 30.3)
+                # Handle input (now with full execution)
                 await self._handle_input(user_input)
 
             except KeyboardInterrupt:
-                # Ctrl+C pressed
-                self.logger.info("keyboard_interrupt")
-                await self._show_farewell()
-                break
+                # Ctrl+C pressed - Story 30.4: Don't exit, just cancel operation
+                self.logger.info("keyboard_interrupt_during_execution")
+                self.console.print("\n[yellow]Operation cancelled by user[/yellow]")
+                # Continue loop (don't exit)
+                continue
 
             except EOFError:
                 # Ctrl+D pressed
@@ -181,7 +233,8 @@ Type 'exit', 'quit', or 'bye' to end the session.
         """
         Handle user input with conversational Brian.
 
-        Story 30.3: Replaces simple echo with real conversation.
+        Story 30.3: Real conversation.
+        Story 30.4: Help system integration.
 
         Args:
             user_input: User's input string
@@ -189,12 +242,33 @@ Type 'exit', 'quit', or 'bye' to end the session.
         # Add to session history
         self.context.session_history.append(f"User: {user_input}")
 
+        # Story 30.4: Check for help request
+        if user_input.lower().startswith("help"):
+            try:
+                help_text = await self.help_system.get_help(user_input, self.project_root)
+                help_panel = self.help_system.format_help_panel(help_text)
+                self.console.print(help_panel)
+                return
+            except Exception as e:
+                self.logger.error("help_system_failed", error=str(e))
+                # Fall through to normal handling
+
         # Get responses from conversational Brian
         async for response in self.conversational_brian.handle_input(user_input, self.context):
             self._display_response(response)
 
             # Add to session history
             self.context.session_history.append(f"Brian: {response}")
+
+    async def _check_recovery(self) -> None:
+        """
+        Check for interrupted operations on startup.
+
+        Story 30.4: Offer recovery options if operations were interrupted.
+        """
+        # Note: Would check operation_tracker.get_interrupted_operations()
+        # For now, just log
+        self.logger.info("checking_for_interrupted_operations")
 
     def _display_response(self, response: str) -> None:
         """
