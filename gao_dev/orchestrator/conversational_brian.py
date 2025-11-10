@@ -77,6 +77,12 @@ class ConversationalBrian:
         """
         self.logger.info("handling_input", input_length=len(user_input))
 
+        # Check for initialization command first (Story 30.6)
+        if self._is_init_command(user_input):
+            async for response in self._handle_initialization(context):
+                yield response
+            return
+
         # Parse intent
         intent = self.intent_parser.parse(user_input)
 
@@ -332,3 +338,60 @@ Could you rephrase that? For example:
 
 Or type 'help' for more guidance.
         """.strip()
+
+    def _is_init_command(self, user_input: str) -> bool:
+        """
+        Check if input is initialization command.
+
+        Args:
+            user_input: User's input string
+
+        Returns:
+            True if input is an init command, False otherwise
+        """
+        user_lower = user_input.lower().strip()
+        return user_lower in ["init", "initialize", "setup", "start new project"]
+
+    async def _handle_initialization(
+        self,
+        context: ConversationContext
+    ) -> AsyncIterator[str]:
+        """
+        Handle project initialization (greenfield or brownfield).
+
+        Story 30.6: Detects project type and routes to appropriate initializer.
+
+        Args:
+            context: Conversation context
+
+        Yields:
+            Conversational responses
+        """
+        from pathlib import Path
+        from gao_dev.cli.greenfield_initializer import GreenfieldInitializer
+        from gao_dev.cli.brownfield_initializer import BrownfieldInitializer
+
+        # Get project root from context
+        project_root = Path(context.project_root)
+
+        # Check if project already exists
+        gao_dev_dir = project_root / ".gao-dev"
+        if gao_dev_dir.exists():
+            yield "This directory already has a GAO-Dev project."
+            yield "Would you like to reinitialize? (This will overwrite existing setup)"
+            # NOTE: Reinitialize flow could be added in future
+            return
+
+        # Detect project type (greenfield vs brownfield)
+        initializer = GreenfieldInitializer(project_root)
+        project_type = initializer.detect_project_type()
+
+        if project_type == "brownfield":
+            # Initialize brownfield project
+            brownfield_initializer = BrownfieldInitializer(project_root)
+            async for message in brownfield_initializer.initialize(interactive=True):
+                yield message
+        else:
+            # Initialize greenfield project
+            async for message in initializer.initialize(interactive=True):
+                yield message

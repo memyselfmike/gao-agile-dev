@@ -287,12 +287,26 @@ class ProjectStatusReporter:
             Formatted status message (markdown)
         """
         if status.is_greenfield:
-            return """
+            # Check if this looks like an existing project (brownfield)
+            from gao_dev.cli.greenfield_initializer import GreenfieldInitializer
+
+            initializer = GreenfieldInitializer(self.project_root or Path.cwd())
+            project_type = initializer.detect_project_type()
+
+            if project_type == "brownfield":
+                return """
+No GAO-Dev project detected, but I see you have existing code here!
+
+Would you like me to add GAO-Dev tracking to your project?
+Type 'init' to get started, or just tell me what you want to build!
+                """.strip()
+            else:
+                return """
 No GAO-Dev project detected in this directory.
 
 Would you like me to initialize a new project?
-Type 'init' to get started, or type your request and I'll help!
-            """.strip()
+Type 'init' to get started, or just tell me what you want to build!
+                """.strip()
 
         if not status.exists:
             return "Unable to load project status."
