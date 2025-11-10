@@ -1,7 +1,7 @@
 # GAO-Dev Project Guide - For Claude
 
 **Last Updated**: 2025-11-10
-**Version**: 2.1 (Epic 30 Complete - Interactive Chat Interface)
+**Version**: 2.2 (Epic 31 Complete - Full Mary Integration)
 
 This document helps you (Claude) quickly understand GAO-Dev's structure, current status, and development patterns.
 
@@ -20,7 +20,7 @@ This document helps you (Claude) quickly understand GAO-Dev's structure, current
 ## Core Principles
 
 1. **Workflow-Driven**: All work follows defined workflows with intelligent selection
-2. **Agent Specialization**: 7 specialized agents (Brian, John, Winston, Sally, Bob, Amelia, Murat)
+2. **Agent Specialization**: 8 specialized agents (Brian, John, Winston, Sally, Bob, Amelia, Murat, Mary)
 3. **Scale-Adaptive**: Auto-adjusts approach based on project size (Levels 0-4)
 4. **Autonomous**: Agents work autonomously to build complete applications
 5. **Quality-Focused**: Comprehensive testing, type safety, clean architecture
@@ -33,6 +33,15 @@ This document helps you (Claude) quickly understand GAO-Dev's structure, current
 ## Current Status (2025-11-10)
 
 ### Latest Achievements
+
+✅ **EPIC 31: Full Mary (Business Analyst) Integration** - COMPLETE (100%)
+  - Vision elicitation with 4 techniques (Vision Canvas, Problem-Solution Fit, Outcome Mapping, 5W1H)
+  - Brainstorming facilitation with 35 BMAD techniques (SCAMPER, Mind Mapping, etc.)
+  - Advanced requirements analysis (MoSCoW, Kano, Dependency, Risk, Constraint)
+  - Domain-specific question libraries (5 domains, 300+ questions)
+  - All 8 GAO-Dev agents now operational
+  - **114+ tests, 2,500+ lines of documentation**
+  - **Production-ready: Users can start with vague ideas, Mary clarifies into clear visions**
 
 ✅ **EPIC 30: Interactive Brian Chat Interface** - COMPLETE (100%)
   - ChatREPL with Rich formatting and infinite loop
@@ -115,7 +124,7 @@ This document helps you (Claude) quickly understand GAO-Dev's structure, current
 
 ---
 
-## The 7 Specialized Agents
+## The 8 Specialized Agents
 
 | Agent | Role | Primary Use |
 |-------|------|-------------|
@@ -126,6 +135,7 @@ This document helps you (Claude) quickly understand GAO-Dev's structure, current
 | **Bob** | Scrum Master | Story creation/management, sprint coordination |
 | **Amelia** | Software Developer | Implementation, code reviews, testing |
 | **Murat** | Test Architect | Test strategies, quality assurance |
+| **Mary** | Business Analyst | Vision elicitation, brainstorming, requirements analysis |
 
 **All agents** configured in `gao_dev/config/agents/*.yaml` with YAML-based prompts.
 

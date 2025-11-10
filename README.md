@@ -7,7 +7,7 @@ GAO-Dev is an autonomous AI development orchestration system that manages the co
 ## Features
 
 - **NEW! Interactive Chat Interface**: Natural language conversational mode via `gao-dev start` - the easiest way to use GAO-Dev
-- **Autonomous Development**: 8 specialized Claude agents (Mary, Brian, John, Winston, Sally, Bob, Amelia, Murat)
+- **Autonomous Development**: 8 specialized Claude agents (Brian, John, Winston, Sally, Bob, Amelia, Murat, Mary)
 - **Project-Scoped Document Lifecycle**: Isolated `.gao-dev/` per project for document tracking, context, and metrics
 - **Context System Integration**: Automatic context injection, meta-prompts, and state persistence
 - **Scale-Adaptive Routing**: Automatically adjusts approach based on project size (Levels 0-4)
