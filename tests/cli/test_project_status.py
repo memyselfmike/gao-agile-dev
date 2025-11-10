@@ -224,10 +224,17 @@ class TestGetStatus:
 class TestStatusFormatting:
     """Tests for format_status method."""
 
-    def test_format_status_greenfield(self, tmp_path):
+    @patch("gao_dev.cli.greenfield_initializer.GreenfieldInitializer")
+    def test_format_status_greenfield(self, mock_greenfield_init, tmp_path):
         """Test formatting for greenfield project."""
-        reporter = ProjectStatusReporter(project_root=None)
+        # Create empty temp directory
+        reporter = ProjectStatusReporter(project_root=tmp_path)
         status = ProjectStatus(exists=False, is_greenfield=True)
+
+        # Mock GreenfieldInitializer to return true greenfield
+        mock_initializer = Mock()
+        mock_initializer.detect_project_type.return_value = "greenfield"
+        mock_greenfield_init.return_value = mock_initializer
 
         formatted = reporter.format_status(status)
 
