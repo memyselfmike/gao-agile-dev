@@ -1,0 +1,293 @@
+# Brainstorming Session Workflow
+# Epic: 31 - Full Mary (Business Analyst) Integration
+# Story: 31.2 - Brainstorming & Mind Mapping
+
+workflow:
+  name: brainstorming-session
+  version: 1.0.0
+  category: analysis
+  description: |
+    Facilitate creative brainstorming session using BMAD techniques.
+    Mary guides users through structured ideation, captures ideas,
+    generates mind maps, and synthesizes insights.
+
+metadata:
+  agent: Mary
+  phase: 1-analysis
+  estimated_duration: 15-45 minutes
+  output_format: markdown
+  techniques_available: 36
+  prompts:
+    scamper: mary_scamper
+    how_might_we: mary_hmw
+    affinity_mapping: mary_affinity
+
+variables:
+  # Input
+  topic:
+    description: Brainstorming topic
+    type: string
+    required: true
+    example: "Authentication system improvements"
+
+  goal:
+    description: Brainstorming goal
+    type: enum
+    default: exploration
+    options:
+      - innovation
+      - problem_solving
+      - strategic_planning
+      - exploration
+
+  techniques:
+    description: Specific techniques to use (optional)
+    type: list
+    required: false
+    example: ["SCAMPER Method", "Mind Mapping"]
+
+  energy_level:
+    description: Preferred energy level
+    type: enum
+    required: false
+    options:
+      - high
+      - moderate
+      - low
+
+  # Output
+  output_folder:
+    description: Output directory for brainstorming documents
+    type: path
+    default: .gao-dev/mary/brainstorming-sessions
+
+  output_file:
+    description: Output markdown file
+    type: path
+    computed: true
+    template: "{{output_folder}}/brainstorming-{{topic_safe}}-{{timestamp}}.md"
+
+prompts:
+  introduction: |
+    Let's explore {{topic}} together!
+
+    I'll guide you through creative brainstorming using proven techniques
+    from the BMAD library. We'll generate ideas, explore possibilities,
+    and synthesize insights.
+
+    Goal: {{goal}}
+
+    Ready to begin?
+
+  technique_intro: |
+    ## {{technique_name}}
+
+    {{technique_description}}
+
+    **Best for**: {{technique_best_for}}
+    **Duration**: {{technique_duration}} minutes
+
+    Let's explore this together!
+
+  scamper_prompts:
+    - lens: Substitute
+      question: What elements of {{topic}} could you SUBSTITUTE?
+      hint: Think about replacing components with alternatives
+
+    - lens: Combine
+      question: What could you COMBINE with {{topic}}?
+      hint: Consider merging with other features or ideas
+
+    - lens: Adapt
+      question: How could you ADAPT {{topic}}?
+      hint: Adjust it to serve another purpose
+
+    - lens: Modify
+      question: What could you MODIFY in {{topic}}?
+      hint: Change size, shape, or attributes
+
+    - lens: Put to other uses
+      question: How else could {{topic}} be used?
+      hint: Think about new contexts or users
+
+    - lens: Eliminate
+      question: What could you ELIMINATE from {{topic}}?
+      hint: Remove complexity or unnecessary parts
+
+    - lens: Reverse
+      question: What if you REVERSED {{topic}}?
+      hint: Do the opposite, flip assumptions
+
+  how_might_we_intro: |
+    Let's reframe problems as opportunities using "How Might We..." questions.
+
+    This technique transforms constraints into creative challenges.
+
+  affinity_mapping_intro: |
+    Now let's organize our ideas by theme.
+
+    I'll group related concepts to reveal patterns and insights.
+
+  mind_map_intro: |
+    Generating visual mind map...
+
+    This will show how ideas connect and cluster around themes.
+
+  synthesis_intro: |
+    Let me synthesize what we've discovered...
+
+    I'll identify key themes, quick wins, and long-term opportunities.
+
+  completion: |
+    Excellent brainstorming session!
+
+    **Ideas Generated**: {{idea_count}}
+    **Techniques Used**: {{techniques_used}}
+    **Duration**: {{duration}} minutes
+
+    Your complete session summary has been saved to:
+    {{output_file}}
+
+    Key highlights:
+    - {{key_themes_count}} major themes identified
+    - {{quick_wins_count}} quick wins
+    - {{long_term_count}} long-term opportunities
+
+    Would you like to:
+    - Continue with another technique?
+    - Move forward to requirements gathering?
+    - Explore a specific theme in depth?
+
+instructions:
+  agent: Mary
+  task: facilitate_brainstorming
+
+  steps:
+    - name: Welcome and Goal Setting
+      description: |
+        Greet user and clarify brainstorming goal.
+        Understand topic and desired outcomes.
+
+    - name: Technique Selection
+      description: |
+        Recommend 2-4 techniques based on goal.
+        User can accept recommendations or choose specific techniques.
+
+      algorithm: |
+        if goal == "innovation":
+          categories = ["creative", "wild", "theatrical"]
+        elif goal == "problem_solving":
+          categories = ["deep", "structured"]
+        elif goal == "strategic_planning":
+          categories = ["structured", "deep", "collaborative"]
+        else:  # exploration
+          categories = ["creative", "collaborative", "structured"]
+
+        Select 3 diverse techniques from categories
+
+    - name: Facilitate Each Technique
+      description: |
+        Guide user through each selected technique.
+        Capture ideas with "Yes, and..." encouragement.
+
+      for_each_technique:
+        - Present technique introduction
+        - Ask facilitation prompts one at a time
+        - Capture user responses
+        - Build on ideas with encouragement
+        - Record all ideas with technique tag
+
+    - name: Affinity Mapping
+      description: |
+        Group ideas by theme using AI clustering.
+        Identify 3-5 major themes across all ideas.
+
+    - name: Mind Map Generation
+      description: |
+        Generate text-based mind map in mermaid syntax.
+        Show hierarchical relationships between ideas.
+
+    - name: Insights Synthesis
+      description: |
+        Synthesize session into actionable insights:
+        - Key themes (recurring concepts)
+        - Insights and learnings
+        - Quick wins (<1 month)
+        - Long-term opportunities (>3 months)
+        - Recommended follow-up techniques
+
+    - name: Document and Save
+      description: |
+        Generate comprehensive markdown report.
+        Save to .gao-dev/mary/brainstorming-sessions/
+
+    - name: Next Steps
+      description: |
+        Offer continuation options:
+        - More brainstorming
+        - Move to requirements
+        - Deep dive on theme
+
+outputs:
+  primary:
+    type: markdown
+    location: "{{output_file}}"
+    sections:
+      - title
+      - metadata (date, duration, techniques)
+      - key_themes
+      - ideas_generated (grouped by technique)
+      - quick_wins
+      - long_term_opportunities
+      - insights_learnings
+      - mind_maps (mermaid)
+      - recommended_followup
+
+  artifacts:
+    - brainstorming_summary.json
+    - mind_map.mermaid
+
+  handoff_to:
+    - Brian (for workflow selection)
+    - John (for PRD creation)
+    - Sally (for UX exploration)
+
+success_criteria:
+  - At least 5 ideas generated
+  - Mind map created successfully
+  - Insights synthesized
+  - Document saved to file
+  - User satisfied with session
+
+performance_targets:
+  technique_recommendation: <500ms
+  mind_map_generation: <5 seconds
+  insights_synthesis: <10 seconds
+  total_session: 15-45 minutes
+
+examples:
+  - name: Authentication Innovation
+    topic: "Authentication system improvements"
+    goal: innovation
+    techniques: ["SCAMPER Method", "What If Scenarios"]
+    expected_ideas: 10-15
+
+  - name: Problem Solving
+    topic: "Reduce user onboarding friction"
+    goal: problem_solving
+    techniques: ["Five Whys", "Problem-Solution Fit"]
+    expected_ideas: 8-12
+
+  - name: Strategic Planning
+    topic: "2024 product roadmap"
+    goal: strategic_planning
+    techniques: ["Mind Mapping", "Outcome Mapping"]
+    expected_ideas: 12-20
+
+notes:
+  - All 36 BMAD techniques available
+  - Conversational facilitation (LLM-powered)
+  - "Yes, and..." encouragement pattern
+  - Multi-turn dialogue supported
+  - Session state persists across turns
+  - Output compatible with downstream workflows

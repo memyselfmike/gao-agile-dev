@@ -26,7 +26,12 @@ from ..core.models.vision_summary import (
     OutcomeMap,
     FiveWOneH,
 )
+from ..core.models.brainstorming_summary import (
+    BrainstormingSummary,
+    Idea,
+)
 from .conversation_manager import ConversationManager
+from .brainstorming_engine import BrainstormingEngine, BrainstormingGoal
 
 
 logger = structlog.get_logger()
@@ -78,6 +83,11 @@ class MaryOrchestrator:
         if project_root is None:
             project_root = Path.cwd()
         self.project_root = project_root
+
+        # Initialize brainstorming engine
+        self.brainstorming_engine = BrainstormingEngine(
+            analysis_service=analysis_service, conversation_manager=conversation_manager
+        )
 
         self.logger.info("mary_orchestrator_initialized", project_root=str(project_root))
 
@@ -371,5 +381,192 @@ class MaryOrchestrator:
         except Exception as e:
             self.logger.error("vision_save_failed", path=str(output_path), error=str(e))
             raise
+
+        return output_path
+
+    async def facilitate_brainstorming(
+        self,
+        topic: str,
+        goal: BrainstormingGoal = BrainstormingGoal.EXPLORATION,
+        techniques: Optional[List[str]] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> BrainstormingSummary:
+        """
+        Facilitate brainstorming session with multiple techniques.
+
+        Mary guides users through creative exploration using BMAD techniques,
+        captures ideas, generates mind maps, and synthesizes insights.
+
+        Args:
+            topic: Brainstorming topic
+            goal: Brainstorming goal (innovation, problem_solving, etc.)
+            techniques: Optional list of specific technique names to use
+            context: Optional context (energy_level, etc.)
+
+        Returns:
+            BrainstormingSummary with all session results
+
+        Raises:
+            ValueError: If invalid technique names provided
+        """
+        self.logger.info(
+            "brainstorming_session_started",
+            topic=topic[:100],
+            goal=goal.value,
+            techniques=techniques,
+        )
+
+        from datetime import datetime, timedelta
+
+        start_time = datetime.now()
+        all_ideas: List[Idea] = []
+        techniques_used: List[str] = []
+
+        # Get techniques to use
+        if techniques:
+            # Validate and get specific techniques
+            technique_objects = []
+            for name in techniques:
+                tech = self.brainstorming_engine.get_technique(name)
+                if not tech:
+                    raise ValueError(f"Invalid technique name: {name}")
+                technique_objects.append(tech)
+        else:
+            # Get recommendations
+            technique_objects = await self.brainstorming_engine.recommend_techniques(
+                topic=topic, goal=goal, context=context or {}
+            )
+
+        self.logger.info(
+            "techniques_selected",
+            count=len(technique_objects),
+            names=[t.name for t in technique_objects],
+        )
+
+        # Facilitate each technique
+        # For MVP: Use mock responses (in production, would use ConversationManager)
+        for technique in technique_objects:
+            techniques_used.append(technique.name)
+
+            if technique.name == "SCAMPER Method":
+                # Use SCAMPER implementation
+                ideas = await self.brainstorming_engine.facilitate_scamper(
+                    topic=topic, user_responses=None
+                )
+                all_ideas.extend(ideas)
+                self.logger.info("scamper_completed", idea_count=len(ideas))
+
+            elif "How Might We" in technique.name or technique.name == "Question Storming":
+                # Use HMW implementation
+                ideas = await self.brainstorming_engine.facilitate_how_might_we(
+                    problem_statement=topic, user_responses=None
+                )
+                all_ideas.extend(ideas)
+                self.logger.info("hmw_completed", idea_count=len(ideas))
+
+            else:
+                # Generic facilitation: create placeholder ideas
+                for i, prompt in enumerate(technique.facilitation_prompts[:3], 1):
+                    idea = Idea(
+                        content=f"[Idea {i} from {technique.name}: {prompt[:50]}...]",
+                        technique=technique.name,
+                    )
+                    all_ideas.append(idea)
+                self.logger.info("generic_technique_completed", technique=technique.name)
+
+        # Perform affinity mapping
+        theme_groups = await self.brainstorming_engine.perform_affinity_mapping(
+            ideas=all_ideas, num_themes=5
+        )
+
+        # Generate mind map
+        try:
+            mind_map = await self.brainstorming_engine.generate_mind_map(
+                ideas=all_ideas, central_topic=topic
+            )
+            mind_maps = [mind_map]
+        except Exception as e:
+            self.logger.error("mind_map_generation_failed", error=str(e))
+            mind_maps = []
+
+        # Synthesize insights
+        insights = await self.brainstorming_engine.synthesize_insights(
+            ideas=all_ideas, techniques_used=techniques_used, topic=topic
+        )
+
+        # Extract quick wins and long-term opportunities
+        quick_wins = []
+        long_term = []
+        for quick_win_text in insights.get("quick_wins", [])[:5]:
+            quick_wins.append(Idea(content=quick_win_text, technique="Synthesis", priority="quick_win"))
+        for long_term_text in insights.get("long_term_opportunities", [])[:5]:
+            long_term.append(
+                Idea(content=long_term_text, technique="Synthesis", priority="long_term")
+            )
+
+        # Calculate duration
+        duration = datetime.now() - start_time
+
+        # Create summary
+        summary = BrainstormingSummary(
+            topic=topic,
+            techniques_used=techniques_used,
+            ideas_generated=all_ideas,
+            mind_maps=mind_maps,
+            key_themes=insights.get("key_themes", []),
+            insights_learnings=insights.get("insights_learnings", []),
+            quick_wins=quick_wins,
+            long_term_opportunities=long_term,
+            recommended_followup=insights.get("recommended_followup", []),
+            session_duration=duration,
+            created_at=start_time,
+        )
+
+        # Save to file
+        output_path = await self._save_brainstorming(summary)
+        summary.file_path = output_path
+
+        self.logger.info(
+            "brainstorming_session_complete",
+            idea_count=len(all_ideas),
+            duration_seconds=duration.total_seconds(),
+            output_path=str(output_path),
+        )
+
+        return summary
+
+    async def _save_brainstorming(self, summary: BrainstormingSummary) -> Path:
+        """
+        Save brainstorming summary to .gao-dev/mary/brainstorming-sessions/.
+
+        Args:
+            summary: Brainstorming summary to save
+
+        Returns:
+            Path to saved file
+
+        Raises:
+            IOError: If file save fails
+        """
+        # Create output directory
+        output_dir = self.project_root / ".gao-dev" / "mary" / "brainstorming-sessions"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate filename
+        timestamp = summary.created_at.strftime("%Y%m%d-%H%M%S")
+        # Sanitize topic for filename
+        topic_safe = "".join(c if c.isalnum() or c in "-_ " else "" for c in summary.topic)[:50]
+        topic_safe = topic_safe.strip().replace(" ", "-")
+        filename = f"brainstorming-{topic_safe}-{timestamp}.md"
+        output_path = output_dir / filename
+
+        # Write markdown
+        try:
+            markdown_content = summary.to_markdown()
+            output_path.write_text(markdown_content, encoding="utf-8")
+            self.logger.info("brainstorming_document_saved", path=str(output_path))
+        except Exception as e:
+            self.logger.error("brainstorming_save_failed", path=str(output_path), error=str(e))
+            raise IOError(f"Failed to save brainstorming summary: {e}")
 
         return output_path
