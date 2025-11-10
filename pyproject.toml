@@ -40,6 +40,8 @@ dependencies = [
     "networkx>=3.0",
     # APScheduler for scheduled learning maintenance (Story 29.6)
     "apscheduler>=3.10.0",
+    # Prompt-toolkit for enhanced REPL with history and autocomplete (Epic 30)
+    "prompt-toolkit>=3.0.43",
 ]
 
 [project.optional-dependencies]

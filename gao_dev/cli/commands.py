@@ -2,6 +2,7 @@
 
 import click
 from pathlib import Path
+from typing import Optional
 import sys
 import asyncio
 import os
@@ -526,6 +527,23 @@ cli.add_command(state)
 
 # Register context command group
 cli.add_command(context)
+
+@cli.command("start")
+@click.option("--project", type=Path, help="Project root (default: auto-detect)")
+def start_chat(project: Optional[Path]):
+    """Start interactive chat with Brian."""
+    from .chat_repl import ChatREPL
+
+    # Create REPL
+    repl = ChatREPL(project_root=project)
+
+    # Start async loop
+    try:
+        asyncio.run(repl.start())
+    except Exception as e:
+        click.echo(f"[ERROR] Failed to start REPL: {e}", err=True)
+        sys.exit(1)
+
 
 # ============================================================================
 # Register db command group
