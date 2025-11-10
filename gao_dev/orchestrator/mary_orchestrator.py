@@ -1,0 +1,375 @@
+"""Mary Orchestrator - Business Analyst agent for vision elicitation and clarification.
+
+This module implements Mary, the Business Analyst agent who:
+- Helps users articulate vague ideas into clear product visions
+- Facilitates structured discovery using multiple techniques
+- Generates comprehensive vision documents for handoff to Brian
+
+Epic: 31 - Full Mary (Business Analyst) Integration
+Story: 31.1 - Vision Elicitation Workflows & Prompts
+"""
+
+from typing import Optional, Dict, Any
+from pathlib import Path
+from datetime import datetime
+import structlog
+from enum import Enum
+
+from ..core.workflow_registry import WorkflowRegistry
+from ..core.prompt_loader import PromptLoader
+from ..core.config_loader import ConfigLoader
+from ..core.services.ai_analysis_service import AIAnalysisService
+from ..core.models.vision_summary import (
+    VisionSummary,
+    VisionCanvas,
+    ProblemSolutionFit,
+    OutcomeMap,
+    FiveWOneH,
+)
+from .conversation_manager import ConversationManager
+
+
+logger = structlog.get_logger()
+
+
+class ClarificationStrategy(str, Enum):
+    """Strategy for clarification approach."""
+
+    SIMPLE_QUESTIONS = "simple_questions"  # Ask 2-3 clarifying questions
+    VISION_ELICITATION = "vision_elicitation"  # Full vision elicitation session
+
+
+class MaryOrchestrator:
+    """
+    Mary - Business Analyst and Vision Elicitation Facilitator.
+
+    Mary helps users with vague ideas articulate clear product visions through
+    structured discovery techniques (vision canvas, problem-solution fit, etc.).
+    """
+
+    def __init__(
+        self,
+        workflow_registry: WorkflowRegistry,
+        prompt_loader: PromptLoader,
+        analysis_service: AIAnalysisService,
+        conversation_manager: Optional[ConversationManager] = None,
+        project_root: Optional[Path] = None,
+        mary_persona_path: Optional[Path] = None,
+    ):
+        """
+        Initialize Mary Orchestrator.
+
+        Args:
+            workflow_registry: Registry of available workflows
+            prompt_loader: PromptLoader for loading vision prompts (Epic 10)
+            analysis_service: AI analysis service for facilitation
+            conversation_manager: Optional conversation manager for multi-turn dialogue
+            project_root: Project root for output files
+            mary_persona_path: Path to Mary's agent definition
+        """
+        self.workflow_registry = workflow_registry
+        self.prompt_loader = prompt_loader
+        self.analysis_service = analysis_service
+        self.conversation_manager = conversation_manager
+        self.mary_persona_path = mary_persona_path
+        self.logger = logger.bind(component="mary_orchestrator", agent="Mary")
+
+        # Setup project root
+        if project_root is None:
+            project_root = Path.cwd()
+        self.project_root = project_root
+
+        self.logger.info("mary_orchestrator_initialized", project_root=str(project_root))
+
+    def select_clarification_strategy(
+        self, user_request: str, vagueness_score: float
+    ) -> ClarificationStrategy:
+        """
+        Select appropriate clarification strategy based on vagueness.
+
+        Args:
+            user_request: User's original request
+            vagueness_score: Vagueness score from Brian (0.0-1.0)
+
+        Returns:
+            ClarificationStrategy to use
+        """
+        # High vagueness (>0.8) triggers full vision elicitation
+        if vagueness_score > 0.8:
+            self.logger.info(
+                "vision_elicitation_selected",
+                vagueness_score=vagueness_score,
+                reason="High vagueness requires structured discovery",
+            )
+            return ClarificationStrategy.VISION_ELICITATION
+
+        # Medium vagueness (0.5-0.8) uses simple questions
+        self.logger.info(
+            "simple_questions_selected",
+            vagueness_score=vagueness_score,
+            reason="Medium vagueness, simple clarification sufficient",
+        )
+        return ClarificationStrategy.SIMPLE_QUESTIONS
+
+    async def elicit_vision(
+        self,
+        user_request: str,
+        technique: str = "vision_canvas",
+        project_context: str = "",
+    ) -> VisionSummary:
+        """
+        Elicit product vision through guided discovery.
+
+        This is Mary's main vision elicitation method. She facilitates a structured
+        conversation using one of four techniques to help users clarify their vision.
+
+        Args:
+            user_request: Original vague request
+            technique: Vision technique to use (vision_canvas, problem_solution_fit,
+                      outcome_mapping, 5w1h)
+            project_context: Optional project context
+
+        Returns:
+            VisionSummary with clarified vision
+
+        Raises:
+            ValueError: If technique is invalid
+        """
+        self.logger.info(
+            "vision_elicitation_started",
+            user_request=user_request[:100],
+            technique=technique,
+        )
+
+        start_time = datetime.now()
+
+        # Validate technique
+        valid_techniques = ["vision_canvas", "problem_solution_fit", "outcome_mapping", "5w1h"]
+        if technique not in valid_techniques:
+            raise ValueError(
+                f"Invalid technique '{technique}'. "
+                f"Must be one of: {', '.join(valid_techniques)}"
+            )
+
+        # Load workflow metadata
+        try:
+            workflow = self.workflow_registry.get_workflow("vision-elicitation")
+            if not workflow:
+                raise ValueError("vision-elicitation workflow not found in registry")
+        except Exception as e:
+            self.logger.error("workflow_load_failed", error=str(e))
+            raise
+
+        # Get prompt name for selected technique
+        prompt_name = workflow.metadata.get("prompts", {}).get(technique)
+        if not prompt_name:
+            # Fallback to technique name if not in metadata
+            prompt_name = f"mary_{technique}"
+
+        self.logger.debug("loading_prompt", prompt_name=prompt_name)
+
+        # Load prompt template (Epic 10 PromptLoader)
+        try:
+            template = self.prompt_loader.load_prompt(f"agents/{prompt_name}")
+        except Exception as e:
+            self.logger.error("prompt_load_failed", prompt_name=prompt_name, error=str(e))
+            raise
+
+        # Load Mary's persona if available
+        mary_context = ""
+        if self.mary_persona_path and self.mary_persona_path.exists():
+            mary_context = self.mary_persona_path.read_text(encoding="utf-8")
+
+        # Render prompt with variables (Epic 10 reference resolution)
+        try:
+            rendered = self.prompt_loader.render_prompt(
+                template,
+                variables={
+                    "user_request": user_request,
+                    "mary_persona": mary_context,
+                    "project_context": project_context,
+                },
+            )
+        except Exception as e:
+            self.logger.error("prompt_render_failed", error=str(e))
+            raise
+
+        # For MVP: Generate mock vision summary
+        # TODO: In Story 31.2+, implement actual multi-turn conversation
+        self.logger.info(
+            "generating_mock_vision_summary",
+            note="Multi-turn conversation will be implemented in Story 31.2+",
+        )
+
+        vision_summary = await self._generate_mock_vision_summary(
+            user_request, technique, project_context, rendered, template
+        )
+
+        # Calculate duration
+        duration = (datetime.now() - start_time).total_seconds() / 60.0
+        vision_summary.duration_minutes = duration
+
+        # Save to .gao-dev/mary/vision-documents/
+        output_path = await self._save_vision(vision_summary, technique)
+        vision_summary.file_path = output_path
+
+        self.logger.info(
+            "vision_elicitation_complete",
+            technique=technique,
+            duration_minutes=round(duration, 2),
+            output_path=str(output_path),
+        )
+
+        return vision_summary
+
+    async def _generate_mock_vision_summary(
+        self,
+        user_request: str,
+        technique: str,
+        project_context: str,
+        rendered_prompt: str,
+        template: Any,
+    ) -> VisionSummary:
+        """
+        Generate mock vision summary using AI analysis (single-shot).
+
+        This is a simplified version for MVP. Story 31.2+ will implement
+        actual multi-turn conversation with ConversationManager.
+
+        Args:
+            user_request: Original request
+            technique: Technique used
+            project_context: Project context
+            rendered_prompt: Rendered prompt
+            template: Prompt template
+
+        Returns:
+            VisionSummary with generated content
+        """
+        # Use AI to generate structured vision content
+        system_prompt = self.prompt_loader.render_system_prompt(
+            template,
+            variables={
+                "user_request": user_request,
+                "mary_persona": "",
+                "project_context": project_context,
+            },
+        )
+
+        try:
+            result = await self.analysis_service.analyze(
+                prompt=rendered_prompt,
+                system_prompt=system_prompt,
+                response_format="text",
+                max_tokens=template.response.get("max_tokens", 1024),
+                temperature=template.response.get("temperature", 0.7),
+            )
+
+            response_text = result.response
+        except Exception as e:
+            self.logger.error("ai_analysis_failed", error=str(e))
+            # Fallback to minimal mock data
+            response_text = f"Vision elicitation for: {user_request}"
+
+        # Parse response into appropriate data structure
+        if technique == "vision_canvas":
+            canvas = VisionCanvas(
+                target_users=f"Users interested in: {user_request[:50]}",
+                user_needs="Need to accomplish their goals efficiently",
+                product_vision=f"Build a solution for: {user_request}",
+                key_features=["Core functionality", "User-friendly interface", "Reliable performance"],
+                success_metrics=["User adoption rate", "User satisfaction score"],
+                differentiators="Innovative approach to solving user needs",
+            )
+            return VisionSummary(
+                user_request=user_request,
+                technique_used=technique,
+                project_context=project_context,
+                vision_canvas=canvas,
+                created_at=datetime.now(),
+                turn_count=1,  # Mock single turn
+            )
+
+        elif technique == "problem_solution_fit":
+            psf = ProblemSolutionFit(
+                problem_definition=f"Users need to: {user_request}",
+                current_solutions="Manual workarounds and existing tools",
+                gaps_pain_points=["Inefficient process", "Lack of integration", "Poor user experience"],
+                proposed_solution=f"Automated solution for: {user_request}",
+                value_proposition="Significantly faster and more reliable than alternatives",
+            )
+            return VisionSummary(
+                user_request=user_request,
+                technique_used=technique,
+                project_context=project_context,
+                problem_solution_fit=psf,
+                created_at=datetime.now(),
+                turn_count=1,
+            )
+
+        elif technique == "outcome_mapping":
+            outcome_map = OutcomeMap(
+                desired_outcomes=["Improved user productivity", "Reduced errors", "Higher satisfaction"],
+                leading_indicators=["Early user adoption", "Positive feedback"],
+                lagging_indicators=["Long-term usage metrics", "Business impact"],
+                stakeholders=["End users", "Business owners", "Development team"],
+            )
+            return VisionSummary(
+                user_request=user_request,
+                technique_used=technique,
+                project_context=project_context,
+                outcome_map=outcome_map,
+                created_at=datetime.now(),
+                turn_count=1,
+            )
+
+        else:  # 5w1h
+            five_w = FiveWOneH(
+                who="Target users who need this capability",
+                what=f"A solution for: {user_request}",
+                when="As soon as feasible, based on priority",
+                where="In the users' typical working environment",
+                why="To address critical user needs and improve outcomes",
+                how="Following agile development principles with iterative delivery",
+            )
+            return VisionSummary(
+                user_request=user_request,
+                technique_used=technique,
+                project_context=project_context,
+                five_w_one_h=five_w,
+                created_at=datetime.now(),
+                turn_count=1,
+            )
+
+    async def _save_vision(
+        self, vision_summary: VisionSummary, technique: str
+    ) -> Path:
+        """
+        Save vision summary to .gao-dev/mary/vision-documents/.
+
+        Args:
+            vision_summary: Vision summary to save
+            technique: Technique used
+
+        Returns:
+            Path to saved file
+        """
+        # Create output directory
+        output_dir = self.project_root / ".gao-dev" / "mary" / "vision-documents"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate filename
+        timestamp = vision_summary.created_at.strftime("%Y%m%d-%H%M%S")
+        filename = f"vision-{technique}-{timestamp}.md"
+        output_path = output_dir / filename
+
+        # Write markdown
+        try:
+            markdown_content = vision_summary.to_markdown()
+            output_path.write_text(markdown_content, encoding="utf-8")
+            self.logger.info("vision_document_saved", path=str(output_path))
+        except Exception as e:
+            self.logger.error("vision_save_failed", path=str(output_path), error=str(e))
+            raise
+
+        return output_path

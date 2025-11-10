@@ -114,6 +114,54 @@ class BrianOrchestrator:
         self.model = model
         self.logger.info("brian_model_configured", model=self.model)
 
+    def assess_vagueness(self, user_request: str) -> float:
+        """
+        Assess vagueness of user request using simple heuristics.
+
+        This is a lightweight check to determine if Mary should be consulted
+        for vision elicitation before Brian selects workflows.
+
+        Args:
+            user_request: User's initial request
+
+        Returns:
+            Vagueness score (0.0 = very specific, 1.0 = very vague)
+        """
+        request_lower = user_request.lower().strip()
+        length = len(request_lower.split())
+
+        # Very short requests are often vague
+        if length < 5:
+            return 0.9
+
+        # Check for vague words
+        vague_words = [
+            "something", "anything", "stuff", "thing", "idea",
+            "maybe", "kinda", "sorta", "probably", "possibly"
+        ]
+        vague_count = sum(1 for word in vague_words if word in request_lower)
+
+        # Check for lack of specifics
+        specific_indicators = [
+            "user", "feature", "button", "page", "api", "database",
+            "authentication", "dashboard", "report", "form"
+        ]
+        specific_count = sum(1 for word in specific_indicators if word in request_lower)
+
+        # Calculate score
+        vagueness = 0.5  # baseline
+
+        if vague_count > 0:
+            vagueness += 0.2 * min(vague_count, 2)
+
+        if specific_count == 0:
+            vagueness += 0.2
+
+        if length < 10:
+            vagueness += 0.1
+
+        return min(1.0, vagueness)
+
     async def assess_and_select_workflows(
         self,
         initial_prompt: str,
