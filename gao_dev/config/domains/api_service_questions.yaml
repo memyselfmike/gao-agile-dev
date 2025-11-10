@@ -1,0 +1,83 @@
+# API Service Domain Question Library
+# For REST APIs, GraphQL services, microservices, backend services
+
+general:
+  - "REST, GraphQL, gRPC, or other API style?"
+  - "Who will consume this API? (web frontend, mobile apps, third-party integrations)"
+  - "Public API or internal/private service?"
+  - "Expected request volume? (requests per second, daily calls)"
+  - "API versioning strategy? (URL versioning, header versioning)"
+  - "Documentation approach? (OpenAPI/Swagger, GraphQL introspection)"
+
+authentication:
+  - "Authentication method? (JWT, OAuth 2.0, API keys, Basic Auth)"
+  - "Token expiration and refresh strategy?"
+  - "Rate limiting per user/client?"
+  - "Scope-based or role-based permissions?"
+  - "Third-party authentication providers?"
+
+endpoints:
+  - "What are the main entities/resources to expose?"
+  - "CRUD operations for all entities or custom endpoints?"
+  - "Pagination strategy? (offset/limit, cursor-based)"
+  - "Filtering and search capabilities needed?"
+  - "Sorting and ordering options?"
+  - "Bulk operations support? (batch create/update/delete)"
+
+data_model:
+  - "Database type? (SQL: PostgreSQL/MySQL, NoSQL: MongoDB/DynamoDB)"
+  - "Relationships between entities?"
+  - "Expected data volume per table/collection?"
+  - "Data validation rules?"
+  - "Schema evolution strategy? (migrations, versioning)"
+
+performance:
+  - "Response time requirements? (target: <100ms, <500ms)"
+  - "Caching strategy? (Redis, Memcached, CDN)"
+  - "Database query optimization needs?"
+  - "Connection pooling requirements?"
+  - "Load balancing approach?"
+  - "Horizontal or vertical scaling?"
+
+technical:
+  - "Preferred backend language/framework? (Node.js/Express, Python/FastAPI, Go, Java/Spring)"
+  - "API gateway needed? (Kong, AWS API Gateway, Apigee)"
+  - "Message queue integration? (RabbitMQ, Kafka, SQS)"
+  - "Service mesh? (Istio, Linkerd)"
+  - "Containerization? (Docker, Kubernetes)"
+
+security:
+  - "HTTPS/TLS enforcement?"
+  - "Input validation and sanitization?"
+  - "SQL injection and XSS protection?"
+  - "CORS configuration for web clients?"
+  - "API request signing or encryption?"
+  - "Sensitive data in transit/at rest?"
+  - "Compliance requirements? (PCI-DSS, HIPAA)"
+
+monitoring:
+  - "Logging strategy? (structured logs, log aggregation)"
+  - "Metrics collection? (Prometheus, CloudWatch, Datadog)"
+  - "Distributed tracing? (Jaeger, Zipkin, X-Ray)"
+  - "Health check endpoints?"
+  - "Alerting thresholds and notifications?"
+  - "Error tracking and debugging?"
+
+reliability:
+  - "High availability requirements? (uptime SLA)"
+  - "Failover and redundancy strategy?"
+  - "Retry logic and circuit breakers?"
+  - "Graceful degradation for dependencies?"
+  - "Backup and disaster recovery?"
+  - "Blue-green or canary deployments?"
+
+integration:
+  - "Third-party API integrations needed?"
+  - "Webhooks for event notifications?"
+  - "Websockets for real-time features?"
+  - "File upload/download capabilities?"
+  - "Email or SMS sending?"
+
+focus_discovery:
+  - "Which area needs most clarity: authentication, endpoints, performance, security, monitoring, or integrations?"
+  - "Are there specific technical challenges or scaling concerns to discuss?"

@@ -34,6 +34,7 @@ from ..core.models.requirements_analysis import RequirementsAnalysis
 from .conversation_manager import ConversationManager
 from .brainstorming_engine import BrainstormingEngine, BrainstormingGoal
 from .requirements_analyzer import RequirementsAnalyzer
+from .domain_question_library import DomainQuestionLibrary, DomainType
 
 
 logger = structlog.get_logger()
@@ -94,6 +95,9 @@ class MaryOrchestrator:
         # Initialize requirements analyzer
         self.requirements_analyzer = RequirementsAnalyzer(analysis_service=analysis_service)
 
+        # Initialize domain question library (Story 31.4)
+        self.domain_library = DomainQuestionLibrary(analysis_service=analysis_service)
+
         self.logger.info("mary_orchestrator_initialized", project_root=str(project_root))
 
     def select_clarification_strategy(
@@ -125,6 +129,74 @@ class MaryOrchestrator:
             reason="Medium vagueness, simple clarification sufficient",
         )
         return ClarificationStrategy.SIMPLE_QUESTIONS
+
+    async def get_clarification_questions(
+        self,
+        user_request: str,
+        project_context: Optional[Dict] = None,
+        focus_area: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get domain-specific clarification questions.
+
+        Story 31.4: Uses domain detection to provide contextually relevant questions.
+
+        Args:
+            user_request: User's project description or request
+            project_context: Optional project context dict
+            focus_area: Optional focus area for targeted questions
+
+        Returns:
+            Dict with:
+                - domain: Detected domain type
+                - confidence: Detection confidence (0.0-1.0)
+                - questions: List of domain-specific questions
+                - focus_areas: Available focus areas for this domain
+
+        Example:
+            ```python
+            result = await mary.get_clarification_questions(
+                user_request="I want to build a web app for task management",
+                focus_area="authentication"
+            )
+            print(f"Domain: {result['domain']}")
+            print(f"Questions: {result['questions']}")
+            ```
+        """
+        self.logger.info(
+            "getting_clarification_questions",
+            request=user_request[:50],
+            has_context=bool(project_context),
+            focus_area=focus_area,
+        )
+
+        # Detect domain
+        domain, confidence = await self.domain_library.detect_domain(
+            user_request, project_context
+        )
+
+        # Get questions
+        questions = self.domain_library.get_questions(domain, focus_area)
+
+        # Get available focus areas
+        focus_areas = self.domain_library.get_available_focus_areas(domain)
+
+        result = {
+            "domain": domain.value,
+            "confidence": confidence,
+            "questions": questions,
+            "focus_areas": focus_areas,
+        }
+
+        self.logger.info(
+            "clarification_questions_prepared",
+            domain=domain.value,
+            confidence=confidence,
+            question_count=len(questions),
+            focus_areas_count=len(focus_areas),
+        )
+
+        return result
 
     async def elicit_vision(
         self,

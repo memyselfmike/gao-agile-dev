@@ -1,0 +1,77 @@
+# Mobile App Domain Question Library
+# For iOS, Android, and cross-platform mobile applications
+
+general:
+  - "iOS, Android, or both platforms?"
+  - "Native development or cross-platform? (React Native, Flutter, native Swift/Kotlin)"
+  - "Offline functionality required? (local data storage, sync)"
+  - "Push notifications needed?"
+  - "Device sensors usage? (camera, GPS, accelerometer, gyroscope, etc.)"
+  - "Biometric authentication? (Face ID, Touch ID, fingerprint)"
+  - "What's the minimum OS version to support? (iOS 14+, Android 10+)"
+
+authentication:
+  - "Email/password or social login (Apple ID, Google, Facebook)?"
+  - "Biometric login required? (Face ID, Touch ID)"
+  - "Session persistence across app restarts?"
+  - "Multi-device login support?"
+  - "Account linking between platforms?"
+
+data_sync:
+  - "Backend API integration needed?"
+  - "Offline-first architecture with sync?"
+  - "Conflict resolution strategy for offline changes?"
+  - "Real-time data updates? (WebSockets, Firebase, etc.)"
+  - "Data caching strategy?"
+  - "Background sync when app is closed?"
+
+features:
+  - "Camera integration? (photo capture, video, QR scanner)"
+  - "Location services? (GPS tracking, geofencing)"
+  - "Push notifications? (local, remote, scheduled)"
+  - "In-app purchases or subscriptions?"
+  - "Social sharing capabilities?"
+  - "Deep linking support? (universal links, app links)"
+  - "Augmented Reality (AR) features?"
+
+ui_ux:
+  - "Platform-specific design? (iOS Human Interface, Material Design)"
+  - "Shared design or platform-native UI components?"
+  - "Dark mode support?"
+  - "Accessibility requirements? (VoiceOver, TalkBack)"
+  - "Tablet optimization needed?"
+  - "Landscape orientation support?"
+  - "Custom animations or transitions?"
+
+technical:
+  - "State management approach? (Redux, MobX, Provider, BLoC)"
+  - "Local database? (SQLite, Realm, Hive, CoreData)"
+  - "API communication? (REST, GraphQL)"
+  - "Third-party SDKs or libraries needed?"
+  - "Analytics integration? (Firebase, Mixpanel, Amplitude)"
+  - "Crash reporting? (Crashlytics, Sentry)"
+
+performance:
+  - "App size constraints? (target size)"
+  - "Launch time requirements?"
+  - "Memory usage constraints?"
+  - "Battery usage considerations?"
+  - "Network efficiency? (compression, caching)"
+
+distribution:
+  - "App Store and/or Google Play distribution?"
+  - "Enterprise distribution? (internal apps)"
+  - "Beta testing approach? (TestFlight, Google Play Beta)"
+  - "App Store Optimization (ASO) requirements?"
+  - "Release cadence? (weekly, monthly, on-demand)"
+
+security:
+  - "Secure storage for sensitive data? (Keychain, KeyStore)"
+  - "Certificate pinning for API calls?"
+  - "Encryption requirements?"
+  - "Compliance needs? (GDPR, COPPA for kids apps)"
+  - "Code obfuscation or anti-tampering?"
+
+focus_discovery:
+  - "Which area needs most clarity: platform choice, data sync, features, UI/UX, performance, or distribution?"
+  - "Are there specific device capabilities or integrations to explore?"

@@ -1,0 +1,71 @@
+# Web App Domain Question Library
+# For web applications, websites, full-stack applications
+
+general:
+  - "Who are your target users? (end users, admins, content creators, etc.)"
+  - "Will this be a public-facing or internal web application?"
+  - "Do you need user authentication and authorization?"
+  - "What's the expected user volume? (concurrent users, daily visits)"
+  - "Does it need to be mobile-responsive or adaptive?"
+  - "Any specific browsers or browser versions you need to support?"
+  - "Will you have a backend API or use server-side rendering?"
+
+authentication:
+  - "Email/password login or social authentication (Google, GitHub, etc.)?"
+  - "Multi-factor authentication (MFA) required?"
+  - "Session timeout requirements?"
+  - "Password reset and account recovery flow needed?"
+  - "Role-based access control (RBAC) or permission system?"
+  - "Single Sign-On (SSO) integration needed?"
+
+data_model:
+  - "What entities or data types will the application manage?"
+  - "Relationships between entities? (one-to-many, many-to-many)"
+  - "Expected data volume? (thousands, millions of records)"
+  - "Real-time updates needed (WebSockets or polling)?"
+  - "Data export/import features required?"
+  - "Data retention or archival requirements?"
+
+ui_ux:
+  - "Any existing design system or branding guidelines to follow?"
+  - "Accessibility requirements (WCAG 2.1 AA compliance)?"
+  - "Internationalization needed? (multiple languages)"
+  - "Dark mode or theme customization support?"
+  - "Responsive design breakpoints? (desktop, tablet, mobile)"
+  - "Any specific UI frameworks or component libraries preferred?"
+
+technical:
+  - "Preferred frontend framework? (React, Vue, Angular, Svelte, vanilla JS)"
+  - "Preferred backend? (Node.js, Python/Django, Ruby/Rails, Go, etc.)"
+  - "Database preference? (PostgreSQL, MySQL, MongoDB, SQLite, etc.)"
+  - "Hosting platform? (AWS, Azure, GCP, Vercel, Netlify, self-hosted)"
+  - "SEO requirements? (meta tags, sitemap, structured data)"
+  - "Analytics integration? (Google Analytics, Plausible, custom)"
+  - "Error tracking or monitoring? (Sentry, LogRocket, etc.)"
+
+performance:
+  - "Page load time requirements? (target: <3s, <1s, etc.)"
+  - "Offline functionality needed? (Progressive Web App features)"
+  - "Caching strategy? (CDN, browser cache, service workers)"
+  - "CDN usage for static assets?"
+  - "Server-side rendering (SSR) or static site generation (SSG)?"
+  - "Image optimization requirements?"
+
+security:
+  - "Sensitive data handling? (PII, payment info, health data)"
+  - "Compliance requirements? (GDPR, HIPAA, PCI-DSS, SOC 2)"
+  - "SSL/TLS requirements? (force HTTPS)"
+  - "Content Security Policy (CSP) needed?"
+  - "Rate limiting or DDoS protection?"
+  - "Data encryption at rest and in transit?"
+
+deployment:
+  - "Continuous deployment or manual releases?"
+  - "Staging/preview environments needed?"
+  - "Blue-green or canary deployments?"
+  - "Database migration strategy?"
+  - "Backup and disaster recovery requirements?"
+
+focus_discovery:
+  - "Which area needs most clarity: authentication, data model, UI/UX, technical stack, performance, security, or deployment?"
+  - "Are there any specific features or workflows you'd like to discuss in depth?"
