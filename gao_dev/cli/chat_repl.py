@@ -46,6 +46,34 @@ class ChatREPL:
         # Initialize status reporter
         self.status_reporter = ProjectStatusReporter(self.project_root)
 
+        # Initialize Conversational Brian (Story 30.3)
+        from gao_dev.orchestrator.brian_orchestrator import BrianOrchestrator
+        from gao_dev.orchestrator.conversational_brian import (
+            ConversationalBrian,
+            ConversationContext,
+        )
+        from gao_dev.core.workflow_registry import WorkflowRegistry
+        from gao_dev.core.services.ai_analysis_service import AIAnalysisService
+        from gao_dev.core.config_loader import ConfigLoader
+        from gao_dev.core.services.process_executor import ProcessExecutor
+
+        # Create Brian orchestrator
+        config_loader = ConfigLoader(self.project_root)
+        workflow_registry = WorkflowRegistry(config_loader)
+        executor = ProcessExecutor(self.project_root)
+        analysis_service = AIAnalysisService(executor)
+        brian_orchestrator = BrianOrchestrator(
+            workflow_registry=workflow_registry,
+            analysis_service=analysis_service,
+            project_root=self.project_root,
+        )
+        self.conversational_brian = ConversationalBrian(brian_orchestrator)
+
+        # Conversation context
+        self.context = ConversationContext(
+            project_root=str(self.project_root), session_history=[]
+        )
+
     async def start(self) -> None:
         """
         Start interactive REPL loop.
@@ -151,16 +179,22 @@ Type 'exit', 'quit', or 'bye' to end the session.
 
     async def _handle_input(self, user_input: str) -> None:
         """
-        Handle user input (placeholder for Story 30.3).
+        Handle user input with conversational Brian.
 
-        For Story 30.1, just echo back the input.
-        Will be replaced with actual conversation handling in Story 30.3.
+        Story 30.3: Replaces simple echo with real conversation.
 
         Args:
             user_input: User's input string
         """
-        response = f"You said: {user_input}"
-        self._display_response(response)
+        # Add to session history
+        self.context.session_history.append(f"User: {user_input}")
+
+        # Get responses from conversational Brian
+        async for response in self.conversational_brian.handle_input(user_input, self.context):
+            self._display_response(response)
+
+            # Add to session history
+            self.context.session_history.append(f"Brian: {response}")
 
     def _display_response(self, response: str) -> None:
         """
