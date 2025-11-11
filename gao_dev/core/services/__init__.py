@@ -11,6 +11,7 @@ from .feature_state_service import (
     FeatureStatus,
     Feature,
 )
+from .feature_path_resolver import FeaturePathResolver
 
 __all__ = [
     "WorkflowCoordinator",
@@ -20,4 +21,5 @@ __all__ = [
     "FeatureScope",
     "FeatureStatus",
     "Feature",
+    "FeaturePathResolver",
 ]
