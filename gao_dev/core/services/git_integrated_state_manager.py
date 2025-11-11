@@ -131,7 +131,9 @@ class GitIntegratedStateManager:
         self.auto_commit = auto_commit
 
         # Initialize coordinator and git manager
-        self.coordinator = StateCoordinator(db_path=self.db_path)
+        self.coordinator = StateCoordinator(
+            db_path=self.db_path, project_root=self.project_path
+        )
         self.git_manager = GitManager(project_path=self.project_path)
 
         self.logger = logger.bind(

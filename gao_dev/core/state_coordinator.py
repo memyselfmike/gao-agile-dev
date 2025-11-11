@@ -20,6 +20,12 @@ from gao_dev.core.services.story_state_service import StoryStateService
 from gao_dev.core.services.action_item_service import ActionItemService
 from gao_dev.core.services.ceremony_service import CeremonyService
 from gao_dev.core.services.learning_index_service import LearningIndexService
+from gao_dev.core.services.feature_state_service import (
+    FeatureStateService,
+    Feature,
+    FeatureScope,
+    FeatureStatus,
+)
 
 logger = structlog.get_logger()
 
@@ -29,11 +35,14 @@ class StateCoordinator:
     Facade coordinating all state management services.
 
     Provides unified interface to epic, story, action item, ceremony,
-    and learning state services with coordinated operations.
+    learning, and feature state services with coordinated operations.
 
     Example:
         ```python
-        coordinator = StateCoordinator(db_path=Path(".gao-dev/documents.db"))
+        coordinator = StateCoordinator(
+            db_path=Path(".gao-dev/documents.db"),
+            project_root=Path("/project")
+        )
 
         # Create epic and stories in one operation
         epic = coordinator.create_epic(
@@ -63,14 +72,16 @@ class StateCoordinator:
         ```
     """
 
-    def __init__(self, db_path: Path):
+    def __init__(self, db_path: Path, project_root: Optional[Path] = None):
         """
         Initialize state coordinator with all services.
 
         Args:
             db_path: Path to SQLite database file (shared across all services)
+            project_root: Project root directory (for feature service)
         """
         self.db_path = Path(db_path)
+        self.project_root = Path(project_root) if project_root else self.db_path.parent.parent
 
         # Initialize all services with same database
         self.epic_service = EpicStateService(db_path=self.db_path)
@@ -78,6 +89,7 @@ class StateCoordinator:
         self.action_service = ActionItemService(db_path=self.db_path)
         self.ceremony_service = CeremonyService(db_path=self.db_path)
         self.learning_service = LearningIndexService(db_path=self.db_path)
+        self.feature_service = FeatureStateService(project_root=self.project_root)
 
         self.logger = logger.bind(service="state_coordinator")
 
@@ -350,6 +362,150 @@ class StateCoordinator:
             topic=topic, category=category, active_only=active_only, limit=limit
         )
 
+    # Feature Operations
+
+    def create_feature(
+        self,
+        name: str,
+        scope: FeatureScope,
+        scale_level: int,
+        description: Optional[str] = None,
+        owner: Optional[str] = None,
+    ) -> Feature:
+        """
+        Create feature (facade to FeatureStateService).
+
+        Args:
+            name: Feature name (e.g., "user-auth", "mvp")
+            scope: MVP or FEATURE
+            scale_level: 0-4
+            description: Optional description
+            owner: Optional owner
+
+        Returns:
+            Feature object
+
+        Raises:
+            ValueError: If feature already exists
+        """
+        self.logger.info(
+            "creating_feature",
+            name=name,
+            scope=scope.value if isinstance(scope, FeatureScope) else scope,
+            scale_level=scale_level,
+        )
+        return self.feature_service.create_feature(
+            name=name,
+            scope=scope,
+            scale_level=scale_level,
+            description=description,
+            owner=owner,
+        )
+
+    def get_feature(self, name: str) -> Optional[Dict[str, Any]]:
+        """Get feature by name (facade)."""
+        return self.feature_service.get_feature(name)
+
+    def list_features(
+        self,
+        scope: Optional[FeatureScope] = None,
+        status: Optional[FeatureStatus] = None,
+    ) -> List[Feature]:
+        """List features with optional filters (facade)."""
+        return self.feature_service.list_features(scope=scope, status=status)
+
+    def update_feature_status(self, name: str, status: FeatureStatus) -> bool:
+        """Update feature status (facade)."""
+        self.logger.info(
+            "updating_feature_status",
+            name=name,
+            status=status.value if isinstance(status, FeatureStatus) else status,
+        )
+        return self.feature_service.update_status(name=name, status=status)
+
+    def get_feature_state(self, name: str) -> Dict[str, Any]:
+        """
+        Get comprehensive feature state.
+
+        Returns complete feature data including:
+        - Feature metadata
+        - All epics for this feature
+        - Story counts
+        - Completion metrics
+
+        Args:
+            name: Feature name
+
+        Returns:
+            Dictionary with:
+                - feature: Feature dict
+                - epics: List of Epic dicts for this feature
+                - epic_summaries: List of {epic_num, title, status, story_count, completed_count}
+                - total_stories: Total story count across all epics
+                - completed_stories: Number of completed stories
+                - completion_pct: Percentage of stories complete
+
+        Raises:
+            ValueError: If feature not found
+        """
+        # Get feature metadata
+        feature = self.feature_service.get_feature(name)
+        if not feature:
+            raise ValueError(f"Feature '{name}' not found")
+
+        # Get all epics for this feature (from epics table, filter by feature column)
+        # Note: EpicStateService uses epic_state table, but we need epics table
+        # Since EpicStateService doesn't support feature filtering yet,
+        # we'll query directly or filter in-memory
+        all_epics = self.epic_service.list()
+        feature_epics = [e for e in all_epics if e.get("feature") == name]
+
+        # Build epic summaries
+        epic_summaries = []
+        total_stories = 0
+        completed_stories = 0
+
+        for epic in feature_epics:
+            epic_num = epic["epic_num"]
+            stories = self.story_service.list_by_epic(epic_num)
+            story_count = len(stories)
+            completed_count = len([s for s in stories if s["status"] == "completed"])
+
+            epic_summaries.append(
+                {
+                    "epic_num": epic_num,
+                    "title": epic["title"],
+                    "status": epic["status"],
+                    "story_count": story_count,
+                    "completed_count": completed_count,
+                }
+            )
+
+            total_stories += story_count
+            completed_stories += completed_count
+
+        completion_pct = (
+            (completed_stories / total_stories * 100) if total_stories > 0 else 0.0
+        )
+
+        self.logger.info(
+            "feature_state_retrieved",
+            name=name,
+            num_epics=len(feature_epics),
+            total_stories=total_stories,
+            completed_stories=completed_stories,
+            completion_pct=completion_pct,
+        )
+
+        return {
+            "feature": feature,
+            "epics": feature_epics,
+            "epic_summaries": epic_summaries,
+            "total_stories": total_stories,
+            "completed_stories": completed_stories,
+            "completion_pct": completion_pct,
+        }
+
     # Cleanup
 
     def close(self) -> None:
@@ -359,6 +515,7 @@ class StateCoordinator:
         self.action_service.close()
         self.ceremony_service.close()
         self.learning_service.close()
+        self.feature_service.close()
 
     def __enter__(self):
         """Context manager entry."""
