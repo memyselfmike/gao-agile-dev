@@ -4,12 +4,15 @@ Manages document structure based on work type and scale level.
 Creates scale-appropriate folder structures and templates for features.
 
 Story 28.6: DocumentStructureManager (Critical Fix C4)
+Story 33.1: Extend DocumentStructureManager (QA/, README.md, auto_commit)
 """
 
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import structlog
+from jinja2 import Environment, FileSystemLoader
 
 from gao_dev.methodologies.adaptive_agile.scale_levels import ScaleLevel
 from gao_dev.lifecycle.models import DocumentType
@@ -25,7 +28,7 @@ class DocumentStructureManager:
 
     Responsibilities:
     - Initialize feature folders with correct structure for each scale level
-    - Create document templates (PRD, ARCHITECTURE, CHANGELOG)
+    - Create document templates (PRD, ARCHITECTURE, CHANGELOG, README)
     - Update global docs (PRD.md, CHANGELOG.md, ARCHITECTURE.md)
     - Enforce structure consistency across features
     - Integrate with DocumentLifecycleManager for tracking
@@ -33,9 +36,14 @@ class DocumentStructureManager:
     Scale Level Structures:
     - Level 0 (Chore): No folder created
     - Level 1 (Bug): docs/bugs/ directory
-    - Level 2 (Small Feature): docs/features/<name>/ + PRD + stories/
+    - Level 2 (Small Feature): docs/features/<name>/ + PRD + QA/ + stories/
     - Level 3 (Medium Feature): + ARCHITECTURE + epics/ + retrospectives/
     - Level 4 (Greenfield): + ceremonies/ + MIGRATION_GUIDE + root docs
+
+    Story 33.1 Enhancements:
+    - QA/ folder created for all features
+    - README.md generated from Jinja2 template
+    - auto_commit parameter for GitIntegratedStateManager integration
     """
 
     def __init__(
@@ -62,23 +70,47 @@ class DocumentStructureManager:
         self.doc_lifecycle = doc_lifecycle
         self.git = git_manager
 
+        # Initialize Jinja2 environment for templates (Story 33.1)
+        template_dir = Path(__file__).parent.parent.parent / "config" / "templates"
+        self.jinja_env = Environment(loader=FileSystemLoader(str(template_dir)))
+
         logger.info(
             "document_structure_manager_initialized", project_root=str(project_root)
         )
 
     def initialize_feature_folder(
-        self, feature_name: str, scale_level: ScaleLevel
+        self,
+        feature_name: str,
+        scale_level: ScaleLevel,
+        description: Optional[str] = None,
+        auto_commit: bool = True,
     ) -> Optional[Path]:
         """
         Initialize feature folder based on scale level.
 
         Creates appropriate folder structure and template files for the
         given scale level. All created documents are registered with
-        DocumentLifecycleManager and committed to git.
+        DocumentLifecycleManager.
+
+        EXISTING FUNCTIONALITY (Epic 28):
+        - Creates docs/features/{feature_name}/
+        - Generates PRD.md, ARCHITECTURE.md templates
+        - Creates epics/, stories/, retrospectives/ (scale-dependent)
+        - Registers with DocumentLifecycleManager
+        - Commits to git
+
+        NEW ENHANCEMENTS (Story 33.1):
+        - Creates QA/ folder (all scale levels)
+        - Generates README.md from Jinja2 template
+        - Supports auto_commit parameter:
+          - True (default): Commits to git (backward compatible)
+          - False: Skips commit (for GitIntegratedStateManager)
 
         Args:
             feature_name: Name of the feature (kebab-case recommended)
             scale_level: Scale level determining folder structure
+            description: Optional feature description
+            auto_commit: Whether to commit to git (default: True)
 
         Returns:
             Path to created folder, or None for Level 0
@@ -93,6 +125,7 @@ class DocumentStructureManager:
             "initializing_feature_folder",
             feature_name=feature_name,
             scale_level=scale_level.name,
+            auto_commit=auto_commit,
         )
 
         # Level 0: No folder created
@@ -120,6 +153,9 @@ class DocumentStructureManager:
             # Stories directory
             (feature_path / "stories").mkdir(exist_ok=True)
 
+            # QA directory (Story 33.1)
+            (feature_path / "QA").mkdir(exist_ok=True)
+
             # Lightweight PRD for Level 2
             prd_content = self._prd_template(feature_name, "lightweight")
             self._create_file(feature_path / "PRD.md", prd_content)
@@ -127,6 +163,9 @@ class DocumentStructureManager:
             # CHANGELOG
             changelog_content = "# Changelog\n\n## Unreleased\n\n"
             self._create_file(feature_path / "CHANGELOG.md", changelog_content)
+
+            # README.md from Jinja2 template (Story 33.1)
+            self._create_readme(feature_path, feature_name, description, scale_level)
 
         if scale_level >= ScaleLevel.LEVEL_3_MEDIUM_FEATURE:
             # Additional directories
@@ -156,17 +195,33 @@ class DocumentStructureManager:
             metadata={"feature": feature_name, "scale_level": scale_level.value},
         )
 
-        # Git commit
-        self.git.add_all()
-        self.git.commit(
-            f"docs({feature_name}): initialize feature folder (Level {scale_level.value})"
-        )
+        # Conditional git commit (Story 33.1)
+        if auto_commit:
+            self.git.add_all()
+            self.git.commit(
+                f"docs({feature_name}): initialize feature folder (Level {scale_level.value})\n\n"
+                f"Created feature structure with scale level {scale_level.value}.\n"
+                f"Includes: PRD, Architecture, README, QA, and folder structure."
+            )
+            logger.info(
+                "feature_folder_committed_to_git",
+                feature_name=feature_name,
+                scale_level=scale_level.name,
+            )
+        else:
+            logger.info(
+                "feature_folder_created_no_git_commit",
+                feature_name=feature_name,
+                scale_level=scale_level.name,
+                message="Git commit delegated to caller",
+            )
 
         logger.info(
             "feature_folder_initialized",
             feature_name=feature_name,
             scale_level=scale_level.name,
             path=str(feature_path),
+            auto_commit=auto_commit,
         )
 
         return feature_path
@@ -227,6 +282,42 @@ class DocumentStructureManager:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
         logger.debug("file_created", path=str(path))
+
+    def _create_readme(
+        self,
+        feature_path: Path,
+        feature_name: str,
+        description: Optional[str],
+        scale_level: ScaleLevel,
+    ) -> None:
+        """
+        Create README.md from Jinja2 template.
+
+        Story 33.1: Generate README.md with feature metadata and structure diagram.
+
+        Args:
+            feature_path: Path to feature folder
+            feature_name: Name of the feature
+            description: Optional feature description
+            scale_level: Scale level of the feature
+
+        Template location: gao_dev/config/templates/feature-readme.md.j2
+        """
+        template = self.jinja_env.get_template("feature-readme.md.j2")
+
+        content = template.render(
+            feature_name=feature_name,
+            description=description or f"Feature: {feature_name}",
+            scale_level=scale_level.value,
+            created_date=datetime.now().strftime("%Y-%m-%d"),
+            has_ceremonies=(scale_level == ScaleLevel.LEVEL_4_GREENFIELD),
+            has_retrospectives=(scale_level >= ScaleLevel.LEVEL_3_MEDIUM_FEATURE),
+        )
+
+        readme_path = feature_path / "README.md"
+        readme_path.write_text(content, encoding="utf-8")
+
+        logger.info("readme_created", path=str(readme_path), feature_name=feature_name)
 
     def _prd_template(self, feature_name: str, template_type: str) -> str:
         """Generate PRD template (lightweight or full).

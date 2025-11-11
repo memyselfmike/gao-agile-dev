@@ -1,0 +1,64 @@
+# {{ feature_name }}
+
+**Description:** {{ description }}
+
+**Scale Level:** {{ scale_level }}
+
+**Created:** {{ created_date }}
+
+---
+
+## Overview
+
+This feature follows GAO-Dev's feature-based document structure with co-located epic and story organization.
+
+## Documents
+
+- **[PRD.md](./PRD.md)** - Product Requirements Document
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Technical Architecture
+- **[EPICS.md](./EPICS.md)** - Master Epic Overview
+
+## Structure
+
+```
+{{ feature_name }}/
+├── PRD.md                    # Requirements
+├── ARCHITECTURE.md           # Architecture
+├── README.md                 # This file
+├── EPICS.md                  # Epic overview
+├── epics/                    # Epic containers (co-located with stories)
+│   └── {N}-{epic-name}/
+│       ├── README.md         # Epic definition
+│       ├── stories/          # Stories for this epic
+│       └── context/          # Context XML files
+├── QA/                       # Quality artifacts
+│   ├── QA_VALIDATION_*.md
+│   └── TEST_REPORT_*.md
+{% if has_retrospectives %}
+├── retrospectives/           # Retrospectives
+│   └── epic-{N}-retro.md
+{% endif %}
+{% if has_ceremonies %}
+└── ceremonies/               # Ceremony artifacts
+    └── planning-session-*.md
+{% endif %}
+```
+
+## Epics
+
+See [EPICS.md](./EPICS.md) for complete epic list and status.
+
+## Contributing
+
+All work should follow the co-located epic-story structure:
+1. Epic definition in `epics/{N}-{name}/README.md`
+2. Stories in `epics/{N}-{name}/stories/story-{N}.{M}.md`
+3. Context XML in `epics/{N}-{name}/context/`
+
+## Quality Assurance
+
+All QA artifacts go in the `QA/` folder. See QA validation and test reports for quality metrics.
+
+---
+
+*This feature was created with GAO-Dev's DocumentStructureManager (Epic 28 + Story 33.1)*

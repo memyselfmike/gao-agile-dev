@@ -132,11 +132,12 @@ def test_initialize_level_2_small_feature(
     assert call_args[1]["metadata"]["feature"] == "my-feature"
     assert call_args[1]["metadata"]["scale_level"] == 2
 
-    # Verify git commit
+    # Verify git commit (Story 33.1: Enhanced commit message)
     mock_git.add_all.assert_called_once()
-    mock_git.commit.assert_called_once_with(
-        "docs(my-feature): initialize feature folder (Level 2)"
-    )
+    commit_message = mock_git.commit.call_args[0][0]
+    assert "docs(my-feature): initialize feature folder (Level 2)" in commit_message
+    assert "Created feature structure with scale level 2" in commit_message
+    assert "Includes: PRD, Architecture, README, QA, and folder structure" in commit_message
 
 
 def test_initialize_level_3_medium_feature(
@@ -182,10 +183,11 @@ def test_initialize_level_3_medium_feature(
     # Verify registration
     mock_doc_lifecycle.register_document.assert_called_once()
 
-    # Verify git commit
-    mock_git.commit.assert_called_once_with(
-        "docs(auth-feature): initialize feature folder (Level 3)"
-    )
+    # Verify git commit (Story 33.1: Enhanced commit message)
+    commit_message = mock_git.commit.call_args[0][0]
+    assert "docs(auth-feature): initialize feature folder (Level 3)" in commit_message
+    assert "Created feature structure with scale level 3" in commit_message
+    assert "Includes: PRD, Architecture, README, QA, and folder structure" in commit_message
 
 
 def test_initialize_level_4_greenfield(
@@ -218,10 +220,11 @@ def test_initialize_level_4_greenfield(
     # Verify registration
     mock_doc_lifecycle.register_document.assert_called_once()
 
-    # Verify git commit
-    mock_git.commit.assert_called_once_with(
-        "docs(new-app): initialize feature folder (Level 4)"
-    )
+    # Verify git commit (Story 33.1: Enhanced commit message)
+    commit_message = mock_git.commit.call_args[0][0]
+    assert "docs(new-app): initialize feature folder (Level 4)" in commit_message
+    assert "Created feature structure with scale level 4" in commit_message
+    assert "Includes: PRD, Architecture, README, QA, and folder structure" in commit_message
 
 
 def test_update_global_docs_invalid_type_raises(manager):
@@ -428,3 +431,275 @@ def test_update_changelog_without_unreleased_section(manager, temp_project):
     changelog_content = changelog_path.read_text()
     assert "## Unreleased\n- Epic 1: my-feature completed\n" in changelog_content
     assert "## v1.0.0" in changelog_content  # Old section preserved
+
+
+# ============================================================================
+# STORY 33.1: QA/ FOLDER, README.md, AND auto_commit TESTS
+# ============================================================================
+
+
+def test_qa_folder_created_level_2(manager, temp_project):
+    """Story 33.1: QA/ folder should be created for Level 2 features."""
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE)
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    qa_path = feature_path / "QA"
+
+    # AC1: QA/ folder created
+    assert qa_path.exists()
+    assert qa_path.is_dir()
+
+
+def test_qa_folder_created_level_3(manager, temp_project):
+    """Story 33.1: QA/ folder should be created for Level 3 features."""
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_3_MEDIUM_FEATURE)
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    qa_path = feature_path / "QA"
+
+    # AC1: QA/ folder created for Level 3
+    assert qa_path.exists()
+    assert qa_path.is_dir()
+
+
+def test_qa_folder_created_level_4(manager, temp_project):
+    """Story 33.1: QA/ folder should be created for Level 4 features."""
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_4_GREENFIELD)
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    qa_path = feature_path / "QA"
+
+    # AC1: QA/ folder created for Level 4
+    assert qa_path.exists()
+    assert qa_path.is_dir()
+
+
+def test_qa_folder_committed_with_auto_commit_true(manager, temp_project, mock_git):
+    """Story 33.1: QA/ folder should be included in git commit when auto_commit=True."""
+    manager.initialize_feature_folder(
+        "test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE, auto_commit=True
+    )
+
+    # Verify git commit was called
+    mock_git.add_all.assert_called_once()
+    mock_git.commit.assert_called_once()
+
+    # Verify QA/ folder exists
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    assert (feature_path / "QA").exists()
+
+
+def test_readme_created_level_2(manager, temp_project):
+    """Story 33.1: README.md should be created for Level 2 features."""
+    manager.initialize_feature_folder("my-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE)
+
+    feature_path = temp_project / "docs" / "features" / "my-feature"
+    readme_path = feature_path / "README.md"
+
+    # AC2: README.md exists
+    assert readme_path.exists()
+
+
+def test_readme_contains_feature_name(manager, temp_project):
+    """Story 33.1: README.md should contain feature name."""
+    manager.initialize_feature_folder("auth-system", ScaleLevel.LEVEL_2_SMALL_FEATURE)
+
+    feature_path = temp_project / "docs" / "features" / "auth-system"
+    readme_content = (feature_path / "README.md").read_text()
+
+    # AC2: README contains feature name
+    assert "auth-system" in readme_content
+    assert "# auth-system" in readme_content
+
+
+def test_readme_contains_description(manager, temp_project):
+    """Story 33.1: README.md should contain description."""
+    manager.initialize_feature_folder(
+        "payment-gateway",
+        ScaleLevel.LEVEL_2_SMALL_FEATURE,
+        description="Payment processing integration",
+    )
+
+    feature_path = temp_project / "docs" / "features" / "payment-gateway"
+    readme_content = (feature_path / "README.md").read_text()
+
+    # AC2: README contains description
+    assert "Payment processing integration" in readme_content
+    assert "**Description:**" in readme_content
+
+
+def test_readme_contains_scale_level(manager, temp_project):
+    """Story 33.1: README.md should contain scale level."""
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_3_MEDIUM_FEATURE)
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    readme_content = (feature_path / "README.md").read_text()
+
+    # AC2: README contains scale level
+    assert "**Scale Level:** 3" in readme_content
+
+
+def test_readme_contains_structure_diagram(manager, temp_project):
+    """Story 33.1: README.md should contain structure diagram."""
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE)
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    readme_content = (feature_path / "README.md").read_text()
+
+    # AC2: README contains structure diagram
+    assert "## Structure" in readme_content
+    assert "test-feature/" in readme_content
+    assert "QA/" in readme_content
+    assert "epics/" in readme_content
+
+
+def test_readme_sections_match_template(manager, temp_project):
+    """Story 33.1: README.md sections should match template."""
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE)
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    readme_content = (feature_path / "README.md").read_text()
+
+    # AC2: All required sections present
+    assert "## Overview" in readme_content
+    assert "## Documents" in readme_content
+    assert "## Structure" in readme_content
+    assert "## Epics" in readme_content
+    assert "## Contributing" in readme_content
+    assert "## Quality Assurance" in readme_content
+
+
+def test_readme_conditional_retrospectives_level_3(manager, temp_project):
+    """Story 33.1: README.md should include retrospectives section for Level 3."""
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_3_MEDIUM_FEATURE)
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    readme_content = (feature_path / "README.md").read_text()
+
+    # Retrospectives should be present for Level 3
+    assert "retrospectives/" in readme_content
+
+
+def test_readme_conditional_ceremonies_level_4(manager, temp_project):
+    """Story 33.1: README.md should include ceremonies section for Level 4."""
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_4_GREENFIELD)
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    readme_content = (feature_path / "README.md").read_text()
+
+    # Ceremonies should be present for Level 4
+    assert "ceremonies/" in readme_content
+
+
+def test_readme_no_ceremonies_level_2(manager, temp_project):
+    """Story 33.1: README.md should not include ceremonies section for Level 2."""
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE)
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    readme_content = (feature_path / "README.md").read_text()
+
+    # Ceremonies should NOT be present for Level 2
+    assert "ceremonies/" not in readme_content
+
+
+def test_auto_commit_true_commits_to_git(manager, temp_project, mock_git):
+    """Story 33.1: auto_commit=True should commit to git."""
+    manager.initialize_feature_folder(
+        "test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE, auto_commit=True
+    )
+
+    # AC3: Git commit called when auto_commit=True
+    mock_git.add_all.assert_called_once()
+    mock_git.commit.assert_called_once()
+
+    # Verify commit message format
+    commit_message = mock_git.commit.call_args[0][0]
+    assert "docs(test-feature):" in commit_message
+    assert "initialize feature folder" in commit_message
+
+
+def test_auto_commit_false_skips_git_commit(manager, temp_project, mock_git):
+    """Story 33.1: auto_commit=False should skip git commit."""
+    manager.initialize_feature_folder(
+        "test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE, auto_commit=False
+    )
+
+    # AC3: Git commit NOT called when auto_commit=False
+    mock_git.add_all.assert_not_called()
+    mock_git.commit.assert_not_called()
+
+
+def test_auto_commit_false_still_creates_files(manager, temp_project):
+    """Story 33.1: auto_commit=False should still create all files."""
+    result = manager.initialize_feature_folder(
+        "test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE, auto_commit=False
+    )
+
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+
+    # AC3: All files created even when auto_commit=False
+    assert result == feature_path
+    assert (feature_path / "PRD.md").exists()
+    assert (feature_path / "README.md").exists()
+    assert (feature_path / "CHANGELOG.md").exists()
+    assert (feature_path / "QA").exists()
+    assert (feature_path / "stories").exists()
+
+
+def test_auto_commit_returns_feature_path_both_cases(manager, temp_project):
+    """Story 33.1: Feature path should be returned for both auto_commit values."""
+    # With auto_commit=True
+    result_true = manager.initialize_feature_folder(
+        "feature-1", ScaleLevel.LEVEL_2_SMALL_FEATURE, auto_commit=True
+    )
+
+    # With auto_commit=False
+    result_false = manager.initialize_feature_folder(
+        "feature-2", ScaleLevel.LEVEL_2_SMALL_FEATURE, auto_commit=False
+    )
+
+    # AC3: Both return valid feature paths
+    assert result_true is not None
+    assert result_false is not None
+    assert result_true.name == "feature-1"
+    assert result_false.name == "feature-2"
+
+
+def test_backward_compatibility_default_auto_commit(manager, temp_project, mock_git):
+    """Story 33.1: auto_commit should default to True for backward compatibility."""
+    # Call without auto_commit parameter (should default to True)
+    manager.initialize_feature_folder("test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE)
+
+    # AC4: Git commit should be called by default
+    mock_git.add_all.assert_called_once()
+    mock_git.commit.assert_called_once()
+
+
+def test_backward_compatibility_no_description_parameter(manager, temp_project):
+    """Story 33.1: description parameter should be optional for backward compatibility."""
+    # Call without description parameter
+    result = manager.initialize_feature_folder(
+        "test-feature", ScaleLevel.LEVEL_2_SMALL_FEATURE
+    )
+
+    # AC4: Should work without description
+    assert result is not None
+    feature_path = temp_project / "docs" / "features" / "test-feature"
+    assert (feature_path / "README.md").exists()
+
+    # Default description should be used
+    readme_content = (feature_path / "README.md").read_text()
+    assert "Feature: test-feature" in readme_content
+
+
+def test_backward_compatibility_commit_message_format(manager, temp_project, mock_git):
+    """Story 33.1: Git commit message format should be maintained."""
+    manager.initialize_feature_folder("my-feature", ScaleLevel.LEVEL_3_MEDIUM_FEATURE)
+
+    # AC4: Commit message should follow expected format
+    mock_git.commit.assert_called_once()
+    commit_message = mock_git.commit.call_args[0][0]
+
+    assert "docs(my-feature):" in commit_message
+    assert "initialize feature folder" in commit_message
+    assert "Level 3" in commit_message
