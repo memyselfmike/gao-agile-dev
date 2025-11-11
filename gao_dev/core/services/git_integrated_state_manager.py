@@ -68,6 +68,7 @@ Example:
     ```
 """
 
+import re
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime
@@ -78,6 +79,9 @@ import structlog
 
 from gao_dev.core.git_manager import GitManager
 from gao_dev.core.state_coordinator import StateCoordinator
+from gao_dev.core.services.document_structure_manager import DocumentStructureManager
+from gao_dev.core.services.feature_state_service import Feature, FeatureScope
+from gao_dev.methodologies.adaptive_agile.scale_levels import ScaleLevel
 
 logger = structlog.get_logger()
 
@@ -116,7 +120,8 @@ class GitIntegratedStateManager:
         self,
         db_path: Path,
         project_path: Path,
-        auto_commit: bool = True
+        auto_commit: bool = True,
+        doc_structure_manager: Optional[DocumentStructureManager] = None
     ):
         """
         Initialize git-integrated state manager.
@@ -125,6 +130,7 @@ class GitIntegratedStateManager:
             db_path: Path to SQLite database file
             project_path: Path to project root (for git operations)
             auto_commit: Whether to auto-commit after operations (default: True)
+            doc_structure_manager: Optional DocumentStructureManager for feature creation
         """
         self.db_path = Path(db_path)
         self.project_path = Path(project_path)
@@ -135,6 +141,9 @@ class GitIntegratedStateManager:
             db_path=self.db_path, project_root=self.project_path
         )
         self.git_manager = GitManager(project_path=self.project_path)
+
+        # Store or create document structure manager (Story 33.2)
+        self.doc_structure_manager = doc_structure_manager
 
         self.logger = logger.bind(
             service="git_integrated_state_manager",
@@ -583,6 +592,271 @@ class GitIntegratedStateManager:
             raise GitIntegratedStateManagerError(
                 f"Failed to transition story {epic_num}.{story_num}: {e}"
             ) from e
+
+    def create_feature(
+        self,
+        name: str,
+        scope: FeatureScope,
+        scale_level: int,
+        description: Optional[str] = None,
+        owner: Optional[str] = None,
+    ) -> Feature:
+        """
+        Create feature atomically (file + DB + git).
+
+        This is the PRIMARY method for feature creation. It guarantees:
+        - All operations succeed together OR
+        - All operations roll back (no partial state)
+
+        ATOMIC PATTERN (Story 33.2):
+        1. Pre-flight checks (git clean, valid name, no duplicates)
+        2. Create checkpoint (note current git HEAD)
+        3. File operations (DocumentStructureManager with auto_commit=False)
+        4. Database insert (StateCoordinator.create_feature)
+        5. Git commit (single atomic commit)
+        6. Rollback on ANY failure (delete files, rollback DB, reset git)
+
+        Args:
+            name: Feature name (kebab-case, e.g., "user-auth", "mvp")
+            scope: FeatureScope.MVP or FeatureScope.FEATURE
+            scale_level: 0-4 (project scale)
+            description: Optional feature description
+            owner: Optional owner
+
+        Returns:
+            Feature object with metadata
+
+        Raises:
+            ValueError: If pre-flight checks fail (feature exists, invalid name, etc.)
+            GitIntegratedStateManagerError: If operation fails and rollback succeeds
+            TransactionRollbackError: If operation AND rollback both fail (critical error)
+
+        Example:
+            ```python
+            manager = GitIntegratedStateManager(...)
+            feature = manager.create_feature(
+                name="user-auth",
+                scope=FeatureScope.FEATURE,
+                scale_level=3,
+                description="User authentication with OAuth"
+            )
+            ```
+        """
+        self.logger.info(
+            "creating_feature_atomically",
+            name=name,
+            scope=scope.value if isinstance(scope, FeatureScope) else scope,
+            scale_level=scale_level,
+        )
+
+        # STEP 1: Pre-flight checks
+        self._pre_flight_checks_feature(name, scope, scale_level)
+
+        # STEP 2: Create checkpoint (note current git HEAD)
+        checkpoint_sha = self.git_manager.get_head_sha()
+
+        feature_path = None
+        feature = None
+
+        try:
+            # STEP 3: File operations (DocumentStructureManager - NO COMMIT!)
+            if self.doc_structure_manager is None:
+                raise GitIntegratedStateManagerError(
+                    "DocumentStructureManager not provided. "
+                    "Initialize GitIntegratedStateManager with doc_structure_manager parameter."
+                )
+
+            self.logger.info("creating_feature_folder_structure", name=name)
+            feature_path = self.doc_structure_manager.initialize_feature_folder(
+                feature_name=name,
+                scale_level=ScaleLevel(scale_level),
+                description=description,
+                auto_commit=False,  # CRITICAL: No git commit yet!
+            )
+
+            # STEP 4: Database insert (StateCoordinator)
+            self.logger.info("inserting_feature_into_database", name=name)
+            feature = self.coordinator.create_feature(
+                name=name,
+                scope=scope,
+                scale_level=scale_level,
+                description=description,
+                owner=owner,
+            )
+
+            # STEP 5: Single atomic git commit (if auto_commit enabled)
+            if self.auto_commit:
+                self.logger.info("committing_feature_to_git", name=name)
+                self.git_manager.add_all()
+                commit_sha = self.git_manager.commit(
+                    f"feat({name}): create feature\n\n"
+                    f"Scope: {scope.value if isinstance(scope, FeatureScope) else scope}\n"
+                    f"Scale Level: {scale_level}\n"
+                    f"Description: {description or 'N/A'}\n\n"
+                    f"Created with GitIntegratedStateManager (atomic operation).\n\n"
+                    f"🤖 Generated with GAO-Dev\n"
+                    f"Co-Authored-By: Claude <noreply@anthropic.com>"
+                )
+
+                self.logger.info(
+                    "feature_created_with_commit",
+                    name=name,
+                    feature_id=feature.id,
+                    commit_sha=commit_sha,
+                )
+            else:
+                self.logger.info(
+                    "feature_created_no_commit",
+                    name=name,
+                    feature_id=feature.id,
+                )
+
+            return feature
+
+        except Exception as e:
+            self.logger.error(
+                "feature_creation_failed_initiating_rollback",
+                name=name,
+                error=str(e),
+                exc_info=True,
+            )
+
+            # STEP 6: Rollback on error
+            self._rollback_feature_creation(
+                name=name,
+                feature_path=feature_path,
+                feature=feature,
+                checkpoint_sha=checkpoint_sha,
+            )
+
+            raise GitIntegratedStateManagerError(
+                f"Feature creation failed and rolled back: {str(e)}"
+            ) from e
+
+    def _pre_flight_checks_feature(
+        self, name: str, scope: FeatureScope, scale_level: int
+    ) -> None:
+        """
+        Pre-flight checks before feature creation.
+
+        Performs 5 critical checks (Story 33.2):
+        1. Git working tree is clean
+        2. Feature name format (kebab-case)
+        3. Feature doesn't exist in DB
+        4. Feature folder doesn't exist on filesystem
+        5. Valid scale_level (0-4)
+
+        Args:
+            name: Feature name
+            scope: Feature scope
+            scale_level: Scale level
+
+        Raises:
+            WorkingTreeDirtyError: If git working tree has uncommitted changes
+            ValueError: If any other check fails
+        """
+        # Check 1: Git working tree is clean
+        if not self.git_manager.is_working_tree_clean():
+            raise WorkingTreeDirtyError(
+                "Git working tree has uncommitted changes. "
+                "Commit or stash changes before creating feature."
+            )
+
+        # Check 2: Feature name format (kebab-case)
+        if not re.match(r"^[a-z0-9]+(?:-[a-z0-9]+)*$", name):
+            raise ValueError(
+                f"Invalid feature name: '{name}'\n"
+                "Feature names must be kebab-case (lowercase, hyphens only).\n"
+                "Examples: user-auth, payment-processing, analytics-dashboard"
+            )
+
+        # Check 3: Feature doesn't exist in DB
+        existing_feature = self.coordinator.get_feature(name)
+        if existing_feature:
+            raise ValueError(
+                f"Feature '{name}' already exists in database.\n"
+                f"Use a different name or delete the existing feature first."
+            )
+
+        # Check 4: Feature folder doesn't exist on filesystem
+        feature_path = self.project_path / "docs" / "features" / name
+        if feature_path.exists():
+            raise ValueError(
+                f"Feature folder already exists: {feature_path}\n"
+                "Delete it manually or choose a different name."
+            )
+
+        # Check 5: Valid scale level
+        if not 0 <= scale_level <= 4:
+            raise ValueError(
+                f"Invalid scale_level: {scale_level}\n"
+                "Must be 0-4 (0=chore, 1=bug, 2=small, 3=medium, 4=large)"
+            )
+
+        self.logger.info(
+            "pre_flight_checks_passed",
+            name=name,
+            scope=scope.value if isinstance(scope, FeatureScope) else scope,
+            scale_level=scale_level,
+        )
+
+    def _rollback_feature_creation(
+        self,
+        name: str,
+        feature_path: Optional[Path],
+        feature: Optional[Feature],
+        checkpoint_sha: str,
+    ) -> None:
+        """
+        Rollback feature creation on error.
+
+        Restores system to state before create_feature() was called.
+
+        3-STEP ROLLBACK (Story 33.2):
+        1. Delete feature folder (if created)
+        2. Delete from database (if inserted)
+        3. Reset git to checkpoint (always)
+
+        Args:
+            name: Feature name
+            feature_path: Path to created feature folder (if created)
+            feature: Feature object (if inserted into DB)
+            checkpoint_sha: Git commit hash before operation
+
+        Raises:
+            TransactionRollbackError: If rollback fails
+        """
+        self.logger.warning("rolling_back_feature_creation", name=name)
+
+        try:
+            # Rollback 1: Delete feature folder (if created)
+            if feature_path and feature_path.exists():
+                self.logger.info("deleting_feature_folder", path=str(feature_path))
+                import shutil
+
+                shutil.rmtree(feature_path)
+
+            # Rollback 2: Delete from database (if inserted)
+            if feature:
+                self.logger.info("deleting_feature_from_database", name=name)
+                self.coordinator.feature_service.delete_feature(name)
+
+            # Rollback 3: Reset git to checkpoint
+            self.logger.info("resetting_git_to_checkpoint", checkpoint=checkpoint_sha)
+            self.git_manager.reset_hard(checkpoint_sha)
+
+            self.logger.info("rollback_complete", name=name)
+
+        except Exception as rollback_error:
+            self.logger.error(
+                "rollback_failed",
+                name=name,
+                error=str(rollback_error),
+                exc_info=True,
+            )
+            raise TransactionRollbackError(
+                f"Failed to rollback feature creation for '{name}': {rollback_error}"
+            ) from rollback_error
 
     # ============================================================================
     # HELPER METHODS
