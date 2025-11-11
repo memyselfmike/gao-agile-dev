@@ -71,12 +71,14 @@ class TestWorkflowExecutorVariableResolution:
         result = workflow_executor.execute(sample_workflow, params)
         variables = result["variables"]
 
-        # Should have config defaults
-        assert "output_folder" in variables
-        assert variables["output_folder"] == "docs"  # From config defaults
-
+        # Should have config defaults (now feature-scoped)
         assert "prd_location" in variables
-        assert variables["prd_location"] == "docs/PRD.md"  # From config defaults
+        # New defaults are feature-scoped with {{feature_name}} placeholder
+        assert "{{feature_name}}" in variables["prd_location"]
+
+        # Legacy paths should still exist
+        assert "legacy_output_folder" in variables
+        assert variables["legacy_output_folder"] == "docs"
 
     def test_resolve_variables_priority_order(
         self,
@@ -174,14 +176,33 @@ class TestWorkflowExecutorVariableResolution:
     def test_resolve_variables_required_missing_raises_error(
         self,
         workflow_executor: WorkflowExecutor,
-        sample_workflow: WorkflowInfo
+        tmp_path: Path
     ):
         """Test that missing required variable raises ValueError."""
-        # Don't provide required project_name
+        # Create workflow with required variable that's NOT in defaults
+        workflow_dir = tmp_path / "required_workflow"
+        workflow_dir.mkdir(parents=True, exist_ok=True)
+
+        workflow = WorkflowInfo(
+            name="required_test",
+            description="Required test",
+            phase=1,
+            variables={
+                "custom_required_var": {
+                    "description": "Custom required variable",
+                    "required": True
+                }
+            },
+            required_tools=[],
+            templates={},
+            installed_path=workflow_dir
+        )
+
+        # Don't provide required variable
         params = {}
 
-        with pytest.raises(ValueError, match="Required variable 'project_name' not provided"):
-            workflow_executor.execute(sample_workflow, params)
+        with pytest.raises(ValueError, match="Required variable 'custom_required_var' not provided"):
+            workflow_executor.execute(workflow, params)
 
     def test_resolve_variables_all_config_defaults_available(
         self,
@@ -200,8 +221,7 @@ class TestWorkflowExecutorVariableResolution:
             variables={
                 "prd_location": {"description": "PRD location"},
                 "architecture_location": {"description": "Arch location"},
-                "tech_spec_location": {"description": "Tech spec location"},
-                "dev_story_location": {"description": "Story location"},
+                "story_location": {"description": "Story location"},
                 "epic_location": {"description": "Epic location"},
             },
             required_tools=[],
@@ -212,12 +232,19 @@ class TestWorkflowExecutorVariableResolution:
         result = workflow_executor.execute(workflow, {})
         variables = result["variables"]
 
-        # All should have config defaults
-        assert variables["prd_location"] == "docs/PRD.md"
-        assert variables["architecture_location"] == "docs/ARCHITECTURE.md"
-        assert variables["tech_spec_location"] == "docs/TECHNICAL_SPEC.md"
-        assert variables["dev_story_location"] == "docs/stories"
-        assert variables["epic_location"] == "docs/epics.md"
+        # All should have config defaults (now feature-scoped)
+        assert "prd_location" in variables
+        assert "{{feature_name}}" in variables["prd_location"]
+
+        assert "architecture_location" in variables
+        assert "{{feature_name}}" in variables["architecture_location"]
+
+        # Story and epic locations also feature-scoped
+        assert "story_location" in variables
+        assert "{{feature_name}}" in variables["story_location"]
+
+        assert "epic_location" in variables
+        assert "{{feature_name}}" in variables["epic_location"]
 
     def test_resolve_variables_with_empty_params(
         self,
@@ -233,7 +260,7 @@ class TestWorkflowExecutorVariableResolution:
             description="Empty params test",
             phase=1,
             variables={
-                "output_folder": {"description": "Output folder"}
+                "prd_location": {"description": "PRD location"}
             },
             required_tools=[],
             templates={},
@@ -245,8 +272,8 @@ class TestWorkflowExecutorVariableResolution:
         variables = result["variables"]
 
         # Should still have config defaults and common variables
-        assert "output_folder" in variables
-        assert variables["output_folder"] == "docs"
+        assert "prd_location" in variables
+        assert "{{feature_name}}" in variables["prd_location"]
         assert "date" in variables
         assert "timestamp" in variables
 
@@ -358,7 +385,9 @@ class TestWorkflowExecutorVariableResolutionIntegration:
         assert variables["output_folder"] == "custom_docs"
 
         # architecture_location: embedded default wins (no param, no workflow, no user config)
-        assert variables["architecture_location"] == "docs/ARCHITECTURE.md"
+        # Now feature-scoped with placeholder
+        assert "architecture_location" in variables
+        assert "{{feature_name}}" in variables["architecture_location"]
 
     def test_workflow_variable_resolution_logging(
         self,
