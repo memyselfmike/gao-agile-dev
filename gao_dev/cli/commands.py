@@ -34,6 +34,9 @@ from .db_commands import db
 from .migration_commands import migrate_group
 from .ceremony_commands import ceremony
 from .learning_commands import learning
+from .create_feature_command import create_feature
+from .list_features_command import list_features
+from .validate_structure_command import validate_structure
 
 
 @click.group()
@@ -570,6 +573,15 @@ cli.add_command(ceremony)
 
 # Register learning command group
 cli.add_command(learning)
+
+# ============================================================================
+# FEATURE COMMANDS (Epic 33)
+# ============================================================================
+
+# Register feature command group
+cli.add_command(create_feature)
+cli.add_command(list_features)
+cli.add_command(validate_structure)
 
 
 if __name__ == "__main__":
