@@ -49,8 +49,8 @@ class TestTriggers:
             cursor = conn.execute("SELECT updated_at FROM epics WHERE epic_num = 1")
             initial_updated_at = cursor.fetchone()[0]
 
-            # Wait a moment
-            time.sleep(0.01)
+            # Wait to ensure timestamp changes (SQLite datetime('now') has 1-second precision)
+            time.sleep(1.01)
 
             # Update epic
             conn.execute("UPDATE epics SET name = 'Epic 1 Updated' WHERE epic_num = 1")
@@ -77,8 +77,8 @@ class TestTriggers:
             cursor = conn.execute("SELECT updated_at FROM stories WHERE story_num = 1")
             initial_updated_at = cursor.fetchone()[0]
 
-            # Wait a moment
-            time.sleep(0.01)
+            # Wait to ensure timestamp changes (SQLite datetime('now') has 1-second precision)
+            time.sleep(1.01)
 
             # Update story
             conn.execute(
@@ -107,8 +107,8 @@ class TestTriggers:
             cursor = conn.execute("SELECT updated_at FROM sprints WHERE sprint_num = 1")
             initial_updated_at = cursor.fetchone()[0]
 
-            # Wait a moment
-            time.sleep(0.01)
+            # Wait to ensure timestamp changes (SQLite datetime('now') has 1-second precision)
+            time.sleep(1.01)
 
             # Update sprint
             conn.execute("UPDATE sprints SET name = 'Sprint 1 Updated' WHERE sprint_num = 1")

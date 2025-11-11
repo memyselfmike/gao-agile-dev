@@ -24,6 +24,8 @@ class SchemaValidator:
         "workflow_executions",
         "state_changes",
         "schema_version",
+        "features",
+        "features_audit",
     }
 
     EXPECTED_INDEXES: Set[str] = {
@@ -42,6 +44,10 @@ class SchemaValidator:
         "idx_workflow_status",
         "idx_workflow_name",
         "idx_changes_record",
+        "idx_features_scope",
+        "idx_features_status",
+        "idx_features_scale_level",
+        "idx_features_audit_feature_id",
     }
 
     EXPECTED_TRIGGERS: Set[str] = {
@@ -53,6 +59,10 @@ class SchemaValidator:
         "log_story_status_change",
         "log_epic_status_change",
         "log_sprint_status_change",
+        "features_completed_at_update",
+        "features_audit_insert",
+        "features_audit_update",
+        "features_audit_delete",
     }
 
     # Expected columns for each table
@@ -146,6 +156,27 @@ class SchemaValidator:
             "changed_by",
             "changed_at",
             "reason",
+        },
+        "features": {
+            "id",
+            "name",
+            "scope",
+            "status",
+            "scale_level",
+            "description",
+            "owner",
+            "created_at",
+            "completed_at",
+            "metadata",
+        },
+        "features_audit": {
+            "id",
+            "feature_id",
+            "operation",
+            "old_value",
+            "new_value",
+            "changed_at",
+            "changed_by",
         },
     }
 

@@ -146,14 +146,20 @@ class TestSchemaValidation:
         assert "epics" in info["tables"]
         assert "stories" in info["tables"]
         assert "sprints" in info["tables"]
+        assert "features" in info["tables"]
+        assert "features_audit" in info["tables"]
 
         # Check indexes
         assert "idx_stories_status" in info["indexes"]
         assert info["indexes"]["idx_stories_status"]["table"] == "stories"
+        assert "idx_features_scope" in info["indexes"]
+        assert info["indexes"]["idx_features_scope"]["table"] == "features"
 
         # Check triggers
         assert "update_epic_timestamp" in info["triggers"]
         assert info["triggers"]["update_epic_timestamp"]["table"] == "epics"
+        assert "features_completed_at_update" in info["triggers"]
+        assert info["triggers"]["features_completed_at_update"]["table"] == "features"
 
         # Check version
         assert info["version"] is not None
@@ -170,6 +176,8 @@ class TestSchemaValidation:
         assert "workflow_executions" in expected
         assert "state_changes" in expected
         assert "schema_version" in expected
+        assert "features" in expected
+        assert "features_audit" in expected
 
     def test_expected_indexes_constant(self):
         """Test EXPECTED_INDEXES constant is complete."""
@@ -202,6 +210,12 @@ class TestSchemaValidation:
         # State changes index
         assert "idx_changes_record" in expected
 
+        # Features indexes
+        assert "idx_features_scope" in expected
+        assert "idx_features_status" in expected
+        assert "idx_features_scale_level" in expected
+        assert "idx_features_audit_feature_id" in expected
+
     def test_expected_triggers_constant(self):
         """Test EXPECTED_TRIGGERS constant is complete."""
         expected = SchemaValidator.EXPECTED_TRIGGERS
@@ -219,6 +233,12 @@ class TestSchemaValidation:
         assert "log_story_status_change" in expected
         assert "log_epic_status_change" in expected
         assert "log_sprint_status_change" in expected
+
+        # Features triggers
+        assert "features_completed_at_update" in expected
+        assert "features_audit_insert" in expected
+        assert "features_audit_update" in expected
+        assert "features_audit_delete" in expected
 
     def test_expected_columns_for_epics(self):
         """Test EXPECTED_COLUMNS for epics table is complete."""

@@ -13,6 +13,15 @@ import sys
 
 import pytest
 
+from gao_dev.core.state.migrations.migration_001_create_state_schema import Migration001
+from gao_dev.core.services.git_consistency_checker import (
+    GitAwareConsistencyChecker,
+    ConsistencyReport,
+    ConsistencyIssue,
+)
+from gao_dev.core.git_manager import GitManager
+from gao_dev.core.state_coordinator import StateCoordinator
+
 # Load migration 005 dynamically
 def load_migration_005():
     """Load migration 005 module dynamically."""
@@ -32,14 +41,6 @@ def load_migration_005():
 
 Migration005 = load_migration_005()
 
-from gao_dev.core.services.git_consistency_checker import (
-    GitAwareConsistencyChecker,
-    ConsistencyReport,
-    ConsistencyIssue,
-)
-from gao_dev.core.git_manager import GitManager
-from gao_dev.core.state_coordinator import StateCoordinator
-
 
 @pytest.fixture
 def temp_project(tmp_path):
@@ -56,9 +57,10 @@ def temp_project(tmp_path):
     gao_dev_dir.mkdir()
     db_path = gao_dev_dir / "documents.db"
 
-    # Create tables
-    migration = Migration005(db_path=db_path)
-    migration.up()
+    # Create tables (need both migrations for StateCoordinator)
+    Migration001.upgrade(db_path)
+    with sqlite3.connect(str(db_path)) as conn:
+        Migration005.up(conn)
 
     # Create docs directory
     docs_dir = project_path / "docs"

@@ -63,6 +63,8 @@ class TestSchemaCreation:
             "workflow_executions",
             "state_changes",
             "schema_version",
+            "features",
+            "features_audit",
         }
 
         with sqlite3.connect(str(temp_db)) as conn:
@@ -247,6 +249,10 @@ class TestSchemaCreation:
             "idx_workflow_status",
             "idx_workflow_name",
             "idx_changes_record",
+            "idx_features_scope",
+            "idx_features_status",
+            "idx_features_scale_level",
+            "idx_features_audit_feature_id",
         }
 
         with sqlite3.connect(str(temp_db)) as conn:
@@ -270,6 +276,10 @@ class TestSchemaCreation:
             "log_story_status_change",
             "log_epic_status_change",
             "log_sprint_status_change",
+            "features_completed_at_update",
+            "features_audit_insert",
+            "features_audit_update",
+            "features_audit_delete",
         }
 
         with sqlite3.connect(str(temp_db)) as conn:
