@@ -88,20 +88,23 @@ This document helps you (Claude) quickly understand GAO-Dev's structure, current
   - HTML reporting with charts
   - 400+ tests passing
 
-### In Planning
+### Recently Completed (Continued)
 
-⏳ **EPIC 28-29: Ceremony Integration & Self-Learning** - PLANNED (Not yet implemented)
-  - Epic 28: Ceremony-Driven Workflow Integration (30 points)
-    - Automatic ceremony triggers in workflows
-    - CeremonyTriggerEngine with intelligent triggering
-    - DocumentStructureManager for consistent project structure
-  - Epic 29: Self-Learning Feedback Loop (51 points)
-    - LearningApplicationService with relevance scoring
-    - Brian context augmentation with learnings
-    - Workflow adjustment based on past experience
-    - Action items flow into next sprint
+✅ **EPIC 28: Ceremony-Driven Workflow Integration** - COMPLETE (100%)
+  - Automatic ceremony triggers in workflows
+  - CeremonyTriggerEngine with intelligent triggering
+  - DocumentStructureManager for consistent project structure
+  - Multi-agent ceremony coordination
+  - 35 story points, 6 stories - ALL COMPLETE
+  - **Production-ready: Ceremonies auto-trigger at workflow milestones**
 
-**Note**: PRD and architecture complete, critical fixes applied. Ready for implementation (8 weeks estimated).
+✅ **EPIC 29: Self-Learning Feedback Loop** - COMPLETE (100%)
+  - LearningApplicationService with relevance scoring
+  - Brian context augmentation with learnings
+  - Workflow adjustment engine based on past failures
+  - Action items flow into next sprint planning
+  - 51 story points, 7 stories - ALL COMPLETE
+  - **Production-ready: System learns from retrospectives and improves over time**
 
 ### System Capabilities
 
@@ -116,7 +119,7 @@ This document helps you (Claude) quickly understand GAO-Dev's structure, current
 - Load prompts and agent configs from YAML
 - Support custom agents/prompts via plugins
 
-**Coming Soon (Epic 28-29)**:
+**System NOW CAN (Epics 28-29 Complete)**:
 - Auto-trigger ceremonies at workflow milestones
 - Learn from retrospectives and improve workflow selection
 - Adjust workflows based on past learnings
@@ -509,7 +512,7 @@ All prompts and agent configs are YAML-based:
 5. **Read before write** - Understand before modifying
 6. **Quality matters** - Tests, types, clean code - always
 
-**Current Focus**: Ready to implement Epic 28-29 (Ceremony Integration & Self-Learning) or continue with other priorities as directed.
+**Current Focus**: Epics 28-29 complete. Ready for next epic (Feature-Based Document Structure) or other priorities as directed.
 
 ---
 
