@@ -158,6 +158,31 @@ CREATE TABLE IF NOT EXISTS state_changes (
     reason TEXT  -- Optional reason for change
 );
 
+-- Features table (Epic 34)
+CREATE TABLE IF NOT EXISTS features (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    scope TEXT NOT NULL CHECK(scope IN ('mvp', 'feature')),
+    status TEXT NOT NULL CHECK(status IN ('planning', 'active', 'complete', 'archived')),
+    scale_level INTEGER NOT NULL CHECK(scale_level >= 0 AND scale_level <= 4),
+    description TEXT,
+    owner TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    completed_at TEXT,
+    metadata JSON
+);
+
+-- Features audit trail
+CREATE TABLE IF NOT EXISTS features_audit (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    feature_id INTEGER NOT NULL,
+    operation TEXT NOT NULL CHECK(operation IN ('INSERT', 'UPDATE', 'DELETE')),
+    old_value JSON,
+    new_value JSON,
+    changed_at TEXT NOT NULL DEFAULT (datetime('now')),
+    changed_by TEXT
+);
+
 -- Indexes for performance
 
 -- Stories indexes
@@ -186,6 +211,14 @@ CREATE INDEX IF NOT EXISTS idx_workflow_name ON workflow_executions(workflow_nam
 
 -- State changes index
 CREATE INDEX IF NOT EXISTS idx_changes_record ON state_changes(table_name, record_id);
+
+-- Features indexes
+CREATE INDEX IF NOT EXISTS idx_features_scope ON features(scope);
+CREATE INDEX IF NOT EXISTS idx_features_status ON features(status);
+CREATE INDEX IF NOT EXISTS idx_features_scale_level ON features(scale_level);
+
+-- Features audit index
+CREATE INDEX IF NOT EXISTS idx_features_audit_feature_id ON features_audit(feature_id);
 
 -- Triggers for auto-updating timestamps
 
@@ -268,4 +301,86 @@ WHEN NEW.status != OLD.status
 BEGIN
     INSERT INTO state_changes (table_name, record_id, field_name, old_value, new_value, changed_by)
     VALUES ('sprints', NEW.id, 'status', OLD.status, NEW.status, 'system');
+END;
+
+-- Features table triggers (Epic 34)
+
+-- Trigger: Auto-set completed_at when status becomes 'complete'
+CREATE TRIGGER IF NOT EXISTS features_completed_at_update
+AFTER UPDATE OF status ON features
+FOR EACH ROW
+WHEN NEW.status = 'complete' AND OLD.status != 'complete'
+BEGIN
+    UPDATE features SET completed_at = datetime('now') WHERE id = NEW.id;
+END;
+
+-- Trigger: Audit INSERT
+CREATE TRIGGER IF NOT EXISTS features_audit_insert
+AFTER INSERT ON features
+FOR EACH ROW
+BEGIN
+    INSERT INTO features_audit (feature_id, operation, new_value, changed_at)
+    VALUES (
+        NEW.id,
+        'INSERT',
+        json_object(
+            'name', NEW.name,
+            'scope', NEW.scope,
+            'status', NEW.status,
+            'scale_level', NEW.scale_level,
+            'description', NEW.description,
+            'owner', NEW.owner
+        ),
+        datetime('now')
+    );
+END;
+
+-- Trigger: Audit UPDATE
+CREATE TRIGGER IF NOT EXISTS features_audit_update
+AFTER UPDATE ON features
+FOR EACH ROW
+BEGIN
+    INSERT INTO features_audit (feature_id, operation, old_value, new_value, changed_at)
+    VALUES (
+        NEW.id,
+        'UPDATE',
+        json_object(
+            'name', OLD.name,
+            'scope', OLD.scope,
+            'status', OLD.status,
+            'scale_level', OLD.scale_level,
+            'description', OLD.description,
+            'owner', OLD.owner
+        ),
+        json_object(
+            'name', NEW.name,
+            'scope', NEW.scope,
+            'status', NEW.status,
+            'scale_level', NEW.scale_level,
+            'description', NEW.description,
+            'owner', NEW.owner
+        ),
+        datetime('now')
+    );
+END;
+
+-- Trigger: Audit DELETE
+CREATE TRIGGER IF NOT EXISTS features_audit_delete
+AFTER DELETE ON features
+FOR EACH ROW
+BEGIN
+    INSERT INTO features_audit (feature_id, operation, old_value, changed_at)
+    VALUES (
+        OLD.id,
+        'DELETE',
+        json_object(
+            'name', OLD.name,
+            'scope', OLD.scope,
+            'status', OLD.status,
+            'scale_level', OLD.scale_level,
+            'description', OLD.description,
+            'owner', OLD.owner
+        ),
+        datetime('now')
+    );
 END;

@@ -46,5 +46,6 @@ def get_all_migrations() -> List[Type[BaseMigration]]:
     from gao_dev.core.state.migrations.migration_001_create_state_schema import (
         Migration001,
     )
+    from gao_dev.core.state.migrations.add_features_table import Migration002
 
-    return [Migration001]
+    return [Migration001, Migration002]

@@ -31,6 +31,7 @@ from gao_dev.core.services.git_consistency_checker import (
     ConsistencyIssue,
     GitAwareConsistencyCheckerError
 )
+from gao_dev.core.state.migrations.add_features_table import AddFeaturesTableMigration
 
 logger = structlog.get_logger()
 
@@ -547,3 +548,111 @@ def _display_consistency_report(report: ConsistencyReport, verbose: bool = False
     click.echo()
     click.echo("To repair these issues, run:")
     click.echo("  gao-dev consistency-repair")
+
+
+@migrate_group.command(name="migrate-features")
+@click.option(
+    "--project",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+    default=None,
+    help="Project root path (default: current directory)"
+)
+@click.option(
+    "--db-path",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Database path (default: .gao-dev/documents.db)"
+)
+@click.option(
+    "--rollback",
+    is_flag=True,
+    default=False,
+    help="Rollback features table migration"
+)
+def migrate_features(
+    project: Path | None,
+    db_path: Path | None,
+    rollback: bool
+):
+    """
+    Migrate database to add features table.
+
+    This command adds the features table, indexes, triggers, and audit trail
+    to an existing database. It is idempotent and safe to run multiple times.
+
+    Features added:
+      - features table with constraints
+      - Indexes for performance (scope, status, scale_level)
+      - Auto-timestamp triggers (created_at, completed_at)
+      - Audit trail (features_audit table)
+
+    Examples:
+        # Apply migration
+        gao-dev migrate-features
+
+        # Apply migration to specific project
+        gao-dev migrate-features --project /path/to/project
+
+        # Rollback migration
+        gao-dev migrate-features --rollback
+    """
+    try:
+        # Determine project path
+        project_path = project or Path.cwd()
+
+        # Determine database path
+        if db_path is None:
+            db_path = project_path / ".gao-dev" / "documents.db"
+
+        click.echo(f"\n{'='*70}")
+        click.echo(f"GAO-Dev Features Table Migration")
+        click.echo(f"{'='*70}\n")
+
+        click.echo(f"Project Path: {project_path}")
+        click.echo(f"Database Path: {db_path}")
+        click.echo(f"Mode: {'ROLLBACK' if rollback else 'APPLY'}")
+        click.echo()
+
+        # Check database exists
+        if not db_path.exists():
+            click.echo("[ERROR] Database does not exist.")
+            click.echo(f"  Run 'gao-dev migrate' to create database first.")
+            sys.exit(1)
+
+        # Initialize migration
+        click.echo("Initializing features table migration...")
+        migration = AddFeaturesTableMigration(db_path)
+
+        if rollback:
+            # Rollback migration
+            click.echo("Rolling back migration...")
+            success = migration.rollback()
+
+            if success:
+                click.echo("\n[OK] Features table migration rolled back successfully!")
+            else:
+                click.echo("\n[INFO] Migration was not applied, nothing to rollback.")
+        else:
+            # Apply migration
+            click.echo("Applying migration...")
+            success = migration.apply()
+
+            if success:
+                click.echo("\n[OK] Features table migration applied successfully!")
+                click.echo("\nCreated:")
+                click.echo("  - features table")
+                click.echo("  - features_audit table")
+                click.echo("  - Indexes (scope, status, scale_level)")
+                click.echo("  - Triggers (auto-timestamps, audit trail)")
+            else:
+                click.echo("\n[INFO] Migration already applied, no changes made.")
+
+        sys.exit(0)
+
+    except RuntimeError as e:
+        click.echo(f"\n[ERROR] Migration failed: {e}", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"\n[ERROR] Unexpected error: {e}", err=True)
+        logger.exception("migrate_features_command_error", error=str(e))
+        sys.exit(1)
