@@ -24,7 +24,14 @@
       "Bash(dir \"C:\\Projects\\gao-agile-dev\\docs\\analysis\" /B)",
       "Bash(dir \"docs\\analysis\" /B 2)",
       "Bash(nul)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(gao-dev:*)",
+      "Bash(dir:*)",
+      "Bash(opencode --version:*)",
+      "Bash(ollama --version:*)",
+      "Bash(ollama list:*)",
+      "WebSearch",
+      "WebFetch(domain:code.claude.com)"
     ],
     "deny": [],
     "ask": []

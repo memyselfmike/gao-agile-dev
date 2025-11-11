@@ -82,8 +82,19 @@ class ChatREPL:
         # Create operation tracker
         operation_tracker = OperationTracker(state_tracker) if state_tracker else None
 
-        # Create orchestrator (mock for now - real one doesn't exist yet)
-        orchestrator = None  # GAODevOrchestrator would go here
+        # Create orchestrator using factory method
+        from gao_dev.orchestrator.orchestrator import GAODevOrchestrator
+
+        orchestrator = None
+        try:
+            orchestrator = GAODevOrchestrator.create_default(
+                project_root=self.project_root,
+                mode="cli"
+            )
+            self.logger.info("orchestrator_initialized", orchestrator="GAODevOrchestrator")
+        except Exception as e:
+            self.logger.warning("orchestrator_init_failed", error=str(e))
+            # Continue without orchestrator - chat will work but workflows won't execute
 
         # Create command router
         if operation_tracker and analysis_service:

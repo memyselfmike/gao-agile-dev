@@ -307,19 +307,11 @@ class CommandRouter:
         yield self._format_agent_start("John", "Creating PRD")
 
         # Extract project name
-        project_name = getattr(workflow, 'project_name', 'New Feature')
+        project_name = getattr(workflow, 'project_name', project_root.name)
 
-        # Simulate orchestrator call
-        # In production: result = await self.orchestrator.create_prd(...)
-        yield "Analyzing requirements..."
-        await asyncio.sleep(0.3)
-        yield "Drafting PRD sections..."
-        await asyncio.sleep(0.3)
-        yield "Writing PRD document..."
-        await asyncio.sleep(0.3)
-
-        prd_path = project_root / "docs" / "PRD.md"
-        yield f"PRD created at: {prd_path}"
+        # Actually call orchestrator to create PRD
+        async for message in self.orchestrator.create_prd(project_name):
+            yield message
 
     async def _execute_create_architecture(
         self,
@@ -329,15 +321,10 @@ class CommandRouter:
         """Execute architecture creation workflow."""
         yield self._format_agent_start("Winston", "Designing architecture")
 
-        yield "Analyzing system requirements..."
-        await asyncio.sleep(0.3)
-        yield "Designing component structure..."
-        await asyncio.sleep(0.3)
-        yield "Creating architecture document..."
-        await asyncio.sleep(0.3)
-
-        arch_path = project_root / "docs" / "ARCHITECTURE.md"
-        yield f"Architecture created at: {arch_path}"
+        # Actually call orchestrator to create architecture
+        project_name = getattr(workflow, 'project_name', project_root.name)
+        async for message in self.orchestrator.create_architecture(project_name):
+            yield message
 
     async def _execute_create_stories(
         self,
@@ -347,17 +334,12 @@ class CommandRouter:
         """Execute story creation workflow."""
         yield self._format_agent_start("Bob", "Creating stories")
 
+        # Actually call orchestrator to create stories
         epic_num = getattr(workflow, 'epic_num', 1)
+        story_title = getattr(workflow, 'story_title', None)
 
-        yield f"Breaking down Epic {epic_num} into stories..."
-        await asyncio.sleep(0.3)
-        yield "Estimating story points..."
-        await asyncio.sleep(0.3)
-        yield "Writing story files..."
-        await asyncio.sleep(0.3)
-
-        story_count = 5  # Simulated
-        yield f"Created {story_count} stories for Epic {epic_num}"
+        async for message in self.orchestrator.create_story(epic_num, 1, story_title):
+            yield message
 
     async def _execute_implement(
         self,
@@ -367,17 +349,12 @@ class CommandRouter:
         """Execute implementation workflow."""
         yield self._format_agent_start("Amelia", "Implementing story")
 
+        # Actually call orchestrator to implement story
         epic_num = getattr(workflow, 'epic_num', 1)
         story_num = getattr(workflow, 'story_num', 1)
 
-        yield f"Implementing Story {epic_num}.{story_num}..."
-        await asyncio.sleep(0.3)
-        yield "Writing code..."
-        await asyncio.sleep(0.3)
-        yield "Running tests..."
-        await asyncio.sleep(0.3)
-
-        yield f"Story {epic_num}.{story_num} implemented successfully"
+        async for message in self.orchestrator.implement_story(epic_num, story_num):
+            yield message
 
     async def _execute_ceremony(
         self,

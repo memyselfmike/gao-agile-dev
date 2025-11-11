@@ -150,9 +150,6 @@ class DocumentStructureManager:
 
         # Create structure based on level
         if scale_level >= ScaleLevel.LEVEL_2_SMALL_FEATURE:
-            # Stories directory
-            (feature_path / "stories").mkdir(exist_ok=True)
-
             # QA directory (Story 33.1)
             (feature_path / "QA").mkdir(exist_ok=True)
 

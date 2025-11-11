@@ -196,6 +196,58 @@ sandbox/projects/my-app/
 └── tests/                        # Test suite
 ```
 
+### Feature-Based Document Structure (Epics 32-34 - NEW!)
+
+Projects now organize documentation by feature with co-located epic-story structure:
+
+```
+docs/features/
+├── mvp/                              # Greenfield initial scope
+│   ├── PRD.md                        # Product requirements
+│   ├── ARCHITECTURE.md               # System architecture
+│   ├── README.md                     # Feature overview
+│   ├── CHANGELOG.md                  # Version history
+│   ├── MIGRATION_GUIDE.md            # Migration docs (Level 4)
+│   │
+│   ├── epics/                        # Co-located epic-story structure
+│   │   ├── 1-foundation/            # Epic 1 (number-name format)
+│   │   │   ├── README.md            # Epic definition
+│   │   │   ├── stories/             # Stories for Epic 1
+│   │   │   │   ├── story-1.1.md
+│   │   │   │   └── story-1.2.md
+│   │   │   └── context/             # Context XML files
+│   │   │       └── story-1.1.xml
+│   │   │
+│   │   └── 2-advanced/              # Epic 2
+│   │       ├── README.md
+│   │       └── stories/
+│   │           └── story-2.1.md
+│   │
+│   ├── QA/                          # Quality artifacts
+│   ├── retrospectives/              # Retrospectives
+│   └── ceremonies/                  # Level 4 only
+│
+└── user-auth/                       # Subsequent feature
+    ├── PRD.md
+    ├── ARCHITECTURE.md
+    ├── README.md
+    ├── CHANGELOG.md
+    ├── epics/
+    │   └── 1-oauth/
+    │       ├── README.md
+    │       └── stories/
+    ├── QA/
+    └── retrospectives/
+```
+
+**Key Benefits:**
+- **Co-located stories**: Stories live with their epic, not in separate folder
+- **Feature isolation**: Each feature is self-contained
+- **Scalable**: Supports MVP → multiple features
+- **Validated**: Built-in structure compliance checking
+
+**See also:** `docs/features/feature-based-document-structure/MIGRATION_GUIDE.md`
+
 ---
 
 ## Scale-Adaptive Routing (Levels 0-4)
@@ -323,6 +375,27 @@ gao-dev sandbox status             # System status
 ```bash
 gao-dev metrics report run <id>    # Generate HTML report
 gao-dev metrics report compare <id1> <id2>  # Compare runs
+```
+
+### Feature Management (Epics 32-34 - NEW!)
+```bash
+# Create feature
+gao-dev create-feature <name> --scale-level 3          # Create new feature
+gao-dev create-feature mvp --scope mvp --scale-level 4  # Create MVP
+
+# List features
+gao-dev list-features                                   # List all features
+gao-dev list-features --scope mvp                       # Filter by scope
+gao-dev list-features --status active                   # Filter by status
+
+# Validate structure
+gao-dev validate-structure --feature user-auth          # Validate specific feature
+gao-dev validate-structure --all                        # Validate all features
+cd docs/features/user-auth && gao-dev validate-structure # Auto-detect from pwd
+
+# Database migration
+gao-dev migrate                                         # Apply migrations
+gao-dev migrate --rollback                              # Rollback migration
 ```
 
 **Note**: Commands auto-detect project root by searching for `.gao-dev/` or `.sandbox.yaml`.
@@ -479,6 +552,10 @@ All prompts and agent configs are YAML-based:
 | **Check what to do next** | **docs/bmm-workflow-status.md** ← START HERE! |
 | Current story status | docs/sprint-status.yaml |
 | Feature PRD/Architecture | docs/features/<feature-name>/ |
+| **Create new feature** | **gao-dev create-feature <name> --scale-level 3** |
+| **List all features** | **gao-dev list-features** |
+| **Validate feature structure** | **gao-dev validate-structure --feature <name>** |
+| **Migrate to feature-based** | **docs/features/feature-based-document-structure/MIGRATION_GUIDE.md** |
 | Workflow variables | docs/features/document-lifecycle-system/VARIABLE_RESOLUTION.md |
 | Git-integrated architecture | docs/features/git-integrated-hybrid-wisdom/ |
 | Migration guides | docs/MIGRATION_GUIDE_EPIC_*.md |

@@ -70,11 +70,30 @@ def create_orchestrator(
     event_bus = EventBus()
 
     # Step 2: Initialize ProcessExecutor
-    provider_name = os.getenv("AGENT_PROVIDER", "claude-code").lower()
+    # Priority: 1) Environment variable, 2) Config file, 3) Default
+    provider_name_from_env = os.getenv("AGENT_PROVIDER")
+    if provider_name_from_env:
+        provider_name = provider_name_from_env.lower()
+        logger.info("using_provider_from_env", provider=provider_name)
+    else:
+        # Read from config file (gao-dev.yaml)
+        provider_config_from_file = config_loader.get("providers", {})
+        provider_name = provider_config_from_file.get("default", "claude-code").lower()
+        logger.info("using_provider_from_config", provider=provider_name)
+
+    # Get provider-specific config from config file
+    provider_specific_config = {}
+    if provider_name in config_loader.get("providers", {}):
+        provider_specific_config = config_loader.get("providers", {}).get(provider_name, {})
+
+    # Merge with API key if provided
+    if api_key and "api_key" not in provider_specific_config:
+        provider_specific_config["api_key"] = api_key
+
     process_executor = ProcessExecutor(
         project_root=project_root,
         provider_name=provider_name,
-        provider_config={"api_key": api_key} if api_key else None,
+        provider_config=provider_specific_config if provider_specific_config else None,
     )
 
     # Step 3: Initialize document lifecycle
@@ -125,10 +144,20 @@ def create_orchestrator(
 
     # Create agent executor closure for workflow execution
     async def agent_executor(
-        workflow_info, epic: int = 1, story: int = 1
+        workflow_info, epic: int = 1, story: int = 1, **kwargs
     ) -> AsyncGenerator[str, None]:
-        """Execute workflow via ProcessExecutor with variable resolution."""
-        params = {"epic": epic, "story": story, "epic_num": epic, "story_num": story}
+        """Execute workflow via ProcessExecutor with variable resolution.
+
+        Accepts arbitrary keyword arguments which are merged into params
+        for variable resolution (e.g., story_title, project_name, etc.).
+        """
+        params = {
+            "epic": epic,
+            "story": story,
+            "epic_num": epic,
+            "story_num": story,
+            **kwargs  # Merge any additional parameters
+        }
         variables = workflow_executor.resolve_variables(workflow_info, params)
 
         instructions_file = workflow_info.installed_path / "instructions.md"

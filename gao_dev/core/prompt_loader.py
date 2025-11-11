@@ -275,7 +275,7 @@ class PromptLoader:
 
         Supports:
         - Absolute paths
-        - Relative paths (relative to prompts_dir or project root)
+        - Relative paths (relative to prompts_dir, gao_dev package root, or project root)
 
         Args:
             file_path: Path to file
@@ -303,6 +303,16 @@ class PromptLoader:
             except Exception as e:
                 raise ReferenceResolutionError(f"Failed to read file {prompts_relative}: {e}")
 
+        # Try relative to gao_dev package root (for gao_dev/config/*, gao_dev/schemas/*, etc.)
+        # This handles paths like "gao_dev/config/scale_levels.yaml"
+        gao_dev_root = Path(__file__).parent.parent.parent  # Go up from core/ to gao-agile-dev/
+        package_relative = gao_dev_root / path
+        if package_relative.exists():
+            try:
+                return package_relative.read_text(encoding="utf-8")
+            except Exception as e:
+                raise ReferenceResolutionError(f"Failed to read file {package_relative}: {e}")
+
         # Try relative to config loader's project root
         if self.config_loader:
             project_relative = self.config_loader.project_root / path
@@ -314,7 +324,7 @@ class PromptLoader:
 
         raise ReferenceResolutionError(
             f"File not found: {file_path} "
-            f"(searched in: absolute, {self.prompts_dir}, "
+            f"(searched in: absolute, {self.prompts_dir}, {gao_dev_root}, "
             f"{self.config_loader.project_root if self.config_loader else 'N/A'})"
         )
 
