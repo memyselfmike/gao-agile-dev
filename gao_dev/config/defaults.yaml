@@ -17,34 +17,120 @@
 # with a workflow_defaults section.
 
 workflow_defaults:
-  # Document locations following GAO-Dev project structure conventions
+  # ========================================================================
+  # FEATURE-BASED DOCUMENT STRUCTURE (v3.0)
+  # ========================================================================
+  # All paths now feature-scoped using co-located epic-story structure.
+  # Epic folders contain their stories for intuitive navigation.
+  #
+  # Naming Convention:
+  #   _location = specific file path (PRD.md, story-1.1.md)
+  #   _folder   = directory path (epics/, QA/)
+  #   _overview = master/index file (EPICS.md)
+  #
+  # Template Variables:
+  #   {{feature_name}} = Feature name (e.g., "user-auth", "mvp")
+  #   {{epic}}         = Epic number (e.g., "1", "2")
+  #   {{epic_name}}    = Epic name (e.g., "foundation", "oauth")
+  #   {{story}}        = Story number (e.g., "1", "2")
+  # ========================================================================
 
-  # Product Requirements Document location
-  prd_location: "docs/PRD.md"
+  # ------------------------------------------------------------------------
+  # Feature-Level Documents
+  # ------------------------------------------------------------------------
+  # Primary documents at feature root
+  # ------------------------------------------------------------------------
 
-  # System architecture documentation location
-  architecture_location: "docs/ARCHITECTURE.md"
+  feature_dir: "docs/features/{{feature_name}}"
+  prd_location: "docs/features/{{feature_name}}/PRD.md"
+  architecture_location: "docs/features/{{feature_name}}/ARCHITECTURE.md"
+  readme_location: "docs/features/{{feature_name}}/README.md"
+  epics_overview: "docs/features/{{feature_name}}/EPICS.md"
 
-  # Technical specification document location
-  tech_spec_location: "docs/TECHNICAL_SPEC.md"
+  # ------------------------------------------------------------------------
+  # Feature-Level Folders
+  # ------------------------------------------------------------------------
+  # Organizational folders at feature root
+  # ------------------------------------------------------------------------
 
-  # Directory for development stories
-  dev_story_location: "docs/stories"
+  qa_folder: "docs/features/{{feature_name}}/QA"
+  retrospectives_folder: "docs/features/{{feature_name}}/retrospectives"
+  ceremonies_folder: "docs/features/{{feature_name}}/ceremonies"
+  standups_folder: "docs/features/{{feature_name}}/standups"
 
-  # Epic tracking document location
-  epic_location: "docs/epics.md"
+  # ------------------------------------------------------------------------
+  # Epic-Level Paths (CO-LOCATED with stories!)
+  # ------------------------------------------------------------------------
+  # Epic folders contain:
+  #   - README.md (epic definition)
+  #   - stories/ (all stories for this epic)
+  #   - context/ (context XML files)
+  # ------------------------------------------------------------------------
 
-  # Default output folder for all documentation
-  output_folder: "docs"
+  epic_folder: "docs/features/{{feature_name}}/epics/{{epic}}-{{epic_name}}"
+  epic_location: "docs/features/{{feature_name}}/epics/{{epic}}-{{epic_name}}/README.md"
 
-  # Sprint status tracking file
-  sprint_status_location: "docs/sprint-status.yaml"
+  # ------------------------------------------------------------------------
+  # Story-Level Paths (INSIDE epic folder!)
+  # ------------------------------------------------------------------------
+  # Stories are co-located with their epic for intuitive navigation
+  # ------------------------------------------------------------------------
 
-  # Workflow status tracking file
-  workflow_status_location: "docs/bmm-workflow-status.md"
+  story_folder: "docs/features/{{feature_name}}/epics/{{epic}}-{{epic_name}}/stories"
+  story_location: "docs/features/{{feature_name}}/epics/{{epic}}-{{epic_name}}/stories/story-{{epic}}.{{story}}.md"
+  context_xml_folder: "docs/features/{{feature_name}}/epics/{{epic}}-{{epic_name}}/context"
+  context_xml_location: "docs/features/{{feature_name}}/epics/{{epic}}-{{epic_name}}/context/story-{{epic}}.{{story}}.xml"
 
-  # Context XML folder for story context
-  context_xml_folder: "docs/stories/{epic}/context"
+  # ------------------------------------------------------------------------
+  # Ceremony Artifact Paths
+  # ------------------------------------------------------------------------
+  # Ceremony outputs stored at feature level
+  # ------------------------------------------------------------------------
+
+  retrospective_location: "docs/features/{{feature_name}}/retrospectives/epic-{{epic}}-retro.md"
+  standup_location: "docs/features/{{feature_name}}/standups/standup-{{date}}.md"
+  planning_session_location: "docs/features/{{feature_name}}/ceremonies/planning-{{date}}.md"
+
+  # ------------------------------------------------------------------------
+  # QA Artifact Paths
+  # ------------------------------------------------------------------------
+  # Quality assurance documents in QA/ folder
+  # ------------------------------------------------------------------------
+
+  qa_validation_location: "docs/features/{{feature_name}}/QA/QA_VALIDATION_EPIC_{{epic}}.md"
+  test_report_location: "docs/features/{{feature_name}}/QA/TEST_REPORT_EPIC_{{epic}}.md"
+  final_qa_report_location: "docs/features/{{feature_name}}/QA/FINAL_QA_REPORT_{{feature_name}}.md"
+
+  # ------------------------------------------------------------------------
+  # LEGACY PATHS (Backward Compatibility - DEPRECATED)
+  # ------------------------------------------------------------------------
+  # These paths are deprecated but kept for backward compatibility.
+  # New workflows should use feature-scoped paths above.
+  # Will be removed in future version.
+  # ------------------------------------------------------------------------
+
+  legacy_prd_location: "docs/PRD.md"
+  legacy_architecture_location: "docs/ARCHITECTURE.md"
+  legacy_tech_spec_location: "docs/TECHNICAL_SPEC.md"
+  legacy_epic_location: "docs/epics.md"
+  legacy_story_folder: "docs/stories"
+  legacy_context_xml_folder: "docs/stories/{epic}/context"
+  legacy_output_folder: "docs"
+  legacy_sprint_status_location: "docs/sprint-status.yaml"
+  legacy_workflow_status_location: "docs/bmm-workflow-status.md"
+
+  # ------------------------------------------------------------------------
+  # Common Variables (Auto-Generated)
+  # ------------------------------------------------------------------------
+  # These are auto-populated by WorkflowExecutor
+  # ------------------------------------------------------------------------
+
+  date: "{{date}}"                    # Current date (YYYY-MM-DD)
+  timestamp: "{{timestamp}}"          # Current timestamp (ISO 8601)
+  project_name: "{{project_name}}"    # Project name (from project_root)
+  project_root: "{{project_root}}"    # Absolute path to project root
+  agent: "{{agent}}"                  # Agent executing workflow
+  workflow: "{{workflow}}"            # Workflow name
 
 # ============================================================================
 # Document Lifecycle Configuration
