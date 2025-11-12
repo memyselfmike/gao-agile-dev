@@ -1,7 +1,7 @@
 # GAO-Dev Project Guide - For Claude
 
-**Last Updated**: 2025-11-10
-**Version**: 2.2 (Epic 31 Complete - Full Mary Integration)
+**Last Updated**: 2025-01-12
+**Version**: 2.3 (Epic 35 Complete - Interactive Provider Selection)
 
 This document helps you (Claude) quickly understand GAO-Dev's structure, current status, and development patterns.
 
@@ -33,6 +33,18 @@ This document helps you (Claude) quickly understand GAO-Dev's structure, current
 ## Current Status (2025-11-10)
 
 ### Latest Achievements
+
+✅ **EPIC 35: Interactive Provider Selection at Startup** - COMPLETE (100%)
+  - Interactive prompts with Rich-formatted tables for provider selection
+  - Preference persistence to `.gao-dev/provider_preferences.yaml`
+  - Cross-platform CLI detection (Windows, macOS, Linux)
+  - Ollama local model support (deepseek-r1, llama2, codellama)
+  - Validation with actionable error messages and fix suggestions
+  - Environment variable bypass for CI/CD (`AGENT_PROVIDER`)
+  - Security: YAML injection prevention, input sanitization, file permissions
+  - **39 story points, 8 stories - ALL COMPLETE**
+  - **120+ tests, 3,000+ lines of comprehensive documentation**
+  - **Production-ready: Choose AI provider interactively at startup**
 
 ✅ **EPIC 31: Full Mary (Business Analyst) Integration** - COMPLETE (100%)
   - Vision elicitation with 4 techniques (Vision Canvas, Problem-Solution Fit, Outcome Mapping, 5W1H)
@@ -110,6 +122,7 @@ This document helps you (Claude) quickly understand GAO-Dev's structure, current
 
 **The system CAN**:
 - Accept simple prompts and intelligently select workflows
+- **Interactively select AI providers at startup (Claude Code, OpenCode, local Ollama models)**
 - Execute multi-workflow sequences with scale-adaptive routing
 - Resolve workflow variables and create artifacts at correct locations
 - Track document lifecycle per-project with isolated `.gao-dev/` directories
@@ -118,6 +131,7 @@ This document helps you (Claude) quickly understand GAO-Dev's structure, current
 - Generate comprehensive metrics and HTML reports
 - Load prompts and agent configs from YAML
 - Support custom agents/prompts via plugins
+- **Persist provider preferences and bypass prompts via `AGENT_PROVIDER` env var**
 
 **System NOW CAN (Epics 28-29 Complete)**:
 - Auto-trigger ceremonies at workflow milestones
@@ -552,6 +566,7 @@ All prompts and agent configs are YAML-based:
 | **Check what to do next** | **docs/bmm-workflow-status.md** ← START HERE! |
 | Current story status | docs/sprint-status.yaml |
 | Feature PRD/Architecture | docs/features/<feature-name>/ |
+| **Provider selection** | **Set `AGENT_PROVIDER` env var or use interactive prompts** |
 | **Create new feature** | **gao-dev create-feature <name> --scale-level 3** |
 | **List all features** | **gao-dev list-features** |
 | **Validate feature structure** | **gao-dev validate-structure --feature <name>** |
