@@ -12,6 +12,8 @@ All prompt_toolkit and rich.prompt imports happen inside methods, not at module 
 
 from typing import Any, Dict, List, Optional
 from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
 import structlog
 
 logger = structlog.get_logger()
@@ -87,7 +89,47 @@ class InteractivePrompter:
             # Returns: 'opencode'
             ```
         """
-        raise NotImplementedError("Story 35.4 implementation")
+        # Display table
+        table = Table(title="Available AI Providers", border_style="cyan")
+        table.add_column("Option", style="cyan", justify="center")
+        table.add_column("Provider", style="green")
+        table.add_column("Description", style="white")
+
+        for idx, provider in enumerate(available_providers, 1):
+            table.add_row(
+                str(idx),
+                provider,
+                descriptions.get(provider, "")
+            )
+
+        self.console.print(table)
+
+        # Get user input with validation loop
+        while True:
+            try:
+                choice = self._get_user_input(
+                    f"Select provider [1-{len(available_providers)}]",
+                    default="1",
+                    choices=[str(i) for i in range(1, len(available_providers) + 1)]
+                )
+
+                # Validate and convert
+                if choice == '' or choice == '1':
+                    return available_providers[0]
+
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(available_providers):
+                    return available_providers[choice_idx]
+                else:
+                    self.show_error(
+                        f"Invalid choice: {choice}",
+                        [f"Please choose a number between 1 and {len(available_providers)}"]
+                    )
+            except ValueError:
+                self.show_error(
+                    f"Invalid input: {choice}",
+                    [f"Please enter a number between 1 and {len(available_providers)}"]
+                )
 
     def prompt_opencode_config(self) -> Dict[str, Any]:
         """
@@ -107,7 +149,44 @@ class InteractivePrompter:
             # or: {'ai_provider': 'anthropic', 'use_local': False}
             ```
         """
-        raise NotImplementedError("Story 35.4 implementation")
+        # Ask about local vs cloud
+        self.console.print("\n[bold cyan]OpenCode Configuration[/bold cyan]")
+
+        use_local_choice = self._get_user_input(
+            "Use local model via Ollama? [y/N]",
+            default="n",
+            choices=['y', 'n', 'Y', 'N', '']
+        )
+
+        if use_local_choice.lower() == 'y':
+            return {
+                'use_local': True,
+                'ai_provider': 'ollama'
+            }
+        else:
+            # Ask for cloud provider
+            self.console.print("\n[bold]Cloud AI Provider Options:[/bold]")
+            self.console.print("  1) Anthropic (Claude)")
+            self.console.print("  2) OpenAI (GPT)")
+            self.console.print("  3) Google (Gemini)")
+
+            provider_choice = self._get_user_input(
+                "Select cloud provider [1-3]",
+                default="1",
+                choices=['1', '2', '3', '']
+            )
+
+            provider_map = {
+                '1': 'anthropic',
+                '2': 'openai',
+                '3': 'google',
+                '': 'anthropic'  # Default
+            }
+
+            return {
+                'use_local': False,
+                'ai_provider': provider_map.get(provider_choice, 'anthropic')
+            }
 
     def prompt_model(
         self,
@@ -139,7 +218,52 @@ class InteractivePrompter:
             # Returns: 'deepseek-r1'
             ```
         """
-        raise NotImplementedError("Story 35.4 implementation")
+        # Display table
+        table = Table(title="Available Models", border_style="cyan")
+        table.add_column("Option", style="cyan", justify="center")
+        table.add_column("Model", style="green")
+
+        if descriptions:
+            table.add_column("Description", style="white")
+
+        for idx, model in enumerate(available_models, 1):
+            if descriptions:
+                table.add_row(
+                    str(idx),
+                    model,
+                    descriptions.get(model, "")
+                )
+            else:
+                table.add_row(str(idx), model)
+
+        self.console.print(table)
+
+        # Get user input with validation loop
+        while True:
+            try:
+                choice = self._get_user_input(
+                    f"Select model [1-{len(available_models)}]",
+                    default="1",
+                    choices=[str(i) for i in range(1, len(available_models) + 1)]
+                )
+
+                # Validate and convert
+                if choice == '' or choice == '1':
+                    return available_models[0]
+
+                choice_idx = int(choice) - 1
+                if 0 <= choice_idx < len(available_models):
+                    return available_models[choice_idx]
+                else:
+                    self.show_error(
+                        f"Invalid choice: {choice}",
+                        [f"Please choose a number between 1 and {len(available_models)}"]
+                    )
+            except ValueError:
+                self.show_error(
+                    f"Invalid input: {choice}",
+                    [f"Please enter a number between 1 and {len(available_models)}"]
+                )
 
     def prompt_save_preferences(self) -> bool:
         """
@@ -148,7 +272,13 @@ class InteractivePrompter:
         Returns:
             True if user wants to save, False otherwise
         """
-        raise NotImplementedError("Story 35.4 implementation")
+        choice = self._get_user_input(
+            "Save these preferences? [y/N]",
+            default="n",
+            choices=['y', 'n', 'Y', 'N', '']
+        )
+
+        return choice.lower() == 'y'
 
     def prompt_use_saved(self, saved_config: Dict[str, Any]) -> str:
         """
@@ -160,9 +290,20 @@ class InteractivePrompter:
         Returns:
             'y' (yes), 'n' (no), or 'c' (change specific settings)
         """
-        raise NotImplementedError("Story 35.4 implementation")
+        # Display saved config
+        self.console.print("\n[bold cyan]Saved Configuration Found:[/bold cyan]")
+        for key, value in saved_config.items():
+            self.console.print(f"  {key}: [green]{value}[/green]")
 
-    def show_error(self, message: str, suggestions: Optional[List[str]] = None):
+        choice = self._get_user_input(
+            "Use saved configuration? [Y/n/c (change)]",
+            default="y",
+            choices=['y', 'n', 'c', 'Y', 'N', 'C', '']
+        )
+
+        return choice.lower() if choice else 'y'
+
+    def show_error(self, message: str, suggestions: Optional[List[str]] = None) -> None:
         """
         Display error message with optional suggestions.
 
@@ -170,13 +311,95 @@ class InteractivePrompter:
             message: Error message
             suggestions: Optional list of suggestion strings
         """
-        raise NotImplementedError("Story 35.4 implementation")
+        content = f"[bold red]{message}[/bold red]"
 
-    def show_success(self, message: str):
+        if suggestions:
+            content += "\n\n[bold]Suggestions:[/bold]"
+            for suggestion in suggestions:
+                content += f"\n  - {suggestion}"
+
+        panel = Panel(
+            content,
+            title="Error",
+            border_style="red",
+            expand=False
+        )
+        self.console.print(panel)
+
+    def show_success(self, message: str) -> None:
         """
         Display success message.
 
         Args:
             message: Success message
         """
-        raise NotImplementedError("Story 35.4 implementation")
+        panel = Panel(
+            f"[bold green]{message}[/bold green]",
+            title="Success",
+            border_style="green",
+            expand=False
+        )
+        self.console.print(panel)
+
+    def _get_user_input(
+        self,
+        prompt_text: str,
+        default: str = "",
+        choices: Optional[List[str]] = None
+    ) -> str:
+        """
+        Get user input with lazy import fallback for CI/CD compatibility.
+
+        This method implements the CRAAP Critical Resolution pattern:
+        - Try to import prompt_toolkit INSIDE the method (lazy)
+        - If ImportError or OSError, fall back to basic input()
+        - This ensures CI/CD pipelines work even without TTY
+
+        Args:
+            prompt_text: Text to display to user
+            default: Default value if user presses Enter
+            choices: Optional list of valid choices
+
+        Returns:
+            User's input string
+
+        Raises:
+            KeyboardInterrupt: User pressed Ctrl+C (not caught, propagates)
+        """
+        # Format prompt with default
+        if default:
+            display_prompt = f"{prompt_text} (default: {default}): "
+        else:
+            display_prompt = f"{prompt_text}: "
+
+        try:
+            # LAZY IMPORT: Import inside method, not at module level
+            from prompt_toolkit import PromptSession
+            from typing import TYPE_CHECKING
+
+            # Use prompt_toolkit for interactive input
+            session: PromptSession[str] = PromptSession()
+            user_input: str = session.prompt(display_prompt)
+
+            # Use default if empty
+            if not user_input and default:
+                return default
+
+            return user_input
+
+        except (ImportError, OSError) as e:
+            # Fallback for headless environments (Docker, CI/CD, no TTY)
+            self.logger.warning(
+                "prompt_toolkit unavailable, using fallback input",
+                error=str(e),
+                error_type=type(e).__name__
+            )
+
+            # Use standard input() function as fallback
+            user_input_fallback: str = input(display_prompt)
+
+            # Use default if empty
+            if not user_input_fallback and default:
+                return default
+
+            return user_input_fallback
