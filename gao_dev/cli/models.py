@@ -145,6 +145,7 @@ class ValidationResult:
         messages: List of informational messages
         warnings: List of warning messages
         suggestions: List of suggestion strings for fixing issues
+        validation_time_ms: Time taken for validation in milliseconds
 
     Example:
         ```python
@@ -156,7 +157,8 @@ class ValidationResult:
             suggestions=[
                 'Install Claude Code: https://...',
                 'Set API key: export ANTHROPIC_API_KEY=sk-...'
-            ]
+            ],
+            validation_time_ms=45.2
         )
         ```
     """
@@ -166,6 +168,7 @@ class ValidationResult:
     messages: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     suggestions: list[str] = field(default_factory=list)
+    validation_time_ms: float = 0.0
 
     def add_message(self, message: str) -> None:
         """Add informational message.
