@@ -238,12 +238,10 @@ class ProviderValidator:
             True if CLI found, False otherwise
         """
         try:
-            proc = await asyncio.create_subprocess_exec(
-                "where",
-                cli_name,
+            proc = await asyncio.create_subprocess_shell(
+                f"where {cli_name}",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                shell=True,  # Required on Windows
             )
 
             await asyncio.wait_for(proc.wait(), timeout=5.0)

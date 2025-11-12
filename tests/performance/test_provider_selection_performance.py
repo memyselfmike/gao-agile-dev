@@ -244,11 +244,13 @@ class TestProviderValidationPerformance:
         validator = ProviderValidator(console)
 
         # Measure CLI check time (real check, no mock)
-        def check_cli():
+        times = []
+        for _ in range(50):
+            start = time.perf_counter()
             # Check for a CLI that definitely doesn't exist
-            validator.check_cli_available("nonexistent-cli-12345")
-
-        times = measure_execution_time(check_cli, iterations=50)
+            result = await validator.check_cli_available("nonexistent-cli-12345")
+            end = time.perf_counter()
+            times.append((end - start) * 1000)  # Convert to ms
 
         # Calculate p95
         p95 = calculate_percentile(times, 95)
@@ -268,12 +270,12 @@ class TestFullSelectionFlowPerformance:
         # Mock all dependencies
         mock_prompter = Mock(spec=InteractivePrompter)
         mock_prompter.prompt_provider.return_value = "opencode"
-        mock_prompter.prompt_use_local.return_value = True
+        mock_prompter.prompt_opencode_config.return_value = {"ai_provider": "ollama", "use_local": True}
         mock_prompter.prompt_model.return_value = "deepseek-r1"
         mock_prompter.prompt_save_preferences.return_value = True
 
         mock_validator = Mock(spec=ProviderValidator)
-        mock_validator.validate_configuration = Mock(
+        mock_validator.validate_configuration = AsyncMock(
             return_value=ValidationResult(
                 success=True,
                 provider_name="opencode",
@@ -313,10 +315,10 @@ class TestFullSelectionFlowPerformance:
         """Returning user flow with saved prefs is very fast (<1s)."""
         # Mock dependencies
         mock_prompter = Mock(spec=InteractivePrompter)
-        mock_prompter.prompt_use_saved_preferences.return_value = True
+        mock_prompter.prompt_use_saved.return_value = "y"  # Use saved preferences
 
         mock_validator = Mock(spec=ProviderValidator)
-        mock_validator.validate_configuration = Mock(
+        mock_validator.validate_configuration = AsyncMock(
             return_value=ValidationResult(
                 success=True,
                 provider_name="opencode",
@@ -386,7 +388,7 @@ class TestREPLStartupPerformance:
         monkeypatch.setenv("AGENT_PROVIDER", "claude-code")
 
         mock_validator = Mock(spec=ProviderValidator)
-        mock_validator.validate_configuration = Mock(
+        mock_validator.validate_configuration = AsyncMock(
             return_value=ValidationResult(
                 success=True,
                 provider_name="claude-code",

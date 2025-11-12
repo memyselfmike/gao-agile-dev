@@ -141,7 +141,7 @@ class TestConfigFilesWork:
         project_root.mkdir()
 
         loader = ConfigLoader(project_root)
-        config = loader.load_config()
+        config = loader.user_config
 
         # Should load without error
         assert config is not None
@@ -156,10 +156,10 @@ class TestConfigFilesWork:
 
         loader = ConfigLoader(project_root)
 
-        # Core methods should exist
-        assert hasattr(loader, "load_config")
+        # Core methods and properties should exist
+        assert hasattr(loader, "user_config")
         assert hasattr(loader, "get")
-        assert hasattr(loader, "save_config")
+        assert hasattr(loader, "to_dict")
 
 
 class TestCommandRouterUnchanged:
@@ -199,9 +199,9 @@ class TestFeatureFlagsWork:
         project_root.mkdir()
 
         loader = ConfigLoader(project_root)
-        config = loader.load_config()
+        config = loader.user_config
 
-        feature_flags = loader.get("feature_flags", {})
+        feature_flags = loader.get("features", {})
         assert isinstance(feature_flags, dict)
 
     def test_new_feature_flag_exists(self, tmp_path: Path):
@@ -212,9 +212,9 @@ class TestFeatureFlagsWork:
         project_root.mkdir()
 
         loader = ConfigLoader(project_root)
-        config = loader.load_config()
+        config = loader.user_config
 
-        feature_flags = loader.get("feature_flags", {})
+        feature_flags = loader.get("features", {})
         # Flag should exist (True or False)
         assert "interactive_provider_selection" in feature_flags
 
@@ -226,7 +226,7 @@ class TestFeatureFlagsWork:
         project_root.mkdir()
 
         loader = ConfigLoader(project_root)
-        feature_flags = loader.get("feature_flags", {})
+        feature_flags = loader.get("features", {})
 
         # Should be boolean
         assert isinstance(feature_flags.get("interactive_provider_selection"), bool)
