@@ -103,9 +103,13 @@ class ChatREPL:
         analysis_service = AIAnalysisService(executor)
 
         # Create StateTracker if database exists
+        # Story 30.x + Self-Healing: Ensure database schema is complete before loading
         db_path = self.project_root / ".gao-dev" / "documents.db"
         state_tracker = None
         if db_path.exists():
+            # Self-heal: Check and apply missing migrations automatically
+            self._ensure_database_schema(db_path)
+
             try:
                 state_tracker = StateTracker(db_path)
             except Exception as e:
@@ -400,3 +404,52 @@ Session Stats:
             )
         )
         self.console.print()
+
+    def _ensure_database_schema(self, db_path: Path) -> None:
+        """
+        Ensure database schema is complete by auto-applying migrations.
+
+        This is called when Brian initializes to self-heal projects with
+        incomplete database schemas. Uses GitAwareConsistencyChecker's
+        built-in auto-migration feature.
+
+        Brian's Philosophy: Users should never manually run migration commands.
+        Brian handles all infrastructure setup automatically on startup.
+
+        Args:
+            db_path: Path to .gao-dev/documents.db
+        """
+        try:
+            from gao_dev.core.services.git_consistency_checker import GitAwareConsistencyChecker
+
+            # Create checker with auto_migrate=True (default)
+            # This triggers migration check and application on __init__
+            checker = GitAwareConsistencyChecker(
+                db_path=db_path,
+                project_path=self.project_root,
+                auto_migrate=True  # Enable self-healing
+            )
+
+            self.logger.info(
+                "database_schema_verified",
+                db_path=str(db_path),
+                message="Database schema check complete (auto-healed if needed)"
+            )
+
+        except Exception as e:
+            self.logger.error(
+                "database_schema_check_failed",
+                error=str(e),
+                message="Failed to verify database schema"
+            )
+            # Don't crash Brian - print warning and continue
+            self.console.print(
+                Panel(
+                    f"[yellow]Warning:[/yellow] Database schema check failed: {e}\n\n"
+                    f"Brian will continue but some features may not work correctly.\n"
+                    f"If you encounter issues, try running:\n"
+                    f"  [cyan]gao-dev migrate[/cyan]",
+                    title="Database Warning",
+                    border_style="yellow"
+                )
+            )
