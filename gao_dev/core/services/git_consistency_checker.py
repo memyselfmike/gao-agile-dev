@@ -206,10 +206,18 @@ class GitAwareConsistencyChecker:
             self.logger.error(
                 "schema_check_failed",
                 error=str(e),
-                message="Could not verify database schema"
+                error_type=type(e).__name__,
+                message="Could not verify database schema - self-healing disabled"
             )
-            # Don't fail initialization - let consistency check handle it
-            pass
+            # Log the full exception for debugging
+            import traceback
+            self.logger.debug(
+                "schema_check_traceback",
+                traceback=traceback.format_exc()
+            )
+            # Don't fail initialization but warn user
+            print(f"\n[WARNING] Database schema check failed: {e}")
+            print(f"[WARNING] Self-healing disabled. Run 'gao-dev migrate' manually if needed.\n")
 
     def _apply_missing_migrations(self) -> None:
         """
@@ -218,23 +226,41 @@ class GitAwareConsistencyChecker:
         Runs Migration 005 (state tables) if not already applied.
         """
         import sqlite3
+        import sys
+        import importlib
+
+        # Import Migration 005 using importlib.util (filename starts with number)
+        # The file is "lifecycle/migrations/005_add_state_tables.py"
         import importlib.util
 
-        # Import Migration005 directly from file (it's named 005_add_state_tables.py)
-        migration_file = Path(__file__).parent.parent.parent / "lifecycle" / "migrations" / "005_add_state_tables.py"
+        lifecycle_migrations_dir = Path(__file__).parent.parent.parent / "lifecycle" / "migrations"
+        migration_file = lifecycle_migrations_dir / "005_add_state_tables.py"
 
         if not migration_file.exists():
             raise GitAwareConsistencyCheckerError(
                 f"Migration file not found: {migration_file}"
             )
 
-        spec = importlib.util.spec_from_file_location("migration_005", str(migration_file))
-        if spec and spec.loader:
+        # Load module from file using importlib.util
+        # This allows loading modules with non-standard names (like starting with numbers)
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "migration_005",  # Internal module name (doesn't matter)
+                str(migration_file)
+            )
+            if not spec or not spec.loader:
+                raise GitAwareConsistencyCheckerError(
+                    "Failed to create module spec for Migration005"
+                )
+
             migration_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(migration_module)
             Migration005 = migration_module.Migration005
-        else:
-            raise GitAwareConsistencyCheckerError("Failed to load migration module")
+
+        except Exception as import_error:
+            raise GitAwareConsistencyCheckerError(
+                f"Failed to import Migration005: {import_error}"
+            ) from import_error
 
         try:
             conn = sqlite3.connect(str(self.db_path))
@@ -265,11 +291,19 @@ class GitAwareConsistencyChecker:
             self.logger.error(
                 "migration_failed",
                 error=str(e),
+                error_type=type(e).__name__,
                 message="Failed to apply migrations. Run 'gao-dev migrate' manually."
             )
-            raise GitAwareConsistencyCheckerError(
-                f"Failed to auto-apply migrations: {e}"
-            ) from e
+            # Log full traceback for debugging
+            import traceback
+            self.logger.debug(
+                "migration_traceback",
+                traceback=traceback.format_exc()
+            )
+            # Don't raise - warn and continue
+            print(f"\n[ERROR] Failed to auto-apply migrations: {e}")
+            print(f"[ERROR] Run 'gao-dev migrate' manually to fix schema.")
+            print(f"[ERROR] Continuing with consistency check (may fail)...\n")
 
     # ============================================================================
     # CONSISTENCY CHECKING
