@@ -81,16 +81,21 @@ class TestBumpVersionScript:
         assert result.returncode == 1
         assert "Invalid bump type" in result.stderr
 
-    def test_bump_version_missing_args(self) -> None:
-        """Test error handling for missing arguments."""
+    def test_bump_version_auto_mode(self) -> None:
+        """Test auto mode (no arguments) - analyzes git commits."""
         result = subprocess.run(
             [sys.executable, str(BUMP_VERSION_SCRIPT)],
             capture_output=True,
             text=True,
             check=False,
         )
-        assert result.returncode == 1
-        assert "Usage:" in result.stderr
+        # Auto mode should succeed and output a version
+        assert result.returncode == 0
+        # Output should be a valid version number
+        version = result.stdout.strip()
+        parts = version.split('.')
+        assert len(parts) == 3
+        assert all(part.isdigit() for part in parts)
 
     def test_bump_version_invalid_format(self) -> None:
         """Test error handling for invalid version format."""
