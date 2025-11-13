@@ -17,7 +17,7 @@ authors = [
 ]
 keywords = ["ai", "agents", "autonomous", "development", "gao"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -75,12 +75,24 @@ packages = ["gao_dev"]
 [tool.setuptools.package-data]
 gao_dev = [
     "workflows/**/*",
+    "config/**/*",
+    "templates/**/*",
+    "migrations/**/*",
     "agents/*",
     "checklists/*",
-    "config/*",
     "sandbox/reporting/templates/**/*",
     "sandbox/reporting/assets/*",
     "../.gaodev-source",  # Source repository marker for safety check
+]
+
+[tool.setuptools.exclude-package-data]
+"*" = [
+    "tests",
+    "tests/*",
+    "docs",
+    "docs/*",
+    "sandbox/projects",
+    "sandbox/projects/*",
 ]
 
 # setuptools-scm configuration for dynamic versioning
