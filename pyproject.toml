@@ -80,6 +80,7 @@ gao_dev = [
     "config/*",
     "sandbox/reporting/templates/**/*",
     "sandbox/reporting/assets/*",
+    "../.gaodev-source",  # Source repository marker for safety check
 ]
 
 # setuptools-scm configuration for dynamic versioning
