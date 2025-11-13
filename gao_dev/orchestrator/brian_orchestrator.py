@@ -381,16 +381,29 @@ class BrianOrchestrator:
         if self.brian_persona_path and self.brian_persona_path.exists():
             brian_context = self.brian_persona_path.read_text(encoding="utf-8")
 
+        # If no explicit persona path, try to load from agents directory
+        if not brian_context:
+            try:
+                from pathlib import Path
+                agents_dir = Path(__file__).parent.parent / "agents"
+                brian_md = agents_dir / "brian.md"
+                if brian_md.exists():
+                    brian_context = brian_md.read_text(encoding="utf-8")
+            except Exception as e:
+                self.logger.warning("failed_to_load_brian_persona", error=str(e))
+
         # Load and render prompt template
         try:
             template = self.prompt_loader.load_prompt("agents/brian_analysis")
 
             # Render the prompt with variables
+            # Send FULL persona context to enable AI-powered intelligent analysis
+            # The AI needs rich context about scale-adaptive principles, not truncated rules
             analysis_prompt = self.prompt_loader.render_prompt(
                 template,
                 variables={
                     "user_request": prompt,
-                    "brian_persona": brian_context[:500] if brian_context else "",
+                    "brian_persona": brian_context,  # FULL context, not [:500]
                 }
             )
         except Exception as e:
