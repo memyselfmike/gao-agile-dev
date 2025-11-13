@@ -868,10 +868,24 @@ Start documentation with metadata block:
                         logger.info("opencode_server_already_running")
                         return
                     else:
-                        raise ProviderInitializationError(
-                            f"Port {self.port} in use but server not responding",
-                            provider_name=self.name
+                        # Port in use but server not responding - try to clean up
+                        logger.warning(
+                            "opencode_server_port_stuck",
+                            port=self.port,
+                            message="Attempting to kill stuck process and restart"
                         )
+                        if self._kill_process_on_port(self.port):
+                            logger.info("opencode_stuck_process_killed", port=self.port)
+                            # Wait a moment for port to be released
+                            import time
+                            time.sleep(1)
+                            # Continue to try starting server
+                        else:
+                            raise ProviderInitializationError(
+                                f"Port {self.port} in use by another process that couldn't be killed. "
+                                f"Please manually stop the process or use a different port.",
+                                provider_name=self.name
+                            )
 
                 # Start server process
                 if not self.cli_path:
@@ -1024,6 +1038,111 @@ Start documentation with metadata block:
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(('localhost', port)) == 0
+
+    def _kill_process_on_port(self, port: int) -> bool:
+        """
+        Intelligently kill process using the specified port.
+
+        Only kills processes that appear to be OpenCode servers.
+        Cross-platform: Works on Windows, Linux, and macOS.
+
+        Args:
+            port: Port number
+
+        Returns:
+            True if process was killed, False if couldn't kill or not safe to kill
+        """
+        import platform
+        import subprocess
+
+        try:
+            system = platform.system()
+
+            if system == "Windows":
+                # Find PID using netstat
+                result = subprocess.run(
+                    ["netstat", "-ano"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+
+                for line in result.stdout.split('\n'):
+                    if f":{port}" in line and "LISTENING" in line:
+                        # Extract PID (last column)
+                        parts = line.split()
+                        if parts:
+                            try:
+                                pid = int(parts[-1])
+                                logger.info("found_process_on_port", port=port, pid=pid)
+
+                                # Try to get process name to verify it's safe to kill
+                                name_result = subprocess.run(
+                                    ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                                    capture_output=True,
+                                    text=True,
+                                    timeout=5
+                                )
+
+                                # Check if it's node/python (OpenCode likely processes)
+                                process_name = name_result.stdout.lower()
+                                if any(name in process_name for name in ["node", "python", "opencode"]):
+                                    logger.info("killing_stuck_process", pid=pid, process=process_name)
+                                    subprocess.run(
+                                        ["taskkill", "/PID", str(pid), "/F"],
+                                        capture_output=True,
+                                        timeout=5
+                                    )
+                                    return True
+                                else:
+                                    logger.warning(
+                                        "process_not_safe_to_kill",
+                                        pid=pid,
+                                        process=process_name
+                                    )
+                                    return False
+                            except (ValueError, IndexError):
+                                continue
+
+            else:  # Linux/macOS
+                # Find PID using lsof
+                result = subprocess.run(
+                    ["lsof", "-ti", f":{port}"],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+
+                if result.returncode == 0 and result.stdout.strip():
+                    pid = int(result.stdout.strip())
+                    logger.info("found_process_on_port", port=port, pid=pid)
+
+                    # Get process name
+                    name_result = subprocess.run(
+                        ["ps", "-p", str(pid), "-o", "comm="],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+
+                    process_name = name_result.stdout.strip().lower()
+                    if any(name in process_name for name in ["node", "python", "opencode"]):
+                        logger.info("killing_stuck_process", pid=pid, process=process_name)
+                        subprocess.run(["kill", "-9", str(pid)], timeout=5)
+                        return True
+                    else:
+                        logger.warning(
+                            "process_not_safe_to_kill",
+                            pid=pid,
+                            process=process_name
+                        )
+                        return False
+
+        except Exception as e:
+            logger.error("kill_process_failed", error=str(e), port=port)
+            return False
+
+        return False
 
     def _stop_server(self) -> None:
         """Stop OpenCode server gracefully."""
