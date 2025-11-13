@@ -244,6 +244,38 @@ I've analyzed your request. Here's what I found:
             # User confirmed - EXECUTE!
             yield "Great! I'll coordinate with the team to get started..."
 
+            # If pending_confirmation has no workflows, it was a clarification request
+            # Re-run Brian's analysis to get actual workflows now that user confirmed
+            if not context.pending_confirmation.workflows:
+                self.logger.info("re_running_analysis_after_clarification")
+                yield "\nLet me finalize the plan..."
+
+                # Get the original prompt from session history
+                # TODO: Better way to track original prompt through clarification flow
+                original_prompt = context.session_history[0] if context.session_history else ""
+
+                try:
+                    # Re-analyze with force to skip clarification this time
+                    # Use the scale_level from previous analysis
+                    analysis = await self.brian.assess_and_select_workflows(
+                        original_prompt
+                    )
+
+                    # Update context with real workflow sequence
+                    context.pending_confirmation = analysis
+
+                    if not analysis.workflows:
+                        yield "\nI couldn't determine the right workflows for this request."
+                        yield "Could you provide more specific details about what you'd like to build?"
+                        context.pending_confirmation = None
+                        return
+
+                except Exception as e:
+                    self.logger.exception("re_analysis_failed", error=str(e))
+                    yield f"\nI encountered an error planning the work: {str(e)}"
+                    context.pending_confirmation = None
+                    return
+
             # Story 30.4: Actually execute workflows via CommandRouter
             if self.command_router:
                 try:

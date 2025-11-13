@@ -467,6 +467,7 @@ class BrianOrchestrator:
                 model=self.model
             )
             # Fallback to conservative default
+            # Proceed with sensible defaults instead of blocking on clarification
             return PromptAnalysis(
                 scale_level=ScaleLevel.LEVEL_2,
                 project_type=ProjectType.SOFTWARE,
@@ -479,13 +480,9 @@ class BrianOrchestrator:
                 domain_complexity="medium",
                 timeline_hint=None,
                 confidence=0.5,
-                reasoning=f"Analysis failed, using conservative default. Error: {str(e)}",
-                needs_clarification=True,
-                clarifying_questions=[
-                    "What is the approximate scope? (small feature, medium project, large system)",
-                    "Is this a new project or enhancing existing code?",
-                    "What is the estimated timeline?"
-                ]
+                reasoning=f"Analysis failed, using conservative default (Level 2: small feature, ~10 stories). Error: {str(e)}",
+                needs_clarification=False,  # Don't block on clarification when analysis fails
+                clarifying_questions=[]
             )
         except json.JSONDecodeError as e:
             self.logger.error(
