@@ -208,9 +208,22 @@ class AIAnalysisService:
                 response_length=len(response_text),
             )
 
+            # Clean response (strip markdown code blocks if present)
+            cleaned_response = response_text.strip()
+            if cleaned_response.startswith("```json"):
+                # Extract JSON from markdown code blocks
+                json_start = cleaned_response.index("```json") + 7
+                json_end = cleaned_response.index("```", json_start)
+                cleaned_response = cleaned_response[json_start:json_end].strip()
+            elif cleaned_response.startswith("```"):
+                # Handle generic code blocks
+                json_start = cleaned_response.index("```") + 3
+                json_end = cleaned_response.index("```", json_start)
+                cleaned_response = cleaned_response[json_start:json_end].strip()
+
             # Create result
             result = AnalysisResult(
-                response=response_text.strip(),
+                response=cleaned_response,
                 model_used=model_to_use,
                 tokens_used=tokens_used,
                 duration_ms=duration_ms,

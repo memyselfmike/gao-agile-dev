@@ -1,6 +1,10 @@
 Scale Levels (BMAD Method):
-- Level 0: Single atomic change (1 story) - bug fix, small tweak
-- Level 1: Small feature (2-10 stories, 1 epic) - single focused feature
-- Level 2: Medium project (5-15 stories, 1-2 epics) - feature set, small app
-- Level 3: Large project (12-40 stories, 2-5 epics) - complex app, system
-- Level 4: Enterprise system (40+ stories, 5+ epics) - enterprise platform
+- Level 0: Single atomic change (< 1 hour) - bug fix, small tweak, chore
+- Level 1: Bug fix or tiny feature (1-4 hours, 1-3 stories) - single focused fix/feature in existing code
+- Level 2: Small feature addition (1-2 weeks, 3-8 stories, 1 epic) - adding feature to existing system
+- Level 3: Medium feature set (1-2 months, 12-40 stories, 2-5 epics) - significant enhancement to existing system
+- Level 4: Greenfield application (2-6 months, 40+ stories, 5+ epics) - building complete app from scratch
+
+CRITICAL: Greenfield projects (building from scratch) should ALWAYS be Level 4, regardless of perceived "simplicity".
+Even a "simple todo app" built from scratch requires: architecture, database design, API design, authentication,
+testing infrastructure, deployment, documentation - this is Level 4 work.

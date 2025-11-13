@@ -19,25 +19,33 @@ user_prompt: |
   JSON Schema for Response:
   {{json_schema}}
 
+  CRITICAL DECISION RULES:
+  1. **Greenfield Detection** - If request asks to "build", "create", "make" a new app/system from scratch:
+     - THIS IS ALWAYS LEVEL 4 (greenfield)
+     - Even if described as "simple" or "basic", greenfield requires full architecture
+     - Examples: "build a todo app", "create a chat system", "make a blog platform"
+  2. **Brownfield Detection** - If request asks to add/fix/enhance existing code:
+     - Levels 0-3 based on scope
+     - Examples: "add login to existing app", "fix bug in module X", "enhance dashboard"
+  3. **Story Estimation** - Greenfield projects require minimum 40+ stories for complete system
+
   Assess the following:
-  1. Scale Level (0-4): Based on estimated story count
+  1. Scale Level (0-4): FIRST check if greenfield (Level 4), then estimate stories
   2. Project Type: greenfield, brownfield, game, software, bug_fix, enhancement
-  3. Is Greenfield: Building from scratch?
+  3. Is Greenfield: Building complete app/system from scratch? (true = MUST be Level 4)
   4. Is Brownfield: Enhancing existing code?
   5. Is Game Project: Game development?
-  6. Estimated Stories: How many stories would this take?
-  7. Estimated Epics: How many epics?
+  6. Estimated Stories: How many stories would this take? (Greenfield minimum: 40)
+  7. Estimated Epics: How many epics? (Greenfield minimum: 5)
   8. Technical Complexity: low, medium, high
   9. Domain Complexity: low, medium, high
   10. Timeline Hint: hours, days, weeks, months (or null)
   11. Confidence: 0.0-1.0 (how confident are you?)
-  12. Reasoning: Your expert assessment (1-2 sentences)
+  12. Reasoning: Your expert assessment (1-2 sentences, explain Level 4 choice if greenfield)
   13. Needs Clarification: true/false - Is the scope too ambiguous?
   14. Clarifying Questions: If ambiguous, what should we ask? (list)
 
-  Return ONLY a JSON object matching the schema above.
-
-  Use your seasoned judgment to right-size the project accurately.
+  Return ONLY valid JSON matching the schema above. Do NOT wrap in markdown code blocks.
 
 variables:
   brian_persona: ""
