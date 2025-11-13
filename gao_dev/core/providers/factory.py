@@ -165,10 +165,16 @@ class ProviderFactory:
             # Create instance with config
             if config:
                 # Filter config to only include provider-specific params
-                # Remove validation/factory-only keys
+                # Remove validation/factory-only keys that aren't constructor params
+                excluded_keys = {
+                    'api_key_env',      # Validation only
+                    'default_model',    # Factory only
+                    'timeout',          # Factory only
+                    'use_local',        # Config only (not a constructor param)
+                }
                 provider_config = {
                     k: v for k, v in config.items()
-                    if k not in ('api_key_env', 'default_model', 'timeout')
+                    if k not in excluded_keys
                 }
                 provider = provider_class(**provider_config)
             else:
