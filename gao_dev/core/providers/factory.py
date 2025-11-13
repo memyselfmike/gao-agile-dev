@@ -164,7 +164,13 @@ class ProviderFactory:
         try:
             # Create instance with config
             if config:
-                provider = provider_class(**config)
+                # Filter config to only include provider-specific params
+                # Remove validation/factory-only keys
+                provider_config = {
+                    k: v for k, v in config.items()
+                    if k not in ('api_key_env', 'default_model', 'timeout')
+                }
+                provider = provider_class(**provider_config)
             else:
                 provider = provider_class()
 
