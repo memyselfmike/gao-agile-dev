@@ -26,24 +26,24 @@ from gao_dev.cli.provider_validator import ProviderValidator
 logger = structlog.get_logger()
 
 # Available providers
-AVAILABLE_PROVIDERS = ["claude-code", "opencode", "direct-api-anthropic"]
+AVAILABLE_PROVIDERS = ["claude-code", "opencode-sdk", "direct-api-anthropic"]
 PROVIDER_DESCRIPTIONS = {
     "claude-code": "Claude Code CLI (Anthropic)",
-    "opencode": "OpenCode CLI (Multi-provider)",
+    "opencode-sdk": "OpenCode SDK (Local + Cloud AI)",
     "direct-api-anthropic": "Direct Anthropic API",
 }
 
 # Default models per provider
 DEFAULT_MODELS = {
     "claude-code": "sonnet-4.5",
-    "opencode": "deepseek-r1",
+    "opencode-sdk": "deepseek-r1",
     "direct-api-anthropic": "claude-3-5-sonnet-20241022",
 }
 
 # Available models per provider
 AVAILABLE_MODELS = {
     "claude-code": ["sonnet-4.5", "opus-4", "haiku-3.5"],
-    "opencode": ["deepseek-r1", "llama2", "codellama"],
+    "opencode-sdk": ["deepseek-r1", "llama2", "codellama"],
     "direct-api-anthropic": [
         "claude-3-5-sonnet-20241022",
         "claude-3-opus-20240229",
@@ -308,17 +308,11 @@ class ProviderSelector:
 
             self.logger.debug("provider_selected", provider=provider)
 
-            # Special handling for OpenCode
+            # Special handling for OpenCode SDK
             config: Dict[str, Any] = {}
-            if provider in ("opencode", "opencode-cli"):
+            if provider == "opencode-sdk":
                 opencode_config = self._interactive_prompter.prompt_opencode_config()
                 config.update(opencode_config)
-
-                # If user selected local Ollama, switch to opencode-sdk provider
-                # OpenCode CLI only supports anthropic/openai/google, not ollama
-                if opencode_config.get('use_local') or opencode_config.get('ai_provider') == 'ollama':
-                    provider = "opencode-sdk"
-                    self.logger.info("switched_to_sdk_for_local", original="opencode", new="opencode-sdk")
 
             # Prompt for model
             available_models = AVAILABLE_MODELS.get(provider, [DEFAULT_MODELS[provider]])
@@ -350,17 +344,11 @@ class ProviderSelector:
 
             self.logger.debug("provider_selected", provider=provider)
 
-            # Special handling for OpenCode
+            # Special handling for OpenCode SDK
             config: Dict[str, Any] = {}
-            if provider in ("opencode", "opencode-cli"):
+            if provider == "opencode-sdk":
                 opencode_config = self._interactive_prompter.prompt_opencode_config()
                 config.update(opencode_config)
-
-                # If user selected local Ollama, switch to opencode-sdk provider
-                # OpenCode CLI only supports anthropic/openai/google, not ollama
-                if opencode_config.get('use_local') or opencode_config.get('ai_provider') == 'ollama':
-                    provider = "opencode-sdk"
-                    self.logger.info("switched_to_sdk_for_local", original="opencode", new="opencode-sdk")
 
             # Prompt for model
             available_models = AVAILABLE_MODELS.get(provider, [DEFAULT_MODELS[provider]])
