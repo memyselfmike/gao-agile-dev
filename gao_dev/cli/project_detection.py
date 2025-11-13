@@ -12,11 +12,98 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
+
+class GAODevSourceDirectoryError(Exception):
+    """
+    Raised when GAO-Dev is run from its source repository directory.
+
+    This error prevents users from accidentally operating on GAO-Dev's
+    repository instead of their project. Provides clear installation
+    and usage instructions.
+    """
+
+    def __init__(self) -> None:
+        """Initialize error with helpful message."""
+        message = """[E001] Running from GAO-Dev Source Directory
+
+GAO-Dev must be installed via pip and run from your project directory.
+
+Installation:
+  pip install git+https://github.com/memyselfmike/gao-agile-dev.git@main
+
+Usage:
+  cd /path/to/your/project
+  gao-dev start
+
+Alternative:
+  gao-dev start --project /path/to/your/project
+
+Documentation: https://docs.gao-dev.com/errors/E001
+Support: https://github.com/memyselfmike/gao-agile-dev/issues/new"""
+        super().__init__(message)
+
 # Marker files/directories that indicate a project root
 PROJECT_MARKERS = [
     ".gao-dev",        # Primary marker: project-scoped GAO-Dev data
     ".sandbox.yaml",   # Secondary marker: sandbox project metadata
 ]
+
+# Marker files that identify GAO-Dev source repository
+SOURCE_REPO_MARKERS = [
+    ".gaodev-source",                          # Explicit marker file
+    "gao_dev/orchestrator/orchestrator.py",    # Core orchestrator file
+    "docs/bmm-workflow-status.md",             # BMM workflow tracking document
+]
+
+
+def _is_gaodev_source_repo(path: Path) -> bool:
+    """
+    Check if a directory is the GAO-Dev source repository.
+
+    This function checks for distinctive markers that identify GAO-Dev's
+    source repository to prevent users from accidentally running commands
+    in the wrong directory.
+
+    Args:
+        path: Directory to check
+
+    Returns:
+        True if directory appears to be GAO-Dev source repo, False otherwise
+
+    Examples:
+        >>> _is_gaodev_source_repo(Path("/path/to/gao-agile-dev"))
+        True
+        >>> _is_gaodev_source_repo(Path("/path/to/user/project"))
+        False
+    """
+    try:
+        # Check for any of the source repo markers
+        for marker in SOURCE_REPO_MARKERS:
+            marker_path = path / marker
+            try:
+                if marker_path.exists():
+                    logger.debug(
+                        "Detected GAO-Dev source repository",
+                        path=str(path),
+                        marker=marker
+                    )
+                    return True
+            except (OSError, PermissionError) as e:
+                logger.debug(
+                    "Error checking source marker",
+                    path=str(marker_path),
+                    error=str(e)
+                )
+                continue
+
+        return False
+    except Exception as e:
+        logger.debug(
+            "Error in source repo detection",
+            path=str(path),
+            error=str(e)
+        )
+        return False
 
 
 def detect_project_root(start_dir: Optional[Path] = None) -> Path:
@@ -36,6 +123,9 @@ def detect_project_root(start_dir: Optional[Path] = None) -> Path:
     Returns:
         Path to project root directory
 
+    Raises:
+        GAODevSourceDirectoryError: If run from GAO-Dev source repository
+
     Examples:
         >>> # From within a project
         >>> root = detect_project_root()
@@ -50,7 +140,8 @@ def detect_project_root(start_dir: Optional[Path] = None) -> Path:
         >>> assert root == Path("/tmp")  # Fallback to start_dir
 
     Note:
-        This function never raises exceptions. If detection fails or
+        This function raises GAODevSourceDirectoryError if run from
+        GAO-Dev's source repository. Otherwise, if detection fails or
         markers are not found, it returns the starting directory as
         a safe fallback.
     """
@@ -73,8 +164,19 @@ def detect_project_root(start_dir: Optional[Path] = None) -> Path:
         )
         current = start_dir
 
-    # Search up directory tree
+    # CRITICAL: Check if we're in GAO-Dev source repo (check current and all parents)
+    # This prevents users from accidentally operating on GAO-Dev's repository
     searched_dirs = []
+    for parent in [current, *current.parents]:
+        if _is_gaodev_source_repo(parent):
+            logger.error(
+                "Detected GAO-Dev source directory - refusing to proceed",
+                directory=str(parent),
+                start_dir=str(start_dir)
+            )
+            raise GAODevSourceDirectoryError()
+
+    # Search up directory tree for project markers
     for parent in [current, *current.parents]:
         searched_dirs.append(str(parent))
 

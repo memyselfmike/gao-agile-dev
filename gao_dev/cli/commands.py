@@ -504,6 +504,59 @@ def metrics_export(format, output, run_id, project, benchmark, since, until, lim
 
 
 # ============================================================================
+# HEALTH CHECK COMMANDS
+# ============================================================================
+
+@cli.command("health-check")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed output")
+@click.option("--project", type=Path, help="Project path (default: current directory)")
+def health_check(verbose: bool, project: Optional[Path]):
+    """Run post-update system health check."""
+    from ..core.system_health_check import SystemHealthCheck
+    from rich.console import Console
+    from rich.table import Table
+
+    console = Console()
+
+    project_path = project or Path.cwd()
+    checker = SystemHealthCheck(project_path)
+
+    console.print("\n[bold cyan]GAO-Dev System Health Check[/bold cyan]")
+    console.print(f"Project: {project_path}\n")
+
+    # Run health check
+    report = checker.run_post_update_check(verbose=verbose)
+
+    # Create results table
+    table = Table(title="Health Check Results")
+    table.add_column("Check", style="cyan")
+    table.add_column("Status", justify="center")
+    table.add_column("Message", style="white")
+
+    for result in report.results:
+        status = "[green]PASS[/green]" if result.passed else "[red]FAIL[/red]"
+        table.add_row(result.check_name, status, result.message)
+
+    console.print(table)
+
+    # Show summary
+    console.print()
+    if report.all_passed:
+        console.print("[bold green]All checks passed![/bold green]")
+    else:
+        console.print(f"[bold red]{report.failed_count} check(s) failed[/bold red]")
+        console.print()
+
+        # Show fix suggestions
+        for result in report.results:
+            if not result.passed and result.fix_suggestion:
+                console.print(f"[yellow]Fix for {result.check_name}:[/yellow]")
+                console.print(f"  {result.fix_suggestion}")
+
+        sys.exit(1)
+
+
+# ============================================================================
 # SANDBOX COMMANDS
 # ============================================================================
 

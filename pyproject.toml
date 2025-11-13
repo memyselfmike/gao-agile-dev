@@ -1,10 +1,13 @@
+# Dynamic versioning: Version is automatically derived from git tags using setuptools-scm
+# No manual version updates needed - just tag releases with semantic versions (e.g., v0.1.0-beta.1)
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=68.0", "wheel", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "gao-dev"
-version = "1.0.0"
+# Version is managed dynamically by setuptools-scm based on git tags
+dynamic = ["version"]
 description = "GAO-Dev - Software Engineering Team for Generative Autonomous Organisation"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -14,7 +17,7 @@ authors = [
 ]
 keywords = ["ai", "agents", "autonomous", "development", "gao"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -72,12 +75,33 @@ packages = ["gao_dev"]
 [tool.setuptools.package-data]
 gao_dev = [
     "workflows/**/*",
+    "config/**/*",
+    "templates/**/*",
+    "migrations/**/*",
     "agents/*",
     "checklists/*",
-    "config/*",
     "sandbox/reporting/templates/**/*",
     "sandbox/reporting/assets/*",
+    "../.gaodev-source",  # Source repository marker for safety check
 ]
+
+[tool.setuptools.exclude-package-data]
+"*" = [
+    "tests",
+    "tests/*",
+    "docs",
+    "docs/*",
+    "sandbox/projects",
+    "sandbox/projects/*",
+]
+
+# setuptools-scm configuration for dynamic versioning
+# Derives version from git tags automatically
+[tool.setuptools_scm]
+# Use 'no-guess-dev' to avoid complex dev versions - cleaner for beta releases
+version_scheme = "no-guess-dev"
+# Use 'no-local-version' to avoid local version identifiers in releases
+local_scheme = "no-local-version"
 
 [tool.black]
 line-length = 100
