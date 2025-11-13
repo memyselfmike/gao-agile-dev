@@ -52,7 +52,16 @@ echo ""
 
 # Activate the virtual environment
 echo "[INFO] Activating virtual environment..."
-source .venv/bin/activate
+# Handle Windows Git Bash (Scripts/) vs Unix (bin/)
+if [ -f ".venv/Scripts/activate" ]; then
+    # Windows - Git Bash
+    source .venv/Scripts/activate
+elif [ -f ".venv/bin/activate" ]; then
+    # Unix/Linux/Mac
+    source .venv/bin/activate
+else
+    echo "[WARNING] Could not find activate script, trying to continue anyway..."
+fi
 
 # Verify installation
 if ! command -v gao-dev &> /dev/null; then

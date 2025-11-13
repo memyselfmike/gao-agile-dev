@@ -49,7 +49,12 @@ echo ""
 
 # Run version check
 echo "[4/4] Running version check..."
-source .venv/bin/activate
+# Activate venv (handle Windows Git Bash vs Unix)
+if [ -f ".venv/Scripts/activate" ]; then
+    source .venv/Scripts/activate
+elif [ -f ".venv/bin/activate" ]; then
+    source .venv/bin/activate
+fi
 python -m gao_dev.cli.commands version
 echo ""
 
