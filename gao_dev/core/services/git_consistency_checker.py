@@ -79,7 +79,7 @@ class ConsistencyReport:
 
     timestamp: datetime
     has_issues: bool
-    total_issues: int
+    total_issues: int = 0  # Recalculated in __post_init__
     uncommitted_changes: List[str] = field(default_factory=list)
     orphaned_records: List[ConsistencyIssue] = field(default_factory=list)
     unregistered_files: List[ConsistencyIssue] = field(default_factory=list)
