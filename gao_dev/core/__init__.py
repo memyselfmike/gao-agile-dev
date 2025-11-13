@@ -15,6 +15,7 @@ from .state_manager import StateManager
 from .git_manager import GitManager
 from .health_check import HealthCheck
 from .hook_manager import HookManager
+from .version_manager import VersionManager, CompatibilityResult
 
 # New interfaces (Epic 1 - Foundation)
 from .interfaces import (
@@ -71,6 +72,8 @@ __all__ = [
     "GitManager",
     "HealthCheck",
     "HookManager",
+    "VersionManager",
+    "CompatibilityResult",
     # Interfaces
     "IAgent",
     "IAgentFactory",
