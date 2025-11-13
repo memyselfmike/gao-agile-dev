@@ -1,0 +1,144 @@
+name: Beta Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+      - '.github/workflows/ci.yml'
+
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  calculate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      current_version: ${{ steps.version.outputs.current }}
+      next_version: ${{ steps.version.outputs.next }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed
+
+      - name: Check if release needed
+        id: check
+        run: |
+          # Get commits since last tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tags found, will create initial release"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Check for commits that warrant a release
+          COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s")
+
+          if echo "$COMMITS" | grep -qE "^(feat|fix|perf|refactor)[\(:]"; then
+            echo "Found commits that warrant a release"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "No release-worthy commits found"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Calculate version
+        id: version
+        if: steps.check.outputs.should_release == 'true'
+        run: |
+          # Get current version
+          CURRENT=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          CURRENT=${CURRENT#v}  # Remove 'v' prefix
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+          # Get commits since last tag
+          COMMITS=$(git log $(git describe --tags --abbrev=0 2>/dev/null || echo "")..HEAD --pretty=format:"%s")
+
+          # Determine bump type
+          if echo "$COMMITS" | grep -qE "BREAKING CHANGE:|^[a-z]+![\(:]:"; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -qE "^feat[\(:]"; then
+            BUMP="minor"
+          elif echo "$COMMITS" | grep -qE "^(fix|perf|refactor)[\(:]"; then
+            BUMP="patch"
+          else
+            BUMP="patch"  # Default to patch
+          fi
+
+          # Calculate next version
+          python scripts/bump_version.py "$CURRENT" "$BUMP" > /tmp/next_version
+          NEXT=$(cat /tmp/next_version)
+
+          # Find existing beta tags for this version and increment
+          BETA_NUM=$(git tag -l "v${NEXT}-beta.*" | sed 's/.*beta\.\([0-9]*\)/\1/' | sort -n | tail -1)
+          if [ -z "$BETA_NUM" ]; then
+            BETA_NUM=0
+          fi
+          NEXT_BETA_NUM=$((BETA_NUM + 1))
+          NEXT_BETA="${NEXT}-beta.${NEXT_BETA_NUM}"
+
+          echo "next=$NEXT_BETA" >> $GITHUB_OUTPUT
+          echo "Next version will be: $NEXT_BETA"
+
+  release:
+    needs: calculate-version
+    if: needs.calculate-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # For creating releases and tags
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build setuptools-scm git-cliff twine
+
+      - name: Create git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a v${{ needs.calculate-version.outputs.next }} \
+                   -m "Release v${{ needs.calculate-version.outputs.next }}"
+          git push origin v${{ needs.calculate-version.outputs.next }}
+
+      - name: Build package
+        run: |
+          python -m build
+          ls -lh dist/
+
+      - name: Validate build
+        run: |
+          twine check dist/*
+
+      - name: Generate changelog
+        run: |
+          # Generate changelog for this version
+          git-cliff --tag v${{ needs.calculate-version.outputs.next }} \
+                    --output CHANGELOG.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.calculate-version.outputs.next }}
+          name: Beta Release ${{ needs.calculate-version.outputs.next }}
+          body_path: CHANGELOG.md
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+          prerelease: true
+          draft: false
