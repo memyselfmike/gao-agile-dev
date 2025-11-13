@@ -199,7 +199,9 @@ features:
   # Interactive provider selection (Epic 35)
   # Enable interactive provider selection prompts at REPL startup
   # Set to false to use hardcoded defaults (rollback capability)
-  interactive_provider_selection: true
+  # TEMPORARY: Disabled due to asyncio/prompt_toolkit conflict on Windows
+  # TODO: Fix nested event loop issue (asyncio.run() conflict)
+  interactive_provider_selection: false
 
 # Provider Configuration (Epic 11)
 providers:
