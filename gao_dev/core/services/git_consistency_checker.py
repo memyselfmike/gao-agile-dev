@@ -119,7 +119,8 @@ class GitAwareConsistencyChecker:
     def __init__(
         self,
         db_path: Path,
-        project_path: Path
+        project_path: Path,
+        auto_migrate: bool = True
     ):
         """
         Initialize git-aware consistency checker.
@@ -127,9 +128,11 @@ class GitAwareConsistencyChecker:
         Args:
             db_path: Path to SQLite database file
             project_path: Path to project root (for git operations)
+            auto_migrate: If True, auto-apply missing migrations (default: True)
         """
         self.db_path = Path(db_path)
         self.project_path = Path(project_path)
+        self.auto_migrate = auto_migrate
 
         # Initialize managers
         self.git_manager = GitManager(project_path=self.project_path)
@@ -143,8 +146,130 @@ class GitAwareConsistencyChecker:
         self.logger.info(
             "git_consistency_checker_initialized",
             db_path=str(self.db_path),
-            project_path=str(self.project_path)
+            project_path=str(self.project_path),
+            auto_migrate=self.auto_migrate
         )
+
+        # Self-heal: Apply missing migrations if enabled
+        if self.auto_migrate:
+            self._ensure_schema_exists()
+
+    # ============================================================================
+    # SCHEMA SELF-HEALING
+    # ============================================================================
+
+    def _ensure_schema_exists(self) -> None:
+        """
+        Ensure required database schema exists by auto-applying migrations.
+
+        Checks for missing critical tables (epic_state, story_state) and
+        automatically runs migrations to create them if needed.
+
+        This enables self-healing for projects with incomplete database schemas.
+        """
+        import sqlite3
+
+        try:
+            conn = sqlite3.connect(str(self.db_path))
+            cursor = conn.cursor()
+
+            # Check for critical tables
+            missing_tables = []
+            required_tables = ['epic_state', 'story_state', 'schema_version']
+
+            for table in required_tables:
+                cursor.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                    (table,)
+                )
+                if not cursor.fetchone():
+                    missing_tables.append(table)
+
+            conn.close()
+
+            # If tables missing, apply migrations
+            if missing_tables:
+                self.logger.warning(
+                    "missing_database_tables",
+                    missing=missing_tables,
+                    message="Auto-applying migrations to create missing tables"
+                )
+
+                self._apply_missing_migrations()
+
+                self.logger.info(
+                    "schema_self_healing_complete",
+                    tables_created=missing_tables
+                )
+
+        except Exception as e:
+            self.logger.error(
+                "schema_check_failed",
+                error=str(e),
+                message="Could not verify database schema"
+            )
+            # Don't fail initialization - let consistency check handle it
+            pass
+
+    def _apply_missing_migrations(self) -> None:
+        """
+        Apply missing database migrations.
+
+        Runs Migration 005 (state tables) if not already applied.
+        """
+        import sqlite3
+        import importlib.util
+
+        # Import Migration005 directly from file (it's named 005_add_state_tables.py)
+        migration_file = Path(__file__).parent.parent.parent / "lifecycle" / "migrations" / "005_add_state_tables.py"
+
+        if not migration_file.exists():
+            raise GitAwareConsistencyCheckerError(
+                f"Migration file not found: {migration_file}"
+            )
+
+        spec = importlib.util.spec_from_file_location("migration_005", str(migration_file))
+        if spec and spec.loader:
+            migration_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(migration_module)
+            Migration005 = migration_module.Migration005
+        else:
+            raise GitAwareConsistencyCheckerError("Failed to load migration module")
+
+        try:
+            conn = sqlite3.connect(str(self.db_path))
+
+            # Check if Migration 005 is applied
+            if not Migration005.is_applied(conn):
+                self.logger.info(
+                    "applying_migration",
+                    migration="005_add_state_tables",
+                    message="Creating epic_state, story_state, and other state tables"
+                )
+
+                Migration005.up(conn)
+
+                self.logger.info(
+                    "migration_applied",
+                    migration="005_add_state_tables"
+                )
+            else:
+                self.logger.debug(
+                    "migration_already_applied",
+                    migration="005_add_state_tables"
+                )
+
+            conn.close()
+
+        except Exception as e:
+            self.logger.error(
+                "migration_failed",
+                error=str(e),
+                message="Failed to apply migrations. Run 'gao-dev migrate' manually."
+            )
+            raise GitAwareConsistencyCheckerError(
+                f"Failed to auto-apply migrations: {e}"
+            ) from e
 
     # ============================================================================
     # CONSISTENCY CHECKING
