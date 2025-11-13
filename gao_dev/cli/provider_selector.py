@@ -141,9 +141,61 @@ class ProviderSelector:
             ```
         """
         try:
-            return asyncio.run(self._select_provider_async())
+            return self._select_provider_sync()
         except KeyboardInterrupt:
             raise ProviderSelectionCancelled("User cancelled provider selection")
+
+    def _select_provider_sync(self) -> Dict[str, Any]:
+        """
+        Synchronous implementation of provider selection.
+
+        Skips async validation to avoid event loop conflicts with prompt_toolkit.
+
+        Returns:
+            Provider config dict
+        """
+        self.logger.info("provider_selection_started")
+
+        # Priority 1: Environment variable
+        env_config = self.use_environment_variable()
+        if env_config:
+            self.logger.info(
+                "using_env_var",
+                provider=env_config["provider"],
+            )
+            # Skip validation in sync mode to avoid event loop issues
+            return env_config
+
+        # Priority 2: Saved preferences
+        if self._preference_manager.has_preferences():
+            saved_prefs = self._preference_manager.load_preferences()
+            if saved_prefs:
+                choice = self._interactive_prompter.prompt_use_saved(saved_prefs)
+
+                if choice == "y":
+                    # User accepted saved preferences
+                    self.logger.info("using_saved_preferences")
+                    provider_data = saved_prefs["provider"]
+                    config = self._build_config_from_saved(provider_data)
+                    return config
+                elif choice == "c":
+                    # User wants to change specific settings
+                    self.logger.info("user_requested_changes")
+                    # Fall through to interactive prompts
+                else:
+                    # User declined saved preferences
+                    self.logger.info("user_declined_saved_preferences")
+                    # Fall through to interactive prompts
+
+        # Priority 3: Interactive prompts
+        self.logger.info("prompting_for_provider_selection")
+        config = self._prompt_for_provider_sync()
+
+        # Ask to save preferences
+        self._save_if_requested_sync(config)
+
+        self.logger.info("provider_selection_completed", provider=config["provider"])
+        return config
 
     async def _select_provider_async(self) -> Dict[str, Any]:
         """
@@ -237,6 +289,42 @@ class ProviderSelector:
             "model": provider_data["model"],
             "config": provider_data.get("config", {}),
         }
+
+    def _prompt_for_provider_sync(self) -> Dict[str, Any]:
+        """
+        Prompt user for provider selection (synchronous).
+
+        Returns:
+            Provider config dict
+
+        Raises:
+            KeyboardInterrupt: User pressed Ctrl+C
+        """
+        try:
+            # Prompt for provider
+            provider = self._interactive_prompter.prompt_provider(
+                AVAILABLE_PROVIDERS, PROVIDER_DESCRIPTIONS
+            )
+
+            self.logger.debug("provider_selected", provider=provider)
+
+            # Special handling for OpenCode
+            config: Dict[str, Any] = {}
+            if provider in ("opencode", "opencode-cli"):
+                opencode_config = self._interactive_prompter.prompt_opencode_config()
+                config.update(opencode_config)
+
+            # Prompt for model
+            available_models = AVAILABLE_MODELS.get(provider, [DEFAULT_MODELS[provider]])
+            model = self._interactive_prompter.prompt_model(available_models)
+
+            self.logger.debug("model_selected", model=model)
+
+            return {"provider": provider, "model": model, "config": config}
+
+        except KeyboardInterrupt:
+            self.logger.info("user_cancelled_prompt")
+            raise
 
     async def _prompt_for_provider(self) -> Dict[str, Any]:
         """
@@ -341,6 +429,42 @@ class ProviderSelector:
 
         # Should never reach here
         raise ProviderValidationFailed("Unexpected validation error")
+
+    def _save_if_requested_sync(self, config: Dict[str, Any]) -> None:
+        """
+        Ask user if they want to save preferences (synchronous).
+
+        Args:
+            config: Provider config to save
+        """
+        try:
+            if self._interactive_prompter.prompt_save_preferences():
+                self.logger.info("saving_preferences")
+
+                # Build preferences dict
+                preferences = {
+                    "version": "1.0.0",
+                    "provider": {
+                        "name": config["provider"],
+                        "model": config["model"],
+                        "config": config.get("config", {}),
+                    },
+                    "metadata": {
+                        "last_updated": datetime.now().isoformat() + "Z",
+                        "cli_version": "1.0.0",
+                    },
+                }
+
+                self._preference_manager.save_preferences(preferences)
+                self.logger.info("preferences_saved")
+            else:
+                self.logger.info("user_declined_save_preferences")
+
+        except Exception as e:
+            self.logger.error("save_preferences_error", error=str(e))
+            self.console.print(
+                f"[yellow]Warning: Could not save preferences: {e}[/yellow]"
+            )
 
     async def _save_if_requested(self, config: Dict[str, Any]) -> None:
         """
