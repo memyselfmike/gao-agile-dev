@@ -314,6 +314,12 @@ class ProviderSelector:
                 opencode_config = self._interactive_prompter.prompt_opencode_config()
                 config.update(opencode_config)
 
+                # If user selected local Ollama, switch to opencode-sdk provider
+                # OpenCode CLI only supports anthropic/openai/google, not ollama
+                if opencode_config.get('use_local') or opencode_config.get('ai_provider') == 'ollama':
+                    provider = "opencode-sdk"
+                    self.logger.info("switched_to_sdk_for_local", original="opencode", new="opencode-sdk")
+
             # Prompt for model
             available_models = AVAILABLE_MODELS.get(provider, [DEFAULT_MODELS[provider]])
             model = self._interactive_prompter.prompt_model(available_models)
@@ -349,6 +355,12 @@ class ProviderSelector:
             if provider in ("opencode", "opencode-cli"):
                 opencode_config = self._interactive_prompter.prompt_opencode_config()
                 config.update(opencode_config)
+
+                # If user selected local Ollama, switch to opencode-sdk provider
+                # OpenCode CLI only supports anthropic/openai/google, not ollama
+                if opencode_config.get('use_local') or opencode_config.get('ai_provider') == 'ollama':
+                    provider = "opencode-sdk"
+                    self.logger.info("switched_to_sdk_for_local", original="opencode", new="opencode-sdk")
 
             # Prompt for model
             available_models = AVAILABLE_MODELS.get(provider, [DEFAULT_MODELS[provider]])
