@@ -24,21 +24,33 @@ fi
 echo "[OK] Found uv"
 echo ""
 
+# Create virtual environment if it doesn't exist
+if [ ! -d ".venv" ]; then
+    echo "[1/4] Creating virtual environment..."
+    uv venv
+    echo "[OK] Virtual environment created"
+    echo ""
+else
+    echo "[1/4] Virtual environment already exists"
+    echo ""
+fi
+
 # Sync dependencies
-echo "[1/3] Syncing dependencies..."
+echo "[2/4] Syncing dependencies..."
 uv sync
 echo "[OK] Dependencies synced"
 echo ""
 
 # Install package in development mode
-echo "[2/3] Installing gao-dev in development mode..."
+echo "[3/4] Installing gao-dev in development mode..."
 uv pip install -e .
 echo "[OK] gao-dev installed"
 echo ""
 
 # Run version check
-echo "[3/3] Running version check..."
-uv run gao-dev version
+echo "[4/4] Running version check..."
+source .venv/bin/activate
+python -m gao_dev.cli.commands version
 echo ""
 
 echo "========================================"

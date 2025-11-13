@@ -100,7 +100,25 @@ This automated script will:
 source .venv/bin/activate
 ```
 
-### Verify Installation
+### Verify Installation & Start Using GAO-Dev
+
+**Easiest Way - Use the Start Script:**
+
+```bash
+# Git Bash/WSL/Unix/Mac
+./start.sh
+
+# Windows Command Prompt or PowerShell
+start.bat
+```
+
+The start script will:
+- Create/verify virtual environment
+- Install all dependencies
+- Launch interactive chat mode
+- Handle everything automatically!
+
+**Or manually verify:**
 
 ```bash
 # Check version
@@ -224,9 +242,27 @@ gao-dev version
 
 ## Quick Start
 
-### NEW! Interactive Chat (Easiest Way to Get Started)
+### NEW! One-Command Startup (Easiest Way!)
 
-The fastest way to use GAO-Dev is through the interactive chat interface:
+The absolute fastest way to start using GAO-Dev:
+
+```bash
+# Git Bash/WSL/Unix/Mac
+./start.sh
+
+# Windows Command Prompt or PowerShell
+start.bat
+```
+
+This single command:
+- Creates/verifies your environment
+- Installs all dependencies
+- Launches interactive chat with Brian
+- No activation or setup needed!
+
+### Interactive Chat Mode
+
+Once started (or if you manually activate), use the interactive chat:
 
 ```bash
 gao-dev start
