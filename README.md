@@ -29,53 +29,198 @@ GAO-Dev is an autonomous AI development orchestration system that manages the co
 
 ## Installation
 
-### Quick Setup with uv (Recommended)
+### Prerequisites
 
-**Windows:**
+1. **Python 3.11 or higher**
+   ```bash
+   python --version  # Should show 3.11+
+   ```
+
+2. **uv (Python package installer)** - Recommended for fast, reliable installs
+
+   **Windows:**
+   ```powershell
+   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+   **macOS/Linux:**
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+   Verify installation:
+   ```bash
+   uv --version
+   ```
+
+### Quick Installation (Recommended)
+
+**Step 1: Clone the repository**
+
 ```bash
+# Clone from GitHub
+git clone https://github.com/memyselfmike/gao-agile-dev.git
+cd gao-agile-dev
+```
+
+**Step 2: Run setup script**
+
+**Windows (Command Prompt or PowerShell):**
+```cmd
 setup.bat
 ```
 
-**Unix/Linux/Mac:**
+**Windows (Git Bash/WSL) or Unix/Linux/Mac:**
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
-### From Source (Manual)
+**Important**: Don't run `bash setup.bat` - use the appropriate script for your shell!
 
+This automated script will:
+- Sync all dependencies
+- Install gao-dev CLI in development mode
+- Verify the installation
+
+**Step 3: Activate the virtual environment**
+
+**Windows (Command Prompt):**
+```cmd
+.venv\Scripts\activate
+```
+
+**Windows (PowerShell):**
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+**Windows (Git Bash/WSL), Unix/Linux/Mac:**
 ```bash
-# Clone the repository
-cd gao-agile-dev
-
-# Install with uv (recommended)
-uv sync
-uv pip install -e .
-
-# Or install with pip
-pip install -e .
-
-# Or install with dev dependencies
-pip install -e ".[dev]"
+source .venv/bin/activate
 ```
 
 ### Verify Installation
 
 ```bash
-# Preferred method (if package installed in editable mode)
+# Check version
 gao-dev --version
+
+# View available commands
 gao-dev --help
 
-# Alternative method (always works)
-python -m gao_dev.cli.commands --version
-python -m gao_dev.cli.commands --help
+# Run health check
+gao-dev health
 ```
 
-**Note**: In the examples below, `gao-dev` commands can be replaced with `python -m gao_dev.cli.commands` if the shorter command isn't available in your environment.
+**Success!** You should see the gao-dev version and command help.
 
-**See [QUICKSTART.md](QUICKSTART.md) for a detailed getting started guide.**
+### Alternative: Manual Installation
 
-**See [docs/SETUP.md](docs/SETUP.md) for API key configuration and autonomous benchmark setup.**
+If you prefer manual control or the setup script doesn't work:
+
+```bash
+# Clone repository
+git clone https://github.com/memyselfmike/gao-agile-dev.git
+cd gao-agile-dev
+
+# Sync dependencies and install
+uv sync
+uv pip install -e .
+
+# Activate virtual environment
+source .venv/bin/activate        # Git Bash/WSL/Unix/Mac
+# OR
+.venv\Scripts\activate           # Windows Command Prompt
+# OR
+.venv\Scripts\Activate.ps1       # Windows PowerShell
+
+# Verify
+gao-dev --version
+```
+
+### Alternative: Using pip
+
+If you don't have uv installed and prefer pip:
+
+```bash
+# Clone repository
+git clone https://github.com/memyselfmike/gao-agile-dev.git
+cd gao-agile-dev
+
+# Create virtual environment
+python -m venv .venv
+
+# Activate virtual environment
+source .venv/bin/activate        # Git Bash/WSL/Unix/Mac
+# OR
+.venv\Scripts\activate           # Windows Command Prompt
+# OR
+.venv\Scripts\Activate.ps1       # Windows PowerShell
+
+# Install
+pip install -e ".[dev]"
+
+# Verify
+gao-dev --version
+```
+
+**Note**: pip installation is slower but works if uv is unavailable.
+
+### Running Without Installation
+
+If the `gao-dev` command isn't available, you can always use:
+
+```bash
+python -m gao_dev.cli.commands --help
+python -m gao_dev.cli.commands version
+```
+
+### Next Steps
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Detailed getting started guide
+- **[docs/SETUP.md](docs/SETUP.md)** - API key configuration for AI providers
+- **[docs/INDEX.md](docs/INDEX.md)** - Complete documentation hub
+
+## Updating GAO-Dev
+
+### Quick Update (For Beta Testers)
+
+To update your installation to the latest version:
+
+**Windows (Command Prompt or PowerShell):**
+```cmd
+update.bat
+```
+
+**Windows (Git Bash/WSL) or Unix/Linux/Mac:**
+```bash
+./update.sh
+```
+
+This will:
+- Pull latest changes from GitHub
+- Update dependencies
+- Run database migrations
+- Verify the installation
+
+### Manual Update
+
+```bash
+# Pull latest changes
+git pull origin main
+
+# Update dependencies
+uv sync
+
+# Run migrations
+gao-dev db migrate
+
+# Verify
+gao-dev version
+```
+
+**For complete update instructions, troubleshooting, and version pinning, see [UPDATE.md](UPDATE.md).**
 
 ## Quick Start
 
