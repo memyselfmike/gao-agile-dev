@@ -1,10 +1,27 @@
-Scale Levels (BMAD Method):
-- Level 0: Single atomic change (< 1 hour) - bug fix, small tweak, chore
-- Level 1: Bug fix or tiny feature (1-4 hours, 1-3 stories) - single focused fix/feature in existing code
-- Level 2: Small feature addition (1-2 weeks, 3-8 stories, 1 epic) - adding feature to existing system
-- Level 3: Medium feature set (1-2 months, 12-40 stories, 2-5 epics) - significant enhancement to existing system
-- Level 4: Greenfield application (2-6 months, 40+ stories, 5+ epics) - building complete app from scratch
+Scale Levels (BMAD Method - Scale-Adaptive Agile):
 
-CRITICAL: Greenfield projects (building from scratch) should ALWAYS be Level 4, regardless of perceived "simplicity".
-Even a "simple todo app" built from scratch requires: architecture, database design, API design, authentication,
-testing infrastructure, deployment, documentation - this is Level 4 work.
+- Level 0 (< 1 hour): Single atomic change - bug fix, config tweak, documentation update
+
+- Level 1 (1-4 hours, 1-3 stories): Tiny focused feature in existing, established system
+  Example: Adding password strength indicator to existing login form
+
+- Level 2 (1-2 weeks, 3-8 stories, 1 epic): Small feature addition to existing system
+  Example: Adding email notifications to existing todo app, implementing dark mode
+  Key distinction: Architecture and infrastructure already exist
+
+- Level 3 (1-2 months, 12-40 stories, 2-5 epics): Significant enhancement to existing system
+  Example: Adding multi-tenant support to existing SaaS, building analytics dashboard
+  Key distinction: Requires architectural decisions for new components
+
+- Level 4 (2-6 months, 40+ stories, 5+ epics): Complete application built from scratch (greenfield)
+  Examples: Building a todo app, creating a blog platform, making a chat system
+  Key distinction: Starting from zero - requires foundation work, architecture decisions,
+  infrastructure setup. Even "simple" greenfield apps need 40+ stories when properly broken
+  down into user stories covering: authentication, core features, infrastructure, quality,
+  and polish.
+
+Philosophical Note:
+The fundamental distinction is greenfield vs brownfield. Building from scratch (greenfield)
+is qualitatively different from enhancing existing code (brownfield), regardless of
+perceived complexity. Greenfield requires foundational decisions that compound over the
+project lifetime, while brownfield builds on proven architecture and existing infrastructure.
