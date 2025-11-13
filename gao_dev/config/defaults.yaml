@@ -196,6 +196,12 @@ features:
   # Automatically inject ceremonies into workflow sequences
   enable_ceremony_integration: true
 
+  # Interactive provider selection (Epic 35)
+  # Enable interactive provider selection prompts at REPL startup
+  # Set to false to use hardcoded defaults (rollback capability)
+  # NOTE: Temporarily disabled while testing integration (Story 35.6)
+  interactive_provider_selection: false
+
 # Provider Configuration (Epic 11)
 providers:
   # Default provider for all agents (can be overridden per-agent)

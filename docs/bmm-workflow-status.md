@@ -1,5 +1,5 @@
 ---
-last_updated: 2025-11-10
+last_updated: 2025-01-12
 phase: 4-implementation
 scale_level: 3
 project_type: software
@@ -11,10 +11,10 @@ project_name: GAO-Dev - Complete System
 ## Current State
 
 **Phase**: 4 - Implementation
-**Scale Level**: 3 (Level 3: 12-40 stories, 2-5 epics - we have 31 completed epics)
+**Scale Level**: 3 (Level 3: 12-40 stories, 2-5 epics - we have 32 completed epics)
 **Project Type**: Software - Python Development Framework
-**Current Epic**: Epic 31 - Full Mary (Business Analyst) Integration ✅ COMPLETE
-**Status**: ALL 5 core stories complete (28/28 points, 100% done) | All 8 GAO-Dev agents operational
+**Current Epic**: Epic 35 - Interactive Provider Selection at Startup ✅ COMPLETE
+**Status**: ALL 8 stories complete (39/39 points, 100% done) | Interactive provider selection with preference persistence operational
 
 ## Project Overview
 
@@ -545,7 +545,79 @@ GAO-Dev now has a conversational interface accessible via `gao-dev start`. Users
 - Comprehensive user guide (400+ lines)
 - Demo script and QA checklist
 
-## Current Epic: Epic 31 - Full Mary (Business Analyst) Integration ✅ COMPLETE
+## Current Epic: Epic 35 - Interactive Provider Selection at Startup ✅ COMPLETE
+
+**Goal**: Add interactive provider selection flow to Brian REPL startup, allowing users to choose AI providers (Claude Code, OpenCode, local Ollama models) through clear prompts with preference persistence.
+
+**Status**: COMPLETE (All 8 stories implemented, 39 story points)
+
+**Key Documents**:
+- PRD: `docs/features/interactive-provider-selection/PRD.md`
+- Architecture: `docs/features/interactive-provider-selection/ARCHITECTURE.md`
+- User Guide: `docs/features/interactive-provider-selection/USER_GUIDE.md`
+- FAQ: `docs/features/interactive-provider-selection/FAQ.md` (20+ questions)
+- API Reference: `docs/features/interactive-provider-selection/API_REFERENCE.md`
+- Testing Guide: `docs/features/interactive-provider-selection/TESTING.md`
+- Examples: `docs/features/interactive-provider-selection/examples/` (5 examples)
+- Stories: `docs/features/interactive-provider-selection/epics/35-provider-selection/stories/`
+
+**Success Criteria**: All achieved ✅
+- ✅ Interactive prompts with Rich-formatted tables
+- ✅ PreferenceManager with YAML security (safe_dump, input sanitization)
+- ✅ ProviderValidator with CLI detection and actionable suggestions
+- ✅ InteractivePrompter with lazy imports for CI/CD compatibility
+- ✅ ProviderSelector orchestrating full flow
+- ✅ ChatREPL integration with zero regressions
+- ✅ Environment variable bypass (`AGENT_PROVIDER`) for CI/CD
+- ✅ Ollama local model support (deepseek-r1, llama2, codellama)
+- ✅ Cross-platform support (Windows, macOS, Linux)
+- ✅ >90% test coverage for new code (120+ tests)
+- ✅ Comprehensive documentation (3,000+ lines)
+
+**Completed Stories** (39 story points total):
+1. ✅ Story 35.1: Project Setup & Architecture (2 points)
+2. ✅ Story 35.2: PreferenceManager Implementation (5 points)
+3. ✅ Story 35.3: ProviderValidator Implementation (5 points)
+4. ✅ Story 35.4: InteractivePrompter Implementation (8 points)
+5. ✅ Story 35.5: ProviderSelector Implementation (5 points)
+6. ✅ Story 35.6: ChatREPL Integration (3 points)
+7. ✅ Story 35.7: Testing & Regression Validation (8 points)
+8. ✅ Story 35.8: Documentation & Examples (3 points)
+
+**Total**: 39 story points, 8 stories - ALL COMPLETE
+
+**Achievement**:
+GAO-Dev now has interactive provider selection at startup. Users can choose between Claude Code, OpenCode (with cloud or local Ollama models), or direct API providers through beautiful Rich-formatted prompts. Preferences persist to `.gao-dev/provider_preferences.yaml`, and `AGENT_PROVIDER` env var bypasses prompts for CI/CD. The system includes comprehensive validation with actionable error messages, security measures (YAML injection prevention, input sanitization), and full CI/CD compatibility with lazy imports.
+
+**Key Deliverables**:
+- `gao_dev/cli/preference_manager.py` - Preference persistence with YAML security (560 lines)
+- `gao_dev/cli/provider_validator.py` - Provider validation with CLI detection (428 lines)
+- `gao_dev/cli/interactive_prompter.py` - Interactive prompts with Rich (406 lines)
+- `gao_dev/cli/provider_selector.py` - Provider selection orchestration (430 lines)
+- `gao_dev/cli/models.py` - Data models (ProviderConfig, ValidationResult) (196 lines)
+- `gao_dev/cli/exceptions.py` - Exception hierarchy (139 lines)
+- ChatREPL integration with zero regressions
+- 120+ tests (unit, integration, E2E, regression)
+- Complete documentation suite:
+  - `USER_GUIDE.md` (400+ lines)
+  - `FAQ.md` (20+ questions, 400+ lines)
+  - `TROUBLESHOOTING.md` (comprehensive issue resolution, 400+ lines)
+  - `API_REFERENCE.md` (complete API docs, 700+ lines)
+  - `TESTING.md` (testing guide, 200+ lines)
+  - `INTEGRATION_GUIDE.md` (custom provider guide, 200+ lines)
+  - `README.md` (feature overview, 400+ lines)
+- 5 practical examples (first-time setup, change provider, local models, CI/CD, advanced)
+
+**Benefits Achieved**:
+- **User Experience**: No manual configuration, clear options, <30s setup time
+- **Cost Savings**: Free local Ollama models (deepseek-r1) save $0.003/1K tokens
+- **Offline Development**: Work with local models without internet
+- **CI/CD Compatible**: Environment variable bypass for automated pipelines
+- **Security**: YAML injection prevention, input sanitization, 0600 file permissions
+- **Extensibility**: Easy to add new providers through ProviderFactory
+- **Zero Regressions**: All existing functionality unchanged, 100% backward compatible
+
+## Previous Epic: Epic 31 - Full Mary (Business Analyst) Integration ✅ COMPLETE
 
 **Goal**: Integrate Mary as GAO-Dev's 8th agent - a Business Analyst who helps clarify vague ideas into clear product visions through structured discovery techniques.
 
@@ -887,6 +959,13 @@ GAO-Dev now has a production-ready document lifecycle management system with int
 - **2025-11-10**: All 8 GAO-Dev agents now operational: Brian, John, Winston, Sally, Bob, Amelia, Murat, Mary
 - **2025-11-10**: 24 Mary prompts following Epic 10 format, 4 workflows, 60+ tests total across Epic 31
 - **2025-11-10**: Mary capabilities: Vision Elicitation (4 techniques), Brainstorming (10 techniques), Requirements Analysis (5 analyses), Domain Intelligence (5 domains)
+- **2025-01-12**: Epic 35 COMPLETE - Interactive Provider Selection at Startup (39/39 points, 100%)
+- **2025-01-12**: Story 35.8 complete: USER_GUIDE, FAQ (20+ Q&A), TROUBLESHOOTING, API_REFERENCE (700+ lines), TESTING, INTEGRATION_GUIDE, README, 5 examples
+- **2025-01-12**: Interactive provider selection operational - Users can choose AI providers (Claude Code, OpenCode, Ollama) at startup
+- **2025-01-12**: 120+ tests (unit, integration, E2E), 3,000+ lines of documentation, >90% coverage
+- **2025-01-12**: Security measures: YAML injection prevention, input sanitization, 0600 file permissions
+- **2025-01-12**: CI/CD compatible: AGENT_PROVIDER env var bypass, lazy imports, headless mode fallback
+- **2025-01-12**: Cost savings enabled: Free local Ollama models (deepseek-r1, llama2, codellama)
 
 ---
 

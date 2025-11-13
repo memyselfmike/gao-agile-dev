@@ -67,7 +67,39 @@ class ChatREPL:
         # Create services
         config_loader = ConfigLoader(self.project_root)
         workflow_registry = WorkflowRegistry(config_loader)
-        executor = ProcessExecutor(self.project_root)
+
+        # Story 35.6: Interactive provider selection
+        features = config_loader.get('features', {})
+        if features.get('interactive_provider_selection', False):
+            try:
+                from gao_dev.cli.provider_selector import ProviderSelector
+                from gao_dev.cli.exceptions import (
+                    ProviderSelectionCancelled,
+                    ProviderValidationFailed
+                )
+
+                selector = ProviderSelector(self.project_root, self.console)
+                provider_config = selector.select_provider()
+
+                # Create ProcessExecutor with selected config
+                executor = ProcessExecutor(
+                    self.project_root,
+                    provider_name=provider_config['provider'],
+                    provider_config=provider_config.get('config', {})
+                )
+
+            except ProviderSelectionCancelled:
+                self.console.print("\n[yellow]Provider selection cancelled. Exiting.[/yellow]")
+                import sys
+                sys.exit(0)
+            except ProviderValidationFailed as e:
+                self.console.print(f"\n[red]Error:[/red] {e}")
+                import sys
+                sys.exit(1)
+        else:
+            # Use existing default ProcessExecutor creation
+            executor = ProcessExecutor(self.project_root)
+
         analysis_service = AIAnalysisService(executor)
 
         # Create StateTracker if database exists

@@ -1,0 +1,31 @@
+# Local configuration override for GAO-Dev
+# This file is git-ignored and overrides defaults.yaml
+
+# Provider Configuration - Use OpenCode with Ollama
+providers:
+  # Set opencode as default provider
+  default: "opencode"
+
+  # Disable auto-fallback to Anthropic API
+  auto_fallback: false
+
+  # OpenCode with Ollama configuration
+  opencode:
+    cli_path: null  # Auto-detect
+    ai_provider: "ollama"  # Use ollama instead of anthropic
+    default_model: "deepseek-r1:8b"  # Your local model
+    timeout: 7200  # Longer timeout for local inference
+
+    # Ollama-specific settings
+    ollama:
+      base_url: "http://localhost:11434"  # Default ollama endpoint
+      context_window: 8192  # Adjust based on your model
+      temperature: 0.7
+
+# Model override for all agents
+claude_model: "deepseek-r1:8b"  # Use local model
+claude_max_tokens: 4000  # Adjust based on model capacity
+
+# Feature flags
+features:
+  provider_abstraction_enabled: true  # Enable provider system
