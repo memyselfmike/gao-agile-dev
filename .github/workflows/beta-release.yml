@@ -114,9 +114,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a v${{ needs.calculate-version.outputs.next }} \
-                   -m "Release v${{ needs.calculate-version.outputs.next }}"
-          git push origin v${{ needs.calculate-version.outputs.next }}
+          git tag -a v${{ needs.calculate-version.outputs.next_version }} \
+                   -m "Release v${{ needs.calculate-version.outputs.next_version }}"
+          git push origin v${{ needs.calculate-version.outputs.next_version }}
 
       - name: Build package
         run: |
@@ -130,14 +130,14 @@ jobs:
       - name: Generate changelog
         run: |
           # Generate changelog for this version
-          git-cliff --tag v${{ needs.calculate-version.outputs.next }} \
+          git-cliff --tag v${{ needs.calculate-version.outputs.next_version }} \
                     --output CHANGELOG.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ needs.calculate-version.outputs.next }}
-          name: Beta Release ${{ needs.calculate-version.outputs.next }}
+          tag_name: v${{ needs.calculate-version.outputs.next_version }}
+          name: Beta Release ${{ needs.calculate-version.outputs.next_version }}
           body_path: CHANGELOG.md
           files: |
             dist/*.whl
