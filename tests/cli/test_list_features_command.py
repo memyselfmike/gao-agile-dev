@@ -17,6 +17,8 @@ from gao_dev.core.services.feature_state_service import FeatureScope, FeatureSta
 @pytest.fixture
 def test_project(tmp_path):
     """Create temporary test project with features."""
+    import subprocess
+
     project_root = tmp_path / "test_project"
     project_root.mkdir()
 
@@ -26,24 +28,10 @@ def test_project(tmp_path):
 
     db_path = gao_dev_dir / "documents.db"
 
-    # Initialize database schema
-    conn = sqlite3.connect(str(db_path))
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS feature_state (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            scope TEXT NOT NULL,
-            status TEXT NOT NULL,
-            scale_level INTEGER NOT NULL,
-            description TEXT,
-            owner TEXT,
-            created_at TEXT NOT NULL,
-            completed_at TEXT,
-            metadata TEXT
-        )
-    """)
+    # Initialize database schema using GitMigrationManager
+    from gao_dev.core.services.git_migration_manager import GitMigrationManager
+    migration_mgr = GitMigrationManager(db_path=db_path, project_path=project_root)
+    migration_mgr._phase_1_create_tables()
 
     # Insert test features
     now = datetime.utcnow().isoformat()
@@ -56,19 +44,26 @@ def test_project(tmp_path):
         ("reporting", "feature", "archived", 2, "Analytics", None, now),
     ]
 
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
     cursor.executemany(
         """INSERT INTO feature_state
         (name, scope, status, scale_level, description, owner, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)""",
         test_features
     )
-
     conn.commit()
     conn.close()
 
-    # Create git repo
-    git_dir = project_root / ".git"
-    git_dir.mkdir()
+    # Create git repo properly
+    subprocess.run(["git", "init"], cwd=project_root, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=project_root, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=project_root, capture_output=True)
+
+    # Create initial commit
+    (project_root / "README.md").write_text("# Test Project")
+    subprocess.run(["git", "add", "."], cwd=project_root, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "Initial commit"], cwd=project_root, capture_output=True)
 
     return project_root
 

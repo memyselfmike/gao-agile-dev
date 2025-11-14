@@ -21,13 +21,21 @@ def tmp_project(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def bypass_provider_selection(monkeypatch):
+    """Bypass provider selection by setting AGENT_PROVIDER env var and mock API key."""
+    monkeypatch.setenv("AGENT_PROVIDER", "direct-api-anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-for-testing")
+    yield
+
+
+@pytest.fixture
 def mock_prompt_session():
     """Mock PromptSession to avoid console issues in tests."""
     with patch("gao_dev.cli.chat_repl.PromptSession") as mock:
         yield mock
 
 
-def test_chatrepl_feature_flag_disabled_by_default(tmp_project: Path, mock_prompt_session):
+def test_chatrepl_feature_flag_disabled_by_default(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """ChatREPL uses default behavior when feature flag is disabled (default)."""
     # This tests the current state where feature flag is FALSE by default
     from gao_dev.cli.chat_repl import ChatREPL
@@ -156,7 +164,7 @@ def test_chatrepl_validation_failure_handling():
             assert exc_info.value.code == 1
 
 
-def test_chatrepl_backward_compatibility(tmp_project: Path, mock_prompt_session):
+def test_chatrepl_backward_compatibility(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """ChatREPL maintains backward compatibility with existing functionality."""
     from gao_dev.cli.chat_repl import ChatREPL
 

@@ -16,7 +16,7 @@ from pathlib import Path
 import tempfile
 import shutil
 from click.testing import CliRunner
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 from gao_dev.cli.commands import (
     create_prd,
@@ -105,9 +105,11 @@ class TestCLIGitIntegration:
         mock_orchestrator.close = Mock()
 
         # Mock create_prd async generator
-        async def mock_create_prd(name):
+        def _mock_create_prd_gen(name):
             yield "Creating PRD..."
             yield "PRD created successfully"
+        mock_create_prd = AsyncMock(return_value=_mock_create_prd_gen('Test'))
+        mock_create_prd.return_value = _mock_create_prd_gen('Test')
 
         mock_orchestrator.create_prd = mock_create_prd
         mock_create_default.return_value = mock_orchestrator
@@ -132,7 +134,7 @@ class TestCLIGitIntegration:
         mock_orchestrator.close = Mock()
 
         # Mock create_story async generator
-        async def mock_create_story(epic, story, title):
+        def mock_create_story(epic, story, title):
             yield "Creating story..."
             yield "Story created successfully"
 
@@ -159,7 +161,7 @@ class TestCLIGitIntegration:
         mock_orchestrator.close = Mock()
 
         # Mock implement_story async generator
-        async def mock_implement_story(epic, story):
+        def mock_implement_story(epic, story):
             yield "Implementing story..."
             yield "Story implemented successfully"
 
@@ -186,7 +188,7 @@ class TestCLIGitIntegration:
         mock_orchestrator.close = Mock()
 
         # Mock create_architecture async generator
-        async def mock_create_architecture(name):
+        def mock_create_architecture(name):
             yield "Creating architecture..."
             yield "Architecture created successfully"
 
@@ -211,7 +213,7 @@ class TestCLIGitIntegration:
         mock_orchestrator.git_state_manager = Mock()
         mock_orchestrator.close = Mock()
 
-        async def mock_create_prd(name):
+        def mock_create_prd(name):
             yield "Creating PRD..."
 
         mock_orchestrator.create_prd = mock_create_prd
@@ -234,7 +236,7 @@ class TestCLIGitIntegration:
         mock_orchestrator.close = Mock()
 
         # Mock that raises exception
-        async def mock_create_prd(name):
+        def mock_create_prd(name):
             raise Exception("Test error")
 
         mock_orchestrator.create_prd = mock_create_prd
@@ -258,7 +260,7 @@ class TestCLIGitIntegration:
         mock_orchestrator.git_state_manager = None  # No git integration
         mock_orchestrator.close = Mock()
 
-        async def mock_create_prd(name):
+        def mock_create_prd(name):
             yield "Creating PRD..."
 
         mock_orchestrator.create_prd = mock_create_prd
@@ -281,7 +283,7 @@ class TestCLIGitIntegration:
         mock_orchestrator.git_state_manager = Mock()
         mock_orchestrator.close = Mock()
 
-        async def mock_create_story(epic, story, title):
+        def mock_create_story(epic, story, title):
             yield f"Creating story: {title}"
 
         mock_orchestrator.create_story = mock_create_story
@@ -312,7 +314,7 @@ class TestCLIErrorHandling:
         mock_orchestrator.close = Mock()
 
         # Async generator that raises
-        async def mock_create_prd(name):
+        def mock_create_prd(name):
             raise ValueError("Test error from workflow")
 
         mock_orchestrator.create_prd = mock_create_prd
@@ -336,7 +338,7 @@ class TestCLIErrorHandling:
         mock_orchestrator.git_state_manager = Mock()
         mock_orchestrator.close = Mock()
 
-        async def mock_implement_story(epic, story):
+        def mock_implement_story(epic, story):
             raise RuntimeError("Implementation failed")
 
         mock_orchestrator.implement_story = mock_implement_story

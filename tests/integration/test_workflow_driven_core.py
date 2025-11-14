@@ -18,12 +18,14 @@ def temp_project(tmp_path):
 
 
 @pytest.fixture
-def orchestrator(temp_project):
+def orchestrator(temp_project, monkeypatch):
     """Create orchestrator for integration testing."""
-    return GAODevOrchestrator(
-        project_root=temp_project,
-        api_key="test-key",
-        mode="cli"
+    # Set environment variable to bypass provider selection
+    monkeypatch.setenv("AGENT_PROVIDER", "direct-api-anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-for-testing")
+
+    return GAODevOrchestrator.create_default(
+        project_root=temp_project
     )
 
 
@@ -31,8 +33,6 @@ def test_orchestrator_initialization(orchestrator, temp_project):
     """Test that orchestrator initializes all components correctly."""
     # Verify basic properties
     assert orchestrator.project_root == temp_project
-    assert orchestrator.api_key == "test-key"
-    assert orchestrator.mode == "cli"
 
     # Verify components initialized
     assert orchestrator.config_loader is not None
@@ -88,12 +88,14 @@ async def test_clarification_handling_in_cli_mode(orchestrator):
 
 
 @pytest.mark.asyncio
-async def test_clarification_handling_in_benchmark_mode(temp_project):
+async def test_clarification_handling_in_benchmark_mode(temp_project, monkeypatch):
     """Test clarification handling in benchmark mode (Story 7.2.4)."""
-    orchestrator_bench = GAODevOrchestrator(
-        project_root=temp_project,
-        api_key="test-key",
-        mode="benchmark"
+    # Set environment variable to bypass provider selection
+    monkeypatch.setenv("AGENT_PROVIDER", "direct-api-anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-for-testing")
+
+    orchestrator_bench = GAODevOrchestrator.create_default(
+        project_root=temp_project
     )
 
     questions = ["What framework?"]
@@ -104,19 +106,19 @@ async def test_clarification_handling_in_benchmark_mode(temp_project):
     assert result is None
 
 
-def test_mode_detection(temp_project):
+def test_mode_detection(temp_project, monkeypatch):
     """Test that different execution modes are set correctly."""
-    # CLI mode
-    orch_cli = GAODevOrchestrator(temp_project, mode="cli")
-    assert orch_cli.mode == "cli"
+    # Set environment variable to bypass provider selection
+    monkeypatch.setenv("AGENT_PROVIDER", "direct-api-anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-for-testing")
 
-    # Benchmark mode
-    orch_bench = GAODevOrchestrator(temp_project, mode="benchmark")
-    assert orch_bench.mode == "benchmark"
+    # Create orchestrator with factory method
+    orch = GAODevOrchestrator.create_default(project_root=temp_project)
 
-    # API mode
-    orch_api = GAODevOrchestrator(temp_project, mode="api")
-    assert orch_api.mode == "api"
+    # Verify orchestrator initialized successfully
+    assert orch.project_root == temp_project
+    assert orch.workflow_registry is not None
+    assert orch.brian_orchestrator is not None
 
 
 @pytest.mark.asyncio

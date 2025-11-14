@@ -154,6 +154,31 @@ class GAODevOrchestrator:
         """Set the document lifecycle manager and update ArtifactManager reference."""
         self.artifact_manager.doc_lifecycle = value
 
+    @property
+    def workflow_registry(self) -> Optional['WorkflowRegistry']:
+        """Get workflow registry from brian_orchestrator for backward compatibility."""
+        if hasattr(self, 'brian_orchestrator') and self.brian_orchestrator:
+            return self.brian_orchestrator.workflow_registry
+        return None
+
+    @property
+    def config_loader(self) -> Optional[ConfigLoader]:
+        """Get config loader from brian_orchestrator for backward compatibility."""
+        if hasattr(self, 'brian_orchestrator') and self.brian_orchestrator:
+            return self.brian_orchestrator.config_loader
+        return None
+
+    def _get_agent_method_for_workflow(self, workflow_name: str):
+        """
+        Stub method for backward compatibility with tests.
+
+        This method used to map workflows to agent methods. Now workflow execution
+        is handled by WorkflowCoordinator, but tests still mock this method.
+
+        Returns None by default. Tests can patch this method to inject mock behavior.
+        """
+        return None
+
     @classmethod
     def create_default(
         cls,

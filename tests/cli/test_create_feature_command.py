@@ -27,10 +27,28 @@ def test_project(tmp_path):
 
     db_path = gao_dev_dir / "documents.db"
 
-    # Initialize database schema (run migration)
-    from gao_dev.core.services.git_migration_manager import GitMigrationManager
-    migration_mgr = GitMigrationManager(db_path=db_path)
-    migration_mgr._phase_1_create_tables()
+    # Initialize database schema manually
+    import sqlite3
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+
+    # Create feature_state table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS feature_state (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            scope TEXT NOT NULL,
+            status TEXT NOT NULL,
+            scale_level INTEGER NOT NULL,
+            description TEXT,
+            owner TEXT,
+            created_at TEXT NOT NULL,
+            completed_at TEXT,
+            metadata TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
 
     # Create git repo properly
     subprocess.run(["git", "init"], cwd=project_root, capture_output=True)

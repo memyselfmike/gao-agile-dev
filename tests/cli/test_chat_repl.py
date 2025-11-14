@@ -3,6 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch, Mock
 from pathlib import Path
+import os
 
 from gao_dev.cli.chat_repl import ChatREPL
 
@@ -14,6 +15,14 @@ def tmp_project(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def bypass_provider_selection(monkeypatch):
+    """Bypass provider selection by setting AGENT_PROVIDER env var and mock API key."""
+    monkeypatch.setenv("AGENT_PROVIDER", "direct-api-anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-for-testing")
+    yield
+
+
+@pytest.fixture
 def mock_prompt_session():
     """Mock PromptSession to avoid console issues in tests."""
     with patch("gao_dev.cli.chat_repl.PromptSession") as mock:
@@ -22,7 +31,7 @@ def mock_prompt_session():
 
 
 @pytest.mark.asyncio
-async def test_repl_initialization(tmp_project: Path, mock_prompt_session):
+async def test_repl_initialization(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that ChatREPL initializes successfully."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -35,7 +44,7 @@ async def test_repl_initialization(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_greeting_displayed(tmp_project: Path, mock_prompt_session):
+async def test_greeting_displayed(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that greeting message is displayed on startup."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -52,7 +61,7 @@ async def test_greeting_displayed(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_exit_command_exit(tmp_project: Path, mock_prompt_session):
+async def test_exit_command_exit(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that 'exit' command exits REPL gracefully."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -71,7 +80,7 @@ async def test_exit_command_exit(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_exit_command_quit(tmp_project: Path, mock_prompt_session):
+async def test_exit_command_quit(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that 'quit' command exits REPL gracefully."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -90,7 +99,7 @@ async def test_exit_command_quit(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_exit_command_bye(tmp_project: Path, mock_prompt_session):
+async def test_exit_command_bye(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that 'bye' command exits REPL gracefully."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -109,7 +118,7 @@ async def test_exit_command_bye(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_exit_command_goodbye(tmp_project: Path, mock_prompt_session):
+async def test_exit_command_goodbye(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that 'goodbye' command exits REPL gracefully."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -128,7 +137,7 @@ async def test_exit_command_goodbye(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_ctrl_c_exit(tmp_project: Path, mock_prompt_session):
+async def test_ctrl_c_exit(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that Ctrl+C exits REPL gracefully."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -147,7 +156,7 @@ async def test_ctrl_c_exit(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_ctrl_d_exit(tmp_project: Path, mock_prompt_session):
+async def test_ctrl_d_exit(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that Ctrl+D (EOFError) exits REPL gracefully."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -166,7 +175,7 @@ async def test_ctrl_d_exit(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_empty_input_ignored(tmp_project: Path, mock_prompt_session):
+async def test_empty_input_ignored(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that empty input is ignored and REPL continues."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -191,7 +200,7 @@ async def test_empty_input_ignored(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_exception_handling(tmp_project: Path, mock_prompt_session):
+async def test_exception_handling(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that exceptions during input handling don't crash REPL."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -218,7 +227,7 @@ async def test_exception_handling(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_echo_input(tmp_project: Path, mock_prompt_session):
+async def test_echo_input(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that user input is echoed back (placeholder for Story 30.3)."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -244,7 +253,7 @@ async def test_echo_input(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_is_exit_command(mock_prompt_session):
+async def test_is_exit_command(mock_prompt_session, bypass_provider_selection):
     """Test exit command detection logic."""
     repl = ChatREPL()
 
@@ -263,7 +272,7 @@ async def test_is_exit_command(mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_farewell_message(tmp_project: Path, mock_prompt_session):
+async def test_farewell_message(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that farewell message is displayed on exit."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -280,7 +289,7 @@ async def test_farewell_message(tmp_project: Path, mock_prompt_session):
 
 
 @pytest.mark.asyncio
-async def test_display_response_formatting(tmp_project: Path, mock_prompt_session):
+async def test_display_response_formatting(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that responses are displayed with Rich Panel formatting."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -295,7 +304,7 @@ async def test_display_response_formatting(tmp_project: Path, mock_prompt_sessio
 
 
 @pytest.mark.asyncio
-async def test_display_error_formatting(tmp_project: Path, mock_prompt_session):
+async def test_display_error_formatting(tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that errors are displayed with helpful suggestions."""
     repl = ChatREPL(project_root=tmp_project)
 
@@ -314,7 +323,7 @@ async def test_display_error_formatting(tmp_project: Path, mock_prompt_session):
 
 @pytest.mark.asyncio
 @patch("gao_dev.cli.chat_repl.ProjectStatusReporter")
-async def test_greeting_includes_project_status(mock_status_reporter_class, tmp_project: Path, mock_prompt_session):
+async def test_greeting_includes_project_status(mock_status_reporter_class, tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that greeting includes project status (Story 30.2 integration test)."""
     # Create .gao-dev/ directory
     gao_dev_dir = tmp_project / ".gao-dev"
@@ -349,7 +358,7 @@ async def test_greeting_includes_project_status(mock_status_reporter_class, tmp_
 
 @pytest.mark.asyncio
 @patch("gao_dev.cli.chat_repl.ProjectStatusReporter")
-async def test_greeting_includes_greenfield_status(mock_status_reporter_class, tmp_project: Path, mock_prompt_session):
+async def test_greeting_includes_greenfield_status(mock_status_reporter_class, tmp_project: Path, mock_prompt_session, bypass_provider_selection):
     """Test that greeting shows greenfield message for projects without .gao-dev/"""
     # Don't create .gao-dev/ directory
 

@@ -20,24 +20,28 @@ def temp_project(tmp_path):
 
 
 @pytest.fixture
-def orchestrator(temp_project):
+def orchestrator(temp_project, monkeypatch):
     """Create orchestrator for performance testing."""
-    return GAODevOrchestrator(
-        project_root=temp_project,
-        api_key="test-key",
-        mode="benchmark"
+    # Set environment variable to bypass provider selection
+    monkeypatch.setenv("AGENT_PROVIDER", "direct-api-anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-for-testing")
+
+    return GAODevOrchestrator.create_default(
+        project_root=temp_project
     )
 
 
 @pytest.mark.performance
-def test_orchestrator_initialization_performance(temp_project):
+def test_orchestrator_initialization_performance(temp_project, monkeypatch):
     """Test that orchestrator initialization is fast."""
+    # Set environment variable to bypass provider selection
+    monkeypatch.setenv("AGENT_PROVIDER", "direct-api-anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-for-testing")
+
     start = time.time()
 
-    orchestrator = GAODevOrchestrator(
-        project_root=temp_project,
-        api_key="test-key",
-        mode="benchmark"
+    orchestrator = GAODevOrchestrator.create_default(
+        project_root=temp_project
     )
 
     duration = time.time() - start
@@ -279,14 +283,16 @@ def test_memory_usage_reasonable(orchestrator):
 
 @pytest.mark.performance
 @pytest.mark.asyncio
-async def test_concurrent_workflow_execution_performance(temp_project):
+async def test_concurrent_workflow_execution_performance(temp_project, monkeypatch):
     """Test that multiple orchestrators can run concurrently."""
+    # Set environment variable to bypass provider selection
+    monkeypatch.setenv("AGENT_PROVIDER", "direct-api-anthropic")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-for-testing")
+
     # Create multiple orchestrators
     orchestrators = [
-        GAODevOrchestrator(
-            project_root=temp_project / f"project_{i}",
-            api_key="test-key",
-            mode="benchmark"
+        GAODevOrchestrator.create_default(
+            project_root=temp_project / f"project_{i}"
         )
         for i in range(3)
     ]
