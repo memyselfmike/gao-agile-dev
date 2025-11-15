@@ -1,6 +1,6 @@
-# Epic 1: Test Infrastructure
+# Epic 36: Test Infrastructure
 
-**Epic ID**: 1
+**Epic ID**: 36
 **Feature**: e2e-testing-ux-quality
 **Status**: Not Started
 **Total Story Points**: 20
@@ -72,17 +72,17 @@ This epic enables cost-free development and testing, removing the financial barr
 None - this is the foundation epic
 
 ### Blocks
-- Epic 2: UX Quality Analysis (depends on test infrastructure)
-- Epic 3: Interactive Testing Tools (depends on test infrastructure)
+- Epic 37: UX Quality Analysis (depends on test infrastructure)
+- Epic 38: Interactive Testing Tools (depends on test infrastructure)
 
 ---
 
 ## Stories
 
-1. **Story 1.1**: Cost-Free Test Execution (3 points)
-2. **Story 1.2**: Test Mode Support in ChatREPL (5 points)
-3. **Story 1.3**: ChatHarness Implementation (8 points)
-4. **Story 1.4**: Fixture System (4 points)
+1. **Story 36.1**: Cost-Free Test Execution (3 points)
+2. **Story 36.2**: Test Mode Support in ChatREPL (5 points)
+3. **Story 36.3**: ChatHarness Implementation (8 points)
+4. **Story 36.4**: Fixture System (4 points)
 
 **Total**: 20 story points
 
@@ -154,9 +154,9 @@ None - this is the foundation epic
 
 ## Out of Scope
 
-- Quality analysis implementation (Epic 2)
-- Interactive debugging tools (Epic 3)
-- CI/CD integration (deferred to Epic 3)
+- Quality analysis implementation (Epic 37)
+- Interactive debugging tools (Epic 38)
+- CI/CD integration (deferred to Epic 38)
 - Performance benchmarking
 - AI-powered deep analysis
 

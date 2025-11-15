@@ -1,4 +1,4 @@
-# Story 2.1: Conversation Instrumentation
+# Story 37.1: Conversation Instrumentation
 
 **Story ID**: 2.1
 **Epic**: 2 - UX Quality Analysis
@@ -32,21 +32,21 @@
 
 ## Technical Context
 
-From Architecture section 4.3 (ChatSession Modifications), this story implements conversation logging that Epic 2 analysis depends on.
+From Architecture section 4.3 (ChatSession Modifications), this story implements conversation logging that Epic 387 analysis depends on.
 
 ### Implementation
 
 See Story 1.2 for ChatSession modifications. This story focuses on:
 - Testing the capture implementation
 - Validating transcript quality
-- Generating sample transcripts for Story 2.2
+- Generating sample transcripts for Story 37.2
 
 ---
 
 ## Dependencies
 
 - **Depends On**: Story 1.2 (capture mode implementation)
-- **Blocks**: Story 2.2 (needs transcripts for analysis)
+- **Blocks**: Story 37.2 (needs transcripts for analysis)
 
 ---
 

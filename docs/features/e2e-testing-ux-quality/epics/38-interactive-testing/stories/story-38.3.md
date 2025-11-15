@@ -1,4 +1,4 @@
-# Story 3.3: CI/CD Integration
+# Story 38.3: CI/CD Integration
 
 **Story ID**: 3.3
 **Epic**: 3 - Interactive Testing Tools
@@ -48,7 +48,7 @@ From Architecture Deployment Architecture section, sets up CI/CD pipeline with o
 
 ## Dependencies
 
-- **Depends On**: Story 3.2 (test suite)
+- **Depends On**: Story 38.2 (test suite)
 - **Blocks**: None
 
 ---

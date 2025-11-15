@@ -1,6 +1,6 @@
-# Epic 2: UX Quality Analysis
+# Epic 387: UX Quality Analysis
 
-**Epic ID**: 2
+**Epic ID**: 37
 **Feature**: e2e-testing-ux-quality
 **Status**: Not Started
 **Total Story Points**: 25
@@ -13,7 +13,7 @@ Build a conversation quality analysis system that automatically identifies UX de
 
 This epic delivers the **core value proposition** of the feature: improving Brian's conversation quality through systematic analysis. It includes conversation capture, pattern-based and AI-powered quality detection, scoring algorithms, and formatted reporting.
 
-**CRITICAL DEPENDENCY**: Must validate deepseek-r1 model quality (Story 2.0) before proceeding with full implementation.
+**CRITICAL DEPENDENCY**: Must validate deepseek-r1 model quality (Story 37.0) before proceeding with full implementation.
 
 ---
 
@@ -63,8 +63,8 @@ This epic enables:
 ## Dependencies
 
 ### Internal Dependencies
-- **CRITICAL**: Epic 1 - Test Infrastructure (provides ChatHarness, capture mode)
-- Epic 30: ChatSession implementation (modified for conversation capture)
+- **CRITICAL**: Epic 386 - Test Infrastructure (provides ChatHarness, capture mode)
+- Epic 380: ChatSession implementation (modified for conversation capture)
 - Epic 21: AIAnalysisService (for AI-powered analysis)
 
 ### External Dependencies
@@ -73,21 +73,21 @@ This epic enables:
 - Sample conversations for validation
 
 ### Blocked By
-- Epic 1 must be complete (especially Story 1.2 - capture mode)
-- **GATE DECISION**: Story 2.0 (POC validation) must pass before Stories 2.1-2.4 proceed
+- Epic 386 must be complete (especially Story 1.2 - capture mode)
+- **GATE DECISION**: Story 37.0 (POC validation) must pass before Stories 37.1-37.4 proceed
 
 ### Blocks
-- Epic 3: Interactive Testing Tools (depends on quality analysis for reports)
+- Epic 38: Interactive Testing Tools (depends on quality analysis for reports)
 
 ---
 
 ## Stories
 
-0. **Story 2.0**: deepseek-r1 Quality Validation POC (5 points) **[MANDATORY GATE]**
-1. **Story 2.1**: Conversation Instrumentation (3 points)
-2. **Story 2.2**: Pattern-Based Quality Detection (8 points)
-3. **Story 2.3**: Quality Scoring Algorithm (5 points)
-4. **Story 2.4**: Quality Reporting (4 points)
+0. **Story 37.0**: deepseek-r1 Quality Validation POC (5 points) **[MANDATORY GATE]**
+1. **Story 37.1**: Conversation Instrumentation (3 points)
+2. **Story 37.2**: Pattern-Based Quality Detection (8 points)
+3. **Story 37.3**: Quality Scoring Algorithm (5 points)
+4. **Story 37.4**: Quality Reporting (4 points)
 
 **Total**: 25 story points
 
@@ -103,7 +103,7 @@ The CRAAP review identified a CRITICAL risk:
 
 ### Gate Decision
 
-**Story 2.0 is MANDATORY** before proceeding with Stories 2.1-2.4.
+**Story 37.0 is MANDATORY** before proceeding with Stories 37.1-37.4.
 
 **Validation Criteria**:
 - Compare deepseek-r1 vs Claude on 10 sample conversations
@@ -112,7 +112,7 @@ The CRAAP review identified a CRITICAL risk:
 - Document quality differences and limitations
 
 **Decision Rule**:
-- **PASS** (>80% agreement): Proceed with Stories 2.1-2.4 using deepseek-r1
+- **PASS** (>80% agreement): Proceed with Stories 37.1-37.4 using deepseek-r1
 - **PARTIAL PASS** (60-80% agreement): Use Claude for analysis, deepseek-r1 for tests only
 - **FAIL** (<60% agreement): Reconsider feature scope or use Claude API (accept costs)
 
@@ -158,7 +158,7 @@ The CRAAP review identified a CRITICAL risk:
 ### Risk Mitigation
 
 **Risk**: Analysis quality insufficient for actionable recommendations
-**Mitigation**: Story 2.0 validates quality BEFORE implementation
+**Mitigation**: Story 37.0 validates quality BEFORE implementation
 
 **Risk**: Local model produces inconsistent results
 **Mitigation**: Multiple runs, statistical validation, Claude spot-checking
@@ -171,7 +171,7 @@ The CRAAP review identified a CRITICAL risk:
 ## Testing Strategy
 
 ### Validation Tests
-- deepseek-r1 vs Claude agreement (Story 2.0)
+- deepseek-r1 vs Claude agreement (Story 37.0)
 - Quality scores vs expert manual ratings
 - Issue detection recall and precision
 - Recommendation actionability assessment
@@ -233,23 +233,23 @@ The CRAAP review identified a CRITICAL risk:
 ## Implementation Sequence
 
 ### Phase 1: Validation (Week 1)
-**Story 2.0**: Validate deepseek-r1 quality
+**Story 37.0**: Validate deepseek-r1 quality
 - **GATE DECISION**: Go/No-Go for Epic 2
 
 ### Phase 2: Foundation (Week 1-2)
-**Story 2.1**: Conversation instrumentation
+**Story 37.1**: Conversation instrumentation
 - Enable conversation capture
 - Persist transcripts with metadata
 
 ### Phase 3: Analysis (Week 2-3)
-**Story 2.2**: Pattern-based detection
-**Story 2.3**: Quality scoring
+**Story 37.2**: Pattern-based detection
+**Story 37.3**: Quality scoring
 - Implement detection algorithms
 - Develop scoring system
 - Validate with sample conversations
 
 ### Phase 4: Reporting (Week 3)
-**Story 2.4**: Quality reporting
+**Story 37.4**: Quality reporting
 - Generate formatted reports
 - Document findings
 - Create improvement recommendations

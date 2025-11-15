@@ -1,4 +1,4 @@
-# Story 1.4: Fixture System
+# Story 36.4: Fixture System
 
 **Story ID**: 1.4
 **Epic**: 1 - Test Infrastructure
@@ -330,8 +330,8 @@ class OutputMatcher:
 
 ### Dependencies
 
-- **Depends On**: None (can be developed in parallel with Story 1.3)
-- **Blocks**: Story 1.2 (AIResponseInjector used in ChatSession)
+- **Depends On**: None (can be developed in parallel with Story 36.3)
+- **Blocks**: Story 36.2 (AIResponseInjector used in ChatSession)
 - pyyaml library (already installed in GAO-Dev)
 
 ---
@@ -580,8 +580,8 @@ scenario:
 ## Related Stories
 
 - **Depends On**: None (foundation story)
-- **Blocks**: Story 1.2 (AIResponseInjector integration)
-- **Related**: Story 1.3 (ChatHarness uses OutputMatcher)
+- **Blocks**: Story 36.2 (AIResponseInjector integration)
+- **Related**: Story 36.3 (ChatHarness uses OutputMatcher)
 - **Future**: Story 3.4 (Fixture Conversion Tool uses FixtureLoader)
 
 ---

@@ -1,4 +1,4 @@
-# Story 3.1: ClaudeTester Framework
+# Story 38.1: ClaudeTester Framework
 
 **Story ID**: 3.1
 **Epic**: 3 - Interactive Testing Tools
@@ -50,7 +50,7 @@ print(f"Quality Score: {report.quality_score}%")
 
 ## Dependencies
 
-- **Depends On**: Epic 1 (ChatHarness), Epic 2 (ConversationAnalyzer)
+- **Depends On**: Epic 386 (ChatHarness), Epic 387 (ConversationAnalyzer)
 - **Blocks**: None (optional tooling)
 
 ---

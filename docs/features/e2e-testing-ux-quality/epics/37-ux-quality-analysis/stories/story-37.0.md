@@ -1,4 +1,4 @@
-# Story 2.0: deepseek-r1 Quality Validation POC
+# Story 37.0: deepseek-r1 Quality Validation POC
 
 **Story ID**: 2.0
 **Epic**: 2 - UX Quality Analysis
@@ -19,7 +19,7 @@
 
 ## Business Value
 
-The entire Epic 2 (UX Quality Analysis) depends on the assumption that deepseek-r1 can perform quality analysis with sufficient accuracy. If this assumption is wrong, we risk building a system that produces unreliable results, wasting 3-4 weeks of development effort.
+The entire Epic 387 (UX Quality Analysis) depends on the assumption that deepseek-r1 can perform quality analysis with sufficient accuracy. If this assumption is wrong, we risk building a system that produces unreliable results, wasting 3-4 weeks of development effort.
 
 This POC provides:
 - **Risk Mitigation**: Validates critical assumption before full implementation
@@ -27,7 +27,7 @@ This POC provides:
 - **Cost-Quality Tradeoff Analysis**: Quantifies cost savings vs quality degradation
 - **Implementation Strategy**: Determines whether to use local model, Claude, or hybrid approach
 
-**Decision Impact**: Affects 20 story points (Stories 2.1-2.4) and $0-200 in monthly costs
+**Decision Impact**: Affects 20 story points (Stories 37.1-37.4) and $0-200 in monthly costs
 
 ---
 
@@ -50,7 +50,7 @@ This POC provides:
 - **Quality Score Agreement**: 8+ of 10 conversations within 15 points
 - **Issue Detection Agreement**: Detects 70%+ of same issues as Claude
 - **Recommendation Quality**: Recommendations are specific and actionable
-- **Decision**: **Proceed** with Stories 2.1-2.4 using deepseek-r1
+- **Decision**: **Proceed** with Stories 37.1-37.4 using deepseek-r1
 
 ### PARTIAL PASS: 60-80% Agreement
 - **Quality Score Agreement**: 6-7 of 10 conversations within 15 points
@@ -213,7 +213,7 @@ def generate_validation_report(result: ValidationResult) -> str:
             "",
             "deepseek-r1 demonstrates sufficient quality for conversation analysis.",
             "",
-            "DECISION: PROCEED with Stories 2.1-2.4 using deepseek-r1",
+            "DECISION: PROCEED with Stories 37.1-37.4 using deepseek-r1",
             "",
             "Rationale:",
             f"- Score agreement ({result.score_agreement_pct:.1f}%) meets threshold (>80%)",
@@ -248,8 +248,8 @@ def generate_validation_report(result: ValidationResult) -> str:
             "",
             "Options:",
             "1. Use Claude API for all analysis (accept $10-50/month cost)",
-            "2. Reduce Epic 2 scope (pattern-only detection, no AI analysis)",
-            "3. Defer Epic 2 until better local models available",
+            "2. Reduce Epic 387 scope (pattern-only detection, no AI analysis)",
+            "3. Defer Epic 387 until better local models available",
             "",
             "Rationale:",
             f"- Score agreement ({result.score_agreement_pct:.1f}%) too low for trust",
@@ -265,7 +265,7 @@ def generate_validation_report(result: ValidationResult) -> str:
 
 ### Dependencies
 
-- Epic 21: AIAnalysisService (for Claude API access)
+- Epic 3871: AIAnalysisService (for Claude API access)
 - ollama with deepseek-r1 model
 - Claude API key (for ground truth analysis)
 - ConversationAnalyzer prototype (minimal implementation for POC)
@@ -373,7 +373,7 @@ STATUS: PASS
 
 deepseek-r1 demonstrates sufficient quality for conversation analysis.
 
-DECISION: PROCEED with Stories 2.1-2.4 using deepseek-r1
+DECISION: PROCEED with Stories 37.1-37.4 using deepseek-r1
 
 Rationale:
 - Score agreement (85.0%) meets threshold (>80%)
@@ -418,8 +418,8 @@ Rationale:
 
 ## Related Stories
 
-- **Blocks**: ALL Epic 2 stories (2.1, 2.2, 2.3, 2.4)
-- **Enables**: Go/No-Go decision for Epic 2 implementation
+- **Blocks**: ALL Epic 387 stories (2.1, 2.2, 2.3, 2.4)
+- **Enables**: Go/No-Go decision for Epic 387 implementation
 - **Related**: CRAAP Review Priority Issue #1 (Validate Local Model Quality)
 
 ---

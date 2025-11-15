@@ -1,4 +1,4 @@
-# Story 2.2: Pattern-Based Quality Detection
+# Story 37.2: Pattern-Based Quality Detection
 
 **Story ID**: 2.2
 **Epic**: 2 - UX Quality Analysis
@@ -25,7 +25,7 @@
 - [ ] **AC4**: Pattern library includes 10+ detection patterns per issue type
 - [ ] **AC5**: False positive rate <20% on sample conversations
 - [ ] **AC6**: Analysis completes in <10s per conversation
-- [ ] **AC7**: Uses deepseek-r1 for AI-powered analysis (validated in Story 2.0)
+- [ ] **AC7**: Uses deepseek-r1 for AI-powered analysis (validated in Story 37.0)
 - [ ] **AC8**: 10+ sample conversations analyzed with documented results
 
 ---
@@ -44,8 +44,8 @@ From Architecture section 3.1 (ConversationAnalyzer), implements pattern-based d
 
 ## Dependencies
 
-- **Depends On**: Story 2.0 (POC validation), Story 2.1 (transcripts)
-- **Blocks**: Story 2.3 (scoring needs issue detection)
+- **Depends On**: Story 37.0 (POC validation), Story 37.1 (transcripts)
+- **Blocks**: Story 37.3 (scoring needs issue detection)
 
 ---
 

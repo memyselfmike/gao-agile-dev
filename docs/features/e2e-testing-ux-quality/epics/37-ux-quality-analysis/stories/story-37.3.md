@@ -1,4 +1,4 @@
-# Story 2.3: Quality Scoring Algorithm
+# Story 37.3: Quality Scoring Algorithm
 
 **Story ID**: 2.3
 **Epic**: 2 - UX Quality Analysis
@@ -47,8 +47,8 @@ score = 100 * (1 - (total_penalty / max_total_penalty))
 
 ## Dependencies
 
-- **Depends On**: Story 2.2 (issue detection)
-- **Blocks**: Story 2.4 (reporting needs scores)
+- **Depends On**: Story 37.2 (issue detection)
+- **Blocks**: Story 37.4 (reporting needs scores)
 
 ---
 

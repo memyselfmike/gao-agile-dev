@@ -1,4 +1,4 @@
-# Story 1.3: ChatHarness Implementation
+# Story 36.3: ChatHarness Implementation
 
 **Story ID**: 1.3
 **Epic**: 1 - Test Infrastructure
@@ -228,7 +228,7 @@ class ChatHarness:
 
 ### Dependencies
 
-- **Depends On**: Story 1.2 (test mode flags in ChatREPL)
+- **Depends On**: Story 36.2 (test mode flags in ChatREPL)
 - **External**: pexpect (Unix), wexpect (Windows), pytest
 - Python 3.10+ (for match statement support)
 
@@ -437,10 +437,10 @@ def chat_harness():
 
 ## Related Stories
 
-- **Depends On**: Story 1.2 (test mode flags)
-- **Blocks**: Epic 2 stories (quality analysis needs ChatHarness)
-- **Blocks**: Epic 3 stories (interactive tools need ChatHarness)
-- **Related**: Story 1.4 (fixture system works with ChatHarness)
+- **Depends On**: Story 36.2 (test mode flags)
+- **Blocks**: Epic 387 stories (quality analysis needs ChatHarness)
+- **Blocks**: Epic 38 stories (interactive tools need ChatHarness)
+- **Related**: Story 36.4 (fixture system works with ChatHarness)
 
 ---
 

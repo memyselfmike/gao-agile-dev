@@ -1,4 +1,4 @@
-# Story 2.4: Quality Reporting
+# Story 37.4: Quality Reporting
 
 **Story ID**: 2.4
 **Epic**: 2 - UX Quality Analysis
@@ -43,8 +43,8 @@ From Architecture section 3.2 (ReportGenerator), generates formatted quality rep
 
 ## Dependencies
 
-- **Depends On**: Story 2.2 (issues), Story 2.3 (scores)
-- **Blocks**: Epic 3 stories (interactive tools use reports)
+- **Depends On**: Story 37.2 (issues), Story 37.3 (scores)
+- **Blocks**: Epic 38 stories (interactive tools use reports)
 
 ---
 

@@ -1,4 +1,4 @@
-# Story 1.1: Cost-Free Test Execution
+# Story 36.1: Cost-Free Test Execution
 
 **Story ID**: 1.1
 **Epic**: 1 - Test Infrastructure
@@ -52,7 +52,7 @@ From Architecture document section "Integration Points":
 
 **Provider Override Precedence** (Three-tier hierarchy):
 1. `E2E_TEST_PROVIDER` environment variable (highest precedence)
-2. `AGENT_PROVIDER` environment variable (global preference from Epic 35)
+2. `AGENT_PROVIDER` environment variable (global preference from Epic 385)
 3. Default: opencode/ollama/deepseek-r1 (cost-free)
 
 ### Implementation Details
@@ -78,7 +78,7 @@ def get_e2e_test_provider() -> Tuple[str, Dict]:
                 "model": os.getenv("E2E_MODEL", "deepseek-r1")
             })
 
-    # Tier 2: AGENT_PROVIDER (global preference from Epic 35)
+    # Tier 2: AGENT_PROVIDER (global preference from Epic 385)
     if agent_provider := os.getenv("AGENT_PROVIDER"):
         if agent_provider == "claude-code":
             # Override with cost-free default
@@ -140,8 +140,8 @@ def validate_ollama_available() -> bool:
 
 ### Dependencies
 
-- Epic 21: Provider abstraction (ProcessExecutor, ProviderFactory)
-- Epic 35: AGENT_PROVIDER environment variable support
+- Epic 3871: Provider abstraction (ProcessExecutor, ProviderFactory)
+- Epic 385: AGENT_PROVIDER environment variable support
 - ollama installed locally
 - deepseek-r1 model downloaded
 
@@ -233,7 +233,7 @@ def test_ollama_validation_detects_missing_service():
 | `E2E_TEST_PROVIDER` | Override test provider (highest precedence) | `claude-code`, `opencode` |
 | `E2E_AI_PROVIDER` | AI backend for opencode | `ollama`, `anthropic` |
 | `E2E_MODEL` | Model to use | `deepseek-r1`, `llama2` |
-| `AGENT_PROVIDER` | Global agent provider (from Epic 35) | `claude-code`, `opencode` |
+| `AGENT_PROVIDER` | Global agent provider (from Epic 385) | `claude-code`, `opencode` |
 
 ### Error Messages
 
@@ -268,8 +268,8 @@ Note: Using Claude API will incur costs ($0.003/1K tokens input, $0.015/1K token
 ## Related Stories
 
 - **Depends On**: None (foundation story)
-- **Blocks**: Story 1.2, 1.3, 1.4 (all need provider configuration)
-- **Related**: Epic 35 stories (provider selection system)
+- **Blocks**: Story 36.2, 1.3, 1.4 (all need provider configuration)
+- **Related**: Epic 385 stories (provider selection system)
 
 ---
 

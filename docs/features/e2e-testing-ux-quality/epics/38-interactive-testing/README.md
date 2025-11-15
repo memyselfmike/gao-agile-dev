@@ -1,6 +1,6 @@
-# Epic 3: Interactive Testing Tools
+# Epic 38: Interactive Testing Tools
 
-**Epic ID**: 3
+**Epic ID**: 38
 **Feature**: e2e-testing-ux-quality
 **Status**: Not Started
 **Total Story Points**: 18
@@ -17,13 +17,13 @@ This epic delivers:
 - CI/CD integration for automated testing
 - Fixture conversion tools for capturing real conversations
 
-**Note**: This epic is considered OPTIONAL or PHASE 2. Based on CRAAP review recommendations, the core value (UX quality improvement) is delivered by Epic 2. Epic 3 provides developer tooling and automation but may be split into a separate feature.
+**Note**: This epic is considered OPTIONAL or PHASE 2. Based on CRAAP review recommendations, the core value (UX quality improvement) is delivered by Epic 37. Epic 3 provides developer tooling and automation but may be split into a separate feature.
 
 ---
 
 ## Business Value
 
-While Epic 2 delivers UX quality analysis, Epic 3 provides:
+While Epic 37 delivers UX quality analysis, Epic 3 provides:
 - **Developer Productivity**: Tools for testing Brian programmatically
 - **Regression Prevention**: Automated tests prevent quality degradation
 - **CI/CD Integration**: Tests run on every PR with zero cost
@@ -58,8 +58,8 @@ While Epic 2 delivers UX quality analysis, Epic 3 provides:
 ## Dependencies
 
 ### Internal Dependencies
-- Epic 1: Test Infrastructure (ChatHarness, FixtureLoader)
-- Epic 2: UX Quality Analysis (ConversationAnalyzer for reports)
+- Epic 36: Test Infrastructure (ChatHarness, FixtureLoader)
+- Epic 37: UX Quality Analysis (ConversationAnalyzer for reports)
 
 ### External Dependencies
 - CI/CD environment with ollama support
@@ -67,17 +67,17 @@ While Epic 2 delivers UX quality analysis, Epic 3 provides:
 - GitHub Actions configuration
 
 ### Blocked By
-- Epic 1 must be complete
-- Optionally Epic 2 (for quality reports)
+- Epic 36 must be complete
+- Optionally Epic 37 (for quality reports)
 
 ---
 
 ## Stories
 
-1. **Story 3.1**: ClaudeTester Framework (5 points)
-2. **Story 3.2**: E2E Test Suite (8 points)
-3. **Story 3.3**: CI/CD Integration (3 points)
-4. **Story 3.4**: Fixture Conversion Tool (2 points)
+1. **Story 38.1**: ClaudeTester Framework (5 points)
+2. **Story 38.2**: E2E Test Suite (8 points)
+3. **Story 38.3**: CI/CD Integration (3 points)
+4. **Story 38.4**: Fixture Conversion Tool (2 points)
 
 **Total**: 18 story points
 
@@ -90,10 +90,10 @@ Based on CRAAP review (Perspective section #3):
 **Analysis**:
 - Mode 1 (ClaudeTester): Useful for AI developers, but niche use case
 - Mode 3 (Regression Tests): Standard testing practice, not unique value
-- Epic 2 (Quality Analysis): Delivers core UX improvement value
+- Epic 37 (Quality Analysis): Delivers core UX improvement value
 
 **Options**:
-1. **Defer to Phase 2**: Ship Epic 1 + Epic 2 first (faster value delivery)
+1. **Defer to Phase 2**: Ship Epic 36 + Epic 37 first (faster value delivery)
 2. **Split Feature**: Make Epic 3 a separate feature "E2E Test Automation"
 3. **Proceed as Planned**: All 3 epics in one feature (comprehensive but slower)
 

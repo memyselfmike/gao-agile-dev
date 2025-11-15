@@ -1,4 +1,4 @@
-# Story 3.2: E2E Test Suite
+# Story 38.2: E2E Test Suite
 
 **Story ID**: 3.2
 **Epic**: 3 - Interactive Testing Tools
@@ -45,8 +45,8 @@ From Architecture section 1.2 (RegressionTestRunner), implements comprehensive f
 
 ## Dependencies
 
-- **Depends On**: Epic 1 (ChatHarness, FixtureLoader, OutputMatcher)
-- **Blocks**: Story 3.3 (CI/CD needs test suite)
+- **Depends On**: Epic 386 (ChatHarness, FixtureLoader, OutputMatcher)
+- **Blocks**: Story 38.3 (CI/CD needs test suite)
 
 ---
 

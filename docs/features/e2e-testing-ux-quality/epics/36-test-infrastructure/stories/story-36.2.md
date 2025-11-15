@@ -1,4 +1,4 @@
-# Story 1.2: Test Mode Support in ChatREPL
+# Story 36.2: Test Mode Support in ChatREPL
 
 **Story ID**: 1.2
 **Epic**: 1 - Test Infrastructure
@@ -215,9 +215,9 @@ class ChatSession:
 
 ### Dependencies
 
-- **Depends On**: Story 1.1 (provider configuration)
-- **Blocks**: Story 1.3 (ChatHarness needs test mode flags)
-- Epic 30: ChatREPL and ChatSession implementations
+- **Depends On**: Story 36.1 (provider configuration)
+- **Blocks**: Story 36.3 (ChatHarness needs test mode flags)
+- Epic 380: ChatREPL and ChatSession implementations
 - click library for CLI options
 
 ---
@@ -344,7 +344,7 @@ def test_no_circular_dependency():
 - `gao_dev/orchestrator/chat_session.py` - Add capture and injection logic
 
 **New Files**:
-- `tests/e2e/harness/ai_response_injector.py` - Response injection (created in Story 1.4)
+- `tests/e2e/harness/ai_response_injector.py` - Response injection (created in Story 36.4)
 
 ### Transcript Format
 
@@ -401,8 +401,8 @@ Add to `.gitignore`:
 
 ## Related Stories
 
-- **Depends On**: Story 1.1 (provider configuration)
-- **Blocks**: Story 1.3 (ChatHarness), Story 1.4 (FixtureLoader)
+- **Depends On**: Story 36.1 (provider configuration)
+- **Blocks**: Story 36.3 (ChatHarness), Story 36.4 (FixtureLoader)
 - **Related**: Story 2.2 (Conversation Instrumentation - uses capture mode)
 
 ---

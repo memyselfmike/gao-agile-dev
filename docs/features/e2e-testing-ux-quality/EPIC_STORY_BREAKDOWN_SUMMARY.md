@@ -10,7 +10,7 @@
 
 The E2E Testing & UX Quality Analysis feature has been broken down into **3 epics** containing **13 stories** totaling **63 story points**.
 
-**Critical Finding**: Story 2.0 (deepseek-r1 Quality Validation POC) is MANDATORY before proceeding with Epic 2 implementation. This addresses the CRAAP review's critical risk that local model quality may be insufficient for reliable UX analysis.
+**Critical Finding**: Story 37.0 (deepseek-r1 Quality Validation POC) is MANDATORY before proceeding with Epic 2 implementation. This addresses the CRAAP review's critical risk that local model quality may be insufficient for reliable UX analysis.
 
 ---
 
@@ -25,7 +25,7 @@ The E2E Testing & UX Quality Analysis feature has been broken down into **3 epic
 
 ---
 
-## Epic 1: Test Infrastructure (20 points)
+## Epic 36: Test Infrastructure (20 points)
 
 **Goal**: Build core testing infrastructure for cost-free E2E testing
 
@@ -53,11 +53,11 @@ The E2E Testing & UX Quality Analysis feature has been broken down into **3 epic
 
 ---
 
-## Epic 2: UX Quality Analysis (25 points)
+## Epic 37: UX Quality Analysis (25 points)
 
 **Goal**: Analyze conversation quality and generate actionable UX improvements
 
-**CRITICAL**: Story 2.0 is a MANDATORY GATE before Stories 2.1-2.4 proceed
+**CRITICAL**: Story 37.0 is a MANDATORY GATE before Stories 37.1-37.4 proceed
 
 ### Stories
 
@@ -82,14 +82,14 @@ The E2E Testing & UX Quality Analysis feature has been broken down into **3 epic
 - Quality scores correlate with expert ratings (r > 0.7)
 - Recommendations are specific and actionable
 
-**Gate Decision (Story 2.0)**:
-- **PASS** (>80% agreement): Proceed with Stories 2.1-2.4
+**Gate Decision (Story 37.0)**:
+- **PASS** (>80% agreement): Proceed with Stories 37.1-37.4
 - **PARTIAL PASS** (60-80%): Use Claude for analysis, deepseek-r1 for tests
 - **FAIL** (<60%): Reconsider feature scope or accept Claude API costs
 
 ---
 
-## Epic 3: Interactive Testing Tools (18 points)
+## Epic 38: Interactive Testing Tools (18 points)
 
 **Goal**: Enable interactive debugging and comprehensive regression testing
 
@@ -123,20 +123,20 @@ The E2E Testing & UX Quality Analysis feature has been broken down into **3 epic
 ## Story Dependencies Graph
 
 ```
-Epic 1: Test Infrastructure
+Epic 36: Test Infrastructure
 ├── 1.1 Cost-Free Test Execution (foundation)
 │   └── 1.2 Test Mode Support in ChatREPL
 │       └── 1.3 ChatHarness Implementation
 └── 1.4 Fixture System (parallel)
 
-Epic 2: UX Quality Analysis
+Epic 37: UX Quality Analysis
 ├── 2.0 deepseek-r1 Quality Validation POC **[MANDATORY GATE]**
 │   └── 2.1 Conversation Instrumentation (depends on 1.2)
 │       └── 2.2 Pattern-Based Quality Detection
 │           ├── 2.3 Quality Scoring Algorithm
 │           └── 2.4 Quality Reporting
 
-Epic 3: Interactive Testing Tools
+Epic 38: Interactive Testing Tools
 ├── 3.1 ClaudeTester Framework (depends on Epic 1, Epic 2)
 ├── 3.2 E2E Test Suite (depends on Epic 1)
 │   └── 3.3 CI/CD Integration
@@ -148,15 +148,15 @@ Epic 3: Interactive Testing Tools
 ## Story Points Breakdown
 
 ### By Epic
-- Epic 1: 20 points (32%)
-- Epic 2: 25 points (40%)
-- Epic 3: 18 points (28%)
+- Epic 36: 20 points (32%)
+- Epic 37: 25 points (40%)
+- Epic 38: 18 points (28%)
 
 ### By Priority
 - Critical: 16 points (Stories 1.1-1.3)
 - High: 19 points (Stories 1.4, 2.1-2.2, 3.2-3.3)
 - Medium: 26 points (Stories 2.0, 2.4, 3.1)
-- Low: 2 points (Story 3.4)
+- Low: 2 points (Story 38.4)
 
 ### Implementation Sequence
 
@@ -164,22 +164,22 @@ Epic 3: Interactive Testing Tools
 - Epic 1 complete
 
 **Phase 2: Validation & Analysis (Week 2-4)** - 25 points
-- Story 2.0 (POC validation) **[GATE DECISION]**
-- If PASS: Stories 2.1-2.4
+- Story 37.0 (POC validation) **[GATE DECISION]**
+- If PASS: Stories 37.1-37.4
 - If FAIL: Reconsider or accept Claude costs
 
 **Phase 3: Testing & Automation (Week 4-5)** - 18 points
 - Epic 3 (optional, may be deferred)
 
-**Total Duration**: 4-5 weeks (without Epic 3: 3-4 weeks)
+**Total Duration**: 4-5 weeks (without Epic 38: 3-4 weeks)
 
 ---
 
 ## Key Dependencies Identified
 
 ### Internal Dependencies
-- Epic 2 CRITICALLY depends on Story 2.0 POC validation
-- Epic 2 depends on Epic 1 (especially Story 1.2 for capture mode)
+- Epic 2 CRITICALLY depends on Story 37.0 POC validation
+- Epic 2 depends on Epic 1 (especially Story 36.2 for capture mode)
 - Epic 3 depends on Epic 1 (ChatHarness, FixtureLoader)
 - Epic 3 optionally depends on Epic 2 (for quality reports)
 
@@ -187,10 +187,10 @@ Epic 3: Interactive Testing Tools
 - ollama installed with deepseek-r1 model
 - opencode CLI on PATH
 - pexpect (Unix) / wexpect (Windows) libraries
-- Claude API key (for Story 2.0 validation only)
+- Claude API key (for Story 37.0 validation only)
 
 ### Blocking Relationships
-- Story 2.0 BLOCKS all of Epic 2 (Stories 2.1-2.4)
+- Story 37.0 BLOCKS all of Epic 2 (Stories 37.1-37.4)
 - Epic 1 BLOCKS Epic 2 and Epic 3
 - Epic 2 enables but doesn't block Epic 3
 
@@ -198,29 +198,29 @@ Epic 3: Interactive Testing Tools
 
 ## Critical Risks & Mitigations
 
-### CRITICAL RISK: Local Model Quality (Story 2.0)
+### CRITICAL RISK: Local Model Quality (Story 37.0)
 
 **Risk**: deepseek-r1 produces unreliable quality analysis
 **Likelihood**: Medium-High
 **Impact**: Critical (entire Epic 2 value proposition at risk)
 
 **Mitigation**:
-- Story 2.0 MANDATORY POC validation before Epic 2 implementation
+- Story 37.0 MANDATORY POC validation before Epic 2 implementation
 - Decision criteria: >80% agreement with Claude
 - Fallback options: Claude API, hybrid approach, or scope reduction
 
-### HIGH RISK: Cross-Platform Compatibility (Story 1.3)
+### HIGH RISK: Cross-Platform Compatibility (Story 36.3)
 
 **Risk**: pexpect/wexpect API differences break tests on Windows
 **Likelihood**: Medium
 **Impact**: High
 
 **Mitigation**:
-- Cross-platform test matrix in Story 1.3 AC
+- Cross-platform test matrix in Story 36.3 AC
 - Path normalization utilities
 - Test on actual Windows, macOS, Linux (not just WSL)
 
-### MEDIUM RISK: CI/CD Performance (Story 3.3)
+### MEDIUM RISK: CI/CD Performance (Story 38.3)
 
 **Risk**: Test execution time exceeds 8-minute target
 **Likelihood**: Medium-High
@@ -235,14 +235,14 @@ Epic 3: Interactive Testing Tools
 
 ## Recommendations
 
-### 1. Mandatory POC Validation (Story 2.0)
+### 1. Mandatory POC Validation (Story 37.0)
 
-**Recommendation**: Execute Story 2.0 FIRST, before any Epic 2 implementation work.
+**Recommendation**: Execute Story 37.0 FIRST, before any Epic 2 implementation work.
 
 **Rationale**: CRAAP review identifies this as critical risk. Investment in Epic 2 (20 story points) depends entirely on deepseek-r1 quality validation passing.
 
 **Decision Timeline**:
-- Week 1: Execute Story 2.0 POC
+- Week 1: Execute Story 37.0 POC
 - Week 1 End: Go/No-Go decision for Epic 2
 - Week 2+: Proceed based on decision
 
@@ -262,7 +262,7 @@ Epic 3: Interactive Testing Tools
 
 **Decision Owner**: Product team + John (Product Manager)
 
-### 3. Revise Performance Targets (Story 2.3, 3.3)
+### 3. Revise Performance Targets (Story 37.3, 3.3)
 
 **Recommendation**: Revise test execution time targets based on CRAAP review.
 
@@ -286,14 +286,14 @@ Epic 3: Interactive Testing Tools
 
 **Full Feature (All 3 Epics)**: 4-5 weeks
 - Week 1-2: Epic 1 (20 points)
-- Week 2-4: Epic 2 (25 points, includes Story 2.0 gate)
+- Week 2-4: Epic 2 (25 points, includes Story 37.0 gate)
 - Week 4-5: Epic 3 (18 points)
 
 **Core Value (Epic 1 + Epic 2 Only)**: 3-4 weeks
 - Week 1-2: Epic 1 (20 points)
 - Week 2-4: Epic 2 (25 points)
 
-**Minimum Viable (Epic 1 + Story 2.0 Only)**: 2-3 weeks
+**Minimum Viable (Epic 1 + Story 37.0 Only)**: 2-3 weeks
 - Validate technical feasibility and local model quality
 - Defer full quality analysis and testing tools to Phase 2
 
@@ -366,7 +366,7 @@ The following were explicitly excluded from this feature scope:
 
 1. **IMMEDIATE**: Review this breakdown with product team
 2. **DECISION REQUIRED**: Epic 3 scope (defer, split, or proceed as planned)
-3. **WEEK 1**: Execute Story 2.0 POC validation
+3. **WEEK 1**: Execute Story 37.0 POC validation
 4. **WEEK 1 END**: Go/No-Go decision for Epic 2
 5. **WEEK 2+**: Begin Epic 1 implementation if Epic 2 approved
 
