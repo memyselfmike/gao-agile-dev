@@ -67,7 +67,7 @@ Build a **cost-free, three-mode E2E testing and UX quality analysis system** wit
 **Provider Strategy:**
 - **Default**: opencode + ollama/deepseek-r1 (zero API cost)
 - **Override**: Environment variable `E2E_TEST_PROVIDER=claude-code` for occasional real API testing
-- **Performance**: <2s per test with local model
+- **Performance**: <5s per test with local model (subprocess spawn + AI inference overhead)
 
 **Instrumentation:**
 - Add `--capture-mode` flag to `gao-dev start`
@@ -254,10 +254,10 @@ Fixture-based tests for CI/CD:
 
 ### NFR1: Performance
 
-- Test execution time <2s per test with local model
+- Test execution time <5s per test with local model (includes subprocess spawn + AI inference)
 - Conversation capture overhead <5% vs normal execution
 - Quality analysis <10s per conversation
-- CI/CD test suite completes <5 minutes
+- CI/CD test suite completes <8 minutes (revised to account for subprocess overhead)
 
 ### NFR2: Cost
 
@@ -477,26 +477,59 @@ class QualityReport:
 
 ## Success Metrics
 
-### Development Metrics
+### PRIMARY: UX Quality Improvement (Core Value)
+
+**Goal**: Measurably improve Brian's conversational quality and user experience
+
+- **Brian Quality Score**: Increase from baseline to 80%+ within 4 weeks
+  - Baseline: First conversation analysis establishes current quality score
+  - Target: 80%+ quality score across 10+ diverse test conversations
+  - Measurement: ConversationAnalyzer scoring algorithm
+
+- **Intent Understanding**: 90%+ of user intents correctly identified by Brian
+  - Measured by explicit confirmation signals in Brian responses
+  - Tracked across vague, specific, and complex user inputs
+
+- **Probing Quality**: Brian asks clarifying questions for 80%+ of vague user inputs
+  - Vague inputs detected via pattern matching (single word, missing context, etc.)
+  - Probing measured by question count and relevance
+
+- **Context Usage**: Brian uses available context in 70%+ of responses
+  - Context availability tracked in conversation transcripts
+  - Usage detected via response analysis (references to past conversation, project state, etc.)
+
+- **Actionable Improvements**: 5+ specific UX improvements implemented and validated
+  - Each improvement linked to detected quality issue
+  - Validation via before/after conversation comparison
+  - Quality score increase >10 points per improvement
+
+### SECONDARY: Development Infrastructure
+
+**Goal**: Enable cost-free, automated E2E testing
+
 - **Test Cost**: $0 (100% local model usage)
-- **Test Execution Time**: <2s per test, <5min full suite
-- **Test Coverage**: 20+ E2E scenarios
+- **Test Execution Time**: <5s per test, <8min full suite (subprocess + AI overhead)
+- **Test Coverage**: 20+ E2E scenarios covering common user journeys
 - **Code Coverage**: >85% for new code
+- **CI/CD Integration**: Tests run on every PR with zero cost
 
-### Quality Metrics
-- **UX Issues Detected**: 5+ specific issues identified in first analysis
+### TERTIARY: Adoption & Sustainability
+
+**Goal**: Ensure system is used and maintained
+
+- **Recommendation Quality**: 80%+ of recommendations actionable and implemented
+- **Developer Usage**: 3+ developers use ClaudeTester for interactive debugging
+- **Fixture Growth**: 10+ new fixtures added per month (regression prevention)
 - **Quality Score Accuracy**: Manual review validates 90%+ of detected issues
-- **Recommendation Quality**: 80%+ of recommendations actionable
 
-### Adoption Metrics
-- **CI/CD Integration**: Tests run on every PR
-- **Developer Usage**: 3+ developers use ClaudeTester for debugging
-- **Fixture Growth**: 10+ new fixtures added per month
+### Business Impact
 
-### Business Metrics
-- **Cost Savings**: $40-200/month in API costs avoided
-- **Bug Prevention**: 50% reduction in UX bugs reaching production
-- **Iteration Speed**: 2x faster UX improvement cycles
+**Goal**: Demonstrate ROI and reduced production bugs
+
+- **Cost Savings**: $40-200/month in API costs avoided (local models vs Claude API)
+- **Bug Prevention**: 50% reduction in UX-related bugs reaching production
+- **Iteration Speed**: 2x faster UX improvement cycles (from 2 weeks to 1 week)
+- **User Satisfaction**: User-reported confusion incidents decrease by 40%
 
 ---
 

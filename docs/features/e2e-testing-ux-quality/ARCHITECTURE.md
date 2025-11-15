@@ -808,11 +808,19 @@ class ChatREPL:
         self.fixture_path = fixture_path
 
         # Load fixture if in test mode
+        # IMPORTANT: This conditional import prevents circular dependency
+        # Production code never imports test code; test framework injects responses
+        # via environment variable or fixture parameter, not through direct import
+        self.ai_injector = None
         if self.test_mode and self.fixture_path:
-            from tests.e2e.harness.ai_response_injector import AIResponseInjector
-            self.ai_injector = AIResponseInjector(self.fixture_path)
-        else:
-            self.ai_injector = None
+            # Import lazily only when needed to avoid production dependency on tests
+            try:
+                from tests.e2e.harness.ai_response_injector import AIResponseInjector
+                self.ai_injector = AIResponseInjector(self.fixture_path)
+            except ImportError:
+                # Graceful fallback if tests module not available
+                # This allows production code to run without test dependencies
+                pass
 
         # ... existing initialization ...
 ```
@@ -1002,32 +1010,122 @@ print(formatted)
 
 ---
 
+## Dependency Management
+
+### Circular Dependency Prevention
+
+**Problem**: Production code (`gao_dev/`) must never import test code (`tests/`), as this creates circular dependencies and prevents running production code without test dependencies.
+
+**Solution**: Use lazy conditional imports with graceful fallbacks
+
+**Pattern**:
+```python
+# In production code (gao_dev/orchestrator/chat_repl.py)
+class ChatREPL:
+    def __init__(self, test_mode: bool = False, fixture_path: Optional[Path] = None):
+        self.ai_injector = None
+
+        if test_mode and fixture_path:
+            # Lazy import only when test mode is active
+            try:
+                from tests.e2e.harness.ai_response_injector import AIResponseInjector
+                self.ai_injector = AIResponseInjector(self.fixture_path)
+            except ImportError:
+                # Graceful fallback - production code runs fine without tests
+                pass
+```
+
+**Key Principles**:
+1. **Default to None**: Set `self.ai_injector = None` before conditional block
+2. **Lazy Import**: Import inside `if test_mode:` block, not at module level
+3. **Try-Except**: Wrap import in try-except to handle missing test dependencies
+4. **Graceful Fallback**: Production code must work when test module is unavailable
+
+**Directory Dependency Rules**:
+- `gao_dev/` (production) → **NEVER** imports from `tests/`
+- `tests/` (test code) → **CAN** import from `gao_dev/`
+- `tests/e2e/` (E2E tests) → **CAN** import from `tests/unit/` (shared fixtures)
+
+---
+
 ## Integration Points
 
 ### 1. Provider System (Epic 21, Epic 35)
 
 **Integration**: Use existing provider abstraction for cost-free testing
 
+#### Provider Override Precedence
+
+The system uses a **three-tier precedence hierarchy** for provider configuration:
+
+**Precedence Order** (highest to lowest):
+1. **`E2E_TEST_PROVIDER` environment variable** - Explicit override for E2E tests only
+2. **`AGENT_PROVIDER` environment variable** - Global provider override (from Epic 35)
+3. **Default configuration** - opencode/ollama/deepseek-r1 (cost-free)
+
+**Rationale**:
+- `E2E_TEST_PROVIDER` takes highest precedence to allow test-specific provider selection without affecting global settings
+- `AGENT_PROVIDER` is checked second to respect user's global preference
+- Default to cost-free local model to ensure zero API costs
+
+**Implementation**:
 ```python
-# Default to opencode/ollama/deepseek-r1
-executor = ProcessExecutor(
-    project_root=Path.cwd(),
-    provider_name="opencode",
-    provider_config={
+import os
+from typing import Optional
+
+def get_e2e_test_provider() -> tuple[str, dict]:
+    """Get provider configuration for E2E tests with precedence resolution."""
+
+    # Tier 1: E2E_TEST_PROVIDER (highest precedence)
+    if e2e_provider := os.getenv("E2E_TEST_PROVIDER"):
+        if e2e_provider == "claude-code":
+            return ("claude-code", {})
+        elif e2e_provider == "opencode":
+            return ("opencode", {
+                "ai_provider": os.getenv("E2E_AI_PROVIDER", "ollama"),
+                "use_local": True,
+                "model": os.getenv("E2E_MODEL", "deepseek-r1")
+            })
+
+    # Tier 2: AGENT_PROVIDER (global preference from Epic 35)
+    if agent_provider := os.getenv("AGENT_PROVIDER"):
+        if agent_provider == "claude-code":
+            return ("claude-code", {})
+        elif agent_provider == "opencode":
+            # Use global AGENT_PROVIDER config but default to local models
+            return ("opencode", {
+                "ai_provider": os.getenv("AI_PROVIDER", "ollama"),
+                "use_local": True,
+                "model": os.getenv("MODEL", "deepseek-r1")
+            })
+
+    # Tier 3: Default (cost-free)
+    return ("opencode", {
         "ai_provider": "ollama",
         "use_local": True,
         "model": "deepseek-r1"
-    }
-)
+    })
 
-# Override with environment variable
-import os
-if os.getenv("E2E_TEST_PROVIDER") == "claude-code":
-    executor = ProcessExecutor(
-        project_root=Path.cwd(),
-        provider_name="claude-code"
-    )
+# Usage in E2E tests
+provider_name, provider_config = get_e2e_test_provider()
+executor = ProcessExecutor(
+    project_root=Path.cwd(),
+    provider_name=provider_name,
+    provider_config=provider_config
+)
 ```
+
+**Example Scenarios**:
+
+| E2E_TEST_PROVIDER | AGENT_PROVIDER | Result | Cost |
+|-------------------|----------------|--------|------|
+| (not set) | (not set) | opencode/ollama/deepseek-r1 | $0 |
+| (not set) | claude-code | opencode/ollama/deepseek-r1 | $0 (default wins) |
+| opencode | claude-code | opencode/ollama/deepseek-r1 | $0 (E2E wins) |
+| claude-code | opencode | claude-code | $$$ (E2E wins) |
+| claude-code | (not set) | claude-code | $$$ (E2E wins) |
+
+**Key Invariant**: Default is **ALWAYS** cost-free unless explicitly overridden
 
 ### 2. ChatREPL (Epic 30)
 
