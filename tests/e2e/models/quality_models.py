@@ -67,12 +67,15 @@ class QualityReport:
     """
     Complete quality analysis report for a conversation.
 
-    Contains all detected issues, statistics, and metadata.
+    Contains all detected issues, statistics, quality score, and metadata.
+
+    Story 37.3: Added quality_score (0-100%) calculation.
     """
 
     transcript_path: Path
     total_turns: int
     issues: List[QualityIssue] = field(default_factory=list)
+    quality_score: float = 100.0  # 0-100%, defaults to perfect
     analysis_duration_seconds: float = 0.0
     analyzed_at: Optional[str] = None
 
@@ -113,6 +116,7 @@ class QualityReport:
         return {
             "transcript_path": str(self.transcript_path),
             "total_turns": self.total_turns,
+            "quality_score": round(self.quality_score, 2),
             "total_issues": len(self.issues),
             "issues": [issue.to_dict() for issue in self.issues],
             "issue_counts_by_type": {

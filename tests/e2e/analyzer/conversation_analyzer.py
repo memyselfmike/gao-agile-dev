@@ -162,6 +162,9 @@ class ConversationAnalyzer:
             for issue in issues:
                 report.add_issue(issue)
 
+        # Story 37.3: Calculate quality score
+        report.quality_score = self._calculate_score(report)
+
         # Calculate duration
         duration = time.perf_counter() - start_time
         report.analysis_duration_seconds = round(duration, 3)
@@ -170,6 +173,7 @@ class ConversationAnalyzer:
             "analysis_complete",
             turns=len(transcript),
             issues=len(report.issues),
+            score=report.quality_score,
             duration_s=report.analysis_duration_seconds,
         )
 
@@ -463,6 +467,73 @@ class ConversationAnalyzer:
             )
 
         return issues
+
+    def _calculate_score(self, report: QualityReport) -> float:
+        """
+        Calculate quality score for a conversation.
+
+        Story 37.3: AC1 - Quality scoring algorithm implementation
+
+        Formula:
+        - total_penalty = sum(severity_weights[issue.severity] for issue in issues)
+        - max_total_penalty = total_turns * MAX_PENALTY_PER_TURN (10.0)
+        - score = 100 * (1 - (total_penalty / max_total_penalty))
+        - score clamped to [0, 100]
+
+        Severity Weights (AC3):
+        - CRITICAL = 5.0 (conversation failure)
+        - HIGH = 3.0 (significant UX failure)
+        - MEDIUM = 2.0 (noticeable UX problem)
+        - LOW = 1.0 (minor UX degradation)
+
+        Args:
+            report: QualityReport with detected issues
+
+        Returns:
+            Quality score from 0-100% (AC2)
+
+        Examples:
+            - 0 issues → 100.0
+            - 1 HIGH issue in 10 turns → 100 * (1 - (3/100)) = 97.0
+            - 5 MEDIUM issues in 10 turns → 100 * (1 - (10/100)) = 90.0
+        """
+        # AC6: Edge case - 0 turns
+        if report.total_turns == 0:
+            return 100.0
+
+        # AC3: Severity weights
+        SEVERITY_WEIGHTS = {
+            IssueSeverity.CRITICAL: 5.0,
+            IssueSeverity.HIGH: 3.0,
+            IssueSeverity.MEDIUM: 2.0,
+            IssueSeverity.LOW: 1.0,
+        }
+
+        MAX_PENALTY_PER_TURN = 10.0
+
+        # AC6: Edge case - no issues
+        if not report.issues:
+            return 100.0
+
+        # Calculate total penalty
+        total_penalty = sum(
+            SEVERITY_WEIGHTS.get(issue.severity, 1.0) for issue in report.issues
+        )
+
+        # Calculate maximum possible penalty
+        max_total_penalty = report.total_turns * MAX_PENALTY_PER_TURN
+
+        # AC6: Edge case - all issues (shouldn't happen but be safe)
+        if total_penalty >= max_total_penalty:
+            return 0.0
+
+        # Calculate score (AC2: 0-100%)
+        score = 100.0 * (1.0 - (total_penalty / max_total_penalty))
+
+        # Clamp to [0, 100] range
+        score = max(0.0, min(100.0, score))
+
+        return round(score, 2)
 
     def ai_analyze_turn(
         self, turn_num: int, turn: Dict[str, Any], report: QualityReport
