@@ -30,20 +30,52 @@ class ChatREPL:
         logger: Structured logger for observability
     """
 
-    def __init__(self, project_root: Optional[Path] = None):
+    def __init__(
+        self,
+        project_root: Optional[Path] = None,
+        test_mode: bool = False,
+        capture_mode: bool = False,
+        fixture_path: Optional[Path] = None
+    ):
         """
         Initialize ChatREPL with full orchestration stack.
 
         Story 30.4: Now includes CommandRouter, HelpSystem, OperationTracker, SubcommandParser.
+        Story 36.2: Now supports test mode and capture mode.
 
         Args:
             project_root: Optional project root
+            test_mode: Enable test mode with fixture responses
+            capture_mode: Enable conversation capture logging
+            fixture_path: Path to fixture file for test mode
         """
         self.project_root = project_root or Path.cwd()
+        self.test_mode = test_mode
+        self.capture_mode = capture_mode
+        self.fixture_path = fixture_path
         self.console = Console()
         self.history = InMemoryHistory()
         self.prompt_session: PromptSession[str] = PromptSession(history=self.history)
         self.logger = logger.bind(component="chat_repl")
+
+        # Story 36.2: Lazy import AIResponseInjector to avoid circular dependency
+        self.ai_injector = None
+        if self.test_mode and self.fixture_path:
+            try:
+                # Import only when test mode is active
+                from tests.e2e.harness.ai_response_injector import AIResponseInjector
+                self.ai_injector = AIResponseInjector(self.fixture_path)
+                self.logger.info(
+                    "test_mode_enabled",
+                    fixture_path=str(self.fixture_path)
+                )
+            except ImportError as e:
+                # Graceful fallback - production code works without tests module
+                self.logger.warning(
+                    "test_mode_unavailable",
+                    error=str(e),
+                    message="Test mode enabled but tests module not available"
+                )
 
         # Initialize status reporter
         self.status_reporter = ProjectStatusReporter(self.project_root)
@@ -163,12 +195,15 @@ class ChatREPL:
         self.subcommand_parser = SubcommandParser(analysis_service)
 
         # Story 30.5: Create ChatSession for state management
+        # Story 36.2: Pass capture mode and AI injector
         from gao_dev.orchestrator.chat_session import ChatSession
 
         self.session = ChatSession(
             conversational_brian=self.conversational_brian,
             command_router=self.command_router,
-            project_root=self.project_root
+            project_root=self.project_root,
+            capture_mode=self.capture_mode,
+            ai_injector=self.ai_injector
         )
 
         # Legacy context (for backward compatibility)

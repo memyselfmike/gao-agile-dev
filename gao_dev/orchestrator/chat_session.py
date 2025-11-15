@@ -113,15 +113,21 @@ class ChatSession:
         command_router: Any,  # CommandRouter
         project_root: Path,
         max_history: int = MAX_HISTORY,
+        capture_mode: bool = False,
+        ai_injector: Any = None,
     ):
         """
         Initialize chat session.
+
+        Story 36.2: Now supports capture mode and test mode AI injection.
 
         Args:
             conversational_brian: ConversationalBrian instance
             command_router: CommandRouter instance
             project_root: Project root path
             max_history: Maximum conversation history (default: 100)
+            capture_mode: Enable conversation capture logging
+            ai_injector: Optional AIResponseInjector for test mode
         """
         self.brian = conversational_brian
         self.router = command_router
@@ -129,6 +135,15 @@ class ChatSession:
         self.history: List[Turn] = []
         self.max_history = max_history
         self.logger = logger.bind(component="chat_session")
+
+        # Story 36.2: Capture mode support
+        self.capture_mode = capture_mode
+        self.ai_injector = ai_injector
+        self.conversation_transcript: List[Dict[str, Any]] = []
+        self.transcript_path: Optional[Path] = None
+
+        if self.capture_mode:
+            self.transcript_path = self._init_transcript()
 
         # Cancellation support
         self.cancel_event = asyncio.Event()
@@ -143,6 +158,8 @@ class ChatSession:
 
         Coordinates between Brian and router while tracking history
         and respecting cancellation.
+
+        Story 36.2: Now supports capture mode and AI injection for test mode.
 
         Args:
             user_input: User's message
@@ -160,6 +177,16 @@ class ChatSession:
             self.logger.warning("operation_cancelled_before_start")
             raise asyncio.CancelledError("Session cancelled")
 
+        # Story 36.2: Capture turn start
+        turn_metadata: Dict[str, Any] = {}
+        if self.capture_mode:
+            turn_metadata = {
+                "timestamp": datetime.now().isoformat(),
+                "user_input": user_input,
+                "brian_response": None,
+                "context_used": self._get_active_context(),
+            }
+
         # Add user turn to history
         self._add_turn("user", user_input)
 
@@ -167,39 +194,59 @@ class ChatSession:
         self._check_memory_limits()
 
         try:
-            # Get responses from Brian (with session context)
+            # Get responses from Brian (or injector in test mode)
             brian_responses = []
 
-            # Create context for backward compatibility with ConversationalBrian
-            from gao_dev.orchestrator.conversational_brian import ConversationContext
+            # Story 36.2: Use injector if available (test mode)
+            if self.ai_injector:
+                try:
+                    response = self.ai_injector.get_next_response()
+                    brian_responses.append(response)
+                    yield response
+                except Exception as e:
+                    self.logger.error("injector_failed", error=str(e))
+                    # Fallback to normal Brian if injector fails
+                    self.logger.warning("falling_back_to_brian")
+                    self.ai_injector = None  # Disable for rest of session
 
-            old_context = ConversationContext(
-                project_root=str(self.context.project_root),
-                session_history=self._format_history_for_legacy(),
-                pending_confirmation=self.context.pending_confirmation,
-                current_epic=self.context.current_epic,
-                current_story=self.context.current_story,
-            )
+            # Normal Brian flow (if not using injector)
+            if not self.ai_injector:
+                # Create context for backward compatibility with ConversationalBrian
+                from gao_dev.orchestrator.conversational_brian import ConversationContext
 
-            async for response in self.brian.handle_input(user_input, old_context):
-                # Check for cancellation
-                if self.cancel_event.is_set():
-                    self.logger.warning("operation_cancelled_during_execution")
-                    brian_responses.append("[Operation cancelled by user]")
-                    yield "[Operation cancelled by user]"
-                    raise asyncio.CancelledError("Cancelled by user")
+                old_context = ConversationContext(
+                    project_root=str(self.context.project_root),
+                    session_history=self._format_history_for_legacy(),
+                    pending_confirmation=self.context.pending_confirmation,
+                    current_epic=self.context.current_epic,
+                    current_story=self.context.current_story,
+                )
 
-                brian_responses.append(response)
-                yield response
+                async for response in self.brian.handle_input(user_input, old_context):
+                    # Check for cancellation
+                    if self.cancel_event.is_set():
+                        self.logger.warning("operation_cancelled_during_execution")
+                        brian_responses.append("[Operation cancelled by user]")
+                        yield "[Operation cancelled by user]"
+                        raise asyncio.CancelledError("Cancelled by user")
 
-            # Sync context back
-            self.context.pending_confirmation = old_context.pending_confirmation
-            self.context.current_epic = old_context.current_epic
-            self.context.current_story = old_context.current_story
+                    brian_responses.append(response)
+                    yield response
+
+                # Sync context back
+                self.context.pending_confirmation = old_context.pending_confirmation
+                self.context.current_epic = old_context.current_epic
+                self.context.current_story = old_context.current_story
 
             # Add Brian's responses to history
             combined_response = "\n".join(brian_responses)
             self._add_turn("brian", combined_response)
+
+            # Story 36.2: Capture turn end
+            if self.capture_mode:
+                turn_metadata["brian_response"] = combined_response
+                self.conversation_transcript.append(turn_metadata)
+                self._save_transcript()
 
         except asyncio.CancelledError:
             # Mark as cancelled and re-raise
@@ -549,3 +596,59 @@ class ChatSession:
         except Exception as e:
             self.logger.error("session_load_failed", error=str(e), file_path=str(file_path))
             return False
+
+    def _init_transcript(self) -> Path:
+        """
+        Initialize transcript file for capture mode.
+
+        Story 36.2: Create transcript directory and file.
+
+        Returns:
+            Path to transcript file
+        """
+        gao_dev_dir = self.context.project_root / ".gao-dev" / "test_transcripts"
+        gao_dev_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        transcript_path = gao_dev_dir / f"session_{timestamp}.json"
+
+        self.logger.info("transcript_initialized", path=str(transcript_path))
+        return transcript_path
+
+    def _save_transcript(self) -> None:
+        """
+        Save conversation transcript to disk.
+
+        Story 36.2: Persist transcript as JSON.
+        """
+        if not self.transcript_path:
+            return
+
+        try:
+            with open(self.transcript_path, "w", encoding="utf-8") as f:
+                json.dump(self.conversation_transcript, f, indent=2, ensure_ascii=False)
+
+            self.logger.debug(
+                "transcript_saved",
+                path=str(self.transcript_path),
+                turn_count=len(self.conversation_transcript),
+            )
+        except Exception as e:
+            self.logger.error("transcript_save_failed", error=str(e))
+
+    def _get_active_context(self) -> Dict[str, Any]:
+        """
+        Get current context for conversation turn capture.
+
+        Story 36.2: Context metadata for transcript.
+
+        Returns:
+            Dictionary with current context information
+        """
+        return {
+            "project_root": str(self.context.project_root),
+            "session_id": id(self),
+            "current_epic": self.context.current_epic,
+            "current_story": self.context.current_story,
+            "pending_confirmation": bool(self.context.pending_confirmation),
+        }
