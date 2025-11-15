@@ -1,13 +1,13 @@
 Metadata-Version: 2.4
 Name: gao-dev
-Version: 1.0.0
+Version: 0.0.post1.dev374
 Summary: GAO-Dev - Software Engineering Team for Generative Autonomous Organisation
 Author: GAO Development Team
 License: MIT
-Project-URL: Homepage, https://github.com/gao-org/gao-dev
-Project-URL: Documentation, https://github.com/gao-org/gao-dev#readme
-Project-URL: Repository, https://github.com/gao-org/gao-dev
-Project-URL: Issues, https://github.com/gao-org/gao-dev/issues
+Project-URL: Homepage, https://github.com/memyselfmike/gao-agile-dev
+Project-URL: Documentation, https://github.com/memyselfmike/gao-agile-dev#readme
+Project-URL: Repository, https://github.com/memyselfmike/gao-agile-dev
+Project-URL: Issues, https://github.com/memyselfmike/gao-agile-dev/issues
 Keywords: ai,agents,autonomous,development,gao
 Classifier: Development Status :: 3 - Alpha
 Classifier: Intended Audience :: Developers
@@ -26,7 +26,12 @@ Requires-Dist: matplotlib>=3.7.0
 Requires-Dist: numpy>=1.24.0
 Requires-Dist: scipy>=1.10.0
 Requires-Dist: rich>=13.0.0
+Requires-Dist: tabulate>=0.9.0
+Requires-Dist: requests>=2.31.0
 Requires-Dist: opencode-ai<0.2.0,>=0.1.0a36
+Requires-Dist: networkx>=3.0
+Requires-Dist: apscheduler>=3.10.0
+Requires-Dist: prompt-toolkit>=3.0.43
 Provides-Extra: dev
 Requires-Dist: pytest>=7.4.0; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
@@ -44,7 +49,8 @@ GAO-Dev is an autonomous AI development orchestration system that manages the co
 
 ## Features
 
-- **Autonomous Development**: 8 specialized Claude agents (Mary, Brian, John, Winston, Sally, Bob, Amelia, Murat)
+- **NEW! Interactive Chat Interface**: Natural language conversational mode via `gao-dev start` - the easiest way to use GAO-Dev
+- **Autonomous Development**: 8 specialized Claude agents (Brian, John, Winston, Sally, Bob, Amelia, Murat, Mary)
 - **Project-Scoped Document Lifecycle**: Isolated `.gao-dev/` per project for document tracking, context, and metrics
 - **Context System Integration**: Automatic context injection, meta-prompts, and state persistence
 - **Scale-Adaptive Routing**: Automatically adjusts approach based on project size (Levels 0-4)
@@ -66,55 +72,262 @@ GAO-Dev is an autonomous AI development orchestration system that manages the co
 
 ## Installation
 
-### Quick Setup with uv (Recommended)
+### Prerequisites
 
-**Windows:**
+1. **Python 3.11 or higher**
+   ```bash
+   python --version  # Should show 3.11+
+   ```
+
+2. **uv (Python package installer)** - Recommended for fast, reliable installs
+
+   **Windows:**
+   ```powershell
+   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+
+   **macOS/Linux:**
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+   Verify installation:
+   ```bash
+   uv --version
+   ```
+
+### Quick Installation (Recommended)
+
+**Step 1: Clone the repository**
+
 ```bash
+# Clone from GitHub
+git clone https://github.com/memyselfmike/gao-agile-dev.git
+cd gao-agile-dev
+```
+
+**Step 2: Run setup script**
+
+**Windows (Command Prompt or PowerShell):**
+```cmd
 setup.bat
 ```
 
-**Unix/Linux/Mac:**
+**Windows (Git Bash/WSL) or Unix/Linux/Mac:**
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
-### From Source (Manual)
+**Important**: Don't run `bash setup.bat` - use the appropriate script for your shell!
+
+This automated script will:
+- Sync all dependencies
+- Install gao-dev CLI in development mode
+- Verify the installation
+
+**Step 3: Activate the virtual environment**
+
+**Windows (Command Prompt):**
+```cmd
+.venv\Scripts\activate
+```
+
+**Windows (PowerShell):**
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+**Windows (Git Bash/WSL), Unix/Linux/Mac:**
+```bash
+source .venv/bin/activate
+```
+
+### Verify Installation & Start Using GAO-Dev
+
+**Easiest Way - Use the Start Script:**
 
 ```bash
-# Clone the repository
+# Git Bash/WSL/Unix/Mac
+./start.sh
+
+# Windows Command Prompt or PowerShell
+start.bat
+```
+
+The start script will:
+- Create/verify virtual environment
+- Install all dependencies
+- Launch interactive chat mode
+- Handle everything automatically!
+
+**Or manually verify:**
+
+```bash
+# Check version
+gao-dev --version
+
+# View available commands
+gao-dev --help
+
+# Run health check
+gao-dev health
+```
+
+**Success!** You should see the gao-dev version and command help.
+
+### Alternative: Manual Installation
+
+If you prefer manual control or the setup script doesn't work:
+
+```bash
+# Clone repository
+git clone https://github.com/memyselfmike/gao-agile-dev.git
 cd gao-agile-dev
 
-# Install with uv (recommended)
+# Sync dependencies and install
 uv sync
 uv pip install -e .
 
-# Or install with pip
-pip install -e .
+# Activate virtual environment
+source .venv/bin/activate        # Git Bash/WSL/Unix/Mac
+# OR
+.venv\Scripts\activate           # Windows Command Prompt
+# OR
+.venv\Scripts\Activate.ps1       # Windows PowerShell
 
-# Or install with dev dependencies
-pip install -e ".[dev]"
+# Verify
+gao-dev --version
 ```
 
-### Verify Installation
+### Alternative: Using pip
+
+If you don't have uv installed and prefer pip:
 
 ```bash
-# Preferred method (if package installed in editable mode)
-gao-dev --version
-gao-dev --help
+# Clone repository
+git clone https://github.com/memyselfmike/gao-agile-dev.git
+cd gao-agile-dev
 
-# Alternative method (always works)
-python -m gao_dev.cli.commands --version
-python -m gao_dev.cli.commands --help
+# Create virtual environment
+python -m venv .venv
+
+# Activate virtual environment
+source .venv/bin/activate        # Git Bash/WSL/Unix/Mac
+# OR
+.venv\Scripts\activate           # Windows Command Prompt
+# OR
+.venv\Scripts\Activate.ps1       # Windows PowerShell
+
+# Install
+pip install -e ".[dev]"
+
+# Verify
+gao-dev --version
 ```
 
-**Note**: In the examples below, `gao-dev` commands can be replaced with `python -m gao_dev.cli.commands` if the shorter command isn't available in your environment.
+**Note**: pip installation is slower but works if uv is unavailable.
 
-**See [QUICKSTART.md](QUICKSTART.md) for a detailed getting started guide.**
+### Running Without Installation
 
-**See [docs/SETUP.md](docs/SETUP.md) for API key configuration and autonomous benchmark setup.**
+If the `gao-dev` command isn't available, you can always use:
+
+```bash
+python -m gao_dev.cli.commands --help
+python -m gao_dev.cli.commands version
+```
+
+### Next Steps
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Detailed getting started guide
+- **[docs/SETUP.md](docs/SETUP.md)** - API key configuration for AI providers
+- **[docs/INDEX.md](docs/INDEX.md)** - Complete documentation hub
+
+## Updating GAO-Dev
+
+### Quick Update (For Beta Testers)
+
+To update your installation to the latest version:
+
+**Windows (Command Prompt or PowerShell):**
+```cmd
+update.bat
+```
+
+**Windows (Git Bash/WSL) or Unix/Linux/Mac:**
+```bash
+./update.sh
+```
+
+This will:
+- Pull latest changes from GitHub
+- Update dependencies
+- Run database migrations
+- Verify the installation
+
+### Manual Update
+
+```bash
+# Pull latest changes
+git pull origin main
+
+# Update dependencies
+uv sync
+
+# Run migrations
+gao-dev db migrate
+
+# Verify
+gao-dev version
+```
+
+**For complete update instructions, troubleshooting, and version pinning, see [UPDATE.md](UPDATE.md).**
 
 ## Quick Start
+
+### NEW! One-Command Startup (Easiest Way!)
+
+The absolute fastest way to start using GAO-Dev:
+
+```bash
+# Git Bash/WSL/Unix/Mac
+./start.sh
+
+# Windows Command Prompt or PowerShell
+start.bat
+```
+
+This single command:
+- Creates/verifies your environment
+- Installs all dependencies
+- Launches interactive chat with Brian
+- No activation or setup needed!
+
+### Interactive Chat Mode
+
+Once started (or if you manually activate), use the interactive chat:
+
+```bash
+gao-dev start
+```
+
+This launches Brian, your AI Engineering Manager, in conversational mode where you can:
+- Make natural language requests: "I want to build a todo app with authentication"
+- Initialize new projects or add GAO-Dev to existing codebases
+- Have multi-turn conversations with context preservation
+- Get contextual help and guidance
+- See project status automatically
+
+**Features**:
+- Auto-detect project status on startup
+- Natural language understanding
+- Session history saved automatically
+- Graceful error handling (Ctrl+C continues chat)
+- Support for greenfield and brownfield projects (9 languages: Node.js, Python, Rust, Go, Java, Ruby, PHP, etc.)
+
+**See [docs/features/interactive-brian-chat/USER_GUIDE.md](docs/features/interactive-brian-chat/USER_GUIDE.md) for complete documentation.**
+
+### Traditional Workflow Commands
 
 ### 1. Initialize a Project
 
@@ -202,6 +415,7 @@ gao-dev sandbox status
 ### Core Commands
 
 ```bash
+gao-dev start                        # NEW! Start interactive chat (recommended)
 gao-dev --version                    # Show version
 gao-dev --help                       # Show help
 gao-dev init --name "Project"        # Initialize project

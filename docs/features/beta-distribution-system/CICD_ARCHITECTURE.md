@@ -1,4 +1,4 @@
-# CI/CD Architecture for Beta Distribution
+2# CI/CD Architecture for Beta Distribution
 
 **Version**: 1.0
 **Status**: Planning
