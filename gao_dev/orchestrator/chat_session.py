@@ -239,7 +239,8 @@ class ChatSession:
                 self.context.current_story = old_context.current_story
 
             # Add Brian's responses to history
-            combined_response = "\n".join(brian_responses)
+            # Story 37.1: Use empty join to preserve chunk formatting
+            combined_response = "".join(brian_responses)
             self._add_turn("brian", combined_response)
 
             # Story 36.2: Capture turn end

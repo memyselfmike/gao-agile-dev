@@ -1,0 +1,74 @@
+[
+  {
+    "timestamp": "2025-01-15T09:00:00.000000",
+    "user_input": "help",
+    "brian_response": "Welcome to GAO-Dev! I'm Brian, your AI workflow coordinator.\n\nI can help you with:\n\n**1. Starting New Projects (Greenfield)**\n- Tell me your idea and I'll guide you through:\n  - Vision elicitation\n  - PRD creation\n  - Architecture design\n  - Implementation planning\n- Example: \"I want to build a blog platform\"\n\n**2. Enhancing Existing Projects (Brownfield)**\n- Add features to your current codebase\n- I'll analyze your project and recommend approaches\n- Example: \"Add authentication to my Flask app\"\n\n**3. Specific Tasks**\n- Create PRD: `create-prd --name MyProject`\n- Create Architecture: `create-architecture --name MyProject`\n- Implement Story: `implement-story --epic 1 --story 2`\n- List workflows: `list-workflows`\n\n**4. Project Management**\n- Check status: `status`\n- View epics: `list-epics`\n- View stories: `list-stories`\n\n**Common Commands:**\n- `help` - This message\n- `status` - Project status\n- `exit` - End session\n\n**Tips:**\n- Just describe what you want in natural language!\n- I'll ask questions to clarify\n- I adapt to your project's scale (from quick fixes to full apps)\n\nWhat would you like to work on?",
+    "context_used": {
+      "project_root": "/home/user/current-dir",
+      "session_id": 33333,
+      "current_epic": null,
+      "current_story": null,
+      "pending_confirmation": false
+    }
+  },
+  {
+    "timestamp": "2025-01-15T09:01:00.123456",
+    "user_input": "how do I check project status?",
+    "brian_response": "Great question! There are several ways to check your project status:\n\n**Option 1: Use the `status` command**\n```\nstatus\n```\nThis shows:\n- Current project name and root\n- Active epic and story (if any)\n- Recent activity\n- Pending tasks\n\n**Option 2: List Epics**\n```\nlist-epics\n```\nShows all epics with:\n- Epic number and title\n- Status (Not Started, In Progress, Complete)\n- Story count\n- Story points\n\n**Option 3: List Stories**\n```\nlist-stories\n```\nOr for specific epic:\n```\nlist-stories --epic 1\n```\nShows:\n- Story ID\n- Title\n- Status\n- Story points\n- Assignee\n\n**Option 4: View Specific Story**\n```\nshow-story --epic 1 --story 2\n```\nShows full story details:\n- Acceptance criteria\n- Tasks\n- Status\n- Dependencies\n\n**Option 5: Check Files Directly**\n- PRD: `docs/features/<feature-name>/PRD.md`\n- Epics: `docs/features/<feature-name>/epics/<epic-num>-<name>/README.md`\n- Stories: `docs/features/<feature-name>/epics/<epic-num>-<name>/stories/story-<num>.md`\n\nWould you like me to run `status` now?",
+    "context_used": {
+      "project_root": "/home/user/current-dir",
+      "session_id": 33333,
+      "current_epic": null,
+      "current_story": null,
+      "pending_confirmation": true
+    }
+  },
+  {
+    "timestamp": "2025-01-15T09:01:45.456789",
+    "user_input": "yes",
+    "brian_response": "Running project status check...\n\n**Project Status**\n\n**Project:** Not initialized\n**Root:** /home/user/current-dir\n**Status:** No .gao-dev directory found\n\n**Recommendation:**\nIt looks like this directory isn't set up as a GAO-Dev project yet.\n\nWould you like to:\n\n**A) Initialize a new project here**\n- I'll create the GAO-Dev structure\n- Set up document tracking\n- Ready for development\n\n**B) Navigate to an existing project**\n- Change to your project directory first\n- Then run status again\n\n**C) Start a new project elsewhere**\n- Tell me what you want to build\n- I'll create it in the right location\n\nWhich option would you prefer?",
+    "context_used": {
+      "project_root": "/home/user/current-dir",
+      "session_id": 33333,
+      "current_epic": null,
+      "current_story": null,
+      "pending_confirmation": false
+    }
+  },
+  {
+    "timestamp": "2025-01-15T09:02:30.789012",
+    "user_input": "what's the difference between greenfield and brownfield?",
+    "brian_response": "Excellent question! Let me explain the key differences:\n\n**Greenfield Project** 🌱\n- **Definition:** Building from scratch, no existing code\n- **Characteristics:**\n  - Start with a blank slate\n  - Full freedom in tech choices\n  - Complete architecture design\n  - More planning upfront\n- **GAO-Dev Approach:**\n  - Level 4 workflow (most comprehensive)\n  - Vision → PRD → Architecture → Stories → Implementation\n  - All 8 agents may be involved\n  - Timeline: 2-6 months for MVP\n- **Example:** \"Build a recipe sharing platform\"\n\n**Brownfield Project** 🏗️\n- **Definition:** Enhancing or modifying existing codebase\n- **Characteristics:**\n  - Work within existing constraints\n  - Must integrate with current architecture\n  - Incremental changes\n  - Less upfront planning\n- **GAO-Dev Approach:**\n  - Level 1-3 workflows (adaptive to change size)\n  - Analysis → Design → Stories → Implementation\n  - Focused on specific enhancement\n  - Timeline: Days to weeks\n- **Example:** \"Add authentication to my Flask app\"\n\n**How GAO-Dev Adapts:**\n\n| Aspect | Greenfield | Brownfield |\n|--------|-----------|------------|\n| **Discovery** | Vision elicitation | Codebase analysis |\n| **Planning** | Full PRD + Architecture | Focused enhancement design |\n| **Scope** | 40+ story points | 1-40 story points |\n| **Agents** | All 8 | Subset based on need |\n| **Documentation** | Complete from scratch | Integrate with existing |\n\n**I automatically detect which type based on:**\n- Presence of existing code\n- Your description\n- Project structure\n\nJust tell me what you want to do, and I'll choose the right approach!\n\nAny other questions?",
+    "context_used": {
+      "project_root": "/home/user/current-dir",
+      "session_id": 33333,
+      "current_epic": null,
+      "current_story": null,
+      "pending_confirmation": false
+    }
+  },
+  {
+    "timestamp": "2025-01-15T09:03:30.012345",
+    "user_input": "what agents are available?",
+    "brian_response": "GAO-Dev has **8 specialized AI agents**, each with expertise in different areas:\n\n**1. Brian** (That's me! 👋)\n- **Role:** Workflow Coordinator\n- **Expertise:** Project analysis, workflow selection, scale routing\n- **When I help:** Initial analysis, guiding you through processes\n\n**2. John** 📋\n- **Role:** Product Manager\n- **Expertise:** PRDs, feature definition, prioritization\n- **When:** Creating product requirements, defining scope\n\n**3. Winston** 🏗️\n- **Role:** Technical Architect\n- **Expertise:** System architecture, technical specifications, tech stack selection\n- **When:** Designing system architecture, making technical decisions\n\n**4. Sally** 🎨\n- **Role:** UX Designer\n- **Expertise:** User experience, wireframes, design systems\n- **When:** Designing user interfaces, improving UX\n\n**5. Bob** 📊\n- **Role:** Scrum Master\n- **Expertise:** Story creation, sprint planning, agile ceremonies\n- **When:** Breaking down work, managing sprints, tracking progress\n\n**6. Amelia** 💻\n- **Role:** Software Developer\n- **Expertise:** Implementation, code reviews, testing\n- **When:** Writing code, implementing features, fixing bugs\n\n**7. Murat** 🧪\n- **Role:** Test Architect\n- **Expertise:** Test strategies, quality assurance, test automation\n- **When:** Creating test plans, ensuring quality\n\n**8. Mary** 💡\n- **Role:** Business Analyst\n- **Expertise:** Vision elicitation, requirements analysis, brainstorming\n- **When:** Clarifying vague ideas, facilitating brainstorming\n\n**How Agents Collaborate:**\n\nTypical **Greenfield** flow:\n```\nMary → John → Winston → Sally → Bob → Amelia → Murat\n(Vision → PRD → Architecture → UX → Stories → Implementation → Testing)\n```\n\nTypical **Brownfield** flow:\n```\nWinston → Bob → Amelia → Murat\n(Analysis → Stories → Implementation → Testing)\n```\n\n**You interact with me (Brian)**, and I:\n- Route your requests to the right agent\n- Coordinate multi-agent workflows\n- Keep you updated on progress\n- Handle handoffs between agents\n\nWant to see what each agent can do specifically? Ask me:\n- \"What can John do?\"\n- \"Show me Winston's capabilities\"\n- etc.",
+    "context_used": {
+      "project_root": "/home/user/current-dir",
+      "session_id": 33333,
+      "current_epic": null,
+      "current_story": null,
+      "pending_confirmation": false
+    }
+  },
+  {
+    "timestamp": "2025-01-15T09:04:15.345678",
+    "user_input": "ok I'm ready to build something now",
+    "brian_response": "Fantastic! Let's get started! 🚀\n\nTell me about what you want to build:\n- What problem does it solve?\n- Who will use it?\n- What are the main features you envision?\n\nYou can be as detailed or as vague as you like - I'll ask follow-up questions to clarify.\n\nOr if you prefer, you can just give me a one-sentence description and we'll dig into details together!\n\nWhat's your idea?",
+    "context_used": {
+      "project_root": "/home/user/current-dir",
+      "session_id": 33333,
+      "current_epic": null,
+      "current_story": null,
+      "pending_confirmation": false
+    }
+  }
+]
