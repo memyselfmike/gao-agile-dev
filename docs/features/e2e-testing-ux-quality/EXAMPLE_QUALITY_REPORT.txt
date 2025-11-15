@@ -1,0 +1,44 @@
+================================================================================
+CONVERSATION QUALITY REPORT
+================================================================================
+
+Transcript: greenfield_vague_to_detailed.json
+Analyzed: 2025-11-15T16:22:29.245959
+Analysis Duration: 0.002s
+
+QUALITY SCORE: 96.00%
+Excellent - Minimal UX issues
+
+SUMMARY STATISTICS:
+  Total Turns: 5
+  Total Issues: 2
+
+  Issues by Severity:
+    LOW: 2
+
+  Issues by Type:
+    no_confirmation: 2
+
+--------------------------------------------------------------------------------
+
+DETAILED ANALYSIS:
+
+Turn 1:
+  - [LOW] no_confirmation
+    Problem: Action taken without confirming understanding
+    Fix: Confirm understanding before taking action. Example: 'To confirm, you want me to create...'
+    Pattern: action_without_confirmation
+
+Turn 2:
+  - [LOW] no_confirmation
+    Problem: Action taken without confirming understanding
+    Fix: Confirm understanding before taking action. Example: 'To confirm, you want me to create...'
+    Pattern: action_without_confirmation
+
+--------------------------------------------------------------------------------
+
+RECOMMENDATIONS:
+
+1. Confirm understanding before taking action to prevent misalignment. Example: 'To confirm, I'll create...'
+
+================================================================================
