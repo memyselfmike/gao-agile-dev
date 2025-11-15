@@ -55,13 +55,22 @@ class ChatREPL:
         self.fixture_path = fixture_path
         self.console = Console()
         self.history = InMemoryHistory()
+        self.logger = logger.bind(component="chat_repl")
 
-        # Only create PromptSession if not in test mode (test mode uses stdin)
+        # Try to create PromptSession for interactive use
+        # Gracefully handle environments where it's not supported (e.g., Git Bash on Windows)
         self.prompt_session: Optional[PromptSession[str]] = None
         if not test_mode:
-            self.prompt_session = PromptSession(history=self.history)
-
-        self.logger = logger.bind(component="chat_repl")
+            try:
+                self.prompt_session = PromptSession(history=self.history)
+            except Exception as e:
+                # PromptSession unavailable (Git Bash, non-interactive, etc.)
+                # Will fall back to basic stdin reading
+                self.logger.warning(
+                    "prompt_session_unavailable",
+                    error=str(e),
+                    fallback="stdin_input"
+                )
 
         # Story 36.2: Lazy import AIResponseInjector to avoid circular dependency
         self.ai_injector = None
@@ -248,12 +257,21 @@ class ChatREPL:
                     if not line:  # EOF
                         break
                     user_input = line.strip()
-                else:
-                    # Normal mode: use prompt_session
+                elif self.prompt_session:
+                    # Interactive mode with PromptSession (full terminal features)
                     user_input = await self.prompt_session.prompt_async(
                         "You: ", multiline=False
                     )
                     user_input = user_input.strip()
+                else:
+                    # Fallback mode: basic stdin (Git Bash, wexpect, etc.)
+                    import sys
+                    self.console.print("[bold cyan]You:[/bold cyan]", end=" ")
+                    sys.stdout.flush()
+                    line = sys.stdin.readline()
+                    if not line:  # EOF
+                        break
+                    user_input = line.strip()
 
                 # Check for exit commands
                 if self._is_exit_command(user_input):
