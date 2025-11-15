@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: gao-dev
-Version: 0.0.post1.dev374
+Version: 0.0.0.post1.dev17
 Summary: GAO-Dev - Software Engineering Team for Generative Autonomous Organisation
 Author: GAO Development Team
 License: MIT
@@ -9,7 +9,7 @@ Project-URL: Documentation, https://github.com/memyselfmike/gao-agile-dev#readme
 Project-URL: Repository, https://github.com/memyselfmike/gao-agile-dev
 Project-URL: Issues, https://github.com/memyselfmike/gao-agile-dev/issues
 Keywords: ai,agents,autonomous,development,gao
-Classifier: Development Status :: 3 - Alpha
+Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Developers
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
@@ -40,6 +40,8 @@ Requires-Dist: black>=23.10.0; extra == "dev"
 Requires-Dist: ruff>=0.1.0; extra == "dev"
 Requires-Dist: mypy>=1.6.0; extra == "dev"
 Requires-Dist: types-PyYAML; extra == "dev"
+Requires-Dist: pexpect>=4.9.0; sys_platform != "win32" and extra == "dev"
+Requires-Dist: wexpect>=4.0.0; sys_platform == "win32" and extra == "dev"
 
 # GAO-Dev
 

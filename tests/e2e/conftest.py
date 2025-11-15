@@ -2,14 +2,18 @@
 
 Epic 36: Test Infrastructure
 Story 36.1: Cost-Free Test Execution
+Story 36.3: ChatHarness Implementation
 
 This module provides provider configuration for E2E tests with a three-tier
 precedence system that defaults to cost-free local models.
+
+Additionally provides pytest fixtures for ChatHarness with automatic cleanup.
 """
 
 import os
 import subprocess
 from typing import Any, Dict, Tuple
+import pytest
 import structlog
 
 logger = structlog.get_logger()
@@ -206,3 +210,38 @@ def validate_ollama_available(model: str = "deepseek-r1") -> bool:
         print("=" * 70 + "\n")
         logger.error("ollama_timeout")
         return False
+
+
+# Story 36.3: ChatHarness pytest fixture with automatic cleanup
+@pytest.fixture
+def chat_harness():
+    """
+    Provide ChatHarness with automatic cleanup.
+
+    Spawns gao-dev start subprocess in capture mode and ensures
+    clean shutdown even if test fails.
+
+    Usage:
+        def test_something(chat_harness):
+            chat_harness.send("help")
+            output = chat_harness.expect(["commands"])
+
+    Yields:
+        ChatHarness: Started ChatHarness instance
+
+    Note:
+        - Automatically starts subprocess before test
+        - Automatically closes subprocess after test
+        - Uses capture_mode=True by default
+        - 30-second default timeout
+    """
+    from tests.e2e.harness.chat_harness import ChatHarness
+
+    harness = ChatHarness(capture_mode=True, timeout=30)
+    harness.start()
+
+    try:
+        yield harness
+    finally:
+        harness.close()
+        logger.info("chat_harness_fixture_cleaned_up")
