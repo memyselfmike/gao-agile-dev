@@ -586,12 +586,30 @@ cli.add_command(context)
 
 @cli.command("start")
 @click.option("--project", type=Path, help="Project root (default: auto-detect)")
-def start_chat(project: Optional[Path]):
+@click.option("--test-mode", is_flag=True, help="Enable test mode with fixture responses")
+@click.option("--capture-mode", is_flag=True, help="Enable conversation capture logging")
+@click.option("--fixture", type=Path, help="Fixture file for test mode (YAML format)")
+def start_chat(
+    project: Optional[Path],
+    test_mode: bool,
+    capture_mode: bool,
+    fixture: Optional[Path]
+):
     """Start interactive chat with Brian."""
     from .chat_repl import ChatREPL
 
-    # Create REPL
-    repl = ChatREPL(project_root=project)
+    # Validate fixture exists if test mode enabled
+    if test_mode and fixture and not fixture.exists():
+        click.echo(f"[ERROR] Fixture file not found: {fixture}", err=True)
+        sys.exit(1)
+
+    # Create REPL with test flags
+    repl = ChatREPL(
+        project_root=project,
+        test_mode=test_mode,
+        capture_mode=capture_mode,
+        fixture_path=fixture
+    )
 
     # Start async loop
     try:

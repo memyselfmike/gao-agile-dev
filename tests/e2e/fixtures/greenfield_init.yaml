@@ -1,0 +1,84 @@
+# Greenfield initialization test fixture
+#
+# Story: 36.4 - Fixture System
+# Epic: 36 - Test Infrastructure
+#
+# Tests vague user input leading to detailed requirements gathering
+# and greenfield project initialization.
+
+name: "greenfield_initialization"
+description: "Test vague user input leading to detailed requirements gathering"
+
+scenario:
+  # Step 1: Vague initial request
+  - user_input: "build a app"
+    brian_response: |
+      I'd be happy to help you build an app! To provide the best guidance,
+      I need to understand more about your vision.
+
+      What type of app are you looking to build?
+      - Web application
+      - Mobile app (iOS/Android)
+      - Desktop application
+      - CLI tool
+      - API/Backend service
+    expect_output:
+      - "happy to help"
+      - "type of app"
+      - "Web application"
+    timeout_ms: 5000
+
+  # Step 2: Specify app type
+  - user_input: "a todo app"
+    brian_response: |
+      Great! A todo app is a solid project. Let me analyze the requirements.
+
+      Based on your input, I detect this is a greenfield project (Scale Level 4).
+
+      I'll help you:
+      1. Define the product requirements (PRD)
+      2. Design the system architecture
+      3. Break down into user stories
+      4. Set up the project structure
+
+      Would you like me to initialize the project structure?
+    expect_output:
+      - "Scale Level.*4"
+      - "greenfield"
+      - "initialize"
+      - "project structure"
+    timeout_ms: 5000
+
+  # Step 3: Confirm initialization
+  - user_input: "yes"
+    brian_response: |
+      Excellent! I'll initialize your todo app project.
+
+      Creating:
+      - Project directory structure
+      - Initial documentation
+      - Git repository
+      - Development environment
+
+      Project initialized successfully!
+
+      Next steps:
+      1. Review the PRD in docs/PRD.md
+      2. Review architecture in docs/ARCHITECTURE.md
+      3. Check user stories in docs/stories/
+
+      What would you like to do next?
+    expect_output:
+      - "initialized successfully"
+      - "PRD"
+      - "ARCHITECTURE"
+      - "stories"
+    timeout_ms: 10000
+
+  # Step 4: Exit
+  - user_input: "exit"
+    brian_response: "Goodbye! Thanks for using GAO-Dev. Your project is ready to go!"
+    expect_output:
+      - "Goodbye"
+      - "Thanks"
+    timeout_ms: 2000

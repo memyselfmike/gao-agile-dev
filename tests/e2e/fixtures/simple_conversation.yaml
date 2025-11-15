@@ -1,0 +1,29 @@
+# Sample fixture for test mode - simple conversation
+#
+# Story: 36.2 - Test Mode Support in ChatREPL
+# Epic: 36 - Test Infrastructure
+#
+# This fixture demonstrates test mode with a simple greeting conversation.
+# Use with: gao-dev start --test-mode --fixture simple_conversation.yaml
+
+name: "simple_conversation"
+description: "Simple greeting conversation for testing"
+
+scenario:
+  - user_input: "hello"
+    brian_response: "Hello! I'm Brian, your AI Engineering Manager. How can I help you today?"
+
+  - user_input: "what can you do?"
+    brian_response: |
+      I can help you with various software development tasks:
+
+      1. Create PRDs (Product Requirements Documents)
+      2. Design system architecture
+      3. Break down features into user stories
+      4. Generate implementation plans
+      5. Answer questions about your project
+
+      What would you like to work on?
+
+  - user_input: "exit"
+    brian_response: "Goodbye! Thanks for using GAO-Dev!"
