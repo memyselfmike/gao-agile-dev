@@ -55,7 +55,12 @@ class ChatREPL:
         self.fixture_path = fixture_path
         self.console = Console()
         self.history = InMemoryHistory()
-        self.prompt_session: PromptSession[str] = PromptSession(history=self.history)
+
+        # Only create PromptSession if not in test mode (test mode uses stdin)
+        self.prompt_session: Optional[PromptSession[str]] = None
+        if not test_mode:
+            self.prompt_session = PromptSession(history=self.history)
+
         self.logger = logger.bind(component="chat_repl")
 
         # Story 36.2: Lazy import AIResponseInjector to avoid circular dependency
@@ -235,13 +240,20 @@ class ChatREPL:
         # Main loop
         while True:
             try:
-                # Get user input (async)
-                user_input = await self.prompt_session.prompt_async(
-                    "You: ", multiline=False
-                )
-
-                # Strip whitespace
-                user_input = user_input.strip()
+                # Get user input (async or from stdin in test mode)
+                if self.test_mode:
+                    # Test mode: read from stdin
+                    import sys
+                    line = sys.stdin.readline()
+                    if not line:  # EOF
+                        break
+                    user_input = line.strip()
+                else:
+                    # Normal mode: use prompt_session
+                    user_input = await self.prompt_session.prompt_async(
+                        "You: ", multiline=False
+                    )
+                    user_input = user_input.strip()
 
                 # Check for exit commands
                 if self._is_exit_command(user_input):
