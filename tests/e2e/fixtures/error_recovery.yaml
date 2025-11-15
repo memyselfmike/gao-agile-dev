@@ -1,0 +1,97 @@
+# Error recovery test fixture
+#
+# Story: 36.4 - Fixture System
+# Epic: 36 - Test Infrastructure
+#
+# Tests error handling and graceful recovery from edge cases.
+
+name: "error_recovery"
+description: "Test error handling and recovery from edge cases"
+
+scenario:
+  # Step 1: Empty input
+  - user_input: ""
+    brian_response: |
+      I didn't receive any input. How can I help you today?
+
+      You can:
+      - Describe what you want to build
+      - Ask me about your project
+      - Type 'help' for available commands
+    expect_output:
+      - "didn't receive.*input"
+      - "How can I help"
+      - "help.*commands"
+    timeout_ms: 3000
+
+  # Step 2: Ambiguous input
+  - user_input: "do something"
+    brian_response: |
+      I'd be happy to help, but "do something" is quite vague!
+
+      Could you be more specific? For example:
+      - "Create a todo app"
+      - "Add authentication to my project"
+      - "Review my architecture"
+      - "Help me with testing"
+
+      What would you like me to do?
+    expect_output:
+      - "vague"
+      - "more specific"
+      - "What would you like"
+    timeout_ms: 3000
+
+  # Step 3: Unknown command
+  - user_input: "foobar command"
+    brian_response: |
+      I don't recognize the command "foobar".
+
+      Available commands:
+      - help - Show help information
+      - status - Show project status
+      - init - Initialize new project
+      - analyze - Analyze existing project
+      - exit - Exit GAO-Dev
+
+      Try typing 'help' to see all available options.
+    expect_output:
+      - "don't recognize"
+      - "foobar"
+      - "Available commands"
+      - "help.*Show help"
+    timeout_ms: 3000
+
+  # Step 4: Help command
+  - user_input: "help"
+    brian_response: |
+      GAO-Dev Help
+
+      I'm Brian, your AI Engineering Manager. I can help you with:
+
+      Project Initialization:
+      - Greenfield: Start from scratch with full planning
+      - Brownfield: Enhance existing projects
+
+      Available Commands:
+      - help - Show this help
+      - status - Show current project status
+      - init <name> - Initialize new project
+      - analyze - Analyze current directory
+      - exit - Exit GAO-Dev
+
+      Just describe what you want to build, and I'll guide you!
+    expect_output:
+      - "GAO-Dev Help"
+      - "Brian"
+      - "Available Commands"
+      - "describe what you want"
+    timeout_ms: 3000
+
+  # Step 5: Successful exit
+  - user_input: "exit"
+    brian_response: "Goodbye! Thanks for using GAO-Dev."
+    expect_output:
+      - "Goodbye"
+      - "Thanks"
+    timeout_ms: 2000

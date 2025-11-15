@@ -33,6 +33,7 @@ class TestCommandLineParsing:
             fixture_path.write_text(
                 """
 name: "test"
+description: "Test fixture"
 scenario:
   - user_input: "hello"
     brian_response: "Hi!"
@@ -67,7 +68,7 @@ scenario:
 
         with runner.isolated_filesystem():
             fixture_path = Path("test.yaml")
-            fixture_path.write_text("name: test\nscenario: []")
+            fixture_path.write_text("name: test\ndescription: Test\nscenario: []")
 
             result = runner.invoke(
                 start_chat,
@@ -99,6 +100,7 @@ scenario:
             fixture_path.write_text(
                 """
 name: "test"
+description: "Test fixture"
 scenario:
   - user_input: "hello"
     brian_response: "Hi!"
@@ -144,6 +146,7 @@ scenario:
         fixture_path.write_text(
             """
 name: "test"
+description: "Test fixture"
 scenario:
   - user_input: "first"
     brian_response: "Response 1"
@@ -164,6 +167,7 @@ scenario:
         fixture_path.write_text(
             """
 name: "test"
+description: "Test fixture"
 scenario:
   - user_input: "hello"
     brian_response: "Hi!"
@@ -182,6 +186,7 @@ scenario:
         fixture_path.write_text(
             """
 name: "test"
+description: "Test fixture"
 scenario:
   - user_input: "hello"
     brian_response: "Hi!"
@@ -365,6 +370,7 @@ class TestTestMode:
         fixture_path.write_text(
             """
 name: "simple_test"
+description: "Simple test fixture"
 scenario:
   - user_input: "hello"
     brian_response: "Hello! How can I help?"
@@ -400,6 +406,7 @@ scenario:
         fixture_path.write_text(
             """
 name: "test"
+description: "Test fixture"
 scenario:
   - user_input: "test"
     brian_response: "Test response"

@@ -1,0 +1,81 @@
+# Brownfield analysis test fixture
+#
+# Story: 36.4 - Fixture System
+# Epic: 36 - Test Infrastructure
+#
+# Tests analysis of existing codebase and enhancement planning.
+
+name: "brownfield_analysis"
+description: "Test analysis of existing codebase and enhancement planning"
+
+scenario:
+  # Step 1: User mentions existing project
+  - user_input: "I have an existing todo app and want to add user authentication"
+    brian_response: |
+      I can help you add authentication to your existing todo app!
+
+      Since this is an enhancement to an existing project (brownfield),
+      I'll analyze your current codebase first.
+
+      Detected Scale Level: 3 (Medium Feature)
+
+      Let me scan your project structure...
+
+      Found:
+      - Python project with Flask framework
+      - SQLite database
+      - Basic CRUD operations for todos
+      - No authentication currently
+
+      I recommend:
+      1. JWT-based authentication
+      2. User registration and login endpoints
+      3. Secure password hashing with bcrypt
+      4. Role-based access control (RBAC)
+
+      Would you like me to create a detailed plan?
+    expect_output:
+      - "brownfield"
+      - "Scale Level.*3"
+      - "authentication"
+      - "JWT"
+      - "detailed plan"
+    timeout_ms: 8000
+
+  # Step 2: Request detailed plan
+  - user_input: "yes please"
+    brian_response: |
+      Perfect! I'll create a comprehensive plan for adding authentication.
+
+      Creating:
+      1. PRD for authentication feature (docs/features/user-auth/PRD.md)
+      2. Architecture design (docs/features/user-auth/ARCHITECTURE.md)
+      3. User stories breakdown (5 stories estimated)
+      4. Migration guide for existing data
+
+      Plan created successfully!
+
+      Summary:
+      - Epic 1: User Authentication (5 stories, 21 points)
+        - Story 1.1: User registration endpoint
+        - Story 1.2: Login and JWT generation
+        - Story 1.3: Password hashing with bcrypt
+        - Story 1.4: Protected routes middleware
+        - Story 1.5: User profile management
+
+      Ready to start implementation? Type 'implement story 1.1' to begin.
+    expect_output:
+      - "PRD.*authentication"
+      - "Epic 1"
+      - "5 stories"
+      - "21 points"
+      - "implement story"
+    timeout_ms: 10000
+
+  # Step 3: Exit
+  - user_input: "exit"
+    brian_response: "Goodbye! Your authentication plan is ready. Run 'gao-dev start' anytime to continue."
+    expect_output:
+      - "Goodbye"
+      - "authentication plan"
+    timeout_ms: 2000

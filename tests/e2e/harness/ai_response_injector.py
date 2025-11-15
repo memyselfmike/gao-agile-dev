@@ -2,14 +2,17 @@
 
 Provides scripted AI responses for deterministic testing.
 
-Story: 36.2 - Test Mode Support in ChatREPL
+Story: 36.2 - Test Mode Support in ChatREPL (Minimal implementation)
+Story: 36.4 - Fixture System (Enhanced with FixtureLoader and models)
 Epic: 36 - Test Infrastructure
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Optional
 from pathlib import Path
-import yaml
 import structlog
+
+from .fixture_loader import FixtureLoader
+from .models import TestScenario
 
 logger = structlog.get_logger()
 
@@ -27,13 +30,13 @@ class AIResponseInjector:
     Enables deterministic testing by replacing real AI calls with
     pre-scripted responses from YAML fixture files.
 
-    This is a minimal implementation for Story 36.2. The full
-    FixtureLoader with validation will be implemented in Story 36.4.
+    Enhanced in Story 36.4 to use FixtureLoader and TestScenario models
+    for comprehensive validation and better error messages.
 
     Attributes:
         fixture_path: Path to YAML fixture file
-        responses: List of pre-scripted responses
-        current_index: Index of next response to return
+        scenario: Loaded TestScenario with all steps
+        current_step: Index of next step to return
         logger: Structured logger
     """
 
@@ -49,119 +52,58 @@ class AIResponseInjector:
             ValueError: If fixture file is malformed
         """
         self.fixture_path = fixture_path
-        self.current_index = 0
+        self.current_step = 0
         self.logger = logger.bind(
             component="ai_response_injector", fixture=str(fixture_path)
         )
 
-        # Load fixture file
-        self.responses = self._load_fixture()
+        # Load fixture using FixtureLoader (Story 36.4)
+        self.scenario = FixtureLoader.load(fixture_path)
 
         self.logger.info(
-            "injector_initialized", response_count=len(self.responses)
+            "injector_initialized",
+            scenario_name=self.scenario.name,
+            step_count=self.scenario.step_count(),
         )
-
-    def _load_fixture(self) -> List[str]:
-        """
-        Load responses from YAML fixture file.
-
-        Expected format:
-        ```yaml
-        name: "fixture_name"
-        description: "Description"
-        scenario:
-          - user_input: "hello"
-            brian_response: "Hello! How can I help?"
-          - user_input: "create a todo app"
-            brian_response: "I'll help you create a todo app..."
-        ```
-
-        Returns:
-            List of Brian responses
-
-        Raises:
-            FileNotFoundError: If fixture doesn't exist
-            ValueError: If YAML is malformed
-        """
-        if not self.fixture_path.exists():
-            raise FileNotFoundError(
-                f"Fixture file not found: {self.fixture_path}"
-            )
-
-        try:
-            with open(self.fixture_path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-
-            if not data:
-                raise ValueError("Fixture file is empty")
-
-            if "scenario" not in data:
-                raise ValueError(
-                    "Fixture must contain 'scenario' key with list of turns"
-                )
-
-            scenario = data["scenario"]
-            if not isinstance(scenario, list):
-                raise ValueError("'scenario' must be a list")
-
-            # Extract Brian responses
-            responses = []
-            for i, turn in enumerate(scenario):
-                if not isinstance(turn, dict):
-                    raise ValueError(
-                        f"Turn {i} must be a dictionary with 'brian_response'"
-                    )
-
-                if "brian_response" not in turn:
-                    raise ValueError(f"Turn {i} missing 'brian_response' key")
-
-                responses.append(turn["brian_response"])
-
-            if not responses:
-                raise ValueError("Fixture scenario is empty")
-
-            self.logger.info(
-                "fixture_loaded",
-                name=data.get("name", "unknown"),
-                response_count=len(responses),
-            )
-
-            return responses
-
-        except yaml.YAMLError as e:
-            raise ValueError(f"Invalid YAML in fixture file: {e}")
 
     def get_next_response(self) -> str:
         """
         Get next scripted response from fixture.
 
         Returns:
-            Next Brian response
+            Next Brian response from current step
 
         Raises:
             FixtureExhausted: If all responses have been consumed
+            ValueError: If current step missing brian_response
         """
-        if self.current_index >= len(self.responses):
+        if self.current_step >= self.scenario.step_count():
             self.logger.error(
                 "fixture_exhausted",
-                requested_index=self.current_index,
-                total_responses=len(self.responses),
+                requested_step=self.current_step,
+                total_steps=self.scenario.step_count(),
             )
             raise FixtureExhausted(
-                f"Fixture exhausted: requested index {self.current_index}, "
-                f"but only {len(self.responses)} responses available"
+                f"Fixture exhausted: requested step {self.current_step}, "
+                f"but only {self.scenario.step_count()} steps in scenario '{self.scenario.name}'"
             )
 
-        response = self.responses[self.current_index]
-        self.current_index += 1
+        step = self.scenario.get_step(self.current_step)
+        self.current_step += 1
+
+        if step.brian_response is None:
+            raise ValueError(
+                f"Step {self.current_step} in scenario '{self.scenario.name}' "
+                f"missing 'brian_response' (required in test mode)"
+            )
 
         self.logger.debug(
             "response_injected",
-            index=self.current_index - 1,
-            response_length=len(response),
+            step_index=self.current_step - 1,
+            response_length=len(step.brian_response),
         )
 
-        return response
+        return step.brian_response
 
     def has_more_responses(self) -> bool:
         """
@@ -170,12 +112,16 @@ class AIResponseInjector:
         Returns:
             True if more responses available, False otherwise
         """
-        return self.current_index < len(self.responses)
+        return self.current_step < self.scenario.step_count()
 
     def reset(self) -> None:
-        """Reset to beginning of fixture."""
-        self.current_index = 0
-        self.logger.info("injector_reset")
+        """
+        Reset to beginning of fixture.
+
+        Resets current step index to 0, allowing scenario to be replayed.
+        """
+        self.current_step = 0
+        self.logger.info("injector_reset", scenario_name=self.scenario.name)
 
     def get_remaining_count(self) -> int:
         """
@@ -184,4 +130,13 @@ class AIResponseInjector:
         Returns:
             Number of responses not yet consumed
         """
-        return len(self.responses) - self.current_index
+        return self.scenario.step_count() - self.current_step
+
+    def get_scenario(self) -> TestScenario:
+        """
+        Get loaded test scenario.
+
+        Returns:
+            TestScenario instance
+        """
+        return self.scenario
