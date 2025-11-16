@@ -9,12 +9,15 @@ from typing import Optional
 
 import structlog
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from .auth import SessionTokenManager
 from .config import WebConfig
+from .event_bus import WebEventBus
+from .websocket_manager import WebSocketManager
 
 logger = structlog.get_logger(__name__)
 
@@ -49,6 +52,21 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     # Store config in app state
     app.state.config = config
 
+    # Initialize WebSocket infrastructure
+    session_token_manager = SessionTokenManager()
+    event_bus = WebEventBus()
+    websocket_manager = WebSocketManager(event_bus)
+
+    # Store in app state for access by other components
+    app.state.session_token_manager = session_token_manager
+    app.state.event_bus = event_bus
+    app.state.websocket_manager = websocket_manager
+
+    logger.info(
+        "websocket_infrastructure_initialized",
+        session_token=session_token_manager.get_token()[:8] + "...",
+    )
+
     # Health check endpoint
     @app.get("/api/health")
     async def health_check() -> JSONResponse:
@@ -58,6 +76,68 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
             JSON response with status and version
         """
         return JSONResponse({"status": "healthy", "version": "1.0.0"})
+
+    # WebSocket endpoint
+    @app.websocket("/ws")
+    async def websocket_endpoint(websocket: WebSocket) -> None:
+        """WebSocket endpoint for real-time communication.
+
+        Requires X-Session-Token header for authentication.
+        Supports reconnection with event replay via X-Client-Id and X-Last-Sequence headers.
+
+        Args:
+            websocket: WebSocket connection
+        """
+        # Extract authentication token
+        token = websocket.headers.get("X-Session-Token") or websocket.query_params.get(
+            "token"
+        )
+
+        if not session_token_manager.validate(token):
+            logger.warning(
+                "websocket_auth_failed",
+                headers_present="X-Session-Token" in websocket.headers,
+            )
+            await websocket.close(code=1008, reason="Unauthorized")
+            return
+
+        # Extract reconnection parameters
+        client_id = websocket.headers.get("X-Client-Id")
+        last_sequence_str = websocket.headers.get("X-Last-Sequence")
+        last_sequence = int(last_sequence_str) if last_sequence_str else None
+
+        # Connect client
+        try:
+            assigned_client_id = await websocket_manager.connect(
+                websocket, client_id, last_sequence
+            )
+
+            logger.info(
+                "websocket_connection_established",
+                client_id=assigned_client_id,
+                reconnection=client_id is not None,
+            )
+
+            # Keep connection alive until disconnect
+            # The WebSocketManager handles event streaming
+            while True:
+                # Receive messages from client (for future bidirectional communication)
+                try:
+                    data = await websocket.receive_json()
+                    # Future: Handle client commands (subscribe, unsubscribe, etc.)
+                    logger.debug("websocket_message_received", client_id=assigned_client_id)
+                except Exception:
+                    break
+
+        except ValueError as e:
+            # Connection limit exceeded
+            logger.error("websocket_connection_failed", error=str(e))
+            await websocket.close(code=1008, reason=str(e))
+        except WebSocketDisconnect:
+            logger.info("websocket_disconnected", client_id=client_id)
+        finally:
+            if client_id:
+                await websocket_manager.disconnect(client_id)
 
     # Static file serving (frontend build)
     frontend_dist = Path(config.frontend_dist_path)

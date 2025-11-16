@@ -22,6 +22,10 @@ class TestCreateApp:
         assert app is not None
         assert app.title == "GAO-Dev Web Interface"
         assert app.version == "1.0.0"
+        # WebSocket infrastructure should be initialized
+        assert hasattr(app.state, "event_bus")
+        assert hasattr(app.state, "websocket_manager")
+        assert hasattr(app.state, "session_token_manager")
 
     def test_create_app_with_custom_config(self):
         """Test creating app with custom config."""
@@ -31,6 +35,9 @@ class TestCreateApp:
         assert app is not None
         assert app.state.config.host == "0.0.0.0"
         assert app.state.config.port == 8080
+        # WebSocket infrastructure should be initialized
+        assert hasattr(app.state, "event_bus")
+        assert hasattr(app.state, "websocket_manager")
 
     def test_health_check_endpoint(self):
         """Test health check endpoint returns correct response."""
