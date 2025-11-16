@@ -50,6 +50,8 @@ dependencies = [
     # FastAPI and uvicorn for web interface (Epic 39)
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
+    # psutil for cross-platform process detection (Story 39.3)
+    "psutil>=5.9.0",
 ]
 
 [project.optional-dependencies]

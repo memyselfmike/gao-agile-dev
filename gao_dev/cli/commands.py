@@ -38,6 +38,7 @@ from .create_feature_command import create_feature
 from .list_features_command import list_features
 from .validate_structure_command import validate_structure
 from .web_commands import web
+from .unlock_command import unlock
 
 
 @click.group()
@@ -661,6 +662,9 @@ cli.add_command(validate_structure)
 
 # Register web command group
 cli.add_command(web)
+
+# Register unlock command
+cli.add_command(unlock)
 
 
 if __name__ == "__main__":

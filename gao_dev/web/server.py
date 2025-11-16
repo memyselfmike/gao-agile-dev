@@ -17,7 +17,9 @@ from fastapi.staticfiles import StaticFiles
 from .auth import SessionTokenManager
 from .config import WebConfig
 from .event_bus import WebEventBus
+from .middleware import ReadOnlyMiddleware
 from .websocket_manager import WebSocketManager
+from ..core.session_lock import SessionLock
 
 logger = structlog.get_logger(__name__)
 
@@ -49,6 +51,9 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Read-only middleware - enforce lock-based access control
+    app.add_middleware(ReadOnlyMiddleware)
+
     # Store config in app state
     app.state.config = config
 
@@ -57,10 +62,21 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     event_bus = WebEventBus()
     websocket_manager = WebSocketManager(event_bus)
 
+    # Initialize session lock (read mode by default for web observability)
+    project_root = Path(config.frontend_dist_path).parent.parent
+    session_lock = SessionLock(project_root)
+
+    # Acquire read lock on startup (observability mode)
+    if session_lock.acquire("web", mode="read"):
+        logger.info("web_session_lock_acquired", mode="read")
+    else:
+        logger.warning("web_session_lock_acquisition_failed")
+
     # Store in app state for access by other components
     app.state.session_token_manager = session_token_manager
     app.state.event_bus = event_bus
     app.state.websocket_manager = websocket_manager
+    app.state.session_lock = session_lock
 
     logger.info(
         "websocket_infrastructure_initialized",
@@ -76,6 +92,28 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
             JSON response with status and version
         """
         return JSONResponse({"status": "healthy", "version": "1.0.0"})
+
+    # Session lock state endpoint
+    @app.get("/api/session/lock-state")
+    async def get_lock_state() -> JSONResponse:
+        """Get current session lock state.
+
+        Returns:
+            JSON response with lock mode, read-only status, and holder
+        """
+        lock_state = app.state.session_lock.get_lock_state()
+
+        # Determine if we're in read-only mode
+        is_read_only = lock_state["mode"] == "read" and lock_state["holder"] is not None
+
+        return JSONResponse(
+            {
+                "mode": lock_state["mode"],
+                "isReadOnly": is_read_only,
+                "holder": lock_state["holder"],
+                "timestamp": lock_state["timestamp"],
+            }
+        )
 
     # WebSocket endpoint
     @app.websocket("/ws")
@@ -241,9 +279,16 @@ class ServerManager:
             raise
 
     def stop(self) -> None:
-        """Stop the server gracefully."""
+        """Stop the server gracefully and release lock."""
         if self.server:
             logger.info("stopping_web_server")
+
+            # Release session lock if acquired
+            if hasattr(self.server, "config") and hasattr(self.server.config, "app"):
+                if hasattr(self.server.config.app.state, "session_lock"):
+                    self.server.config.app.state.session_lock.release()
+                    logger.info("web_session_lock_released")
+
             self.server.should_exit = True
 
 

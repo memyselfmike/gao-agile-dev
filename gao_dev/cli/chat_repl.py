@@ -11,6 +11,7 @@ import asyncio
 import structlog
 
 from gao_dev.cli.project_status import ProjectStatusReporter
+from gao_dev.core.session_lock import SessionLock
 
 logger = structlog.get_logger()
 
@@ -93,6 +94,9 @@ class ChatREPL:
 
         # Initialize status reporter
         self.status_reporter = ProjectStatusReporter(self.project_root)
+
+        # Initialize session lock (CLI acquires write lock)
+        self.session_lock = SessionLock(self.project_root)
 
         # Story 30.4: Initialize full stack
         from gao_dev.orchestrator.brian_orchestrator import BrianOrchestrator
@@ -231,89 +235,109 @@ class ChatREPL:
 
         Story 30.4: Now checks for interrupted operations on startup.
         Story 30.5: Session state management with optional history load.
+        Story 39.3: Acquire write lock before starting.
 
         Displays greeting, checks for recovery, enters infinite loop
         accepting user input, handles exit commands and Ctrl+C gracefully.
         """
         self.logger.info("chat_repl_starting")
 
-        # Story 30.5: Optionally load previous session
-        await self._maybe_load_previous_session()
+        # Story 39.3: Acquire write lock
+        if not self.session_lock.acquire("cli", mode="write"):
+            lock_state = self.session_lock.get_lock_state()
+            holder = lock_state.get("holder", "unknown").upper()
+            self.console.print(
+                f"\n[red]Error:[/red] Session locked by {holder}.\n"
+                f"Close the {holder} session first or use 'gao-dev unlock --force' to remove stale locks.\n"
+            )
+            self.logger.error("write_lock_acquisition_failed", holder=holder)
+            return
 
-        # Story 30.4: Check for interrupted operations
-        await self._check_recovery()
+        self.logger.info("write_lock_acquired", interface="cli")
 
-        # Display greeting
-        await self._show_greeting()
+        try:
+            # Story 30.5: Optionally load previous session
+            await self._maybe_load_previous_session()
 
-        # Main loop
-        while True:
-            try:
-                # Get user input (async or from stdin in test mode)
-                if self.test_mode:
-                    # Test mode: read from stdin
-                    import sys
-                    line = sys.stdin.readline()
-                    if not line:  # EOF
+            # Story 30.4: Check for interrupted operations
+            await self._check_recovery()
+
+            # Display greeting
+            await self._show_greeting()
+
+            # Main loop
+            while True:
+                try:
+                    # Get user input (async or from stdin in test mode)
+                    if self.test_mode:
+                        # Test mode: read from stdin
+                        import sys
+                        line = sys.stdin.readline()
+                        if not line:  # EOF
+                            break
+                        user_input = line.strip()
+                    elif self.prompt_session:
+                        # Interactive mode with PromptSession (full terminal features)
+                        user_input = await self.prompt_session.prompt_async(
+                            "You: ", multiline=False
+                        )
+                        user_input = user_input.strip()
+                    else:
+                        # Fallback mode: basic stdin (Git Bash, wexpect, etc.)
+                        import sys
+                        self.console.print("[bold cyan]You:[/bold cyan]", end=" ")
+                        sys.stdout.flush()
+                        line = sys.stdin.readline()
+                        if not line:  # EOF
+                            break
+                        user_input = line.strip()
+
+                    # Check for exit commands
+                    if self._is_exit_command(user_input):
+                        await self._show_farewell()
                         break
-                    user_input = line.strip()
-                elif self.prompt_session:
-                    # Interactive mode with PromptSession (full terminal features)
-                    user_input = await self.prompt_session.prompt_async(
-                        "You: ", multiline=False
-                    )
-                    user_input = user_input.strip()
-                else:
-                    # Fallback mode: basic stdin (Git Bash, wexpect, etc.)
-                    import sys
-                    self.console.print("[bold cyan]You:[/bold cyan]", end=" ")
-                    sys.stdout.flush()
-                    line = sys.stdin.readline()
-                    if not line:  # EOF
-                        break
-                    user_input = line.strip()
 
-                # Check for exit commands
-                if self._is_exit_command(user_input):
+                    # Handle empty input
+                    if not user_input:
+                        continue
+
+                    # Handle input (now with full execution)
+                    await self._handle_input(user_input)
+
+                except KeyboardInterrupt:
+                    # Ctrl+C pressed - Story 30.5: Cancel via session, don't exit
+                    self.logger.info("keyboard_interrupt_during_execution")
+                    self.console.print("\n[yellow]Operation cancelled by user[/yellow]")
+
+                    # Cancel current operation via session
+                    try:
+                        await self.session.cancel_current_operation()
+                    except Exception as e:
+                        self.logger.error("cancellation_failed", error=str(e))
+
+                    # Reset for next operation
+                    self.session.reset_cancellation()
+
+                    # Continue loop (don't exit)
+                    continue
+
+                except EOFError:
+                    # Ctrl+D pressed
+                    self.logger.info("eof_received")
                     await self._show_farewell()
                     break
 
-                # Handle empty input
-                if not user_input:
-                    continue
-
-                # Handle input (now with full execution)
-                await self._handle_input(user_input)
-
-            except KeyboardInterrupt:
-                # Ctrl+C pressed - Story 30.5: Cancel via session, don't exit
-                self.logger.info("keyboard_interrupt_during_execution")
-                self.console.print("\n[yellow]Operation cancelled by user[/yellow]")
-
-                # Cancel current operation via session
-                try:
-                    await self.session.cancel_current_operation()
                 except Exception as e:
-                    self.logger.error("cancellation_failed", error=str(e))
+                    # Catch all other exceptions (never crash)
+                    self.logger.exception("repl_error", error=str(e))
+                    self._display_error(e)
 
-                # Reset for next operation
-                self.session.reset_cancellation()
+            self.logger.info("chat_repl_stopped")
 
-                # Continue loop (don't exit)
-                continue
-
-            except EOFError:
-                # Ctrl+D pressed
-                self.logger.info("eof_received")
-                await self._show_farewell()
-                break
-
-            except Exception as e:
-                # Catch all other exceptions (never crash)
-                self.logger.exception("repl_error", error=str(e))
-                self._display_error(e)
-
-        self.logger.info("chat_repl_stopped")
+        finally:
+            # Story 39.3: Release write lock on exit
+            self.session_lock.release()
+            self.logger.info("write_lock_released", interface="cli")
 
     async def _show_greeting(self) -> None:
         """Display welcome greeting with project status."""
