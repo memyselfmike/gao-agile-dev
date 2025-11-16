@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Epic 39: Browser-Based Web Interface - COMPLETE (MVP Phase 1)
 
 **Status**: 4 epics complete, 14 stories implemented, 45 story points delivered
-**Commits**: 10 feature commits + 1 bug fix commit
+**Commits**: 10 feature commits + 2 bug fix commits
 
 ---
 
@@ -168,8 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed - Bug Fixes (Post-Implementation Testing) ✅
 
 **Testing performed**: User acceptance testing with Playwright MCP
-**Bugs found**: 5 critical bugs
-**Bugs fixed**: 5/5 (100%)
+**Bugs found**: 6 critical bugs
+**Bugs fixed**: 6/6 (100%)
 
 1. **Bug #1: Frontend Path Configuration**
    - Issue: Frontend showed 404 errors for static assets
@@ -201,7 +201,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Fix: Updated App.tsx to handle correct event types (chat.message_sent, chat.streaming_chunk, chat.message_received, chat.thinking_started, chat.thinking_finished) and access message.data
    - File: gao_dev/web/frontend/src/App.tsx:34-76
 
-**Commit**: dc1f67c (fix(web): Epic 39 - 5 critical bug fixes for 100% functional web interface)
+6. **Bug #6: Files Tab Shows "0 items" - project_root Calculation Error**
+   - Issue: Files tab showed "0 items", Monaco editor not visible, file tree empty
+   - Root cause: project_root calculated incorrectly - Path(config.frontend_dist_path).parent.parent only went up 2 levels to "gao_dev/web" instead of project root. Even .parent.parent.parent.parent failed because frontend_dist_path was relative, not absolute.
+   - Fix: Added .resolve() to convert relative path to absolute first, then navigate up 4 levels: Path(config.frontend_dist_path).resolve().parent.parent.parent.parent
+   - Result: File tree now shows all tracked directories (docs/, gao_dev/, tests/), Monaco editor loads correctly
+   - File: gao_dev/web/server.py:124
+
+**Commits**:
+- dc1f67c (fix(web): Epic 39 - 5 critical bug fixes for 100% functional web interface)
+- e47c765 (fix(web): Epic 39.4 - Fix project_root calculation for file tree)
 
 ---
 
@@ -212,7 +221,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **4 epics**: Backend Foundation, Frontend Foundation, Core Observability, File Management
 - **14 stories**: All stories 39.1-39.14 implemented
 - **45 story points**: Total effort delivered
-- **11 commits**: 10 feature commits + 1 bug fix commit
+- **12 commits**: 10 feature commits + 2 bug fix commits
 - **100% functional**: All bugs fixed, E2E testing passed
 
 ### Features
