@@ -9,7 +9,7 @@ from typing import Optional
 
 import structlog
 import uvicorn
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -618,6 +618,171 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to get diff: {str(e)}"
+            )
+
+    # Kanban endpoints (Story 39.15)
+    @app.get("/api/kanban/board")
+    async def get_kanban_board(request: Request) -> JSONResponse:
+        """Get all epics and stories grouped by state.
+
+        Returns Kanban board data with epics and stories organized into 5 columns:
+        - backlog: Stories with status 'pending'
+        - ready: Stories that are ready to be worked on
+        - in_progress: Stories currently being worked on
+        - in_review: Stories under review
+        - done: Completed stories
+
+        Args:
+            request: FastAPI request object (for accessing app.state)
+
+        Returns:
+            JSON response with columns containing epics and stories
+
+        Raises:
+            HTTPException: If database query fails
+        """
+        try:
+            # Import StateTracker
+            from gao_dev.core.state.state_tracker import StateTracker
+            from gao_dev.core.state.exceptions import StateTrackerError
+            import sqlite3
+
+            # Get project root from app state (can be overridden in tests)
+            project_root_path = request.app.state.project_root
+
+            # Check if database exists
+            db_path = project_root_path / ".gao-dev" / "documents.db"
+            if not db_path.exists():
+                # Return empty board if no database yet
+                return JSONResponse({
+                    "columns": {
+                        "backlog": [],
+                        "ready": [],
+                        "in_progress": [],
+                        "in_review": [],
+                        "done": []
+                    }
+                })
+
+            # Query database
+            try:
+                state_tracker = StateTracker(db_path)
+                # Get all active epics
+                epics = state_tracker.get_active_epics()
+            except (sqlite3.OperationalError, StateTrackerError) as e:
+                # Handle unmigrated database (schema not initialized)
+                error_msg = str(e)
+                if "no such table" in error_msg:
+                    logger.warning(
+                        "kanban_board_schema_not_initialized",
+                        error=error_msg,
+                        hint="Run 'gao-dev migrate migrate' to initialize database schema"
+                    )
+                    # Return empty board
+                    return JSONResponse({
+                        "columns": {
+                            "backlog": [],
+                            "ready": [],
+                            "in_progress": [],
+                            "in_review": [],
+                            "done": []
+                        }
+                    })
+                # Re-raise other errors
+                raise
+
+            # Build map of stories by status
+            # Note: The database uses 'pending', 'in_progress', 'done', 'blocked', 'cancelled'
+            # We'll map these to Kanban columns
+            columns = {
+                "backlog": [],
+                "ready": [],
+                "in_progress": [],
+                "in_review": [],
+                "done": []
+            }
+
+            # Process each epic
+            for epic in epics:
+                # Get stories for this epic
+                stories = state_tracker.get_stories_by_epic(epic.epic_num)
+
+                # Group stories by status
+                for story in stories:
+                    # Map database status to Kanban column
+                    # Database statuses: pending, in_progress, done, blocked, cancelled
+                    # Kanban columns: backlog, ready, in_progress, in_review, done
+                    status = story.status.lower()
+
+                    # Default mapping
+                    column = "backlog"
+                    if status == "pending":
+                        column = "backlog"
+                    elif status == "ready":
+                        column = "ready"
+                    elif status == "in_progress":
+                        column = "in_progress"
+                    elif status == "in_review":
+                        column = "in_review"
+                    elif status == "done":
+                        column = "done"
+                    elif status == "blocked":
+                        # Blocked stories stay in their original column but marked
+                        column = "backlog"
+                    elif status == "cancelled":
+                        # Skip cancelled stories
+                        continue
+
+                    # Add story card to appropriate column
+                    columns[column].append({
+                        "id": f"story-{story.epic}.{story.story_num}",
+                        "type": "story",
+                        "number": f"{story.epic}.{story.story_num}",
+                        "epicNumber": story.epic,
+                        "storyNumber": story.story_num,
+                        "title": story.title,
+                        "status": story.status,
+                        "owner": story.owner,
+                        "points": story.points,
+                        "priority": story.priority
+                    })
+
+                # Add epic card showing summary
+                # Place epic in column based on overall progress
+                epic_column = "backlog"
+                if epic.progress >= 100.0:
+                    epic_column = "done"
+                elif epic.progress > 0:
+                    epic_column = "in_progress"
+
+                # Count stories by status for epic card
+                story_counts = {
+                    "total": len(stories),
+                    "done": len([s for s in stories if s.status == "done"]),
+                    "in_progress": len([s for s in stories if s.status == "in_progress"]),
+                    "backlog": len([s for s in stories if s.status == "pending"])
+                }
+
+                # Add epic card to appropriate column
+                columns[epic_column].append({
+                    "id": f"epic-{epic.epic_num}",
+                    "type": "epic",
+                    "number": str(epic.epic_num),
+                    "title": epic.title,
+                    "status": epic.status,
+                    "progress": epic.progress,
+                    "totalPoints": epic.total_points,
+                    "completedPoints": epic.completed_points,
+                    "storyCounts": story_counts
+                })
+
+            return JSONResponse({"columns": columns})
+
+        except Exception as e:
+            logger.exception("get_kanban_board_failed", error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get kanban board: {str(e)}"
             )
 
     # WebSocket endpoint
