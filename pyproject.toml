@@ -52,6 +52,8 @@ dependencies = [
     "uvicorn[standard]>=0.24.0",
     # psutil for cross-platform process detection (Story 39.3)
     "psutil>=5.9.0",
+    # watchdog for file system monitoring (Story 39.13)
+    "watchdog>=3.0.0",
 ]
 
 [project.optional-dependencies]

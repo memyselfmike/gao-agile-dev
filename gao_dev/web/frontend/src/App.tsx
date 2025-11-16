@@ -6,9 +6,11 @@ import { createWebSocketClient, WebSocketClient } from './lib/websocket';
 import { useChatStore } from './stores/chatStore';
 import { useActivityStore } from './stores/activityStore';
 import { useSessionStore } from './stores/sessionStore';
+import { useFilesStore } from './stores/filesStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RootLayout } from './components/layout/RootLayout';
 import { LoadingSpinner } from './components/LoadingSpinner';
+import { toast } from 'sonner';
 import type { WebSocketMessage } from './types';
 
 function App() {
@@ -19,6 +21,7 @@ function App() {
   const addEventWithSequence = useActivityStore((state) => state.addEventWithSequence);
   const addMessage = useChatStore((state) => state.addMessage);
   const setSessionToken = useSessionStore((state) => state.setSessionToken);
+  const { addRecentlyChanged, setFileTree, closeFile, openFiles } = useFilesStore();
 
   useEffect(() => {
     // Create WebSocket connection on mount
@@ -40,6 +43,56 @@ function App() {
                   addActivity(event);
                 }
                 break;
+
+              // File events (Story 39.13)
+              case 'file.created':
+              case 'file.modified': {
+                const payload = message.payload as { path: string; agent?: string; commitMessage?: string };
+
+                // Mark as recently changed
+                addRecentlyChanged(payload.path);
+
+                // Reload file tree
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
+                fetch(`${apiUrl}/api/files/tree`, { credentials: 'include' })
+                  .then((res) => res.json())
+                  .then((data) => setFileTree(data.tree || []))
+                  .catch(() => {
+                    // Failed to reload file tree - ignore
+                  });
+
+                // Show toast notification
+                const fileName = payload.path.split('/').pop();
+                const actionText = message.type === 'file.created' ? 'created' : 'modified';
+                toast.info(`File ${actionText}`, {
+                  description: `${payload.agent || 'Agent'} ${actionText} ${fileName}`,
+                });
+                break;
+              }
+
+              case 'file.deleted': {
+                const payload = message.payload as { path: string; agent?: string };
+
+                // Close file if open
+                const isOpen = openFiles.some((f) => f.path === payload.path);
+                if (isOpen) {
+                  closeFile(payload.path);
+                  toast.warning('File deleted', {
+                    description: `${payload.path} was deleted by ${payload.agent || 'an agent'}`,
+                  });
+                }
+
+                // Reload file tree
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
+                fetch(`${apiUrl}/api/files/tree`, { credentials: 'include' })
+                  .then((res) => res.json())
+                  .then((data) => setFileTree(data.tree || []))
+                  .catch(() => {
+                    // Failed to reload file tree - ignore
+                  });
+                break;
+              }
+
               default:
                 addActivity({
                   type: 'Workflow',

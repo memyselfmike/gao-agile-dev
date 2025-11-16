@@ -46,12 +46,18 @@ export interface FileNode {
   name: string;
   type: 'file' | 'directory';
   children?: FileNode[];
+  icon?: string; // File icon type (for files only)
+  size?: number; // File size in bytes (for files only)
+  modified?: string; // ISO timestamp (for files only)
+  recentlyChanged?: boolean; // Highlighted if changed in last 5 minutes
 }
 
 export interface OpenFile {
   path: string;
   content: string;
-  modified: boolean;
+  language: string; // Monaco language/mode
+  modified: boolean; // User has unsaved changes
+  saved: boolean; // File saved to disk
 }
 
 // Session types

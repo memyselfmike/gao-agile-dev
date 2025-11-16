@@ -20,6 +20,8 @@ from .config import WebConfig
 from .event_bus import WebEventBus
 from .middleware import ReadOnlyMiddleware
 from .websocket_manager import WebSocketManager
+from .file_tree_builder import build_file_tree
+from .file_watcher import FileSystemWatcher
 from ..core.session_lock import SessionLock
 
 logger = structlog.get_logger(__name__)
@@ -30,6 +32,51 @@ class ChatRequest(BaseModel):
 
     message: str
     agent: Optional[str] = "Brian"
+
+
+class FileSaveRequest(BaseModel):
+    """Request model for file save endpoint."""
+
+    path: str
+    content: str
+    commit_message: str
+
+
+def _detect_language(file_path: Path) -> str:
+    """Detect language/mode for Monaco editor based on file extension.
+
+    Args:
+        file_path: Path to file
+
+    Returns:
+        Language identifier for Monaco editor
+    """
+    extension_map = {
+        ".py": "python",
+        ".js": "javascript",
+        ".ts": "typescript",
+        ".tsx": "typescript",
+        ".jsx": "javascript",
+        ".md": "markdown",
+        ".json": "json",
+        ".yaml": "yaml",
+        ".yml": "yaml",
+        ".html": "html",
+        ".css": "css",
+        ".sh": "shell",
+        ".xml": "xml",
+        ".sql": "sql",
+        ".txt": "plaintext",
+        ".java": "java",
+        ".c": "c",
+        ".cpp": "cpp",
+        ".go": "go",
+        ".rs": "rust",
+        ".rb": "ruby",
+        ".php": "php",
+    }
+    suffix = file_path.suffix.lower()
+    return extension_map.get(suffix, "plaintext")
 
 
 def create_app(config: Optional[WebConfig] = None) -> FastAPI:
@@ -85,15 +132,22 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     app.state.event_bus = event_bus
     app.state.websocket_manager = websocket_manager
     app.state.session_lock = session_lock
+    app.state.project_root = project_root
 
     # Initialize BrianWebAdapter (Story 39.7)
     # NOTE: This will be properly initialized with real ChatSession in future
     # For now, we store None and will create on-demand in chat endpoint
     app.state.brian_adapter = None
 
+    # Initialize FileSystemWatcher (Story 39.13)
+    file_watcher = FileSystemWatcher(project_root, event_bus)
+    file_watcher.start()
+    app.state.file_watcher = file_watcher
+
     logger.info(
         "websocket_infrastructure_initialized",
         session_token=session_token_manager.get_token()[:8] + "...",
+        file_watcher_running=file_watcher.is_running()
     )
 
     # Health check endpoint
@@ -324,6 +378,199 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
                 detail=f"Failed to get context: {str(e)}"
             )
 
+    # File endpoints (Story 39.11, 39.12, 39.14)
+    @app.get("/api/files/tree")
+    async def get_file_tree() -> JSONResponse:
+        """Get project file tree structure.
+
+        Returns hierarchical file tree with only tracked directories.
+        Respects .gitignore and highlights recently changed files.
+
+        Returns:
+            JSON response with file tree
+        """
+        try:
+            tree = build_file_tree(project_root)
+            return JSONResponse({"tree": tree})
+        except Exception as e:
+            logger.exception("get_file_tree_failed", error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get file tree: {str(e)}"
+            )
+
+    @app.get("/api/files/content")
+    async def get_file_content(path: str) -> JSONResponse:
+        """Get file content for given path.
+
+        Args:
+            path: Relative path to file from project root
+
+        Returns:
+            JSON response with file content
+
+        Raises:
+            HTTPException: If file not found or cannot be read
+        """
+        try:
+            file_path = project_root / path
+
+            # Security: Ensure path is within project root
+            file_path = file_path.resolve()
+            if not str(file_path).startswith(str(project_root.resolve())):
+                raise HTTPException(status_code=403, detail="Access denied")
+
+            # Check if file exists
+            if not file_path.exists():
+                raise HTTPException(status_code=404, detail="File not found")
+
+            # Read file content
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            return JSONResponse({
+                "path": path,
+                "content": content,
+                "size": len(content),
+                "language": _detect_language(file_path)
+            })
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.exception("get_file_content_failed", path=path, error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to read file: {str(e)}"
+            )
+
+    @app.post("/api/files/save")
+    async def save_file(request: FileSaveRequest) -> JSONResponse:
+        """Save file with commit message.
+
+        Atomic operation: file write + DB update + git commit.
+        Requires write lock (enforced by middleware).
+
+        Args:
+            request: File save request with path, content, and commit message
+
+        Returns:
+            JSON response with success status
+
+        Raises:
+            HTTPException: If save fails or validation fails
+        """
+        # Validate commit message format
+        if not request.commit_message or not request.commit_message.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Commit message is required"
+            )
+
+        # Basic commit message format validation
+        import re
+        commit_pattern = r'^(feat|fix|docs|refactor|test|chore|style|perf)\([^)]+\):.+'
+        if not re.match(commit_pattern, request.commit_message):
+            raise HTTPException(
+                status_code=400,
+                detail="Commit message must follow format: <type>(<scope>): <description>"
+            )
+
+        try:
+            file_path = project_root / request.path
+
+            # Security: Ensure path is within project root
+            file_path = file_path.resolve()
+            if not str(file_path).startswith(str(project_root.resolve())):
+                raise HTTPException(status_code=403, detail="Access denied")
+
+            # Ensure parent directory exists
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Write file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(request.content)
+
+            # Git commit (atomic)
+            from gao_dev.core.git_manager import GitManager
+            git_manager = GitManager(project_path=project_root)
+
+            # Add file
+            git_manager.add_files([file_path])
+
+            # Commit
+            commit_hash = git_manager.commit(
+                message=request.commit_message,
+                author_name="Web User",
+                author_email="web@gao-dev.local"
+            )
+
+            # Publish file.modified event
+            event_bus.publish({
+                "type": "file.modified",
+                "payload": {
+                    "path": request.path,
+                    "commitHash": commit_hash,
+                    "commitMessage": request.commit_message,
+                    "agent": "web",
+                    "timestamp": asyncio.get_event_loop().time()
+                }
+            })
+
+            logger.info(
+                "file_saved_and_committed",
+                path=request.path,
+                commit_hash=commit_hash[:8]
+            )
+
+            return JSONResponse({
+                "status": "success",
+                "path": request.path,
+                "commitHash": commit_hash,
+                "message": "File saved and committed"
+            })
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.exception("save_file_failed", path=request.path, error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to save file: {str(e)}"
+            )
+
+    @app.get("/api/files/diff")
+    async def get_file_diff(path: str) -> JSONResponse:
+        """Get diff of file vs last commit.
+
+        Args:
+            path: Relative path to file from project root
+
+        Returns:
+            JSON response with diff
+
+        Raises:
+            HTTPException: If diff cannot be generated
+        """
+        try:
+            from gao_dev.core.git_manager import GitManager
+            git_manager = GitManager(project_path=project_root)
+
+            # Get diff vs HEAD
+            diff = git_manager.get_file_diff(path)
+
+            return JSONResponse({
+                "path": path,
+                "diff": diff
+            })
+
+        except Exception as e:
+            logger.exception("get_file_diff_failed", path=path, error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get diff: {str(e)}"
+            )
+
     # WebSocket endpoint
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket) -> None:
@@ -492,8 +739,13 @@ class ServerManager:
         if self.server:
             logger.info("stopping_web_server")
 
-            # Release session lock if acquired
+            # Stop file watcher if running
             if hasattr(self.server, "config") and hasattr(self.server.config, "app"):
+                if hasattr(self.server.config.app.state, "file_watcher"):
+                    self.server.config.app.state.file_watcher.stop()
+                    logger.info("file_watcher_stopped")
+
+                # Release session lock if acquired
                 if hasattr(self.server.config.app.state, "session_lock"):
                     self.server.config.app.state.session_lock.release()
                     logger.info("web_session_lock_released")
