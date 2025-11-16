@@ -106,6 +106,74 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
         """
         return JSONResponse({"status": "healthy", "version": "1.0.0"})
 
+    # Agents endpoint (Story 39.8)
+    @app.get("/api/agents")
+    async def get_agents() -> JSONResponse:
+        """Get list of all available agents with metadata.
+
+        Returns:
+            JSON response with array of agent configurations
+        """
+        agents = [
+            {
+                "id": "brian",
+                "name": "Brian",
+                "role": "Workflow Coordinator",
+                "description": "Analyzes requests, selects workflows, and coordinates other agents",
+                "icon": "workflow",
+            },
+            {
+                "id": "mary",
+                "name": "Mary",
+                "role": "Business Analyst",
+                "description": "Elicits vision, facilitates brainstorming, analyzes requirements",
+                "icon": "lightbulb",
+            },
+            {
+                "id": "john",
+                "name": "John",
+                "role": "Product Manager",
+                "description": "Creates PRDs, defines features, prioritizes work",
+                "icon": "clipboard-list",
+            },
+            {
+                "id": "winston",
+                "name": "Winston",
+                "role": "Technical Architect",
+                "description": "Designs system architecture and technical specifications",
+                "icon": "layers",
+            },
+            {
+                "id": "sally",
+                "name": "Sally",
+                "role": "UX Designer",
+                "description": "Creates user experience designs and wireframes",
+                "icon": "palette",
+            },
+            {
+                "id": "bob",
+                "name": "Bob",
+                "role": "Scrum Master",
+                "description": "Manages stories, coordinates sprints, tracks progress",
+                "icon": "kanban",
+            },
+            {
+                "id": "amelia",
+                "name": "Amelia",
+                "role": "Software Developer",
+                "description": "Implements features, writes tests, reviews code",
+                "icon": "code",
+            },
+            {
+                "id": "murat",
+                "name": "Murat",
+                "role": "Test Architect",
+                "description": "Designs test strategies and quality assurance processes",
+                "icon": "check-circle",
+            },
+        ]
+        return JSONResponse({"agents": agents})
+
     # Session lock state endpoint
     @app.get("/api/session/lock-state")
     async def get_lock_state() -> JSONResponse:

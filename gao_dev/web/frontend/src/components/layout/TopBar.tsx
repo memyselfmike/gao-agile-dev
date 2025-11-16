@@ -1,7 +1,10 @@
 /**
  * Top Bar - Project name, session status, agent switcher, theme toggle
+ *
+ * Story 39.8: Enhanced agent switcher with per-agent chat history and Cmd+K shortcut
  */
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,56 +16,112 @@ import {
 import { SessionStatus } from '@/components/session/SessionStatus';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { User, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useChatStore } from '@/stores/chatStore';
+import type { Agent } from '@/types';
 
 interface TopBarProps {
   isConnected: boolean;
   projectName?: string;
 }
 
-const AGENTS = [
-  { id: 'brian', name: 'Brian', role: 'Workflow Coordinator' },
-  { id: 'john', name: 'John', role: 'Product Manager' },
-  { id: 'winston', name: 'Winston', role: 'Technical Architect' },
-  { id: 'sally', name: 'Sally', role: 'UX Designer' },
-  { id: 'bob', name: 'Bob', role: 'Scrum Master' },
-  { id: 'amelia', name: 'Amelia', role: 'Software Developer' },
-  { id: 'murat', name: 'Murat', role: 'Test Architect' },
-  { id: 'mary', name: 'Mary', role: 'Business Analyst' },
-];
-
 export function TopBar({ isConnected, projectName = 'GAO-Dev' }: TopBarProps) {
-  const [selectedAgent, setSelectedAgent] = useState(AGENTS[0]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const activeAgent = useChatStore((state) => state.activeAgent);
+  const switchAgent = useChatStore((state) => state.switchAgent);
+
+  // Load agents from backend
+  useEffect(() => {
+    const loadAgents = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
+        const response = await fetch(`${apiUrl}/api/agents`);
+        if (response.ok) {
+          const data = (await response.json()) as { agents: Agent[] };
+          setAgents(data.agents);
+
+          // Set Brian as default if no active agent
+          if (!activeAgent && data.agents.length > 0) {
+            const brian = data.agents.find((a) => a.id === 'brian') || data.agents[0];
+            switchAgent(brian);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load agents:', error);
+      }
+    };
+
+    loadAgents();
+  }, [activeAgent, switchAgent]);
+
+  // Keyboard shortcut: Cmd+K or Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsMenuOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleSelectAgent = (agent: Agent) => {
+    switchAgent(agent);
+    setIsMenuOpen(false);
+  };
+
+  const displayAgent = activeAgent || agents[0];
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4">
-      {/* Project Name */}
-      <div className="flex items-center gap-2">
+      {/* Project Name + Agent Indicator */}
+      <div className="flex items-center gap-3">
         <h1 className="text-lg font-semibold text-foreground">{projectName}</h1>
+        {displayAgent && (
+          <Badge variant="outline" className="gap-1 text-xs">
+            <User className="h-3 w-3" />
+            <span className="hidden sm:inline">Chatting with</span>
+            <span className="font-medium">{displayAgent.name}</span>
+          </Badge>
+        )}
       </div>
 
       {/* Right Section: Agent Switcher, Session Status, Settings */}
       <div className="flex items-center gap-3">
         {/* Agent Switcher */}
-        <DropdownMenu>
+        <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
               <User className="h-4 w-4" />
-              <span className="hidden sm:inline">{selectedAgent.name}</span>
+              <span className="hidden sm:inline">{displayAgent?.name || 'Select Agent'}</span>
               <ChevronDown className="h-3 w-3 opacity-50" />
+              <kbd className="pointer-events-none ml-1 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:inline-flex">
+                <span className="text-xs">⌘</span>K
+              </kbd>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
-            <DropdownMenuLabel>Select Agent</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuLabel>Switch Agent (⌘K)</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {AGENTS.map((agent) => (
+            {agents.map((agent) => (
               <DropdownMenuItem
                 key={agent.id}
-                onClick={() => setSelectedAgent(agent)}
-                className="flex flex-col items-start"
+                onClick={() => handleSelectAgent(agent)}
+                className="flex flex-col items-start gap-1 py-3"
               >
-                <div className="font-medium">{agent.name}</div>
+                <div className="flex w-full items-center justify-between">
+                  <span className="font-medium">{agent.name}</span>
+                  {agent.id === activeAgent?.id && (
+                    <Badge variant="secondary" className="text-xs">
+                      Active
+                    </Badge>
+                  )}
+                </div>
                 <div className="text-xs text-muted-foreground">{agent.role}</div>
+                <div className="line-clamp-1 text-xs text-muted-foreground">{agent.description}</div>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

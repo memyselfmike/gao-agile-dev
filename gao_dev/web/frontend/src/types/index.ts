@@ -12,18 +12,32 @@ export interface ChatMessage {
 }
 
 export interface Agent {
+  id: string;
   name: string;
   role: string;
-  status: 'idle' | 'active' | 'busy';
+  description: string;
+  icon?: string;
+  status?: 'idle' | 'active' | 'busy';
 }
 
 // Activity types
+export type ActivityEventType = 'Workflow' | 'Chat' | 'File' | 'State' | 'Ceremony' | 'Git';
+
 export interface ActivityEvent {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  message: string;
+  sequence?: number; // For detecting missed events
+  type: ActivityEventType;
+  agent: string;
+  action: string;
+  summary: string;
   timestamp: number;
-  details?: Record<string, unknown>;
+  details?: {
+    reasoning?: string;
+    toolCalls?: string[];
+    fileDiffs?: string;
+    [key: string]: unknown;
+  };
+  severity?: 'info' | 'success' | 'warning' | 'error';
 }
 
 // File types

@@ -16,6 +16,7 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const addActivity = useActivityStore((state) => state.addEvent);
+  const addEventWithSequence = useActivityStore((state) => state.addEventWithSequence);
   const addMessage = useChatStore((state) => state.addMessage);
   const setSessionToken = useSessionStore((state) => state.setSessionToken);
 
@@ -31,33 +32,51 @@ function App() {
                 addMessage(message.payload as never);
                 break;
               case 'activity':
-                addActivity(message.payload as never);
+                // Use addEventWithSequence for events with sequence numbers
+                const event = message.payload as never;
+                if ((event as { sequence?: number }).sequence !== undefined) {
+                  addEventWithSequence(event);
+                } else {
+                  addActivity(event);
+                }
                 break;
               default:
                 addActivity({
-                  type: 'info',
-                  message: `Unknown message type: ${message.type}`,
+                  type: 'Workflow',
+                  agent: 'System',
+                  action: 'received unknown message',
+                  summary: `Unknown message type: ${message.type}`,
+                  severity: 'info',
                 });
             }
           },
           () => {
             setIsConnected(true);
             addActivity({
-              type: 'success',
-              message: 'Connected to GAO-Dev backend',
+              type: 'Workflow',
+              agent: 'System',
+              action: 'established connection',
+              summary: 'Connected to GAO-Dev backend',
+              severity: 'success',
             });
           },
           () => {
             setIsConnected(false);
             addActivity({
-              type: 'warning',
-              message: 'Disconnected from GAO-Dev backend',
+              type: 'Workflow',
+              agent: 'System',
+              action: 'lost connection',
+              summary: 'Disconnected from GAO-Dev backend',
+              severity: 'warning',
             });
           },
           (error) => {
             addActivity({
-              type: 'error',
-              message: `WebSocket error: ${error.type}`,
+              type: 'Workflow',
+              agent: 'System',
+              action: 'encountered error',
+              summary: `WebSocket error: ${error.type}`,
+              severity: 'error',
             });
           }
         );
@@ -75,8 +94,11 @@ function App() {
         }
       } catch (error) {
         addActivity({
-          type: 'error',
-          message: `Failed to initialize WebSocket: ${error}`,
+          type: 'Workflow',
+          agent: 'System',
+          action: 'failed to initialize',
+          summary: `Failed to initialize WebSocket: ${error}`,
+          severity: 'error',
         });
       } finally {
         setIsInitializing(false);
