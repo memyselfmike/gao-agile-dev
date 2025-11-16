@@ -37,6 +37,7 @@ from .learning_commands import learning
 from .create_feature_command import create_feature
 from .list_features_command import list_features
 from .validate_structure_command import validate_structure
+from .web_commands import web
 
 
 @click.group()
@@ -653,6 +654,13 @@ cli.add_command(learning)
 cli.add_command(create_feature)
 cli.add_command(list_features)
 cli.add_command(validate_structure)
+
+# ============================================================================
+# WEB INTERFACE COMMANDS (Epic 39)
+# ============================================================================
+
+# Register web command group
+cli.add_command(web)
 
 
 if __name__ == "__main__":

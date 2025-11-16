@@ -47,6 +47,9 @@ dependencies = [
     "apscheduler>=3.10.0",
     # Prompt-toolkit for enhanced REPL with history and autocomplete (Epic 30)
     "prompt-toolkit>=3.0.43",
+    # FastAPI and uvicorn for web interface (Epic 39)
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
 ]
 
 [project.optional-dependencies]
@@ -62,6 +65,8 @@ dev = [
     # Platform-conditional dependencies for E2E testing
     "pexpect>=4.9.0; sys_platform != 'win32'",  # Unix/macOS
     "wexpect>=4.0.0; sys_platform == 'win32'",  # Windows
+    # httpx for FastAPI TestClient (Epic 39)
+    "httpx>=0.25.0",
 ]
 
 [project.scripts]
