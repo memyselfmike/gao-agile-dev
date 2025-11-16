@@ -13,6 +13,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
 from .auth import SessionTokenManager
 from .config import WebConfig
@@ -22,6 +23,13 @@ from .websocket_manager import WebSocketManager
 from ..core.session_lock import SessionLock
 
 logger = structlog.get_logger(__name__)
+
+
+class ChatRequest(BaseModel):
+    """Request model for chat endpoint."""
+
+    message: str
+    agent: Optional[str] = "Brian"
 
 
 def create_app(config: Optional[WebConfig] = None) -> FastAPI:
@@ -78,6 +86,11 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     app.state.websocket_manager = websocket_manager
     app.state.session_lock = session_lock
 
+    # Initialize BrianWebAdapter (Story 39.7)
+    # NOTE: This will be properly initialized with real ChatSession in future
+    # For now, we store None and will create on-demand in chat endpoint
+    app.state.brian_adapter = None
+
     logger.info(
         "websocket_infrastructure_initialized",
         session_token=session_token_manager.get_token()[:8] + "...",
@@ -114,6 +127,134 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
                 "timestamp": lock_state["timestamp"],
             }
         )
+
+    # Chat endpoints (Story 39.7)
+    @app.post("/api/chat")
+    async def send_chat_message(request: ChatRequest) -> JSONResponse:
+        """Send message to Brian via chat.
+
+        This endpoint triggers the BrianWebAdapter which streams responses
+        via WebSocket events (chat.streaming_chunk, chat.message_received).
+
+        Args:
+            request: Chat request with message and agent
+
+        Returns:
+            JSON response with message acknowledgement
+
+        Raises:
+            HTTPException: If message is empty or adapter fails
+        """
+        if not request.message or not request.message.strip():
+            raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+        # Validate agent (currently only Brian supported)
+        if request.agent and request.agent != "Brian":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported agent: {request.agent}. Only 'Brian' is supported."
+            )
+
+        try:
+            # Get or create BrianWebAdapter
+            if app.state.brian_adapter is None:
+                # Initialize Brian adapter on first use
+                from gao_dev.orchestrator.chat_session import ChatSession
+                from gao_dev.orchestrator.conversational_brian import ConversationalBrian
+                from gao_dev.orchestrator.brian_orchestrator import BrianOrchestrator
+                from gao_dev.orchestrator.command_router import CommandRouter
+                from gao_dev.web.adapters import BrianWebAdapter
+
+                # Create Brian infrastructure (reusing Epic 30 components)
+                brian_orchestrator = BrianOrchestrator(project_root)
+                command_router = CommandRouter(project_root)
+                conversational_brian = ConversationalBrian(
+                    brian_orchestrator=brian_orchestrator,
+                    command_router=command_router
+                )
+
+                chat_session = ChatSession(
+                    conversational_brian=conversational_brian,
+                    command_router=command_router,
+                    project_root=project_root
+                )
+
+                # Create adapter
+                app.state.brian_adapter = BrianWebAdapter(
+                    chat_session=chat_session,
+                    event_bus=event_bus
+                )
+
+                logger.info("brian_adapter_initialized")
+
+            # Send message (responses stream via WebSocket)
+            # We collect chunks here but don't return them (WebSocket does that)
+            chunks = []
+            async for chunk in app.state.brian_adapter.send_message(request.message):
+                chunks.append(chunk)
+
+            return JSONResponse({
+                "status": "success",
+                "message": "Message sent to Brian",
+                "agent": request.agent or "Brian",
+                "chunks_sent": len(chunks)
+            })
+
+        except Exception as e:
+            logger.exception("chat_message_failed", error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to send message: {str(e)}"
+            )
+
+    @app.get("/api/chat/history")
+    async def get_chat_history(max_turns: int = 50) -> JSONResponse:
+        """Get conversation history.
+
+        Args:
+            max_turns: Maximum number of turns to return (default: 50)
+
+        Returns:
+            JSON response with conversation history
+        """
+        if app.state.brian_adapter is None:
+            return JSONResponse({"messages": []})
+
+        try:
+            history = app.state.brian_adapter.get_conversation_history(max_turns)
+            return JSONResponse({"messages": history})
+        except Exception as e:
+            logger.exception("get_history_failed", error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get history: {str(e)}"
+            )
+
+    @app.get("/api/chat/context")
+    async def get_chat_context() -> JSONResponse:
+        """Get current session context.
+
+        Returns:
+            JSON response with session context
+        """
+        if app.state.brian_adapter is None:
+            return JSONResponse({
+                "projectRoot": str(project_root),
+                "currentEpic": None,
+                "currentStory": None,
+                "pendingConfirmation": False,
+                "contextSummary": "No active session"
+            })
+
+        try:
+            context = app.state.brian_adapter.get_session_context()
+            return JSONResponse(context)
+        except Exception as e:
+            logger.exception("get_context_failed", error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get context: {str(e)}"
+            )
 
     # WebSocket endpoint
     @app.websocket("/ws")

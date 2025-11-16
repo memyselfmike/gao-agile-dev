@@ -29,6 +29,7 @@ class EventType(str, Enum):
     # Chat events
     CHAT_MESSAGE_SENT = "chat.message_sent"
     CHAT_MESSAGE_RECEIVED = "chat.message_received"
+    CHAT_STREAMING_CHUNK = "chat.streaming_chunk"
     CHAT_THINKING_STARTED = "chat.thinking_started"
     CHAT_THINKING_FINISHED = "chat.thinking_finished"
 
