@@ -118,7 +118,10 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     websocket_manager = WebSocketManager(event_bus)
 
     # Initialize session lock (read mode by default for web observability)
-    project_root = Path(config.frontend_dist_path).parent.parent
+    # frontend_dist_path = "gao_dev/web/frontend/dist" (relative path)
+    # Need to resolve to absolute path first, then go up to project root
+    # dist → frontend → web → gao_dev → project_root (4 levels up)
+    project_root = Path(config.frontend_dist_path).resolve().parent.parent.parent.parent
     session_lock = SessionLock(project_root)
 
     # Acquire read lock on startup (observability mode)
