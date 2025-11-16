@@ -12,6 +12,8 @@ Additionally provides pytest fixtures for ChatHarness with automatic cleanup.
 
 import os
 import subprocess
+import shutil
+from pathlib import Path
 from typing import Any, Dict, Tuple
 import pytest
 import structlog
@@ -245,3 +247,73 @@ def chat_harness():
     finally:
         harness.close()
         logger.info("chat_harness_fixture_cleaned_up")
+
+
+@pytest.fixture(scope="function", autouse=True)
+def cleanup_test_artifacts():
+    """
+    Automatically cleanup test artifacts after each test.
+
+    Removes:
+        - .gao-dev/test_transcripts/ (conversation transcripts)
+        - tests/e2e/debug_reports/ (quality analysis reports)
+        - test_output.log (test logs)
+        - Any .db files in project root (except gao_dev.db if needed)
+
+    This fixture runs automatically for ALL e2e tests (autouse=True).
+
+    Yields:
+        None: Cleanup happens after test completes
+    """
+    # Run test first
+    yield
+
+    # Cleanup after test
+    cleanup_paths = [
+        Path(".gao-dev/test_transcripts"),
+        Path("tests/e2e/debug_reports"),
+        Path("test_output.log"),
+    ]
+
+    for path in cleanup_paths:
+        if path.is_dir():
+            try:
+                shutil.rmtree(path, ignore_errors=True)
+                logger.info("cleanup_test_artifact", path=str(path), type="directory")
+            except Exception as e:
+                logger.warning("cleanup_failed", path=str(path), error=str(e))
+        elif path.is_file():
+            try:
+                path.unlink()
+                logger.info("cleanup_test_artifact", path=str(path), type="file")
+            except Exception as e:
+                logger.warning("cleanup_failed", path=str(path), error=str(e))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_session_artifacts():
+    """
+    Cleanup test artifacts at the end of the entire test session.
+
+    This is a failsafe to ensure test directories are cleaned up even if
+    individual test cleanup fails.
+
+    Runs once after all tests complete.
+    """
+    yield
+
+    # Session-level cleanup (runs once at end)
+    logger.info("session_cleanup_starting")
+
+    session_cleanup_paths = [
+        Path(".gao-dev/test_transcripts"),
+        Path("tests/e2e/debug_reports"),
+    ]
+
+    for path in session_cleanup_paths:
+        if path.exists():
+            try:
+                shutil.rmtree(path, ignore_errors=True)
+                logger.info("session_cleanup_complete", path=str(path))
+            except Exception as e:
+                logger.warning("session_cleanup_failed", path=str(path), error=str(e))

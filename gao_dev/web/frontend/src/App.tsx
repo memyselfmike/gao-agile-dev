@@ -31,6 +31,50 @@ function App() {
           (message: WebSocketMessage) => {
             // Handle incoming WebSocket messages
             switch (message.type) {
+              // Chat events (Story 39.7) - using message.data from backend WebEvent
+              case 'chat.message_sent': {
+                const data = (message as { data?: { role: string; content: string; agentName?: string } }).data;
+                if (data) {
+                  addMessage({
+                    role: data.role as 'user' | 'agent',
+                    content: data.content,
+                    agentName: data.agentName,
+                  });
+                }
+                break;
+              }
+
+              case 'chat.streaming_chunk': {
+                const data = (message as { data?: { chunk: string; role: string; agentName: string } }).data;
+                if (data) {
+                  const chatState = useChatStore.getState();
+                  chatState.setIsTyping(true);
+                  chatState.addStreamingChunk(data.chunk);
+                }
+                break;
+              }
+
+              case 'chat.message_received': {
+                const data = (message as { data?: { role: string; content: string; agentName: string } }).data;
+                if (data) {
+                  const chatState = useChatStore.getState();
+                  chatState.finishStreamingMessage(data.agentName);
+                }
+                break;
+              }
+
+              case 'chat.thinking_started': {
+                const chatState = useChatStore.getState();
+                chatState.setThinking(true, 'Analyzing your request...');
+                break;
+              }
+
+              case 'chat.thinking_finished': {
+                const chatState = useChatStore.getState();
+                chatState.setThinking(false);
+                break;
+              }
+
               case 'chat_message':
                 addMessage(message.payload as never);
                 break;

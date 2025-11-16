@@ -1,0 +1,6 @@
+name: "simple_todo_app"
+description: "Test creating a simple todo application - reproducing user's manual failure"
+
+scenario:
+  - user_input: "Create a simple todo application"
+    brian_response: "I'll help you create a simple todo application. Let me analyze the requirements and select the appropriate workflows for this project."

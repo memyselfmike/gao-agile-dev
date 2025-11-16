@@ -28,7 +28,7 @@ class WebConfig:
             "http://127.0.0.1:3000",
         ]
     )
-    frontend_dist_path: str = "gao_dev/frontend/dist"
+    frontend_dist_path: str = "gao_dev/web/frontend/dist"
 
     def get_url(self) -> str:
         """Get the full server URL."""

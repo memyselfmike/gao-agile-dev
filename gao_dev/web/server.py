@@ -160,6 +160,16 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
         """
         return JSONResponse({"status": "healthy", "version": "1.0.0"})
 
+    # Session token endpoint
+    @app.get("/api/session/token")
+    async def get_session_token() -> JSONResponse:
+        """Get session token for WebSocket authentication.
+
+        Returns:
+            JSON response with session token
+        """
+        return JSONResponse({"token": session_token_manager.get_token()})
+
     # Agents endpoint (Story 39.8)
     @app.get("/api/agents")
     async def get_agents() -> JSONResponse:
@@ -284,12 +294,48 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
                 from gao_dev.orchestrator.chat_session import ChatSession
                 from gao_dev.orchestrator.conversational_brian import ConversationalBrian
                 from gao_dev.orchestrator.brian_orchestrator import BrianOrchestrator
-                from gao_dev.orchestrator.command_router import CommandRouter
+                from gao_dev.cli.command_router import CommandRouter
                 from gao_dev.web.adapters import BrianWebAdapter
+                from gao_dev.core.workflow_registry import WorkflowRegistry
+                from gao_dev.core.services.ai_analysis_service import AIAnalysisService
+                from gao_dev.core.config_loader import ConfigLoader
+                from gao_dev.core.services.process_executor import ProcessExecutor
+
+                # Create services (matching ChatREPL initialization)
+                config_loader = ConfigLoader(project_root)
+                workflow_registry = WorkflowRegistry(config_loader)
+                executor = ProcessExecutor(project_root)
+                analysis_service = AIAnalysisService(executor)
+
+                # Create StateTracker and OperationTracker (needed for CommandRouter)
+                from gao_dev.core.state.state_tracker import StateTracker
+                from gao_dev.core.state.operation_tracker import OperationTracker
+                from gao_dev.orchestrator.orchestrator import GAODevOrchestrator
+
+                db_path = project_root / ".gao-dev" / "documents.db"
+                state_tracker = StateTracker(db_path) if db_path.exists() else None
+                operation_tracker = OperationTracker(state_tracker) if state_tracker else None
+
+                # Create orchestrator
+                orchestrator = GAODevOrchestrator.create_default(
+                    project_root=project_root,
+                    mode="web"
+                )
 
                 # Create Brian infrastructure (reusing Epic 30 components)
-                brian_orchestrator = BrianOrchestrator(project_root)
-                command_router = CommandRouter(project_root)
+                brian_orchestrator = BrianOrchestrator(
+                    workflow_registry=workflow_registry,
+                    analysis_service=analysis_service,
+                    project_root=project_root
+                )
+
+                # Create command router with all required dependencies
+                command_router = CommandRouter(
+                    orchestrator=orchestrator,
+                    operation_tracker=operation_tracker,
+                    analysis_service=analysis_service
+                ) if operation_tracker else None
+
                 conversational_brian = ConversationalBrian(
                     brian_orchestrator=brian_orchestrator,
                     command_router=command_router
