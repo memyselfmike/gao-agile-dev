@@ -1,5 +1,5 @@
 /**
- * Top Bar - Project name, session status, agent switcher, settings
+ * Top Bar - Project name, session status, agent switcher, theme toggle
  */
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SessionStatus } from '@/components/session/SessionStatus';
-import { Settings, User, ChevronDown } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { User, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 interface TopBarProps {
@@ -70,10 +71,8 @@ export function TopBar({ isConnected, projectName = 'GAO-Dev' }: TopBarProps) {
         {/* Session Status */}
         <SessionStatus isConnected={isConnected} />
 
-        {/* Settings */}
-        <Button variant="ghost" size="icon" aria-label="Settings">
-          <Settings className="h-5 w-5" />
-        </Button>
+        {/* Theme Toggle */}
+        <ThemeToggle />
       </div>
     </header>
   );
