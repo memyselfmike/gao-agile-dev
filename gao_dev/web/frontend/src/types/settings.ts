@@ -31,6 +31,22 @@ export interface SaveProviderRequest {
 
 export interface SaveProviderResponse {
   success: boolean;
-  message: string;
-  validation_errors?: string[];
+  provider?: string;
+  model?: string;
+  message?: string;
+  error?: string;
+  fix_suggestion?: string;
+  validation_details?: {
+    api_key_status: string;
+    model_available: boolean;
+  };
+}
+
+export interface ValidationStatus {
+  valid: boolean;
+  api_key_status: 'valid' | 'invalid' | 'missing' | 'unknown';
+  model_available: boolean;
+  warnings: string[];
+  error?: string;
+  fix_suggestion?: string;
 }

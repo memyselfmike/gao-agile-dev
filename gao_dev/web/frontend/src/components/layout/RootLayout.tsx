@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { TopBar } from './TopBar';
 import { Sidebar, type TabId, TABS } from './Sidebar';
 import { MainContent } from './MainContent';
+import { Toaster } from '@/components/ui/sonner';
 
 interface RootLayoutProps {
   isConnected: boolean;
@@ -33,17 +34,20 @@ export function RootLayout({ isConnected, projectName }: RootLayoutProps) {
   }, []);
 
   return (
-    <div className="grid h-screen grid-cols-[auto_1fr] grid-rows-[auto_1fr]">
-      {/* Top Bar - spans both columns */}
-      <div className="col-span-2">
-        <TopBar isConnected={isConnected} projectName={projectName} />
+    <>
+      <div className="grid h-screen grid-cols-[auto_1fr] grid-rows-[auto_1fr]">
+        {/* Top Bar - spans both columns */}
+        <div className="col-span-2">
+          <TopBar isConnected={isConnected} projectName={projectName} />
+        </div>
+
+        {/* Sidebar - left column */}
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+
+        {/* Main Content - right column */}
+        <MainContent activeTab={activeTab} />
       </div>
-
-      {/* Sidebar - left column */}
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-
-      {/* Main Content - right column */}
-      <MainContent activeTab={activeTab} />
-    </div>
+      <Toaster richColors closeButton position="top-right" />
+    </>
   );
 }

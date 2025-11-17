@@ -1,17 +1,21 @@
 """Tests for settings API endpoints.
 
 Story 39.28: Provider Selection Settings Panel
+Story 39.29: Provider Validation and Persistence
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict
+from unittest.mock import patch
 
 import pytest
 import yaml
 from fastapi.testclient import TestClient
 
 from gao_dev.web.server import create_app
+from gao_dev.web.provider_validator import WebValidationResult
 
 
 @pytest.fixture
@@ -252,3 +256,227 @@ def test_response_json_structure(client: TestClient) -> None:
         for model in provider["models"]:
             assert isinstance(model["id"], str)
             assert isinstance(model["name"], str)
+
+
+# Story 39.29: Provider Validation and Persistence Tests
+
+
+def test_validate_provider_endpoint_success(client: TestClient, monkeypatch) -> None:
+    """Test GET /api/settings/provider/validate with valid provider.
+
+    AC3: Real-time validation during typing (debounced 500ms)
+    """
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-valid-key")
+
+    response = client.get(
+        "/api/settings/provider/validate",
+        params={"provider": "claude_code", "model": "claude-sonnet-4-5-20250929"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Check validation result structure
+    assert "valid" in data
+    assert "api_key_status" in data
+    assert "model_available" in data
+    assert "warnings" in data
+
+    # Should be valid
+    assert data["valid"] is True
+    assert data["api_key_status"] == "valid"
+
+
+def test_validate_provider_endpoint_missing_api_key(
+    client: TestClient, monkeypatch
+) -> None:
+    """Test validate endpoint with missing API key.
+
+    AC2: API key validation displays status indicator
+    AC5: Validation errors show specific fix suggestions
+    """
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    response = client.get(
+        "/api/settings/provider/validate",
+        params={"provider": "claude_code", "model": "claude-sonnet-4-5-20250929"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should fail validation
+    assert data["valid"] is False
+    assert data["api_key_status"] == "missing"
+    assert data["error"] == "API key missing"
+    assert "ANTHROPIC_API_KEY" in data["fix_suggestion"]
+
+
+def test_save_provider_success(client: TestClient, tmp_path: Path, monkeypatch) -> None:
+    """Test POST /api/settings/provider saves successfully.
+
+    AC6: Save writes to `.gao-dev/provider_preferences.yaml` atomically
+    AC7: YAML structure matches Epic 35 format
+    AC11: Success toast notification
+    """
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-valid-key")
+
+    response = client.post(
+        "/api/settings/provider",
+        json={"provider": "claude_code", "model": "claude-sonnet-4-5-20250929"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Check success response
+    assert data["success"] is True
+    assert data["provider"] == "claude_code"
+    assert data["model"] == "claude-sonnet-4-5-20250929"
+    assert "Provider changed to" in data["message"]
+
+    # Check file was created (AC6)
+    prefs_file = tmp_path / ".gao-dev" / "provider_preferences.yaml"
+    assert prefs_file.exists()
+
+    # Check YAML structure (AC7)
+    with open(prefs_file, "r", encoding="utf-8") as f:
+        saved_prefs = yaml.safe_load(f)
+
+    assert saved_prefs["provider"] == "claude_code"
+    assert saved_prefs["model"] == "claude-sonnet-4-5-20250929"
+    assert "last_updated" in saved_prefs
+
+
+def test_save_provider_validation_failure(
+    client: TestClient, tmp_path: Path, monkeypatch
+) -> None:
+    """Test save fails if validation fails.
+
+    AC1: Provider + model combination validated before save
+    AC12: Error toast notification with actionable message
+    """
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    response = client.post(
+        "/api/settings/provider",
+        json={"provider": "claude_code", "model": "claude-sonnet-4-5-20250929"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should fail
+    assert data["success"] is False
+    assert data["error"] == "API key missing"
+    assert "ANTHROPIC_API_KEY" in data["fix_suggestion"]
+
+    # Check validation details (AC1)
+    assert "validation_details" in data
+    assert data["validation_details"]["api_key_status"] == "missing"
+
+    # File should NOT be created
+    prefs_file = tmp_path / ".gao-dev" / "provider_preferences.yaml"
+    assert not prefs_file.exists()
+
+
+def test_save_provider_atomic_with_backup(
+    client: TestClient, tmp_path: Path, monkeypatch
+) -> None:
+    """Test atomic save creates backup before overwriting.
+
+    AC6: Save writes atomically with backup
+    AC9: Rollback on save failure
+    """
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-valid-key")
+
+    # Create existing preferences file
+    gao_dev_dir = tmp_path / ".gao-dev"
+    gao_dev_dir.mkdir(parents=True, exist_ok=True)
+    prefs_file = gao_dev_dir / "provider_preferences.yaml"
+
+    original_prefs = {
+        "provider": "ollama",
+        "model": "llama2",
+        "last_updated": "2025-01-01T00:00:00Z",
+    }
+    with open(prefs_file, "w", encoding="utf-8") as f:
+        yaml.safe_dump(original_prefs, f)
+
+    # Save new preferences
+    response = client.post(
+        "/api/settings/provider",
+        json={"provider": "claude_code", "model": "claude-sonnet-4-5-20250929"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+
+    # Check new preferences saved
+    with open(prefs_file, "r", encoding="utf-8") as f:
+        saved_prefs = yaml.safe_load(f)
+
+    assert saved_prefs["provider"] == "claude_code"
+    assert saved_prefs["model"] == "claude-sonnet-4-5-20250929"
+
+    # Backup should be deleted after successful save
+    backup_file = gao_dev_dir / "provider_preferences.yaml.bak"
+    assert not backup_file.exists()
+
+
+def test_save_provider_invalid_model(
+    client: TestClient, tmp_path: Path, monkeypatch
+) -> None:
+    """Test save fails with invalid model.
+
+    AC1: Provider + model combination validated before save
+    AC4: Save button disabled if validation fails
+    """
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-valid-key")
+
+    response = client.post(
+        "/api/settings/provider",
+        json={"provider": "claude_code", "model": "invalid-model"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Should fail
+    assert data["success"] is False
+    assert data["error"] == "Invalid model"
+    assert data["validation_details"]["model_available"] is False
+
+    # File should NOT be created
+    prefs_file = tmp_path / ".gao-dev" / "provider_preferences.yaml"
+    assert not prefs_file.exists()
+
+
+def test_file_permissions_unix_only(
+    client: TestClient, tmp_path: Path, monkeypatch
+) -> None:
+    """Test file permissions set to 0600 on Unix.
+
+    AC8: File permissions set to 0600 (read/write owner only) for security
+    """
+    # Skip on Windows
+    if os.name == "nt":
+        pytest.skip("File permissions test skipped on Windows")
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-valid-key")
+
+    response = client.post(
+        "/api/settings/provider",
+        json={"provider": "claude_code", "model": "claude-sonnet-4-5-20250929"},
+    )
+
+    assert response.status_code == 200
+
+    # Check file permissions
+    prefs_file = tmp_path / ".gao-dev" / "provider_preferences.yaml"
+    assert prefs_file.exists()
+
+    # Check permissions are 0600
+    stat_info = prefs_file.stat()
+    permissions = oct(stat_info.st_mode)[-3:]
+    assert permissions == "600"

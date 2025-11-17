@@ -46,6 +46,9 @@ class EventType(str, Enum):
     # Git events
     GIT_COMMIT_CREATED = "git.commit_created"
 
+    # Provider events
+    PROVIDER_CHANGED = "provider.changed"
+
     # System events
     SYSTEM_HEARTBEAT = "system.heartbeat"
     SYSTEM_ERROR = "system.error"
