@@ -23,6 +23,7 @@ from .websocket_manager import WebSocketManager
 from .file_tree_builder import build_file_tree
 from .file_watcher import FileSystemWatcher
 from ..core.session_lock import SessionLock
+from .api import git as git_router
 
 logger = structlog.get_logger(__name__)
 
@@ -152,6 +153,9 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
         session_token=session_token_manager.get_token()[:8] + "...",
         file_watcher_running=file_watcher.is_running()
     )
+
+    # Register API routers
+    app.include_router(git_router.router)
 
     # Health check endpoint
     @app.get("/api/health")
