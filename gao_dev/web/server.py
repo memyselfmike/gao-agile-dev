@@ -24,6 +24,7 @@ from .file_tree_builder import build_file_tree
 from .file_watcher import FileSystemWatcher
 from ..core.session_lock import SessionLock
 from .api import git as git_router
+from .api import settings as settings_router
 
 logger = structlog.get_logger(__name__)
 
@@ -156,6 +157,7 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
 
     # Register API routers
     app.include_router(git_router.router)
+    app.include_router(settings_router.router)
 
     # Health check endpoint
     @app.get("/api/health")

@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SessionStatus } from '@/components/session/SessionStatus';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { SettingsIcon, SettingsPanel } from '@/components/settings';
 import { User, ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useChatStore } from '@/stores/chatStore';
@@ -28,6 +29,7 @@ interface TopBarProps {
 export function TopBar({ isConnected, projectName = 'GAO-Dev' }: TopBarProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const activeAgent = useChatStore((state) => state.activeAgent);
   const switchAgent = useChatStore((state) => state.switchAgent);
 
@@ -76,7 +78,8 @@ export function TopBar({ isConnected, projectName = 'GAO-Dev' }: TopBarProps) {
   const displayAgent = activeAgent || agents[0];
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4">
+    <>
+      <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4">
       {/* Project Name + Agent Indicator */}
       <div className="flex items-center gap-3">
         <h1 className="text-lg font-semibold text-foreground">{projectName}</h1>
@@ -130,9 +133,16 @@ export function TopBar({ isConnected, projectName = 'GAO-Dev' }: TopBarProps) {
         {/* Session Status */}
         <SessionStatus isConnected={isConnected} />
 
+        {/* Settings Icon */}
+        <SettingsIcon onClick={() => setIsSettingsOpen(true)} />
+
         {/* Theme Toggle */}
         <ThemeToggle />
       </div>
     </header>
+
+      {/* Settings Panel */}
+      <SettingsPanel open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+    </>
   );
 }
