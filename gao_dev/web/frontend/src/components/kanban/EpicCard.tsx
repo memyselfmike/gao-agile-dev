@@ -6,6 +6,8 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useKanbanStore } from '@/stores/kanbanStore';
+import { HighlightedText } from './HighlightedText';
 
 export interface EpicCardProps {
   epic: {
@@ -26,6 +28,8 @@ export interface EpicCardProps {
 }
 
 export function EpicCard({ epic, onClick }: EpicCardProps) {
+  const { filters } = useKanbanStore();
+
   // Determine progress bar color based on completion percentage
   const getProgressColor = (progress: number): string => {
     if (progress >= 80) return 'bg-green-500';
@@ -60,7 +64,7 @@ export function EpicCard({ epic, onClick }: EpicCardProps) {
               Epic {epic.number}
             </Badge>
             <h4 className="text-sm font-semibold leading-tight line-clamp-2">
-              {epic.title}
+              <HighlightedText text={epic.title} search={filters.search} />
             </h4>
           </div>
         </div>

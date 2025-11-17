@@ -7,6 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useKanbanStore } from '@/stores/kanbanStore';
+import { HighlightedText } from './HighlightedText';
 
 export interface StoryCardProps {
   story: {
@@ -23,6 +25,8 @@ export interface StoryCardProps {
 }
 
 export function StoryCard({ story, onClick }: StoryCardProps) {
+  const { filters } = useKanbanStore();
+
   // Priority color mapping (P0=red, P1=orange, P2=yellow, P3=green)
   const getPriorityColor = (priority: string): string => {
     const normalizedPriority = priority.toUpperCase();
@@ -90,9 +94,9 @@ export function StoryCard({ story, onClick }: StoryCardProps) {
           </Badge>
         </div>
 
-        {/* Story title */}
+        {/* Story title with search highlighting */}
         <h4 className="text-sm font-medium leading-tight line-clamp-2">
-          {story.title}
+          <HighlightedText text={story.title} search={filters.search} />
         </h4>
 
         {/* Footer with priority and owner */}

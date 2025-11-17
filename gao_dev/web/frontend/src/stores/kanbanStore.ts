@@ -65,6 +65,14 @@ export interface PendingMove {
   card: StoryCard | EpicCard;
 }
 
+// Filter state (Story 39.18)
+export interface FilterState {
+  search: string;
+  epicNums: number[];
+  owners: string[];
+  priorities: string[];
+}
+
 // Kanban board state
 interface KanbanState {
   // Data
@@ -73,10 +81,19 @@ interface KanbanState {
   error: string | null;
   loadingCards: Set<string>; // Cards currently being moved
 
+  // Filter state (Story 39.18)
+  filters: FilterState;
+
   // Actions
   fetchBoard: () => Promise<void>;
   clearError: () => void;
   reset: () => void;
+
+  // Filter actions (Story 39.18)
+  setFilters: (filters: FilterState) => void;
+  getFilteredCards: (status: ColumnState) => (StoryCard | EpicCard)[];
+  getTotalCardCount: () => number;
+  getFilteredCardCount: () => number;
 
   // Drag-and-drop actions (Story 39.17)
   moveCardOptimistic: (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => void;
@@ -96,6 +113,12 @@ const initialState = {
   isLoading: false,
   error: null,
   loadingCards: new Set<string>(),
+  filters: {
+    search: '',
+    epicNums: [],
+    owners: [],
+    priorities: [],
+  },
 };
 
 export const useKanbanStore = create<KanbanState>((set) => ({
@@ -134,6 +157,74 @@ export const useKanbanStore = create<KanbanState>((set) => ({
   clearError: () => set({ error: null }),
 
   reset: () => set(initialState),
+
+  // Story 39.18: Filter actions
+  setFilters: (filters: FilterState) => set({ filters }),
+
+  getFilteredCards: (status: ColumnState): (StoryCard | EpicCard)[] => {
+    const state = useKanbanStore.getState() as KanbanState;
+    const { columns, filters } = state;
+    let cards: (StoryCard | EpicCard)[] = columns[status];
+
+    // Apply search filter (case-insensitive partial match)
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      cards = cards.filter((card: StoryCard | EpicCard) =>
+        card.title.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply epic filter (multi-select with OR logic)
+    if (filters.epicNums.length > 0) {
+      cards = cards.filter((card: StoryCard | EpicCard) => {
+        if (card.type === 'epic') {
+          return filters.epicNums.includes(parseInt(card.number));
+        } else if (card.type === 'story') {
+          return filters.epicNums.includes((card as StoryCard).epicNumber);
+        }
+        return false;
+      });
+    }
+
+    // Apply owner filter (multi-select with OR logic, stories only)
+    if (filters.owners.length > 0) {
+      cards = cards.filter((card: StoryCard | EpicCard) => {
+        if (card.type === 'story') {
+          const owner = (card as StoryCard).owner;
+          return owner && filters.owners.includes(owner);
+        }
+        // Epics don't have owners, exclude them when owner filter is active
+        return false;
+      });
+    }
+
+    // Apply priority filter (multi-select with OR logic, stories only)
+    if (filters.priorities.length > 0) {
+      cards = cards.filter((card: StoryCard | EpicCard) => {
+        if (card.type === 'story') {
+          return filters.priorities.includes((card as StoryCard).priority);
+        }
+        // Epics don't have priorities, exclude them when priority filter is active
+        return false;
+      });
+    }
+
+    return cards;
+  },
+
+  getTotalCardCount: (): number => {
+    const state = useKanbanStore.getState() as KanbanState;
+    return Object.values(state.columns).flat().length;
+  },
+
+  getFilteredCardCount: (): number => {
+    const state = useKanbanStore.getState() as KanbanState;
+    let total = 0;
+    COLUMN_STATES.forEach((status: ColumnState) => {
+      total += state.getFilteredCards(status).length;
+    });
+    return total;
+  },
 
   // Story 39.17: Drag-and-drop actions
   moveCardOptimistic: (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => {

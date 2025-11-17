@@ -32,6 +32,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { ConfirmMoveDialog } from './ConfirmMoveDialog';
 import { EpicCard as EpicCardComponent } from './EpicCard';
 import { StoryCard as StoryCardComponent } from './StoryCard';
+import { FilterBar } from './FilterBar';
 import { toast } from 'sonner';
 
 export function KanbanBoard() {
@@ -44,6 +45,9 @@ export function KanbanBoard() {
     rollbackMove,
     setCardLoading,
     moveCardServer,
+    getFilteredCards,
+    getTotalCardCount,
+    getFilteredCardCount,
   } = useKanbanStore();
 
   // Drag-and-drop state
@@ -165,7 +169,7 @@ export function KanbanBoard() {
 
         for (let i = 0; i < COLUMN_STATES.length; i++) {
           const state = COLUMN_STATES[i];
-          const foundCard = columns[state].find((c) => c.id === cardId);
+          const foundCard = columns[state].find((c: StoryCard | EpicCard) => c.id === cardId);
           if (foundCard) {
             currentColumnIndex = i;
             card = foundCard as (StoryCard | EpicCard);
@@ -271,42 +275,72 @@ export function KanbanBoard() {
     );
   }
 
+  // Check if there are filtered results
+  const totalCards = getTotalCardCount();
+  const filteredCards = getFilteredCardCount();
+  const hasResults = filteredCards > 0;
+
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div
-        className="grid h-full grid-cols-5 overflow-hidden"
-        role="main"
-        aria-label="Kanban board with 5 columns"
-      >
-        {COLUMN_STATES.map((state) => (
-          <KanbanColumn key={state} state={state} cards={columns[state]} />
-        ))}
-      </div>
+    <div className="flex h-full flex-col">
+      {/* Filter Bar */}
+      <FilterBar />
 
-      {/* Drag overlay - ghost image during drag */}
-      <DragOverlay>
-        {activeCard ? (
-          <div className="opacity-75 rotate-3 scale-105">
-            {activeCard.type === 'epic' ? (
-              <EpicCardComponent epic={activeCard as EpicCard} />
-            ) : (
-              <StoryCardComponent story={activeCard as StoryCard} />
-            )}
+      {/* Empty state for no filter results */}
+      {!hasResults && totalCards > 0 && (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg font-medium text-muted-foreground mb-2">
+              No cards match your filters
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Try adjusting your search or filter criteria
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Showing {filteredCards} of {totalCards} cards
+            </p>
           </div>
-        ) : null}
-      </DragOverlay>
+        </div>
+      )}
 
-      {/* Confirmation dialog */}
-      <ConfirmMoveDialog
-        pendingMove={pendingMove}
-        onConfirm={handleConfirmMove}
-        onCancel={handleCancelMove}
-      />
-    </DndContext>
+      {/* Kanban Board */}
+      {hasResults && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div
+            className="grid h-full grid-cols-5 overflow-hidden"
+            role="main"
+            aria-label="Kanban board with 5 columns"
+          >
+            {COLUMN_STATES.map((state) => (
+              <KanbanColumn key={state} state={state} cards={getFilteredCards(state)} />
+            ))}
+          </div>
+
+          {/* Drag overlay - ghost image during drag */}
+          <DragOverlay>
+            {activeCard ? (
+              <div className="opacity-75 rotate-3 scale-105">
+                {activeCard.type === 'epic' ? (
+                  <EpicCardComponent epic={activeCard as EpicCard} />
+                ) : (
+                  <StoryCardComponent story={activeCard as StoryCard} />
+                )}
+              </div>
+            ) : null}
+          </DragOverlay>
+
+          {/* Confirmation dialog */}
+          <ConfirmMoveDialog
+            pendingMove={pendingMove}
+            onConfirm={handleConfirmMove}
+            onCancel={handleCancelMove}
+          />
+        </DndContext>
+      )}
+    </div>
   );
 }
