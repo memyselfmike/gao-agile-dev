@@ -1461,6 +1461,240 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
                 detail=f"Failed to get workflow metrics: {str(e)}"
             )
 
+    @app.get("/api/workflows/history")
+    async def get_workflow_history(
+        request: Request,
+        page: int = 1,
+        limit: int = 20,
+        workflow_type: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> JSONResponse:
+        """Get paginated workflow execution history.
+
+        Args:
+            request: FastAPI request object
+            page: Page number (1-indexed)
+            limit: Items per page (default: 20)
+            workflow_type: Filter by workflow name
+            start_date: Filter by start date (ISO 8601)
+            end_date: Filter by end date (ISO 8601)
+            status: Filter by status
+            search: Search query for workflow_id or workflow_name
+
+        Returns:
+            JSON response with paginated workflows and metadata
+        """
+        try:
+            from gao_dev.core.state.state_tracker import StateTracker
+            import sqlite3
+
+            project_root_path = request.app.state.project_root
+            db_path = project_root_path / ".gao-dev" / "documents.db"
+
+            if not db_path.exists():
+                return JSONResponse({"workflows": [], "total": 0, "page": page, "limit": limit, "pages": 0})
+
+            try:
+                state_tracker = StateTracker(db_path)
+                workflows = state_tracker.query_workflows(
+                    workflow_type=workflow_type,
+                    start_date=start_date,
+                    end_date=end_date,
+                    status=[status] if status else None
+                )
+
+                # Apply search filter
+                if search:
+                    search_lower = search.lower()
+                    workflows = [
+                        wf for wf in workflows
+                        if search_lower in wf.workflow_id.lower() or search_lower in wf.workflow_name.lower()
+                    ]
+
+                # Calculate pagination
+                total = len(workflows)
+                pages = (total + limit - 1) // limit
+                start_idx = (page - 1) * limit
+                end_idx = start_idx + limit
+                page_workflows = workflows[start_idx:end_idx]
+
+                # Format response
+                workflow_list = []
+                for wf in page_workflows:
+                    duration = None
+                    if wf.completed_at and wf.started_at:
+                        try:
+                            from datetime import datetime
+                            started = datetime.fromisoformat(wf.started_at.replace("Z", "+00:00"))
+                            completed = datetime.fromisoformat(wf.completed_at.replace("Z", "+00:00"))
+                            duration = int((completed - started).total_seconds())
+                        except (ValueError, AttributeError):
+                            pass
+
+                    workflow_list.append({
+                        "id": wf.id,
+                        "workflow_id": wf.workflow_id,
+                        "workflow_name": wf.workflow_name,
+                        "status": wf.status,
+                        "started_at": wf.started_at,
+                        "completed_at": wf.completed_at,
+                        "duration": duration,
+                        "agent": wf.workflow_id.split("-")[0] if "-" in wf.workflow_id else "Unknown",
+                        "epic": wf.epic,
+                        "story_num": wf.story_num,
+                        "bookmarked": False,
+                        "bookmark_label": None
+                    })
+
+                return JSONResponse({
+                    "workflows": workflow_list,
+                    "total": total,
+                    "page": page,
+                    "limit": limit,
+                    "pages": pages
+                })
+
+            except sqlite3.OperationalError as e:
+                if "no such table" in str(e):
+                    return JSONResponse({"workflows": [], "total": 0, "page": page, "limit": limit, "pages": 0})
+                raise
+
+        except Exception as e:
+            logger.exception("get_workflow_history_failed", error=str(e))
+            raise HTTPException(status_code=500, detail=f"Failed to get workflow history: {str(e)}")
+
+    @app.get("/api/workflows/{workflow_id}/export")
+    async def export_workflow(request: Request, workflow_id: str) -> JSONResponse:
+        """Export workflow execution as JSON.
+
+        Args:
+            request: FastAPI request object
+            workflow_id: Workflow execution ID
+
+        Returns:
+            JSON response with complete workflow data
+        """
+        try:
+            from gao_dev.core.state.state_tracker import StateTracker
+
+            project_root_path = request.app.state.project_root
+            db_path = project_root_path / ".gao-dev" / "documents.db"
+
+            if not db_path.exists():
+                raise HTTPException(status_code=404, detail="Workflow not found")
+
+            state_tracker = StateTracker(db_path)
+            workflows = state_tracker.query_workflows()
+            workflow = next((wf for wf in workflows if wf.workflow_id == workflow_id), None)
+
+            if not workflow:
+                raise HTTPException(status_code=404, detail="Workflow not found")
+
+            # Build export data
+            export_data = {
+                "workflow_id": workflow.workflow_id,
+                "workflow_name": workflow.workflow_name,
+                "status": workflow.status,
+                "started_at": workflow.started_at,
+                "completed_at": workflow.completed_at,
+                "epic": workflow.epic,
+                "story_num": workflow.story_num,
+                "result": workflow.result,
+                "exported_at": datetime.now().isoformat()
+            }
+
+            return JSONResponse(export_data)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.exception("export_workflow_failed", error=str(e))
+            raise HTTPException(status_code=500, detail=f"Failed to export workflow: {str(e)}")
+
+    @app.get("/api/workflows/compare")
+    async def compare_workflows(
+        request: Request,
+        workflow_id_1: str,
+        workflow_id_2: str
+    ) -> JSONResponse:
+        """Compare two workflow executions.
+
+        Args:
+            request: FastAPI request object
+            workflow_id_1: First workflow ID
+            workflow_id_2: Second workflow ID
+
+        Returns:
+            JSON response with comparison data and diffs
+        """
+        try:
+            from gao_dev.core.state.state_tracker import StateTracker
+            from datetime import datetime
+
+            project_root_path = request.app.state.project_root
+            db_path = project_root_path / ".gao-dev" / "documents.db"
+
+            if not db_path.exists():
+                raise HTTPException(status_code=404, detail="Workflows not found")
+
+            state_tracker = StateTracker(db_path)
+            workflows = state_tracker.query_workflows()
+
+            wf1 = next((wf for wf in workflows if wf.workflow_id == workflow_id_1), None)
+            wf2 = next((wf for wf in workflows if wf.workflow_id == workflow_id_2), None)
+
+            if not wf1 or not wf2:
+                raise HTTPException(status_code=404, detail="One or both workflows not found")
+
+            # Calculate durations
+            def get_duration(wf):
+                if wf.completed_at and wf.started_at:
+                    try:
+                        started = datetime.fromisoformat(wf.started_at.replace("Z", "+00:00"))
+                        completed = datetime.fromisoformat(wf.completed_at.replace("Z", "+00:00"))
+                        return int((completed - started).total_seconds())
+                    except (ValueError, AttributeError):
+                        return 0
+                return 0
+
+            duration1 = get_duration(wf1)
+            duration2 = get_duration(wf2)
+
+            return JSONResponse({
+                "workflow_1": {
+                    "workflow_id": wf1.workflow_id,
+                    "workflow_name": wf1.workflow_name,
+                    "duration": duration1,
+                    "status": wf1.status,
+                    "started_at": wf1.started_at,
+                    "epic": wf1.epic,
+                    "story_num": wf1.story_num
+                },
+                "workflow_2": {
+                    "workflow_id": wf2.workflow_id,
+                    "workflow_name": wf2.workflow_name,
+                    "duration": duration2,
+                    "status": wf2.status,
+                    "started_at": wf2.started_at,
+                    "epic": wf2.epic,
+                    "story_num": wf2.story_num
+                },
+                "diff": {
+                    "duration_delta": duration2 - duration1,
+                    "status_changed": wf1.status != wf2.status,
+                    "performance_improvement": duration2 < duration1
+                }
+            })
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.exception("compare_workflows_failed", error=str(e))
+            raise HTTPException(status_code=500, detail=f"Failed to compare workflows: {str(e)}")
+
     # Kanban endpoints (Story 39.15)
     @app.get("/api/kanban/board")
     async def get_kanban_board(request: Request) -> JSONResponse:
