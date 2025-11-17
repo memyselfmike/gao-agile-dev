@@ -2,12 +2,14 @@
  * WorkflowTimeline - Main timeline visualization component
  *
  * Story 39.20: Workflow Execution Timeline
+ * Story 39.21: Workflow Detail Panel (integration)
  */
 import React, { useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useWorkflowStore } from '../../stores/workflowStore';
 import { WorkflowBar } from './WorkflowBar';
 import { TimelineFilters } from './TimelineFilters';
+import { WorkflowDetailPanel } from './WorkflowDetailPanel';
 import { Loader2 } from 'lucide-react';
 
 export const WorkflowTimeline: React.FC = () => {
@@ -46,7 +48,7 @@ export const WorkflowTimeline: React.FC = () => {
 
   const handleWorkflowClick = (workflowId: string) => {
     selectWorkflow(workflowId);
-    // Note: Detail panel will be implemented in Story 39.21
+    // Detail panel will open automatically (Story 39.21)
   };
 
   if (error) {
@@ -164,6 +166,9 @@ export const WorkflowTimeline: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Workflow Detail Panel (Story 39.21) */}
+      <WorkflowDetailPanel />
     </div>
   );
 };

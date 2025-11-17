@@ -2,6 +2,7 @@
  * Workflow Store - State management for workflow timeline visualization
  *
  * Story 39.20: Workflow Execution Timeline
+ * Story 39.21: Workflow Detail Panel
  */
 import { create } from 'zustand';
 
@@ -17,6 +18,45 @@ export interface WorkflowExecution {
   agent: string;
   epic: number;
   story_num: number;
+}
+
+// Workflow step type (Story 39.21)
+export interface WorkflowStep {
+  name: string;
+  status: 'completed' | 'pending' | 'failed';
+  started_at: string;
+  completed_at: string | null;
+  duration: number | null;
+  tool_calls: Array<{
+    tool: string;
+    args: Record<string, any>;
+  }>;
+  outputs: string[];
+}
+
+// Workflow artifact type (Story 39.21)
+export interface WorkflowArtifact {
+  path: string;
+  type: string;
+  size: number;
+  created_at: string;
+}
+
+// Workflow error type (Story 39.21)
+export interface WorkflowError {
+  timestamp: string;
+  message: string;
+  stack_trace: string;
+  step: string;
+}
+
+// Workflow details type (Story 39.21)
+export interface WorkflowDetails {
+  workflow: WorkflowExecution;
+  steps: WorkflowStep[];
+  variables: Record<string, any>;
+  artifacts: WorkflowArtifact[];
+  errors: WorkflowError[] | null;
 }
 
 // Filter state
@@ -47,6 +87,9 @@ interface WorkflowTimelineState {
 
   // Selected workflow for detail panel (Story 39.21)
   selectedWorkflowId: string | null;
+  workflowDetails: WorkflowDetails | null;
+  detailsLoading: boolean;
+  detailsError: string | null;
 
   // Filters
   filters: TimelineFilters;
@@ -56,6 +99,8 @@ interface WorkflowTimelineState {
   applyFilters: (filters: Partial<TimelineFilters>) => void;
   clearFilters: () => void;
   selectWorkflow: (workflowId: string | null) => void;
+  fetchDetails: (workflowId: string) => Promise<void>;
+  closePanel: () => void;
   clearError: () => void;
   reset: () => void;
 
@@ -77,6 +122,9 @@ const initialState = {
   loading: false,
   error: null,
   selectedWorkflowId: null,
+  workflowDetails: null,
+  detailsLoading: false,
+  detailsError: null,
   filters: initialFilters,
 };
 
@@ -157,6 +205,52 @@ export const useWorkflowStore = create<WorkflowTimelineState>((set, get) => ({
 
   selectWorkflow: (workflowId: string | null) => {
     set({ selectedWorkflowId: workflowId });
+    // Auto-fetch details when workflow is selected
+    if (workflowId) {
+      get().fetchDetails(workflowId);
+    }
+  },
+
+  fetchDetails: async (workflowId: string) => {
+    set({ detailsLoading: true, detailsError: null });
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
+      const url = `${apiUrl}/api/workflows/${workflowId}/details`;
+
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(`Workflow ${workflowId} not found`);
+        }
+        throw new Error(`Failed to fetch workflow details: ${response.statusText}`);
+      }
+
+      const data = (await response.json()) as WorkflowDetails;
+
+      set({
+        workflowDetails: data,
+        detailsLoading: false,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      set({
+        detailsError: errorMessage,
+        detailsLoading: false,
+        workflowDetails: null,
+      });
+    }
+  },
+
+  closePanel: () => {
+    set({
+      selectedWorkflowId: null,
+      workflowDetails: null,
+      detailsError: null,
+    });
   },
 
   clearError: () => set({ error: null }),

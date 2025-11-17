@@ -1,8 +1,12 @@
 /**
- * Workflow Components - Export all workflow-related components
+ * Workflow components exports
  *
- * Story 39.20: Workflow Execution Timeline
+ * Story 39.21: Workflow Detail Panel
  */
-export { WorkflowTimeline } from './WorkflowTimeline';
-export { TimelineFilters } from './TimelineFilters';
-export { WorkflowBar } from './WorkflowBar';
+export { WorkflowDetailPanel } from './WorkflowDetailPanel';
+export { WorkflowMetadata } from './WorkflowMetadata';
+export { WorkflowSteps } from './WorkflowSteps';
+export { WorkflowVariables } from './WorkflowVariables';
+export { WorkflowArtifacts } from './WorkflowArtifacts';
+export { WorkflowErrors } from './WorkflowErrors';
+export { formatDuration, copyToClipboard, getFileIcon, formatFileSize } from './utils';

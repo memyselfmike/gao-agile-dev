@@ -620,7 +620,7 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
                 detail=f"Failed to get diff: {str(e)}"
             )
 
-    # Workflow visualization endpoints (Story 39.20)
+    # Workflow visualization endpoints (Story 39.20, 39.21)
     @app.get("/api/workflows/timeline")
     async def get_workflow_timeline(
         request: Request,
@@ -750,6 +750,140 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
             raise HTTPException(
                 status_code=500,
                 detail=f"Failed to get workflow timeline: {str(e)}"
+            )
+
+    @app.get("/api/workflows/{workflow_id}/details")
+    async def get_workflow_details(
+        workflow_id: str,
+        request: Request
+    ) -> JSONResponse:
+        """Get detailed information about a specific workflow execution.
+
+        Returns comprehensive workflow details including:
+        - Workflow metadata (id, name, status, timestamps, duration)
+        - Execution steps with tool calls and outputs
+        - Workflow input variables
+        - Created artifacts (files)
+        - Error information (if workflow failed)
+
+        Args:
+            workflow_id: Workflow execution identifier (e.g., "wf-123")
+            request: FastAPI request object
+
+        Returns:
+            JSON response with workflow details
+
+        Raises:
+            HTTPException: If workflow not found or query fails
+        """
+        try:
+            from gao_dev.core.state.state_tracker import StateTracker
+            from gao_dev.core.state.exceptions import RecordNotFoundError
+            import json
+            from datetime import datetime
+
+            # Get project root from app state
+            project_root_path = request.app.state.project_root
+
+            # Check if database exists
+            db_path = project_root_path / ".gao-dev" / "documents.db"
+            if not db_path.exists():
+                raise HTTPException(
+                    status_code=404,
+                    detail="Project database not found. Initialize project first."
+                )
+
+            # Get workflow execution
+            state_tracker = StateTracker(db_path)
+            try:
+                workflow = state_tracker.get_workflow_execution(workflow_id)
+            except RecordNotFoundError:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Workflow {workflow_id} not found"
+                )
+
+            # Calculate duration if completed
+            duration = None
+            if workflow.completed_at and workflow.started_at:
+                try:
+                    started = datetime.fromisoformat(workflow.started_at.replace("Z", "+00:00"))
+                    completed = datetime.fromisoformat(workflow.completed_at.replace("Z", "+00:00"))
+                    duration = int((completed - started).total_seconds())
+                except (ValueError, AttributeError):
+                    duration = None
+
+            # Parse workflow result JSON to extract steps, artifacts, errors
+            steps = []
+            variables = {}
+            artifacts = []
+            errors = None
+
+            if workflow.result:
+                try:
+                    result_data = json.loads(workflow.result)
+
+                    # Extract steps (if present)
+                    if "steps" in result_data:
+                        steps = result_data["steps"]
+
+                    # Extract variables (if present)
+                    if "variables" in result_data:
+                        variables = result_data["variables"]
+
+                    # Extract artifacts (if present)
+                    if "artifacts" in result_data:
+                        artifacts = result_data["artifacts"]
+
+                    # Extract errors (if workflow failed)
+                    if "errors" in result_data:
+                        errors = result_data["errors"]
+                    elif workflow.status == "failed" and "error" in result_data:
+                        # Fallback: single error object
+                        errors = [{
+                            "timestamp": workflow.completed_at or workflow.started_at,
+                            "message": result_data.get("error", "Unknown error"),
+                            "stack_trace": result_data.get("stack_trace", ""),
+                            "step": result_data.get("failed_step", "Unknown")
+                        }]
+                except json.JSONDecodeError:
+                    # Result is not valid JSON, treat as raw output
+                    logger.warning(
+                        "workflow_result_not_json",
+                        workflow_id=workflow_id,
+                        result_preview=workflow.result[:100] if workflow.result else None
+                    )
+
+            # Build response
+            response_data = {
+                "workflow": {
+                    "id": workflow.id,
+                    "workflow_id": workflow.workflow_id,
+                    "workflow_name": workflow.workflow_name,
+                    "status": workflow.status,
+                    "started_at": workflow.started_at,
+                    "completed_at": workflow.completed_at,
+                    "duration": duration,
+                    "agent": workflow.workflow_id,  # executor is the agent identifier
+                    "epic": workflow.epic,
+                    "story_num": workflow.story_num
+                },
+                "steps": steps,
+                "variables": variables,
+                "artifacts": artifacts,
+                "errors": errors
+            }
+
+            return JSONResponse(response_data)
+
+        except HTTPException:
+            # Re-raise HTTP exceptions
+            raise
+        except Exception as e:
+            logger.exception("get_workflow_details_failed", workflow_id=workflow_id, error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get workflow details: {str(e)}"
             )
 
     # Kanban endpoints (Story 39.15)
