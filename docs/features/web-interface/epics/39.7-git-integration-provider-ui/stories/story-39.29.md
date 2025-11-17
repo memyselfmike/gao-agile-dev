@@ -3,10 +3,12 @@
 **Story Number**: 39.29
 **Epic**: 39.7 - Git Integration & Provider UI
 **Feature**: Web Interface
-**Status**: Planned
+**Status**: Done
 **Priority**: SHOULD HAVE (P1 - V1.1)
 **Effort Estimate**: M (Medium - 4 story points)
 **Dependencies**: Story 39.28 (Provider Selection Settings Panel), Epic 35 (Provider Selection)
+**Completed**: 2025-01-17
+**Commit**: 6c031a0
 
 ---
 
