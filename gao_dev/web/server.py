@@ -1127,6 +1127,340 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
                 detail=f"Failed to get workflow graph: {str(e)}"
             )
 
+    @app.get("/api/workflows/metrics")
+    async def get_workflow_metrics(
+        request: Request,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        epic: Optional[int] = None,
+    ) -> JSONResponse:
+        """Get aggregate workflow metrics and analytics.
+
+        Provides comprehensive metrics including success rates, durations,
+        agent utilization, failure analysis, and time series data.
+
+        Args:
+            request: FastAPI request object
+            start_date: Optional ISO 8601 start date filter
+            end_date: Optional ISO 8601 end date filter
+            epic: Optional epic number filter
+
+        Returns:
+            JSON response with metrics summary, charts data, and analytics
+        """
+        try:
+            from gao_dev.core.state.state_tracker import StateTracker
+            from gao_dev.core.state.exceptions import StateTrackerError
+            import sqlite3
+            from datetime import datetime
+            from typing import Dict, List
+            from collections import defaultdict
+
+            # Get project root
+            project_root_path = request.app.state.project_root
+
+            # Check database exists
+            db_path = project_root_path / ".gao-dev" / "documents.db"
+            if not db_path.exists():
+                # Return empty metrics
+                return JSONResponse({
+                    "summary": {
+                        "total_workflows": 0,
+                        "completed": 0,
+                        "failed": 0,
+                        "cancelled": 0,
+                        "running": 0,
+                        "pending": 0,
+                        "success_rate": 0.0,
+                        "average_duration": 0.0,
+                        "total_duration": 0
+                    },
+                    "workflow_type_metrics": [],
+                    "agent_utilization": [],
+                    "longest_workflows": [],
+                    "failure_analysis": {
+                        "most_failed_workflows": [],
+                        "most_failed_steps": [],
+                        "common_errors": []
+                    },
+                    "workflows_over_time": []
+                })
+
+            # Query workflows
+            try:
+                state_tracker = StateTracker(db_path)
+                workflows = state_tracker.query_workflows(
+                    workflow_type=None,
+                    start_date=start_date,
+                    end_date=end_date,
+                    status=None
+                )
+
+                # Apply epic filter
+                if epic is not None:
+                    workflows = [wf for wf in workflows if wf.epic == epic]
+
+            except (sqlite3.OperationalError, StateTrackerError) as e:
+                error_msg = str(e)
+                if "no such table" in error_msg:
+                    logger.warning(
+                        "workflow_metrics_schema_not_initialized",
+                        error=error_msg,
+                        hint="Run 'gao-dev migrate' to initialize database schema"
+                    )
+                    return JSONResponse({
+                        "summary": {
+                            "total_workflows": 0,
+                            "completed": 0,
+                            "failed": 0,
+                            "cancelled": 0,
+                            "running": 0,
+                            "pending": 0,
+                            "success_rate": 0.0,
+                            "average_duration": 0.0,
+                            "total_duration": 0
+                        },
+                        "workflow_type_metrics": [],
+                        "agent_utilization": [],
+                        "longest_workflows": [],
+                        "failure_analysis": {"most_failed_workflows": [], "most_failed_steps": [], "common_errors": []},
+                        "workflows_over_time": []
+                    })
+                raise
+
+            # Calculate summary metrics
+            status_counts = defaultdict(int)
+            total_duration = 0
+            durations = []
+
+            for wf in workflows:
+                status_counts[wf.status] += 1
+
+                # Calculate duration
+                if wf.completed_at and wf.started_at:
+                    try:
+                        started = datetime.fromisoformat(wf.started_at.replace("Z", "+00:00"))
+                        completed = datetime.fromisoformat(wf.completed_at.replace("Z", "+00:00"))
+                        duration = (completed - started).total_seconds()
+                        total_duration += duration
+                        durations.append(duration)
+                    except (ValueError, AttributeError):
+                        pass
+
+            total_workflows = len(workflows)
+            completed_count = status_counts.get("completed", 0)
+            failed_count = status_counts.get("failed", 0)
+            cancelled_count = status_counts.get("cancelled", 0)
+            running_count = status_counts.get("running", 0)
+            pending_count = status_counts.get("pending", 0) + status_counts.get("started", 0)
+
+            # Success rate: completed / (completed + failed + cancelled)
+            denominator = completed_count + failed_count + cancelled_count
+            success_rate = (completed_count / denominator * 100.0) if denominator > 0 else 0.0
+
+            # Average duration
+            average_duration = (total_duration / len(durations)) if durations else 0.0
+
+            summary = {
+                "total_workflows": total_workflows,
+                "completed": completed_count,
+                "failed": failed_count,
+                "cancelled": cancelled_count,
+                "running": running_count,
+                "pending": pending_count,
+                "success_rate": round(success_rate, 2),
+                "average_duration": round(average_duration, 2),
+                "total_duration": round(total_duration, 2)
+            }
+
+            # Workflow type metrics
+            workflow_type_data: Dict[str, Dict] = defaultdict(lambda: {
+                "count": 0,
+                "durations": [],
+                "completed": 0,
+                "failed": 0,
+                "cancelled": 0
+            })
+
+            for wf in workflows:
+                wf_type = wf.workflow_name
+                workflow_type_data[wf_type]["count"] += 1
+
+                if wf.completed_at and wf.started_at:
+                    try:
+                        started = datetime.fromisoformat(wf.started_at.replace("Z", "+00:00"))
+                        completed = datetime.fromisoformat(wf.completed_at.replace("Z", "+00:00"))
+                        duration = (completed - started).total_seconds()
+                        workflow_type_data[wf_type]["durations"].append(duration)
+                    except (ValueError, AttributeError):
+                        pass
+
+                if wf.status == "completed":
+                    workflow_type_data[wf_type]["completed"] += 1
+                elif wf.status == "failed":
+                    workflow_type_data[wf_type]["failed"] += 1
+                elif wf.status == "cancelled":
+                    workflow_type_data[wf_type]["cancelled"] += 1
+
+            workflow_type_metrics = []
+            for wf_type, data in workflow_type_data.items():
+                durs = data["durations"]
+                avg_duration = (sum(durs) / len(durs)) if durs else 0.0
+                min_duration = min(durs) if durs else 0.0
+                max_duration = max(durs) if durs else 0.0
+
+                denom = data["completed"] + data["failed"] + data["cancelled"]
+                wf_success_rate = (data["completed"] / denom * 100.0) if denom > 0 else 0.0
+
+                workflow_type_metrics.append({
+                    "workflow_type": wf_type,
+                    "count": data["count"],
+                    "average_duration": round(avg_duration, 2),
+                    "success_rate": round(wf_success_rate, 2),
+                    "min_duration": round(min_duration, 2),
+                    "max_duration": round(max_duration, 2)
+                })
+
+            # Sort by count descending
+            workflow_type_metrics.sort(key=lambda x: x["count"], reverse=True)
+
+            # Agent utilization
+            agent_data: Dict[str, Dict] = defaultdict(lambda: {"count": 0, "duration": 0.0})
+
+            for wf in workflows:
+                # Use workflow_id as agent identifier
+                agent = wf.workflow_id.split("-")[0] if "-" in wf.workflow_id else "Unknown"
+                agent_data[agent]["count"] += 1
+
+                if wf.completed_at and wf.started_at:
+                    try:
+                        started = datetime.fromisoformat(wf.started_at.replace("Z", "+00:00"))
+                        completed = datetime.fromisoformat(wf.completed_at.replace("Z", "+00:00"))
+                        duration = (completed - started).total_seconds()
+                        agent_data[agent]["duration"] += duration
+                    except (ValueError, AttributeError):
+                        pass
+
+            agent_utilization = []
+            for agent, data in agent_data.items():
+                percentage = (data["count"] / total_workflows * 100.0) if total_workflows > 0 else 0.0
+                agent_utilization.append({
+                    "agent": agent,
+                    "workflow_count": data["count"],
+                    "total_duration": round(data["duration"], 2),
+                    "percentage": round(percentage, 2)
+                })
+
+            # Sort by count descending
+            agent_utilization.sort(key=lambda x: x["workflow_count"], reverse=True)
+
+            # Longest workflows (top 10)
+            workflows_with_duration = []
+            for wf in workflows:
+                if wf.completed_at and wf.started_at:
+                    try:
+                        started = datetime.fromisoformat(wf.started_at.replace("Z", "+00:00"))
+                        completed = datetime.fromisoformat(wf.completed_at.replace("Z", "+00:00"))
+                        duration = (completed - started).total_seconds()
+                        workflows_with_duration.append({
+                            "workflow_id": wf.workflow_id,
+                            "workflow_name": wf.workflow_name,
+                            "duration": round(duration, 2),
+                            "status": wf.status,
+                            "agent": wf.workflow_id.split("-")[0] if "-" in wf.workflow_id else "Unknown",
+                            "started_at": wf.started_at
+                        })
+                    except (ValueError, AttributeError):
+                        pass
+
+            workflows_with_duration.sort(key=lambda x: x["duration"], reverse=True)
+            longest_workflows = workflows_with_duration[:10]
+
+            # Failure analysis
+            failed_workflows = [wf for wf in workflows if wf.status == "failed"]
+            failed_by_type: Dict[str, Dict] = defaultdict(lambda: {"failed": 0, "total": 0})
+
+            for wf in workflows:
+                failed_by_type[wf.workflow_name]["total"] += 1
+                if wf.status == "failed":
+                    failed_by_type[wf.workflow_name]["failed"] += 1
+
+            most_failed_workflows = []
+            for wf_type, data in failed_by_type.items():
+                if data["failed"] > 0:
+                    failure_rate = (data["failed"] / data["total"] * 100.0)
+                    most_failed_workflows.append({
+                        "workflow_type": wf_type,
+                        "failure_count": data["failed"],
+                        "total_count": data["total"],
+                        "failure_rate": round(failure_rate, 2)
+                    })
+
+            most_failed_workflows.sort(key=lambda x: x["failure_count"], reverse=True)
+            most_failed_workflows = most_failed_workflows[:10]
+
+            # Common errors (parse from result field if available)
+            error_counts: Dict[str, int] = defaultdict(int)
+            for wf in failed_workflows:
+                if wf.result:
+                    # Simple error extraction - take first line of result
+                    error_line = wf.result.split("\n")[0] if "\n" in wf.result else wf.result
+                    error_counts[error_line[:100]] += 1  # Limit to 100 chars
+
+            common_errors = [
+                {"error_message": msg, "count": count}
+                for msg, count in sorted(error_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+            ]
+
+            failure_analysis = {
+                "most_failed_workflows": most_failed_workflows,
+                "most_failed_steps": [],  # Would need step-level tracking
+                "common_errors": common_errors
+            }
+
+            # Workflows over time (daily aggregation)
+            workflows_by_date: Dict[str, Dict] = defaultdict(lambda: {
+                "completed": 0,
+                "failed": 0,
+                "cancelled": 0
+            })
+
+            for wf in workflows:
+                if wf.started_at:
+                    try:
+                        started = datetime.fromisoformat(wf.started_at.replace("Z", "+00:00"))
+                        date_key = started.strftime("%Y-%m-%d")
+
+                        if wf.status == "completed":
+                            workflows_by_date[date_key]["completed"] += 1
+                        elif wf.status == "failed":
+                            workflows_by_date[date_key]["failed"] += 1
+                        elif wf.status == "cancelled":
+                            workflows_by_date[date_key]["cancelled"] += 1
+                    except (ValueError, AttributeError):
+                        pass
+
+            workflows_over_time = [
+                {"date": date, **counts}
+                for date, counts in sorted(workflows_by_date.items())
+            ]
+
+            return JSONResponse({
+                "summary": summary,
+                "workflow_type_metrics": workflow_type_metrics,
+                "agent_utilization": agent_utilization,
+                "longest_workflows": longest_workflows,
+                "failure_analysis": failure_analysis,
+                "workflows_over_time": workflows_over_time
+            })
+
+        except Exception as e:
+            logger.exception("get_workflow_metrics_failed", error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get workflow metrics: {str(e)}"
+            )
+
     # Kanban endpoints (Story 39.15)
     @app.get("/api/kanban/board")
     async def get_kanban_board(request: Request) -> JSONResponse:
