@@ -7,6 +7,7 @@ import { useChatStore } from './stores/chatStore';
 import { useActivityStore } from './stores/activityStore';
 import { useSessionStore } from './stores/sessionStore';
 import { useFilesStore } from './stores/filesStore';
+import { useWorkflowStore } from './stores/workflowStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RootLayout } from './components/layout/RootLayout';
 import { LoadingSpinner } from './components/LoadingSpinner';
@@ -22,6 +23,7 @@ function App() {
   const addMessage = useChatStore((state) => state.addMessage);
   const setSessionToken = useSessionStore((state) => state.setSessionToken);
   const { addRecentlyChanged, setFileTree, closeFile, openFiles } = useFilesStore();
+  const { addWorkflow, updateWorkflow } = useWorkflowStore();
 
   useEffect(() => {
     // Create WebSocket connection on mount
@@ -134,6 +136,94 @@ function App() {
                   .catch(() => {
                     // Failed to reload file tree - ignore
                   });
+                break;
+              }
+
+              // Workflow events (Story 39.20)
+              case 'workflow.started': {
+                const payload = message.payload as {
+                  workflow_id: string;
+                  workflow_name: string;
+                  agent: string;
+                  started_at: string;
+                  epic?: number;
+                  story_num?: number;
+                };
+
+                // Add new workflow to timeline
+                addWorkflow({
+                  id: 0, // Will be set by backend
+                  workflow_id: payload.workflow_id,
+                  workflow_name: payload.workflow_name,
+                  status: 'running',
+                  started_at: payload.started_at,
+                  completed_at: null,
+                  duration: null,
+                  agent: payload.agent,
+                  epic: payload.epic || 0,
+                  story_num: payload.story_num || 0,
+                });
+
+                // Show toast notification
+                toast.info('Workflow started', {
+                  description: `${payload.workflow_name} started by ${payload.agent}`,
+                });
+                break;
+              }
+
+              case 'workflow.completed': {
+                const payload = message.payload as {
+                  workflow_id: string;
+                  completed_at: string;
+                  duration?: number;
+                };
+
+                // Update workflow status
+                updateWorkflow(payload.workflow_id, {
+                  status: 'completed',
+                  completed_at: payload.completed_at,
+                  duration: payload.duration || null,
+                });
+
+                // Show toast notification
+                toast.success('Workflow completed', {
+                  description: `Workflow ${payload.workflow_id} finished successfully`,
+                });
+                break;
+              }
+
+              case 'workflow.failed': {
+                const payload = message.payload as {
+                  workflow_id: string;
+                  error?: string;
+                };
+
+                // Update workflow status
+                updateWorkflow(payload.workflow_id, {
+                  status: 'failed',
+                });
+
+                // Show toast notification
+                toast.error('Workflow failed', {
+                  description: payload.error || `Workflow ${payload.workflow_id} failed`,
+                });
+                break;
+              }
+
+              case 'workflow.cancelled': {
+                const payload = message.payload as {
+                  workflow_id: string;
+                };
+
+                // Update workflow status
+                updateWorkflow(payload.workflow_id, {
+                  status: 'cancelled',
+                });
+
+                // Show toast notification
+                toast.warning('Workflow cancelled', {
+                  description: `Workflow ${payload.workflow_id} was cancelled`,
+                });
                 break;
               }
 

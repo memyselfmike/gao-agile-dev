@@ -1137,3 +1137,92 @@ class StateTracker:
                 "success_rate": success_rate,
                 "avg_duration_ms": avg_duration,
             }
+
+    def query_workflows(
+        self,
+        workflow_type: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        status: Optional[List[str]] = None,
+    ) -> List[WorkflowExecution]:
+        """Query workflow executions with filters.
+
+        Args:
+            workflow_type: Filter by workflow name (optional)
+            start_date: Filter by start date >= this ISO timestamp (optional)
+            end_date: Filter by start date <= this ISO timestamp (optional)
+            status: Filter by status values (optional list)
+
+        Returns:
+            List of WorkflowExecution instances matching filters
+        """
+        with self._get_connection() as conn:
+            # Build dynamic query
+            query = "SELECT * FROM workflow_executions WHERE 1=1"
+            params: List[Any] = []
+
+            if workflow_type:
+                query += " AND workflow_name = ?"
+                params.append(workflow_type)
+
+            if start_date:
+                query += " AND started_at >= ?"
+                params.append(start_date)
+
+            if end_date:
+                query += " AND started_at <= ?"
+                params.append(end_date)
+
+            if status and len(status) > 0:
+                placeholders = ",".join(["?"] * len(status))
+                query += f" AND status IN ({placeholders})"
+                params.extend(status)
+
+            # Order by started_at descending (most recent first)
+            query += " ORDER BY started_at DESC"
+
+            cursor = conn.execute(query, params)
+            workflows = []
+            for row in cursor.fetchall():
+                wf_data = dict(row)
+                # Map executor to workflow_id for dataclass
+                wf_data["workflow_id"] = wf_data.pop("executor")
+                wf_data["result"] = wf_data.pop("output")
+                wf_data["epic"] = wf_data.pop("epic_num")
+                # Remove fields that are not in the WorkflowExecution model
+                wf_data.pop("phase", None)
+                wf_data.pop("duration_ms", None)
+                wf_data.pop("error_message", None)
+                wf_data.pop("exit_code", None)
+                wf_data.pop("metadata", None)
+                wf_data.pop("context_snapshot", None)
+                workflows.append(WorkflowExecution(**wf_data))
+            return workflows
+
+    def get_workflow_types(self) -> List[str]:
+        """Get all unique workflow names.
+
+        Returns:
+            List of workflow names sorted alphabetically
+        """
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT DISTINCT workflow_name FROM workflow_executions ORDER BY workflow_name"
+            )
+            return [row["workflow_name"] for row in cursor.fetchall()]
+
+    def get_workflow_date_range(self) -> Dict[str, Optional[str]]:
+        """Get the min and max workflow start dates.
+
+        Returns:
+            Dictionary with 'min' and 'max' ISO timestamp strings
+        """
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT MIN(started_at) as min_date, MAX(started_at) as max_date FROM workflow_executions"
+            )
+            row = cursor.fetchone()
+            return {
+                "min": row["min_date"],
+                "max": row["max_date"],
+            }

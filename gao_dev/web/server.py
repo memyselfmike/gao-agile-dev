@@ -620,6 +620,138 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
                 detail=f"Failed to get diff: {str(e)}"
             )
 
+    # Workflow visualization endpoints (Story 39.20)
+    @app.get("/api/workflows/timeline")
+    async def get_workflow_timeline(
+        request: Request,
+        workflow_type: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> JSONResponse:
+        """Get workflow execution timeline with optional filters.
+
+        Returns timeline data for workflow visualization with filtering by:
+        - workflow_type: Specific workflow name
+        - start_date: ISO 8601 timestamp (filter started_at >= this)
+        - end_date: ISO 8601 timestamp (filter started_at <= this)
+        - status: Comma-separated list of statuses
+
+        Args:
+            request: FastAPI request object
+            workflow_type: Optional workflow name filter
+            start_date: Optional start date filter (ISO 8601)
+            end_date: Optional end date filter (ISO 8601)
+            status: Optional comma-separated status filter
+
+        Returns:
+            JSON response with workflows array, total count, and filter metadata
+        """
+        try:
+            from gao_dev.core.state.state_tracker import StateTracker
+            from gao_dev.core.state.exceptions import StateTrackerError
+            import sqlite3
+            from datetime import datetime
+
+            # Get project root from app state
+            project_root_path = request.app.state.project_root
+
+            # Check if database exists
+            db_path = project_root_path / ".gao-dev" / "documents.db"
+            if not db_path.exists():
+                # Return empty timeline if no database yet
+                return JSONResponse({
+                    "workflows": [],
+                    "total": 0,
+                    "filters": {
+                        "workflow_types": [],
+                        "date_range": {"min": None, "max": None},
+                        "statuses": ["pending", "running", "completed", "failed", "cancelled"]
+                    }
+                })
+
+            # Parse status filter (comma-separated)
+            status_list = None
+            if status:
+                status_list = [s.strip() for s in status.split(",")]
+
+            # Query workflows with filters
+            try:
+                state_tracker = StateTracker(db_path)
+                workflows = state_tracker.query_workflows(
+                    workflow_type=workflow_type,
+                    start_date=start_date,
+                    end_date=end_date,
+                    status=status_list
+                )
+
+                # Get filter metadata
+                workflow_types = state_tracker.get_workflow_types()
+                date_range = state_tracker.get_workflow_date_range()
+
+            except (sqlite3.OperationalError, StateTrackerError) as e:
+                # Handle unmigrated database
+                error_msg = str(e)
+                if "no such table" in error_msg:
+                    logger.warning(
+                        "workflow_timeline_schema_not_initialized",
+                        error=error_msg,
+                        hint="Run 'gao-dev migrate' to initialize database schema"
+                    )
+                    return JSONResponse({
+                        "workflows": [],
+                        "total": 0,
+                        "filters": {
+                            "workflow_types": [],
+                            "date_range": {"min": None, "max": None},
+                            "statuses": ["pending", "running", "completed", "failed", "cancelled"]
+                        }
+                    })
+                raise
+
+            # Build response with workflow data
+            workflow_data = []
+            for wf in workflows:
+                # Calculate duration if completed
+                duration = None
+                if wf.completed_at and wf.started_at:
+                    try:
+                        started = datetime.fromisoformat(wf.started_at.replace("Z", "+00:00"))
+                        completed = datetime.fromisoformat(wf.completed_at.replace("Z", "+00:00"))
+                        duration = int((completed - started).total_seconds())
+                    except (ValueError, AttributeError):
+                        duration = None
+
+                workflow_data.append({
+                    "id": wf.id,
+                    "workflow_id": wf.workflow_id,
+                    "workflow_name": wf.workflow_name,
+                    "status": wf.status,
+                    "started_at": wf.started_at,
+                    "completed_at": wf.completed_at,
+                    "duration": duration,
+                    "agent": wf.workflow_id,  # executor is the agent identifier
+                    "epic": wf.epic,
+                    "story_num": wf.story_num
+                })
+
+            return JSONResponse({
+                "workflows": workflow_data,
+                "total": len(workflow_data),
+                "filters": {
+                    "workflow_types": workflow_types,
+                    "date_range": date_range,
+                    "statuses": ["pending", "running", "completed", "failed", "cancelled"]
+                }
+            })
+
+        except Exception as e:
+            logger.exception("get_workflow_timeline_failed", error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get workflow timeline: {str(e)}"
+            )
+
     # Kanban endpoints (Story 39.15)
     @app.get("/api/kanban/board")
     async def get_kanban_board(request: Request) -> JSONResponse:

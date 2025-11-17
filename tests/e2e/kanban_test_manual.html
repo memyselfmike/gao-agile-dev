@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board Manual Test - Story 39.15</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .status {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+
+        .status.error {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+
+        .checklist {
+            margin: 20px 0;
+        }
+
+        .checklist h2 {
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .checklist-item {
+            padding: 8px;
+            margin: 4px 0;
+            background: #fafafa;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+        }
+
+        .checklist-item input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+
+        .api-test {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .api-response {
+            margin-top: 10px;
+            padding: 10px;
+            background: #263238;
+            color: #aed581;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #1976d2;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .test-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #2196f3;
+            padding-bottom: 5px;
+        }
+
+        .screenshot-link {
+            display: inline-block;
+            margin: 5px 0;
+            color: #2196f3;
+            text-decoration: none;
+        }
+
+        .screenshot-link:hover {
+            text-decoration: underline;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Story 39.15 - Kanban Board Manual Validation</h1>
+
+        <div id="status" class="status">
+            <strong>Status:</strong> Ready to test
+        </div>
+
+        <div class="progress-bar">
+            <div id="progress" class="progress-fill" style="width: 0%">0%</div>
+        </div>
+
+        <div class="api-test">
+            <h3>Step 1: Test API Endpoint</h3>
+            <p>Click the button below to test if the /api/kanban/board endpoint is working:</p>
+            <button onclick="testApiEndpoint()">Test API Endpoint</button>
+            <button onclick="testWithSampleData()">Test with Sample Data</button>
+            <div id="api-response" class="api-response" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Step 2: Browser Testing Checklist</h3>
+            <p>After confirming the API works, open the main app at <a href="http://127.0.0.1:3000" target="_blank">http://127.0.0.1:3000</a> and complete the following tests:</p>
+
+            <div class="checklist">
+                <h4>Basic Functionality</h4>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test1" onchange="updateProgress()">
+                    <label for="test1">Navigate to Kanban tab (4th tab)</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test2" onchange="updateProgress()">
+                    <label for="test2">Verify 5 columns visible: Backlog, Ready, In Progress, In Review, Done</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test3" onchange="updateProgress()">
+                    <label for="test3">Verify column headers show names</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test4" onchange="updateProgress()">
+                    <label for="test4">Verify column headers show card counts</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test5" onchange="updateProgress()">
+                    <label for="test5">Verify empty columns show "No items" placeholder</label>
+                </div>
+            </div>
+
+            <div class="checklist">
+                <h4>Visual Design</h4>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test6" onchange="updateProgress()">
+                    <label for="test6">Columns are equal width</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test7" onchange="updateProgress()">
+                    <label for="test7">Columns fill screen width</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test8" onchange="updateProgress()">
+                    <label for="test8">Styling matches shadcn/ui theme (rounded corners, shadows)</label>
+                </div>
+            </div>
+
+            <div class="checklist">
+                <h4>Dark/Light Mode</h4>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test9" onchange="updateProgress()">
+                    <label for="test9">Click theme toggle - board adapts to dark mode</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test10" onchange="updateProgress()">
+                    <label for="test10">Column colors appropriate for dark theme</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test11" onchange="updateProgress()">
+                    <label for="test11">Toggle back - board adapts to light mode</label>
+                </div>
+            </div>
+
+            <div class="checklist">
+                <h4>Keyboard Navigation</h4>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test12" onchange="updateProgress()">
+                    <label for="test12">Tab key focuses cards</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test13" onchange="updateProgress()">
+                    <label for="test13">Arrow Down moves to next card in column</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test14" onchange="updateProgress()">
+                    <label for="test14">Arrow Up moves to previous card in column</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test15" onchange="updateProgress()">
+                    <label for="test15">Arrow Right moves to next column</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test16" onchange="updateProgress()">
+                    <label for="test16">Arrow Left moves to previous column</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test17" onchange="updateProgress()">
+                    <label for="test17">Enter/Space keys work on focused cards</label>
+                </div>
+            </div>
+
+            <div class="checklist">
+                <h4>Responsiveness</h4>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test18" onchange="updateProgress()">
+                    <label for="test18">Resize to tablet (768px) - all columns visible</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test19" onchange="updateProgress()">
+                    <label for="test19">Resize to large desktop (1920px) - columns expand</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test20" onchange="updateProgress()">
+                    <label for="test20">Board adapts smoothly to resize</label>
+                </div>
+            </div>
+
+            <div class="checklist">
+                <h4>Data Loading & Performance</h4>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test21" onchange="updateProgress()">
+                    <label for="test21">Refresh page - loading state appears briefly</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test22" onchange="updateProgress()">
+                    <label for="test22">Data loads in <500ms</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test23" onchange="updateProgress()">
+                    <label for="test23">No console errors (check DevTools)</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test24" onchange="updateProgress()">
+                    <label for="test24">Network tab shows /api/kanban/board API call</label>
+                </div>
+            </div>
+
+            <div class="checklist">
+                <h4>User Experience</h4>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test25" onchange="updateProgress()">
+                    <label for="test25">Layout looks professional</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test26" onchange="updateProgress()">
+                    <label for="test26">Column names are clear and understandable</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test27" onchange="updateProgress()">
+                    <label for="test27">Can understand what to do (intuitive)</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="test28" onchange="updateProgress()">
+                    <label for="test28">No visual glitches or alignment issues</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>Step 3: Take Screenshots</h3>
+            <p>Take the following screenshots for documentation:</p>
+            <ul>
+                <li>Initial state (light mode)</li>
+                <li>Dark mode</li>
+                <li>Empty state (if database empty)</li>
+                <li>With data (if database has epics/stories)</li>
+                <li>Tablet view (768px)</li>
+                <li>Desktop view (1920px)</li>
+                <li>Keyboard focus indicator</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>Final Approval</h3>
+            <button onclick="generateReport()">Generate Test Report</button>
+            <button onclick="exportResults()">Export Results</button>
+        </div>
+    </div>
+
+    <script>
+        const totalTests = 28;
+
+        function updateProgress() {
+            const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
+            const percentage = Math.round((checked / totalTests) * 100);
+            const progressBar = document.getElementById('progress');
+            progressBar.style.width = percentage + '%';
+            progressBar.textContent = percentage + '%';
+
+            const status = document.getElementById('status');
+            if (percentage === 100) {
+                status.className = 'status success';
+                status.innerHTML = '<strong>Status:</strong> ✅ All tests complete! Ready to commit.';
+            } else {
+                status.className = 'status';
+                status.innerHTML = `<strong>Status:</strong> ${checked} of ${totalTests} tests completed (${percentage}%)`;
+            }
+        }
+
+        async function testApiEndpoint() {
+            const responseDiv = document.getElementById('api-response');
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = 'Testing /api/kanban/board endpoint...\n';
+
+            try {
+                const response = await fetch('http://127.0.0.1:3000/api/kanban/board', {
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    responseDiv.textContent += '\n✅ SUCCESS! Endpoint is working.\n\n';
+                    responseDiv.textContent += `HTTP Status: ${response.status} OK\n\n`;
+                    responseDiv.textContent += 'Response:\n';
+                    responseDiv.textContent += JSON.stringify(data, null, 2);
+
+                    document.getElementById('status').className = 'status success';
+                    document.getElementById('status').innerHTML = '<strong>Status:</strong> ✅ API endpoint is working! Proceed to browser testing.';
+                } else {
+                    responseDiv.textContent += `\n❌ FAILED: HTTP ${response.status}\n\n`;
+                    responseDiv.textContent += 'Response:\n';
+                    responseDiv.textContent += JSON.stringify(data, null, 2);
+
+                    document.getElementById('status').className = 'status error';
+                    document.getElementById('status').innerHTML = '<strong>Status:</strong> ❌ API endpoint failed. Check if server needs restart.';
+                }
+            } catch (error) {
+                responseDiv.textContent += `\n❌ ERROR: ${error.message}\n\n`;
+                responseDiv.textContent += 'Possible causes:\n';
+                responseDiv.textContent += '1. Web server is not running\n';
+                responseDiv.textContent += '2. Server needs to be restarted to load new endpoint\n';
+                responseDiv.textContent += '3. CORS issue (should not happen on localhost)\n';
+
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').innerHTML = '<strong>Status:</strong> ❌ Cannot connect to server. Restart required?';
+            }
+        }
+
+        async function testWithSampleData() {
+            const responseDiv = document.getElementById('api-response');
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = 'Sample API response structure:\n\n';
+
+            const sampleData = {
+                "columns": {
+                    "backlog": [
+                        {
+                            "id": "story-1.1",
+                            "type": "story",
+                            "number": "1.1",
+                            "epicNumber": 1,
+                            "storyNumber": 1,
+                            "title": "Login Page",
+                            "status": "pending",
+                            "owner": null,
+                            "points": 3,
+                            "priority": "high"
+                        }
+                    ],
+                    "ready": [],
+                    "in_progress": [
+                        {
+                            "id": "story-1.2",
+                            "type": "story",
+                            "number": "1.2",
+                            "epicNumber": 1,
+                            "storyNumber": 2,
+                            "title": "Password Reset",
+                            "status": "in_progress",
+                            "owner": "Amelia",
+                            "points": 5,
+                            "priority": "medium"
+                        }
+                    ],
+                    "in_review": [],
+                    "done": [
+                        {
+                            "id": "story-1.3",
+                            "type": "story",
+                            "number": "1.3",
+                            "epicNumber": 1,
+                            "storyNumber": 3,
+                            "title": "Logout",
+                            "status": "done",
+                            "owner": "Amelia",
+                            "points": 2,
+                            "priority": "low"
+                        }
+                    ]
+                }
+            };
+
+            responseDiv.textContent += JSON.stringify(sampleData, null, 2);
+        }
+
+        function generateReport() {
+            const checked = document.querySelectorAll('input[type="checkbox"]:checked').length;
+            const percentage = Math.round((checked / totalTests) * 100);
+
+            let report = '# Story 39.15 - Manual Validation Report\n\n';
+            report += `**Date**: ${new Date().toISOString().split('T')[0]}\n`;
+            report += `**Tester**: [Your Name]\n`;
+            report += `**Progress**: ${checked}/${totalTests} tests completed (${percentage}%)\n\n`;
+
+            report += '## Test Results\n\n';
+
+            const sections = [
+                { title: 'Basic Functionality', start: 1, end: 5 },
+                { title: 'Visual Design', start: 6, end: 8 },
+                { title: 'Dark/Light Mode', start: 9, end: 11 },
+                { title: 'Keyboard Navigation', start: 12, end: 17 },
+                { title: 'Responsiveness', start: 18, end: 20 },
+                { title: 'Data Loading & Performance', start: 21, end: 24 },
+                { title: 'User Experience', start: 25, end: 28 }
+            ];
+
+            sections.forEach(section => {
+                report += `### ${section.title}\n`;
+                for (let i = section.start; i <= section.end; i++) {
+                    const checkbox = document.getElementById(`test${i}`);
+                    const label = checkbox.nextElementSibling.textContent;
+                    const status = checkbox.checked ? '✅ PASS' : '❌ PENDING';
+                    report += `- ${status}: ${label}\n`;
+                }
+                report += '\n';
+            });
+
+            report += '## Final Approval\n\n';
+            if (percentage === 100) {
+                report += '✅ **READY TO COMMIT** - All tests passed\n';
+            } else {
+                report += `⚠️ **NEEDS MORE TESTING** - ${totalTests - checked} tests remaining\n`;
+            }
+
+            console.log(report);
+            alert('Test report generated in console. Open DevTools to copy.');
+        }
+
+        function exportResults() {
+            const results = {
+                date: new Date().toISOString(),
+                totalTests: totalTests,
+                completedTests: document.querySelectorAll('input[type="checkbox"]:checked').length,
+                tests: []
+            };
+
+            for (let i = 1; i <= totalTests; i++) {
+                const checkbox = document.getElementById(`test${i}`);
+                const label = checkbox.nextElementSibling.textContent;
+                results.tests.push({
+                    id: `test${i}`,
+                    description: label,
+                    passed: checkbox.checked
+                });
+            }
+
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kanban_test_results.json';
+            a.click();
+        }
+    </script>
+</body>
+</html>
