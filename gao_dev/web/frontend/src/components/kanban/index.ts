@@ -5,6 +5,7 @@
  * Story 39.16: Epic and Story Card Components
  * Story 39.17: Drag-and-Drop State Transitions
  * Story 39.18: Kanban Filters and Search
+ * Story 39.19: Virtual Scrolling for Large Boards
  */
 export { KanbanBoard } from './KanbanBoard';
 export { KanbanColumn } from './KanbanColumn';
@@ -18,3 +19,5 @@ export { SearchInput } from './SearchInput';
 export { FilterDropdown } from './FilterDropdown';
 export { FilterChips } from './FilterChips';
 export { HighlightedText } from './HighlightedText';
+export { VirtualizedColumn } from './VirtualizedColumn';
+export { JumpToTopButton } from './JumpToTopButton';

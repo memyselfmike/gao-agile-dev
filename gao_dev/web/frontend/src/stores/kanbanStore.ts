@@ -84,6 +84,9 @@ interface KanbanState {
   // Filter state (Story 39.18)
   filters: FilterState;
 
+  // Scroll positions (Story 39.19)
+  scrollPositions: Record<ColumnState, number>;
+
   // Actions
   fetchBoard: () => Promise<void>;
   clearError: () => void;
@@ -100,6 +103,10 @@ interface KanbanState {
   rollbackMove: (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => void;
   setCardLoading: (cardId: string, loading: boolean) => void;
   moveCardServer: (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => Promise<void>;
+
+  // Scroll position actions (Story 39.19)
+  setScrollPosition: (status: ColumnState, position: number) => void;
+  getScrollPosition: (status: ColumnState) => number;
 }
 
 const initialState = {
@@ -118,6 +125,13 @@ const initialState = {
     epicNums: [],
     owners: [],
     priorities: [],
+  },
+  scrollPositions: {
+    backlog: 0,
+    ready: 0,
+    in_progress: 0,
+    in_review: 0,
+    done: 0,
   },
 };
 
@@ -317,5 +331,19 @@ export const useKanbanStore = create<KanbanState>((set) => ({
       console.error('Failed to move card:', errorMessage);
       throw error;
     }
+  },
+
+  // Story 39.19: Scroll position management
+  setScrollPosition: (status: ColumnState, position: number) =>
+    set((state) => ({
+      scrollPositions: {
+        ...state.scrollPositions,
+        [status]: position,
+      },
+    })),
+
+  getScrollPosition: (status: ColumnState): number => {
+    const state = useKanbanStore.getState() as KanbanState;
+    return state.scrollPositions[status];
   },
 }));
