@@ -889,7 +889,7 @@ class GitManager:
                     self._log("warning", "file_outside_repo", path=str(path))
                     return None
 
-            result = self._run_git_command(["log", "-1", "--format=%H|%s|%an|%ai", "--", str(path)])
+            result = self._run_git_command(["log", "-1", "--format=%H|%s|%an|%aI", "--", str(path)])
 
             if not result.strip():
                 return None  # File not tracked or no commits
@@ -1081,7 +1081,7 @@ class GitManager:
         try:
             # Get commit metadata
             result = self._run_git_command(
-                ["show", "--format=%H|%h|%s|%an|%ae|%ai", "--name-only", sha]
+                ["show", "--format=%H|%h|%s|%an|%ae|%aI", "--name-only", sha]
             )
 
             lines = result.strip().split("\n")
@@ -1144,7 +1144,7 @@ class GitManager:
             - get_last_commit_for_file(): Get last commit for file
         """
         try:
-            cmd = ["log", f"{since}..{until}", "--format=%H|%h|%s|%an|%ae|%ai"]
+            cmd = ["log", f"{since}..{until}", "--format=%H|%h|%s|%an|%ae|%aI"]
 
             if file_path:
                 # Convert to relative path if absolute
@@ -1238,7 +1238,7 @@ class GitManager:
         try:
             cmd = [
                 "log",
-                "--format=%H|%h|%s|%an|%ae|%ai",
+                "--format=%H|%h|%s|%an|%ae|%aI",
                 f"--skip={offset}",
                 f"--max-count={limit}",
             ]

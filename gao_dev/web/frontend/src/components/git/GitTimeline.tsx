@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { GitTimelineFilters } from '@/types/git';
 import { CommitList } from './CommitList';
-import { FilterBar } from './FilterBar';
+// import { FilterBar } from './FilterBar'; // TODO: Fix infinite loop in child components
 import { useWebSocket } from '@/hooks/useWebSocket';
 
 interface GitTimelineProps {
@@ -22,7 +22,7 @@ interface GitTimelineProps {
 export function GitTimeline({ onCommitClick }: GitTimelineProps) {
   const queryClient = useQueryClient();
   const websocket = useWebSocket();
-  const [filters, setFilters] = useState<GitTimelineFilters>({});
+  const filters: GitTimelineFilters = {}; // TODO: Re-enable filtering when infinite loop is fixed
 
   // Subscribe to real-time git commit events
   useEffect(() => {
@@ -54,7 +54,8 @@ export function GitTimeline({ onCommitClick }: GitTimelineProps) {
           </p>
         </div>
 
-        <FilterBar onFilterChange={setFilters} />
+        {/* TODO: Re-enable when infinite loop in child components is fixed */}
+        {/* <FilterBar filters={filters} onFilterChange={handleFilterChange} /> */}
 
         <CommitList filters={filters} onCommitClick={onCommitClick} />
       </div>
