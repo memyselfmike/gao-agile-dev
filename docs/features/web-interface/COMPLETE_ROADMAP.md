@@ -49,7 +49,7 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 
 ---
 
-### Phase 2: V1.1 (Stories 39.15-39.27) - 10 Weeks
+### Phase 2: V1.1 (Stories 39.15-39.29) - 10 Weeks
 
 **Epic 39.5: Visual Project Management (Kanban Board)** (18 points)
 - Story 39.15: Kanban Board Layout and State Columns (M - 3 pts)
@@ -58,41 +58,43 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 - Story 39.18: Kanban Filters and Search (M - 3 pts)
 - Story 39.19: Virtual Scrolling for Large Boards (M - 3 pts)
 
-**Epic 39.6: Workflow Visualization** (13 points)
+**Epic 39.6: Workflow Visualization** (19 points)
 - Story 39.20: Workflow List and Details View (M - 4 pts)
 - Story 39.21: Workflow Step Progress Tracking (M - 4 pts)
 - Story 39.22: Workflow Controls (Pause/Resume/Cancel) (L - 5 pts)
+- Story 39.23: Workflow Metrics Dashboard (M - 3 pts)
+- Story 39.24: Workflow Replay and History (M - 3 pts)
 
 **Epic 39.7: Git Integration and Provider UI** (17 points)
-- Story 39.23: Git Timeline Commit History (M - 4 pts)
-- Story 39.24: Monaco Diff Viewer for Commits (M - 4 pts)
-- Story 39.25: Git Filters and Search (M - 3 pts)
-- Story 39.26: Provider Selection Settings Panel (S - 2 pts)
-- Story 39.27: Provider Validation and Persistence (M - 4 pts)
+- Story 39.25: Git Timeline Commit History (M - 4 pts)
+- Story 39.26: Monaco Diff Viewer for Commits (M - 4 pts)
+- Story 39.27: Git Filters and Search (M - 3 pts)
+- Story 39.28: Provider Selection Settings Panel (S - 2 pts)
+- Story 39.29: Provider Validation and Persistence (M - 4 pts)
 
-**Phase 2 Total**: 13 stories, 48 points
+**Phase 2 Total**: 15 stories, 54 points
 
 ---
 
-### Phase 3: V1.2 (Stories 39.28-39.40) - 8 Weeks
+### Phase 3: V1.2 (Stories 39.30-39.41) - 8 Weeks
 
 **Epic 39.8: Ceremony Channels** (14 points)
-- Story 39.28: Ceremony Channel UI Components (M - 4 pts)
-- Story 39.29: Channel Message Stream and Rendering (M - 4 pts)
-- Story 39.30: User Participation in Ceremonies (M - 3 pts)
-- Story 39.31: Channel Archive and Export (M - 3 pts)
+- Story 39.30: Ceremony Channel UI Components (M - 4 pts)
+- Story 39.31: Channel Message Stream and Rendering (M - 4 pts)
+- Story 39.32: User Participation in Ceremonies (M - 3 pts)
+- Story 39.33: Channel Archive and Export (M - 3 pts)
 
 **Epic 39.9: Customizable Layout and UX Polish** (10 points)
-- Story 39.32: Resizable Panels Infrastructure (M - 3 pts)
-- Story 39.33: Layout Persistence and Presets (M - 3 pts)
-- Story 39.34: Performance Optimization and Memory Management (M - 4 pts)
+- Story 39.34: Resizable Panels Infrastructure (M - 3 pts)
+- Story 39.35: Layout Persistence and Presets (M - 3 pts)
+- Story 39.36: Performance Optimization and Memory Management (M - 4 pts)
 
 **Epic 39.10: Advanced Metrics Dashboard** (18 points)
-- Story 39.35: Metrics Data Aggregation Service (M - 4 pts)
-- Story 39.36: Story Velocity and Agent Activity Charts (L - 5 pts)
-- Story 39.37: Workflow Success Rate Visualization (M - 3 pts)
-- Story 39.38: Test Coverage and Code Quality Metrics (M - 3 pts)
-- Story 39.39: Metrics Export and Reporting (M - 3 pts)
+- Story 39.37: Metrics Data Aggregation Service (M - 4 pts)
+- Story 39.38: Story Velocity and Agent Activity Charts (L - 5 pts)
+- Story 39.39: Workflow Success Rate Visualization (M - 3 pts)
+- Story 39.40: Test Coverage and Code Quality Metrics (M - 3 pts)
+- Story 39.41: Metrics Export and Reporting (M - 3 pts)
 
 **Phase 3 Total**: 12 stories, 42 points
 
@@ -100,8 +102,8 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 
 ## Grand Total
 
-**Total Stories**: 39 stories across 10 epics
-**Total Story Points**: 135 points
+**Total Stories**: 41 stories across 10 epics
+**Total Story Points**: 141 points
 **Total Duration**: 28 weeks (7 months)
 **Team Velocity**: ~5 points per week
 
@@ -113,10 +115,10 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 
 | Phase | Stories | Points | Weeks | Percentage |
 |-------|---------|--------|-------|------------|
-| **Phase 1 (MVP)** | 14 | 45 | 10 | 33% |
-| **Phase 2 (V1.1)** | 13 | 48 | 10 | 36% |
-| **Phase 3 (V1.2)** | 12 | 42 | 8 | 31% |
-| **TOTAL** | **39** | **135** | **28** | **100%** |
+| **Phase 1 (MVP)** | 14 | 45 | 10 | 32% |
+| **Phase 2 (V1.1)** | 15 | 54 | 10 | 38% |
+| **Phase 3 (V1.2)** | 12 | 42 | 8 | 30% |
+| **TOTAL** | **41** | **141** | **28** | **100%** |
 
 ### By Epic
 
@@ -124,15 +126,15 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 |------|------|---------|--------|------------|
 | 39.1 | Backend Foundation | 3 | 8 | 6% |
 | 39.2 | Frontend Foundation | 3 | 7 | 5% |
-| 39.3 | Core Observability | 4 | 16 | 12% |
+| 39.3 | Core Observability | 4 | 16 | 11% |
 | 39.4 | File Management | 4 | 14 | 10% |
 | 39.5 | Kanban Board | 5 | 18 | 13% |
-| 39.6 | Workflow Visualization | 3 | 13 | 10% |
-| 39.7 | Git Integration & Provider UI | 5 | 17 | 13% |
+| 39.6 | Workflow Visualization | 5 | 19 | 13% |
+| 39.7 | Git Integration & Provider UI | 5 | 17 | 12% |
 | 39.8 | Ceremony Channels | 4 | 14 | 10% |
 | 39.9 | Customizable Layout & Polish | 3 | 10 | 7% |
 | 39.10 | Advanced Metrics | 5 | 18 | 13% |
-| **TOTAL** | | **39** | **135** | **100%** |
+| **TOTAL** | | **41** | **141** | **100%** |
 
 ### By Size
 
@@ -205,17 +207,19 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 - Story 39.20: Workflow List/Details (4 pts)
 - Story 39.21: Step Progress (4 pts)
 - Story 39.22: Workflow Controls (5 pts)
-- **Velocity**: 13 points (stretch)
+- Story 39.23: Workflow Metrics Dashboard (3 pts)
+- Story 39.24: Workflow Replay and History (3 pts)
+- **Velocity**: 19 points (stretch - 2 week sprint)
 
 **Sprint 11 (Week 18-19): Git Timeline**
-- Story 39.23: Git History (4 pts)
-- Story 39.24: Diff Viewer (4 pts)
-- Story 39.25: Git Filters (3 pts)
+- Story 39.25: Git History (4 pts)
+- Story 39.26: Diff Viewer (4 pts)
+- Story 39.27: Git Filters (3 pts)
 - **Velocity**: 11 points (stretch)
 
 **Sprint 12 (Week 20): Provider UI**
-- Story 39.26: Settings Panel (2 pts)
-- Story 39.27: Provider Validation (4 pts)
+- Story 39.28: Settings Panel (2 pts)
+- Story 39.29: Provider Validation (4 pts)
 - **Velocity**: 6 points (buffer for polish/testing)
 
 **Milestone**: V1.1 GA - Visual project management complete
@@ -225,33 +229,33 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 ### Phase 3: V1.2 (8 Weeks)
 
 **Sprint 13 (Week 21-22): Ceremony Channels**
-- Story 39.28: Channel UI (4 pts)
-- Story 39.29: Message Stream (4 pts)
-- Story 39.30: User Participation (3 pts)
+- Story 39.30: Channel UI (4 pts)
+- Story 39.31: Message Stream (4 pts)
+- Story 39.32: User Participation (3 pts)
 - **Velocity**: 11 points
 
 **Sprint 14 (Week 23): Ceremony Archive**
-- Story 39.31: Archive & Export (3 pts)
+- Story 39.33: Archive & Export (3 pts)
 - **Velocity**: 3 points (buffer for testing)
 
 **Sprint 15 (Week 24): Customizable Layout**
-- Story 39.32: Resizable Panels (3 pts)
-- Story 39.33: Layout Persistence (3 pts)
+- Story 39.34: Resizable Panels (3 pts)
+- Story 39.35: Layout Persistence (3 pts)
 - **Velocity**: 6 points
 
 **Sprint 16 (Week 25): Performance Optimization**
-- Story 39.34: Performance & Memory (4 pts)
+- Story 39.36: Performance & Memory (4 pts)
 - **Velocity**: 4 points
 
 **Sprint 17 (Week 26-27): Advanced Metrics**
-- Story 39.35: Metrics Aggregation (4 pts)
-- Story 39.36: Velocity/Activity Charts (5 pts)
-- Story 39.37: Workflow Success (3 pts)
+- Story 39.37: Metrics Aggregation (4 pts)
+- Story 39.38: Velocity/Activity Charts (5 pts)
+- Story 39.39: Workflow Success (3 pts)
 - **Velocity**: 12 points (stretch)
 
 **Sprint 18 (Week 28): Metrics Completion**
-- Story 39.38: Test/Code Quality Metrics (3 pts)
-- Story 39.39: Metrics Export (3 pts)
+- Story 39.40: Test/Code Quality Metrics (3 pts)
+- Story 39.41: Metrics Export (3 pts)
 - **Velocity**: 6 points (buffer for polish/testing)
 
 **Milestone**: V1.2 GA - Epic 39 COMPLETE

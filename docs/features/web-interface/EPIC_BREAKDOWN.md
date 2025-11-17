@@ -3,7 +3,7 @@
 **Feature**: Browser-Based Web Interface for GAO-Dev
 **Epic Number**: 39
 **Scale Level**: 4 (Greenfield Significant Feature)
-**Total Story Points**: 135 (across all 3 phases)
+**Total Story Points**: 141 (across all 3 phases)
 **Total Duration**: 28 weeks (7 months)
 **Status**: Ready for Implementation
 
@@ -22,9 +22,9 @@ Epic 39 delivers a COMPLETE browser-based web interface transforming GAO-Dev fro
 4. Files Tab - File tree + Monaco editor with commit enforcement
 5. Basic Layout - Professional UI with shadcn/ui
 
-**Phase 2 - V1.1 (10 weeks, 48 points)**:
+**Phase 2 - V1.1 (10 weeks, 54 points)**:
 6. Kanban Board - Visual project management with drag-and-drop
-7. Workflow Visualization - Real-time workflow execution tracking
+7. Workflow Visualization - Real-time workflow execution tracking with metrics and replay
 8. Git Timeline - Commit history with diff viewer
 9. Provider Selection UI - Configure AI providers from web
 
@@ -43,7 +43,7 @@ Epic 39 delivers a COMPLETE browser-based web interface transforming GAO-Dev fro
 
 **Phase 2 - V1.1**:
 - **Epic 39.5: Kanban Board** (5 stories, 18 points)
-- **Epic 39.6: Workflow Visualization** (3 stories, 13 points)
+- **Epic 39.6: Workflow Visualization** (5 stories, 19 points)
 - **Epic 39.7: Git Integration & Provider UI** (5 stories, 17 points)
 
 **Phase 3 - V1.2**:

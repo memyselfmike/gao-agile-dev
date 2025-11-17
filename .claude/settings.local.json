@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(do sed -i 's/Story 2\\.0/Story 37.0/g; s/Story 2\\.1/Story 37.1/g; s/Story 2\\.2/Story 37.2/g; s/Story 2\\.3/Story 37.3/g; s/Story 2\\.4/Story 37.4/g; s/Stories 2\\.1-2\\.4/Stories 37.1-37.4/g; s/Epic 1/Epic 36/g; s/Epic 2/Epic 37/g; s/Epic 3/Epic 38/g' \"$file\")",
-      "Bash(do sed -i 's/Story 3\\.1/Story 38.1/g; s/Story 3\\.2/Story 38.2/g; s/Story 3\\.3/Story 38.3/g; s/Story 3\\.4/Story 38.4/g; s/Epic 1/Epic 36/g; s/Epic 2/Epic 37/g; s/Epic 3/Epic 38/g' \"$file\")"
+      "Bash(do sed -i 's/Story 3\\.1/Story 38.1/g; s/Story 3\\.2/Story 38.2/g; s/Story 3\\.3/Story 38.3/g; s/Story 3\\.4/Story 38.4/g; s/Epic 1/Epic 36/g; s/Epic 2/Epic 37/g; s/Epic 3/Epic 38/g' \"$file\")",
+      "Bash(nul)",
+      "SlashCommand(/craap docs/features/web-interface/VISION.md docs/features/web-interface/ARCHITECTURE.md)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:monaco-vscode-api.netlify.app)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

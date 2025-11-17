@@ -48,10 +48,17 @@ htmlcov/
 dmypy.json
 .ruff_cache/
 
+# E2E test artifacts
+tests/e2e/debug_reports/
+tests/e2e/debug_*.py
+tests/e2e/test_simple_*.py
+.gao-dev/test_transcripts/
+
 # Test artifacts in root (not in tests/ directory)
 /test_*.py
 /test_*.db
 /test_output.txt
+/test_output.log
 /*test*.db
 /PRD_test-*.md
 /gao_dev.db
@@ -60,6 +67,8 @@ dmypy.json
 /NUL
 /-p/
 /%USERPROFILE%/
+/analyze_*.py
+/run_*_tests.bat
 
 # BMAD Method reference (don't commit the full repo)
 BMAD-METHOD/
