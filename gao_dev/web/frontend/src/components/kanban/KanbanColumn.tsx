@@ -3,13 +3,16 @@
  *
  * Story 39.15: Kanban Board Layout and State Columns
  * Story 39.16: Epic and Story Card Components
+ * Story 39.17: Drag-and-Drop State Transitions
  */
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { ColumnState, StoryCard as StoryCardType, EpicCard as EpicCardType } from '@/stores/kanbanStore';
-import { COLUMN_LABELS, COLUMN_COLORS } from '@/stores/kanbanStore';
+import { COLUMN_LABELS, COLUMN_COLORS, useKanbanStore } from '@/stores/kanbanStore';
 import { cn } from '@/lib/utils';
 import { EpicCard } from './EpicCard';
 import { StoryCard } from './StoryCard';
+import { DroppableColumn } from './DroppableColumn';
+import { DraggableCard } from './DraggableCard';
 
 interface KanbanColumnProps {
   state: ColumnState;
@@ -20,6 +23,7 @@ export function KanbanColumn({ state, cards }: KanbanColumnProps) {
   const label = COLUMN_LABELS[state];
   const color = COLUMN_COLORS[state];
   const count = cards.length;
+  const { loadingCards } = useKanbanStore();
 
   // Color mapping for column headers
   const colorClasses: Record<string, string> = {
@@ -31,12 +35,13 @@ export function KanbanColumn({ state, cards }: KanbanColumnProps) {
   };
 
   return (
-    <div
-      className="flex h-full flex-col border-r border-border bg-card last:border-r-0"
-      data-testid={`kanban-column-${state}`}
-      role="region"
-      aria-label={`${label} column with ${count} items`}
-    >
+    <DroppableColumn status={state} className="flex h-full flex-col border-r border-border bg-card last:border-r-0">
+      <div
+        data-testid={`kanban-column-${state}`}
+        role="region"
+        aria-label={`${label} column with ${count} items`}
+        className="flex h-full flex-col"
+      >
       {/* Column Header */}
       <div className={cn('flex items-center justify-between p-4', colorClasses[color])}>
         <h3 className="text-sm font-semibold">{label}</h3>
@@ -59,28 +64,33 @@ export function KanbanColumn({ state, cards }: KanbanColumnProps) {
           // Card list
           <div className="space-y-2" role="list">
             {cards.map((card) => {
+              const isLoading = loadingCards.has(card.id);
+
               // Render appropriate card component based on type
               if (card.type === 'epic') {
                 return (
-                  <EpicCard
-                    key={card.id}
-                    epic={card}
-                    onClick={() => console.log('Epic clicked:', card.id)}
-                  />
+                  <DraggableCard key={card.id} card={card} isLoading={isLoading}>
+                    <EpicCard
+                      epic={card}
+                      onClick={() => console.log('Epic clicked:', card.id)}
+                    />
+                  </DraggableCard>
                 );
               } else {
                 return (
-                  <StoryCard
-                    key={card.id}
-                    story={card}
-                    onClick={() => console.log('Story clicked:', card.id)}
-                  />
+                  <DraggableCard key={card.id} card={card} isLoading={isLoading}>
+                    <StoryCard
+                      story={card}
+                      onClick={() => console.log('Story clicked:', card.id)}
+                    />
+                  </DraggableCard>
                 );
               }
             })}
           </div>
         )}
       </ScrollArea>
-    </div>
+      </div>
+    </DroppableColumn>
   );
 }

@@ -57,17 +57,32 @@ export const COLUMN_COLORS: Record<ColumnState, string> = {
   done: 'green',
 };
 
+// Pending move operation (for confirmation dialog)
+export interface PendingMove {
+  cardId: string;
+  fromStatus: ColumnState;
+  toStatus: ColumnState;
+  card: StoryCard | EpicCard;
+}
+
 // Kanban board state
 interface KanbanState {
   // Data
   columns: Record<ColumnState, (StoryCard | EpicCard)[]>;
   isLoading: boolean;
   error: string | null;
+  loadingCards: Set<string>; // Cards currently being moved
 
   // Actions
   fetchBoard: () => Promise<void>;
   clearError: () => void;
   reset: () => void;
+
+  // Drag-and-drop actions (Story 39.17)
+  moveCardOptimistic: (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => void;
+  rollbackMove: (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => void;
+  setCardLoading: (cardId: string, loading: boolean) => void;
+  moveCardServer: (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => Promise<void>;
 }
 
 const initialState = {
@@ -80,6 +95,7 @@ const initialState = {
   },
   isLoading: false,
   error: null,
+  loadingCards: new Set<string>(),
 };
 
 export const useKanbanStore = create<KanbanState>((set) => ({
@@ -118,4 +134,97 @@ export const useKanbanStore = create<KanbanState>((set) => ({
   clearError: () => set({ error: null }),
 
   reset: () => set(initialState),
+
+  // Story 39.17: Drag-and-drop actions
+  moveCardOptimistic: (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => {
+    set((state) => {
+      // Find the card in the source column
+      const sourceCards = state.columns[fromStatus];
+      const card = sourceCards.find((c) => c.id === cardId);
+
+      if (!card) {
+        console.error(`Card ${cardId} not found in column ${fromStatus}`);
+        return state;
+      }
+
+      // Create updated card with new status
+      const updatedCard = { ...card, status: toStatus };
+
+      // Remove from source column, add to destination column
+      return {
+        columns: {
+          ...state.columns,
+          [fromStatus]: sourceCards.filter((c) => c.id !== cardId),
+          [toStatus]: [...state.columns[toStatus], updatedCard],
+        },
+      };
+    });
+  },
+
+  rollbackMove: (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => {
+    // Note: fromStatus is the ORIGINAL status, toStatus is where it was moved TO
+    // So we need to reverse: move from toStatus back to fromStatus
+    set((state) => {
+      const currentCards = state.columns[toStatus];
+      const card = currentCards.find((c) => c.id === cardId);
+
+      if (!card) {
+        console.error(`Card ${cardId} not found in column ${toStatus} for rollback`);
+        return state;
+      }
+
+      // Restore original status
+      const restoredCard = { ...card, status: fromStatus };
+
+      return {
+        columns: {
+          ...state.columns,
+          [toStatus]: currentCards.filter((c) => c.id !== cardId),
+          [fromStatus]: [...state.columns[fromStatus], restoredCard],
+        },
+      };
+    });
+  },
+
+  setCardLoading: (cardId: string, loading: boolean) => {
+    set((state) => {
+      const newLoadingCards = new Set(state.loadingCards);
+      if (loading) {
+        newLoadingCards.add(cardId);
+      } else {
+        newLoadingCards.delete(cardId);
+      }
+      return { loadingCards: newLoadingCards };
+    });
+  },
+
+  moveCardServer: async (cardId: string, fromStatus: ColumnState, toStatus: ColumnState) => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
+
+    try {
+      const response = await fetch(`${apiUrl}/api/kanban/cards/${cardId}/move`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          fromStatus,
+          toStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to move card: ${response.statusText}`);
+      }
+
+      // Return success (optimistic update already applied)
+      return;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to move card:', errorMessage);
+      throw error;
+    }
+  },
 }));
