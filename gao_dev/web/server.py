@@ -886,6 +886,247 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
                 detail=f"Failed to get workflow details: {str(e)}"
             )
 
+    @app.get("/api/workflows/graph")
+    async def get_workflow_graph(
+        request: Request,
+        epic: Optional[int] = None,
+        story_num: Optional[int] = None,
+        include_completed: bool = True,
+    ) -> JSONResponse:
+        """Get workflow dependency graph as DAG structure.
+
+        Returns workflow nodes with dependencies (edges) for DAG visualization.
+        Calculates critical path (longest duration sequence) and groups by epic.
+
+        Args:
+            request: FastAPI request object
+            epic: Optional epic number filter
+            story_num: Optional story number filter
+            include_completed: Include completed workflows (default: true)
+
+        Returns:
+            JSON response with nodes, edges, groups, and critical_path
+        """
+        try:
+            from gao_dev.core.state.state_tracker import StateTracker
+            from gao_dev.core.state.exceptions import StateTrackerError
+            import sqlite3
+            from datetime import datetime
+            from typing import Dict, Set, Tuple
+
+            # Get project root from app state
+            project_root_path = request.app.state.project_root
+
+            # Check if database exists
+            db_path = project_root_path / ".gao-dev" / "documents.db"
+            if not db_path.exists():
+                # Return empty graph if no database yet
+                return JSONResponse({
+                    "nodes": [],
+                    "edges": [],
+                    "groups": [],
+                    "critical_path": []
+                })
+
+            # Query workflows
+            try:
+                state_tracker = StateTracker(db_path)
+
+                # Build filter list for statuses
+                status_filter = None
+                if not include_completed:
+                    status_filter = ["started", "running", "failed", "cancelled"]
+
+                workflows = state_tracker.query_workflows(
+                    workflow_type=None,
+                    start_date=None,
+                    end_date=None,
+                    status=status_filter
+                )
+
+                # Apply epic/story filters
+                if epic is not None:
+                    workflows = [wf for wf in workflows if wf.epic == epic]
+                if story_num is not None:
+                    workflows = [wf for wf in workflows if wf.story_num == story_num]
+
+            except (sqlite3.OperationalError, StateTrackerError) as e:
+                error_msg = str(e)
+                if "no such table" in error_msg:
+                    logger.warning(
+                        "workflow_graph_schema_not_initialized",
+                        error=error_msg,
+                        hint="Run 'gao-dev migrate' to initialize database schema"
+                    )
+                    return JSONResponse({
+                        "nodes": [],
+                        "edges": [],
+                        "groups": [],
+                        "critical_path": []
+                    })
+                raise
+
+            # Build nodes
+            nodes = []
+            workflow_durations: Dict[str, int] = {}
+
+            for wf in workflows:
+                # Calculate duration
+                duration = None
+                if wf.completed_at and wf.started_at:
+                    try:
+                        started = datetime.fromisoformat(wf.started_at.replace("Z", "+00:00"))
+                        completed = datetime.fromisoformat(wf.completed_at.replace("Z", "+00:00"))
+                        duration = int((completed - started).total_seconds())
+                        workflow_durations[wf.workflow_id] = duration
+                    except (ValueError, AttributeError):
+                        duration = None
+                        workflow_durations[wf.workflow_id] = 0
+                else:
+                    workflow_durations[wf.workflow_id] = 0
+
+                nodes.append({
+                    "id": wf.workflow_id,
+                    "label": wf.workflow_name,
+                    "type": "workflow",
+                    "status": wf.status,
+                    "duration": duration,
+                    "agent": wf.workflow_id,
+                    "epic": wf.epic,
+                    "story_num": wf.story_num,
+                    "data": {
+                        "workflow_id": wf.workflow_id,
+                        "workflow_name": wf.workflow_name,
+                        "started_at": wf.started_at,
+                        "completed_at": wf.completed_at
+                    }
+                })
+
+            # Build edges (dependencies based on temporal order and epic/story)
+            edges = []
+            edge_id = 0
+
+            # Sort workflows by start time
+            sorted_workflows = sorted(
+                workflows,
+                key=lambda w: w.started_at if w.started_at else "9999-12-31"
+            )
+
+            # Simple dependency detection: workflows within same epic/story executed sequentially
+            for i, wf in enumerate(sorted_workflows):
+                # Look for previous workflow in same context
+                for j in range(i - 1, -1, -1):
+                    prev_wf = sorted_workflows[j]
+
+                    # Dependency criteria: same epic AND same story (or both None)
+                    if prev_wf.epic == wf.epic and prev_wf.story_num == wf.story_num:
+                        edges.append({
+                            "id": f"e{edge_id}",
+                            "source": prev_wf.workflow_id,
+                            "target": wf.workflow_id,
+                            "label": "prerequisite",
+                            "type": "dependency"
+                        })
+                        edge_id += 1
+                        break  # Only connect to immediate predecessor
+
+            # Calculate critical path using longest path algorithm
+            critical_path = []
+
+            if nodes and edges:
+                # Build adjacency list for graph traversal
+                graph: Dict[str, list] = {node["id"]: [] for node in nodes}
+                in_degree: Dict[str, int] = {node["id"]: 0 for node in nodes}
+
+                for edge in edges:
+                    graph[edge["source"]].append(edge["target"])
+                    in_degree[edge["target"]] += 1
+
+                # Topological sort with longest path calculation
+                # dp[node] = (max_duration, predecessor)
+                dp: Dict[str, Tuple[int, Optional[str]]] = {
+                    node["id"]: (workflow_durations.get(node["id"], 0), None)
+                    for node in nodes
+                }
+
+                # Queue for topological sort (start with nodes with no incoming edges)
+                queue = [node_id for node_id, degree in in_degree.items() if degree == 0]
+
+                while queue:
+                    current = queue.pop(0)
+                    current_duration, _ = dp[current]
+
+                    for neighbor in graph[current]:
+                        # Calculate path duration through current node
+                        neighbor_duration = workflow_durations.get(neighbor, 0)
+                        new_duration = current_duration + neighbor_duration
+
+                        # Update if this path is longer
+                        if new_duration > dp[neighbor][0]:
+                            dp[neighbor] = (new_duration, current)
+
+                        # Decrease in-degree and add to queue if ready
+                        in_degree[neighbor] -= 1
+                        if in_degree[neighbor] == 0:
+                            queue.append(neighbor)
+
+                # Find node with maximum duration (end of critical path)
+                max_node = max(dp.items(), key=lambda x: x[1][0])[0] if dp else None
+
+                # Backtrack to construct critical path
+                if max_node:
+                    path = []
+                    current = max_node
+                    while current:
+                        path.append(current)
+                        _, predecessor = dp[current]
+                        current = predecessor
+                    critical_path = list(reversed(path))
+
+            # Group workflows by epic
+            groups = []
+            epic_workflows: Dict[int, list] = {}
+
+            for node in nodes:
+                epic_num = node.get("epic")
+                if epic_num is not None:
+                    if epic_num not in epic_workflows:
+                        epic_workflows[epic_num] = []
+                    epic_workflows[epic_num].append(node["id"])
+
+            for epic_num, workflow_ids in epic_workflows.items():
+                # Get epic info
+                try:
+                    epic = state_tracker.get_epic(epic_num)
+                    groups.append({
+                        "id": f"epic-{epic_num}",
+                        "label": f"Epic {epic_num}: {epic.title}",
+                        "nodes": workflow_ids,
+                        "collapsed": False
+                    })
+                except Exception:
+                    # Epic not found, create simple group
+                    groups.append({
+                        "id": f"epic-{epic_num}",
+                        "label": f"Epic {epic_num}",
+                        "nodes": workflow_ids,
+                        "collapsed": False
+                    })
+
+            return JSONResponse({
+                "nodes": nodes,
+                "edges": edges,
+                "groups": groups,
+                "critical_path": critical_path
+            })
+
+        except Exception as e:
+            logger.exception("get_workflow_graph_failed", error=str(e))
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get workflow graph: {str(e)}"
+            )
+
     # Kanban endpoints (Story 39.15)
     @app.get("/api/kanban/board")
     async def get_kanban_board(request: Request) -> JSONResponse:
