@@ -50,6 +50,25 @@ class CommitListResponse(BaseModel):
     has_more: bool
 
 
+class FileChange(BaseModel):
+    """File change information in a commit diff."""
+
+    path: str
+    change_type: str  # "added", "modified", "deleted"
+    insertions: int
+    deletions: int
+    is_binary: bool
+    diff: Optional[str]
+    original_content: Optional[str]
+    modified_content: Optional[str]
+
+
+class CommitDiffResponse(BaseModel):
+    """Response model for commit diff endpoint."""
+
+    files: List[FileChange]
+
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
@@ -277,4 +296,94 @@ async def get_commits(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get commit history: {str(e)}",
+        )
+
+
+@router.get("/commits/{commit_hash}/diff", response_model=CommitDiffResponse)
+async def get_commit_diff(
+    request: Request,
+    commit_hash: str,
+) -> CommitDiffResponse:
+    """
+    Get diff for a specific commit.
+
+    Returns all files changed in the commit with:
+    - Change type (added, modified, deleted)
+    - Insertions and deletions count
+    - Binary file detection
+    - Full diff patch
+    - Original and modified file contents (for Monaco diff editor)
+
+    Args:
+        request: FastAPI request object (for accessing app.state)
+        commit_hash: Full or short commit SHA
+
+    Returns:
+        CommitDiffResponse with list of file changes
+
+    Raises:
+        HTTPException: If commit not found or git operations fail
+    """
+    try:
+        # Get project root from app state
+        project_root: Path = request.app.state.project_root
+
+        # Initialize GitManager
+        git_manager = GitManager(project_path=project_root)
+
+        # Check if it's a git repository
+        if not git_manager.is_git_repo():
+            raise HTTPException(
+                status_code=404,
+                detail="Not a git repository. Initialize git first.",
+            )
+
+        # Get commit diff from GitManager
+        try:
+            files_data = git_manager.get_commit_diff(commit_hash)
+        except subprocess.CalledProcessError as e:
+            # Commit not found or invalid
+            error_msg = (e.stderr or "").lower() + (e.stdout or "").lower()
+            if "unknown revision" in error_msg or "bad object" in error_msg:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Commit not found: {commit_hash}",
+                )
+            raise
+
+        # Convert to FileChange models
+        files = []
+        for file_data in files_data:
+            files.append(
+                FileChange(
+                    path=file_data["path"],
+                    change_type=file_data["change_type"],
+                    insertions=file_data["insertions"],
+                    deletions=file_data["deletions"],
+                    is_binary=file_data["is_binary"],
+                    diff=file_data["diff"] if not file_data["is_binary"] else None,
+                    original_content=(
+                        file_data["original_content"] if not file_data["is_binary"] else None
+                    ),
+                    modified_content=(
+                        file_data["modified_content"] if not file_data["is_binary"] else None
+                    ),
+                )
+            )
+
+        logger.info(
+            "retrieved_commit_diff",
+            commit_hash=commit_hash,
+            files_count=len(files),
+        )
+
+        return CommitDiffResponse(files=files)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("get_commit_diff_failed", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get commit diff: {str(e)}",
         )

@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface CommitListProps {
   filters?: GitTimelineFilters;
-  onCommitClick?: (commit: Commit) => void;
+  onCommitClick?: (commitHash: string) => void;
 }
 
 async function fetchCommits(
@@ -135,7 +135,7 @@ export function CommitList({ filters, onCommitClick }: CommitListProps) {
         <CommitCard
           key={commit.hash}
           commit={commit}
-          onClick={onCommitClick ? () => onCommitClick(commit) : undefined}
+          onClick={onCommitClick ? () => onCommitClick(commit.hash) : undefined}
         />
       ))}
 

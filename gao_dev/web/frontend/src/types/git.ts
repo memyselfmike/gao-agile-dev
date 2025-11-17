@@ -42,3 +42,24 @@ export interface GitTimelineFilters {
   since?: string; // ISO 8601 date
   until?: string; // ISO 8601 date
 }
+
+/**
+ * File change information in a commit diff
+ */
+export interface FileChange {
+  path: string;
+  change_type: 'added' | 'modified' | 'deleted';
+  insertions: number;
+  deletions: number;
+  is_binary: boolean;
+  diff?: string;
+  original_content?: string;
+  modified_content?: string;
+}
+
+/**
+ * Commit diff API response
+ */
+export interface CommitDiffResponse {
+  files: FileChange[];
+}

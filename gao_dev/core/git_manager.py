@@ -12,10 +12,12 @@ from datetime import datetime
 
 try:
     import structlog
+
     logger = structlog.get_logger(__name__)
     HAS_STRUCTLOG = True
 except ImportError:
     import logging
+
     logger = logging.getLogger(__name__)
     HAS_STRUCTLOG = False
 
@@ -32,11 +34,7 @@ class GitManager:
     DEFAULT_USER_NAME = "GAO-Dev"
     DEFAULT_USER_EMAIL = "dev@gao-dev.local"
 
-    def __init__(
-        self,
-        project_path: Optional[Path] = None,
-        config_loader: Optional[Any] = None
-    ):
+    def __init__(self, project_path: Optional[Path] = None, config_loader: Optional[Any] = None):
         """
         Initialize git manager.
 
@@ -132,8 +130,9 @@ class GitManager:
                 result["commit_hash"] = commit_result["hash"]
                 result["commit_message"] = commit_result["message"]
 
-            self._log("info", "git_repository_initialized",
-                     user_name=name, initial_commit=initial_commit)
+            self._log(
+                "info", "git_repository_initialized", user_name=name, initial_commit=initial_commit
+            )
 
             return result
 
@@ -182,7 +181,10 @@ class GitManager:
                     footer = self.config_loader.get_git_commit_footer()
                     final_message = message + footer
             elif add_footer:
-                final_message = message + "\n\n🤖 Generated with GAO-Dev\nCo-Authored-By: Claude <noreply@anthropic.com>"
+                final_message = (
+                    message
+                    + "\n\n🤖 Generated with GAO-Dev\nCo-Authored-By: Claude <noreply@anthropic.com>"
+                )
 
             # Build commit command
             cmd = ["commit", "-m", final_message]
@@ -206,8 +208,7 @@ class GitManager:
                 "files_changed": files_changed,
             }
 
-            self._log("info", "commit_created",
-                     hash=commit_hash, files_changed=len(files_changed))
+            self._log("info", "commit_created", hash=commit_hash, files_changed=len(files_changed))
 
             return result
 
@@ -888,9 +889,7 @@ class GitManager:
                     self._log("warning", "file_outside_repo", path=str(path))
                     return None
 
-            result = self._run_git_command([
-                "log", "-1", "--format=%H|%s|%an|%ai", "--", str(path)
-            ])
+            result = self._run_git_command(["log", "-1", "--format=%H|%s|%an|%ai", "--", str(path)])
 
             if not result.strip():
                 return None  # File not tracked or no commits
@@ -906,7 +905,7 @@ class GitManager:
                 "full_sha": full_sha,
                 "message": message,
                 "author": author,
-                "date": date
+                "date": date,
             }
 
             self._log("debug", "retrieved_file_commit_info", path=str(path), sha=commit_info["sha"])
@@ -945,9 +944,7 @@ class GitManager:
                 except ValueError:
                     return False
 
-            result = self._run_git_command([
-                "log", "--diff-filter=D", "--", str(path)
-            ])
+            result = self._run_git_command(["log", "--diff-filter=D", "--", str(path)])
 
             was_deleted = bool(result.strip())
             self._log("debug", "file_deletion_check", path=str(path), was_deleted=was_deleted)
@@ -1083,9 +1080,9 @@ class GitManager:
         """
         try:
             # Get commit metadata
-            result = self._run_git_command([
-                "show", "--format=%H|%h|%s|%an|%ae|%ai", "--name-only", sha
-            ])
+            result = self._run_git_command(
+                ["show", "--format=%H|%h|%s|%an|%ae|%ai", "--name-only", sha]
+            )
 
             lines = result.strip().split("\n")
             if not lines:
@@ -1108,7 +1105,7 @@ class GitManager:
                 "author": author,
                 "email": email,
                 "date": date,
-                "files_changed": files
+                "files_changed": files,
             }
 
             self._log("debug", "retrieved_commit_info", sha=short_sha, files_count=len(files))
@@ -1120,10 +1117,7 @@ class GitManager:
             raise
 
     def get_commits_since(
-        self,
-        since: str,
-        until: str = "HEAD",
-        file_path: Optional[Path] = None
+        self, since: str, until: str = "HEAD", file_path: Optional[Path] = None
     ) -> List[Dict[str, Any]]:
         """
         Get list of commits in a range, optionally filtered by file.
@@ -1175,24 +1169,165 @@ class GitManager:
 
                 full_sha, short_sha, message, author, email, date = parts
 
-                commits.append({
-                    "sha": short_sha,
-                    "full_sha": full_sha,
-                    "message": message,
-                    "author": author,
-                    "email": email,
-                    "date": date
-                })
+                commits.append(
+                    {
+                        "sha": short_sha,
+                        "full_sha": full_sha,
+                        "message": message,
+                        "author": author,
+                        "email": email,
+                        "date": date,
+                    }
+                )
 
-            self._log("debug", "retrieved_commit_range",
-                     since=since, until=until, count=len(commits),
-                     file=str(file_path) if file_path else None)
+            self._log(
+                "debug",
+                "retrieved_commit_range",
+                since=since,
+                until=until,
+                count=len(commits),
+                file=str(file_path) if file_path else None,
+            )
 
             return commits
 
         except subprocess.CalledProcessError as e:
             error_msg = f"Failed to get commits since '{since}': {e.stderr}"
-            self._log("error", "get_commits_since_failed", error=error_msg, since=since, until=until)
+            self._log(
+                "error", "get_commits_since_failed", error=error_msg, since=since, until=until
+            )
+            raise
+
+    def get_commit_diff(self, commit_hash: str) -> List[Dict[str, Any]]:
+        """
+        Get diff information for all files changed in a commit.
+
+        Returns detailed information for each file changed in the commit,
+        including change type, insertions/deletions, diff patch, and full
+        file contents before and after the commit.
+
+        Args:
+            commit_hash: Full or short commit SHA
+
+        Returns:
+            List[Dict]: List of file change dicts with keys:
+                - path: File path
+                - change_type: "added", "modified", or "deleted"
+                - insertions: Number of lines added
+                - deletions: Number of lines deleted
+                - diff: Unified diff patch
+                - original_content: Full file content before commit
+                - modified_content: Full file content after commit
+
+        Raises:
+            subprocess.CalledProcessError: If commit doesn't exist
+
+        Example:
+            >>> git = GitManager(Path("/project"))
+            >>> files = git.get_commit_diff("abc1234")
+            >>> for file in files:
+            ...     print(f"{file['path']}: +{file['insertions']} -{file['deletions']}")
+
+        See Also:
+            - get_commit_info(): Get commit metadata
+            - get_file_at_revision(): Get file content at specific revision
+        """
+        try:
+            # Get list of files changed with their change type and stats
+            result = self._run_git_command(["show", "--numstat", "--format=", commit_hash])
+
+            files = []
+
+            for line in result.strip().split("\n"):
+                if not line:
+                    continue
+
+                parts = line.split("\t")
+                if len(parts) < 3:
+                    continue
+
+                insertions_str = parts[0]
+                deletions_str = parts[1]
+                file_path = parts[2]
+
+                # Handle binary files (marked with -)
+                is_binary = insertions_str == "-" and deletions_str == "-"
+                insertions = 0 if is_binary else int(insertions_str)
+                deletions = 0 if is_binary else int(deletions_str)
+
+                # Determine change type
+                # Check if file exists in parent commit
+                parent_commit = f"{commit_hash}^"
+                try:
+                    self._run_git_command(["cat-file", "-e", f"{parent_commit}:{file_path}"])
+                    file_existed_before = True
+                except subprocess.CalledProcessError:
+                    file_existed_before = False
+
+                # Check if file exists in current commit
+                try:
+                    self._run_git_command(["cat-file", "-e", f"{commit_hash}:{file_path}"])
+                    file_exists_now = True
+                except subprocess.CalledProcessError:
+                    file_exists_now = False
+
+                if not file_existed_before and file_exists_now:
+                    change_type = "added"
+                elif file_existed_before and not file_exists_now:
+                    change_type = "deleted"
+                else:
+                    change_type = "modified"
+
+                # Get unified diff for this file
+                diff = ""
+                if not is_binary:
+                    try:
+                        diff = self._run_git_command(["show", f"{commit_hash}", "--", file_path])
+                    except subprocess.CalledProcessError:
+                        diff = ""
+
+                # Get original content (before commit)
+                original_content = ""
+                if file_existed_before and not is_binary:
+                    try:
+                        original_content = self._run_git_command(
+                            ["show", f"{parent_commit}:{file_path}"]
+                        )
+                    except subprocess.CalledProcessError:
+                        original_content = ""
+
+                # Get modified content (after commit)
+                modified_content = ""
+                if file_exists_now and not is_binary:
+                    try:
+                        modified_content = self._run_git_command(
+                            ["show", f"{commit_hash}:{file_path}"]
+                        )
+                    except subprocess.CalledProcessError:
+                        modified_content = ""
+
+                files.append(
+                    {
+                        "path": file_path,
+                        "change_type": change_type,
+                        "insertions": insertions,
+                        "deletions": deletions,
+                        "is_binary": is_binary,
+                        "diff": diff,
+                        "original_content": original_content,
+                        "modified_content": modified_content,
+                    }
+                )
+
+            self._log(
+                "debug", "retrieved_commit_diff", commit_hash=commit_hash, files_count=len(files)
+            )
+
+            return files
+
+        except subprocess.CalledProcessError as e:
+            error_msg = f"Failed to get commit diff for '{commit_hash}': {e.stderr}"
+            self._log("error", "get_commit_diff_failed", error=error_msg, commit_hash=commit_hash)
             raise
 
     # ============================================================================
@@ -1330,9 +1465,7 @@ logs/
     def _get_untracked_files(self) -> List[str]:
         """Get list of untracked files."""
         try:
-            output = self._run_git_command(
-                ["ls-files", "--others", "--exclude-standard"]
-            )
+            output = self._run_git_command(["ls-files", "--others", "--exclude-standard"])
             return [f.strip() for f in output.splitlines() if f.strip()]
         except subprocess.CalledProcessError:
             return []

@@ -267,3 +267,163 @@ class TestGitCommitsEndpoint:
         assert commit["files_changed"] >= 1
         assert commit["insertions"] >= 0
         assert commit["deletions"] >= 0
+
+
+class TestGitCommitDiffEndpoint:
+    """Tests for /api/git/commits/{hash}/diff endpoint (Story 39.26)."""
+
+    def test_get_commit_diff_success(self, test_client, git_test_project):
+        """Test successful retrieval of commit diff."""
+        # Get commits to find a hash
+        commits_response = test_client.get("/api/git/commits?limit=10")
+        commits_data = commits_response.json()
+        commit_hash = commits_data["commits"][0]["hash"]
+
+        # Get diff for commit
+        response = test_client.get(f"/api/git/commits/{commit_hash}/diff")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify response structure
+        assert "files" in data
+        assert isinstance(data["files"], list)
+
+        # If there are files, verify structure
+        if len(data["files"]) > 0:
+            file_change = data["files"][0]
+            assert "path" in file_change
+            assert "change_type" in file_change
+            assert file_change["change_type"] in ["added", "modified", "deleted"]
+            assert "insertions" in file_change
+            assert "deletions" in file_change
+            assert "is_binary" in file_change
+            assert "diff" in file_change
+            assert "original_content" in file_change
+            assert "modified_content" in file_change
+
+    def test_get_commit_diff_added_file(self, test_client, git_test_project):
+        """Test diff for commit that adds a new file."""
+        # Get commits
+        commits_response = test_client.get("/api/git/commits?limit=50")
+        commits_data = commits_response.json()
+
+        # Find commit with "add file1.txt" message
+        target_commit = next(
+            (c for c in commits_data["commits"] if "add file1.txt" in c["message"]), None
+        )
+
+        if target_commit:
+            response = test_client.get(f"/api/git/commits/{target_commit['hash']}/diff")
+            assert response.status_code == 200
+            data = response.json()
+
+            # Find file1.txt in changes
+            file1_change = next((f for f in data["files"] if "file1.txt" in f["path"]), None)
+
+            if file1_change:
+                assert file1_change["change_type"] == "added"
+                assert file1_change["insertions"] > 0
+                assert file1_change["deletions"] == 0
+                assert file1_change["is_binary"] is False
+                assert file1_change["original_content"] == ""
+                assert "Line 1" in file1_change["modified_content"]
+
+    def test_get_commit_diff_modified_file(self, test_client, git_test_project):
+        """Test diff for commit that modifies a file."""
+        # Get commits
+        commits_response = test_client.get("/api/git/commits?limit=50")
+        commits_data = commits_response.json()
+
+        # Find commit with "update file1.txt" message
+        target_commit = next(
+            (c for c in commits_data["commits"] if "update file1.txt" in c["message"]), None
+        )
+
+        if target_commit:
+            response = test_client.get(f"/api/git/commits/{target_commit['hash']}/diff")
+            assert response.status_code == 200
+            data = response.json()
+
+            # Find file1.txt in changes
+            file1_change = next((f for f in data["files"] if "file1.txt" in f["path"]), None)
+
+            if file1_change:
+                assert file1_change["change_type"] == "modified"
+                assert file1_change["insertions"] > 0
+                assert file1_change["is_binary"] is False
+                assert file1_change["original_content"] != ""
+                assert file1_change["modified_content"] != ""
+                assert file1_change["original_content"] != file1_change["modified_content"]
+
+    def test_get_commit_diff_short_hash(self, test_client, git_test_project):
+        """Test diff endpoint works with short commit hash."""
+        # Get commits
+        commits_response = test_client.get("/api/git/commits?limit=10")
+        commits_data = commits_response.json()
+        short_hash = commits_data["commits"][0]["short_hash"]
+
+        # Get diff with short hash
+        response = test_client.get(f"/api/git/commits/{short_hash}/diff")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "files" in data
+
+    def test_get_commit_diff_invalid_hash(self, test_client):
+        """Test diff endpoint with invalid commit hash."""
+        response = test_client.get("/api/git/commits/invalidhash123/diff")
+
+        assert response.status_code == 404
+        assert "Commit not found" in response.json()["detail"]
+
+    def test_get_commit_diff_not_git_repo(self, tmp_path):
+        """Test diff endpoint with non-git directory."""
+        # Create non-git directory
+        non_git_project = tmp_path / "non_git_project"
+        non_git_project.mkdir()
+        (non_git_project / ".gao-dev").mkdir()
+
+        # Create test client
+        frontend_dist = non_git_project / "frontend" / "dist"
+        frontend_dist.mkdir(parents=True, exist_ok=True)
+
+        config = WebConfig(
+            host="127.0.0.1",
+            port=3000,
+            auto_open=False,
+            frontend_dist_path=str(frontend_dist),
+        )
+
+        app = create_app(config)
+        app.state.project_root = non_git_project
+
+        client = TestClient(app)
+
+        # Request diff - should fail
+        response = client.get("/api/git/commits/abc123/diff")
+        assert response.status_code == 404
+        assert "Not a git repository" in response.json()["detail"]
+
+    def test_get_commit_diff_binary_detection(self, test_client, git_test_project):
+        """Test binary file detection in diff (would need actual binary file)."""
+        # Note: This test would require creating a commit with a binary file
+        # For now, we just verify the structure supports is_binary flag
+        commits_response = test_client.get("/api/git/commits?limit=10")
+        commits_data = commits_response.json()
+        commit_hash = commits_data["commits"][0]["hash"]
+
+        response = test_client.get(f"/api/git/commits/{commit_hash}/diff")
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify all files have is_binary field
+        for file_change in data["files"]:
+            assert "is_binary" in file_change
+            assert isinstance(file_change["is_binary"], bool)
+
+            # If binary, content fields should be null
+            if file_change["is_binary"]:
+                assert file_change["diff"] is None
+                assert file_change["original_content"] is None
+                assert file_change["modified_content"] is None

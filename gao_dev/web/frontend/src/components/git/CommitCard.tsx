@@ -11,7 +11,6 @@
 import { formatDistanceToNow, format, differenceInDays, parseISO } from 'date-fns';
 import { Copy, Check } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { Commit } from '@/types/git';
 import { AuthorBadge } from './AuthorBadge';
@@ -24,7 +23,6 @@ interface CommitCardProps {
 }
 
 export function CommitCard({ commit, onClick }: CommitCardProps) {
-  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
   // Parse timestamp
@@ -37,14 +35,12 @@ export function CommitCard({ commit, onClick }: CommitCardProps) {
       ? formatDistanceToNow(commitDate, { addSuffix: true })
       : format(commitDate, 'MMM d, yyyy HH:mm');
 
-  // Handle commit card click (navigate to diff view - Story 39.26)
+  // Handle commit card click
   const handleCardClick = () => {
     if (onClick) {
       onClick();
-    } else {
-      // Navigate to diff view (will be implemented in Story 39.26)
-      navigate(`/git/commits/${commit.hash}`);
     }
+    // Note: No default navigation since we're in a tab-based UI
   };
 
   // Handle hash copy (stop propagation to prevent card click)

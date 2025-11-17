@@ -15,7 +15,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 
 interface GitTimelineProps {
   filters?: GitTimelineFilters;
-  onCommitClick?: (commit: Commit) => void;
+  onCommitClick?: (commitHash: string) => void;
 }
 
 export function GitTimeline({ filters, onCommitClick }: GitTimelineProps) {
