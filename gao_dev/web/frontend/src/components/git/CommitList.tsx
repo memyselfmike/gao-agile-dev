@@ -10,7 +10,7 @@
 import { useEffect, useRef } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
-import type { Commit, CommitListResponse, GitTimelineFilters } from '@/types/git';
+import type { CommitListResponse, GitTimelineFilters } from '@/types/git';
 import { CommitCard } from './CommitCard';
 import { EmptyState } from './EmptyState';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -57,9 +57,10 @@ export function CommitList({ filters, onCommitClick }: CommitListProps) {
     isLoading,
     isError,
     error,
-  } = useInfiniteQuery({
+  } = useInfiniteQuery<CommitListResponse, Error>({
     queryKey: ['git-commits', filters],
-    queryFn: ({ pageParam = 0 }) => fetchCommits(pageParam, filters),
+    queryFn: ({ pageParam }) => fetchCommits(pageParam as number, filters),
+    initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.has_more) {
         return allPages.reduce((sum, page) => sum + page.commits.length, 0);

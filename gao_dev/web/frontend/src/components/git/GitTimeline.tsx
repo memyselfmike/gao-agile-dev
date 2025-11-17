@@ -28,7 +28,7 @@ export function GitTimeline({ onCommitClick }: GitTimelineProps) {
   useEffect(() => {
     if (!websocket) return;
 
-    const handleGitCommit = (event: any) => {
+    const handleGitCommit = () => {
       // Invalidate commit list query to refetch and show new commit
       queryClient.invalidateQueries({ queryKey: ['git-commits'] });
     };
