@@ -18,7 +18,7 @@ export interface StoryCard extends KanbanCard {
   type: 'story';
   epicNumber: number;
   storyNumber: number;
-  owner?: string;
+  owner: string | null;
   points: number;
   priority: string;
 }
