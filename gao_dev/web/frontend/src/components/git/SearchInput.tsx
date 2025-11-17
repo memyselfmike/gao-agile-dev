@@ -21,9 +21,11 @@ export function SearchInput({ value, onChange }: SearchInputProps) {
   const debouncedValue = useDebouncedValue(localValue, 300);
 
   // Sync debounced value with parent
+  // Note: onChange not in deps to avoid infinite loop when parent passes inline function
   useEffect(() => {
     onChange(debouncedValue);
-  }, [debouncedValue, onChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedValue]);
 
   // Sync external value changes
   useEffect(() => {
