@@ -20,9 +20,33 @@ import { Button } from '@/components/ui/button';
 interface CommitCardProps {
   commit: Commit;
   onClick?: () => void;
+  searchTerm?: string;
 }
 
-export function CommitCard({ commit, onClick }: CommitCardProps) {
+/**
+ * Highlight search term in text with yellow background
+ */
+function highlightText(text: string, searchTerm?: string): React.ReactNode {
+  if (!searchTerm || !searchTerm.trim()) {
+    return text;
+  }
+
+  const regex = new RegExp(`(${searchTerm})`, 'gi');
+  const parts = text.split(regex);
+
+  return parts.map((part, index) => {
+    if (part.toLowerCase() === searchTerm.toLowerCase()) {
+      return (
+        <mark key={index} className="bg-yellow-200 dark:bg-yellow-900 px-0.5 rounded">
+          {part}
+        </mark>
+      );
+    }
+    return part;
+  });
+}
+
+export function CommitCard({ commit, onClick, searchTerm }: CommitCardProps) {
   const [copied, setCopied] = useState(false);
 
   // Parse timestamp
@@ -70,8 +94,10 @@ export function CommitCard({ commit, onClick }: CommitCardProps) {
 
           {/* Commit content */}
           <div className="flex-1 min-w-0">
-            {/* Commit message (first line only) */}
-            <p className="text-sm font-medium mb-1 truncate">{commit.message.split('\n')[0]}</p>
+            {/* Commit message (first line only) with search highlighting */}
+            <p className="text-sm font-medium mb-1 truncate">
+              {highlightText(commit.message.split('\n')[0], searchTerm)}
+            </p>
 
             {/* Metadata row */}
             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">

@@ -1198,6 +1198,167 @@ class GitManager:
             )
             raise
 
+    def get_commit_history(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        author: Optional[str] = None,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+        message_search: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get commit history with filtering and pagination.
+
+        Returns commits in reverse chronological order (newest first) with
+        comprehensive filtering options.
+
+        Args:
+            limit: Maximum number of commits to return (default: 50)
+            offset: Number of commits to skip for pagination (default: 0)
+            author: Filter by author name or email (partial match)
+            since: Filter commits after this date
+            until: Filter commits before this date
+            message_search: Search term for commit messages
+
+        Returns:
+            List[Dict]: List of commit dicts with keys: sha, full_sha, message,
+                       author, email, date, files_changed
+
+        Example:
+            >>> git = GitManager(Path("/project"))
+            >>> commits = git.get_commit_history(limit=10, message_search="fix")
+            >>> for commit in commits:
+            ...     print(f"{commit['sha']}: {commit['message']}")
+
+        See Also:
+            - get_commit_count(): Get total count with same filters
+            - get_commit_info(): Get detailed info for single commit
+        """
+        try:
+            cmd = [
+                "log",
+                "--format=%H|%h|%s|%an|%ae|%ai",
+                f"--skip={offset}",
+                f"--max-count={limit}",
+            ]
+
+            # Add filters
+            if author:
+                cmd.append(f"--author={author}")
+            if since:
+                cmd.append(f"--since={since.isoformat()}")
+            if until:
+                cmd.append(f"--until={until.isoformat()}")
+            if message_search:
+                cmd.append(f"--grep={message_search}")
+                cmd.append("--regexp-ignore-case")  # Case-insensitive search
+
+            result = self._run_git_command(cmd)
+
+            commits = []
+            for line in result.strip().split("\n"):
+                if not line:
+                    continue
+
+                parts = line.split("|", 5)
+                if len(parts) != 6:
+                    continue
+
+                full_sha, short_sha, message, author_name, author_email, date = parts
+
+                # Get files changed for this commit
+                files_changed = self._get_changed_files(full_sha)
+
+                commits.append(
+                    {
+                        "sha": short_sha,
+                        "full_sha": full_sha,
+                        "message": message,
+                        "author": author_name,
+                        "email": author_email,
+                        "date": date,
+                        "files_changed": files_changed,
+                    }
+                )
+
+            self._log(
+                "debug",
+                "retrieved_commit_history",
+                count=len(commits),
+                offset=offset,
+                limit=limit,
+                has_filters=bool(author or since or until or message_search),
+            )
+
+            return commits
+
+        except subprocess.CalledProcessError as e:
+            error_msg = f"Failed to get commit history: {e.stderr}"
+            self._log("error", "get_commit_history_failed", error=error_msg)
+            return []
+
+    def get_commit_count(
+        self,
+        author: Optional[str] = None,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+        message_search: Optional[str] = None,
+    ) -> int:
+        """
+        Get total count of commits matching filters.
+
+        Uses same filters as get_commit_history() but returns just the count.
+        Efficient for pagination and filter result counts.
+
+        Args:
+            author: Filter by author name or email (partial match)
+            since: Filter commits after this date
+            until: Filter commits before this date
+            message_search: Search term for commit messages
+
+        Returns:
+            int: Total number of commits matching filters
+
+        Example:
+            >>> git = GitManager(Path("/project"))
+            >>> total = git.get_commit_count(message_search="bug")
+            >>> print(f"Found {total} commits with 'bug' in message")
+
+        See Also:
+            - get_commit_history(): Get commits with same filters
+        """
+        try:
+            cmd = ["rev-list", "--count", "HEAD"]
+
+            # Add filters
+            if author:
+                cmd.append(f"--author={author}")
+            if since:
+                cmd.append(f"--since={since.isoformat()}")
+            if until:
+                cmd.append(f"--until={until.isoformat()}")
+            if message_search:
+                cmd.append(f"--grep={message_search}")
+                cmd.append("--regexp-ignore-case")  # Case-insensitive search
+
+            result = self._run_git_command(cmd)
+            count = int(result.strip())
+
+            self._log(
+                "debug",
+                "retrieved_commit_count",
+                count=count,
+                has_filters=bool(author or since or until or message_search),
+            )
+
+            return count
+
+        except subprocess.CalledProcessError as e:
+            error_msg = f"Failed to get commit count: {e.stderr}"
+            self._log("error", "get_commit_count_failed", error=error_msg)
+            return 0
+
     def get_commit_diff(self, commit_hash: str) -> List[Dict[str, Any]]:
         """
         Get diff information for all files changed in a commit.

@@ -42,12 +42,23 @@ class CommitInfo(BaseModel):
     deletions: int
 
 
+class CommitFilters(BaseModel):
+    """Applied filters for commit list."""
+
+    author: Optional[str] = None
+    since: Optional[str] = None
+    until: Optional[str] = None
+    search: Optional[str] = None
+
+
 class CommitListResponse(BaseModel):
     """Response model for commit list endpoint."""
 
     commits: List[CommitInfo]
     total: int
+    total_unfiltered: int
     has_more: bool
+    filters_applied: CommitFilters
 
 
 class FileChange(BaseModel):
@@ -72,6 +83,27 @@ class CommitDiffResponse(BaseModel):
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
+
+
+def _get_agent_emails() -> List[str]:
+    """
+    Get list of all GAO-Dev agent email addresses.
+
+    Returns:
+        List of agent email addresses
+    """
+    return [
+        "brian@gao-dev.local",
+        "john@gao-dev.local",
+        "winston@gao-dev.local",
+        "sally@gao-dev.local",
+        "bob@gao-dev.local",
+        "amelia@gao-dev.local",
+        "murat@gao-dev.local",
+        "mary@gao-dev.local",
+        "noreply@anthropic.com",  # Claude's email
+        "dev@gao-dev.local",  # Generic agent email
+    ]
 
 
 def _is_agent_commit(email: str) -> bool:
@@ -157,9 +189,12 @@ async def get_commits(
     request: Request,
     limit: int = Query(50, ge=1, le=100, description="Number of commits to return"),
     offset: int = Query(0, ge=0, description="Number of commits to skip"),
-    author: Optional[str] = Query(None, description="Filter by author name or email"),
+    author: Optional[str] = Query(
+        None, description="Filter by author: 'all', 'agents', 'user', or specific agent/username"
+    ),
     since: Optional[str] = Query(None, description="Filter commits since date (ISO 8601)"),
     until: Optional[str] = Query(None, description="Filter commits until date (ISO 8601)"),
+    search: Optional[str] = Query(None, description="Search commit messages"),
 ) -> CommitListResponse:
     """
     Get commit history with pagination and filtering.
@@ -171,16 +206,22 @@ async def get_commits(
     - Timestamp (ISO 8601)
     - File statistics (files changed, insertions, deletions)
 
+    Filtering:
+    - author: 'all' (default), 'agents' (all agents), 'user' (non-agents), or specific agent name
+    - since/until: ISO 8601 date strings
+    - search: Case-insensitive search in commit messages
+
     Args:
         request: FastAPI request object (for accessing app.state)
         limit: Number of commits per page (1-100, default: 50)
         offset: Number of commits to skip for pagination (default: 0)
-        author: Filter by author name or email (partial match)
+        author: Filter by author (all/agents/user/specific)
         since: Filter commits after this date (ISO 8601 format)
         until: Filter commits before this date (ISO 8601 format)
+        search: Search term for commit messages
 
     Returns:
-        CommitListResponse with commits array, total count, and has_more flag
+        CommitListResponse with commits, total (filtered), total_unfiltered, has_more, filters_applied
 
     Raises:
         HTTPException: If git operations fail or repository not found
@@ -199,68 +240,110 @@ async def get_commits(
                 detail="Not a git repository. Initialize git first.",
             )
 
-        # Build git log command with filters
-        # Format: %H (full hash) | %h (short hash) | %s (subject) | %an (author name) |
-        #         %ae (author email) | %ai (author date ISO 8601)
-        cmd = [
-            "log",
-            "--format=%H|%h|%s|%an|%ae|%ai",
-            f"--skip={offset}",
-            f"--max-count={limit + 1}",  # +1 to check if there are more
-        ]
+        # Parse author filter
+        author_filter = None
+        if author and author != "all":
+            if author == "agents":
+                # Filter for all agent commits (OR logic for multiple authors)
+                agent_emails = _get_agent_emails()
+                # Git --author supports regex, so we'll use OR pattern
+                author_filter = "|".join([f"({email})" for email in agent_emails])
+            elif author == "user":
+                # Filter for non-agent commits (inverse of agents filter)
+                # Git doesn't support --not-author, so we need to handle this differently
+                # We'll get all commits and filter in Python
+                author_filter = "user"  # Special marker
+            else:
+                # Specific agent or username
+                author_filter = author
 
-        # Add author filter
-        if author:
-            cmd.append(f"--author={author}")
-
-        # Add date filters
+        # Parse date filters
+        since_dt = None
+        until_dt = None
         if since:
-            cmd.append(f"--since={since}")
+            try:
+                # Handle both Z and +00:00 timezone formats
+                normalized_since = since.replace("Z", "+00:00")
+                since_dt = datetime.fromisoformat(normalized_since)
+            except (ValueError, TypeError) as e:
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid since date: {since}. Error: {str(e)}"
+                )
         if until:
-            cmd.append(f"--until={until}")
+            try:
+                # Handle both Z and +00:00 timezone formats
+                normalized_until = until.replace("Z", "+00:00")
+                until_dt = datetime.fromisoformat(normalized_until)
+            except (ValueError, TypeError) as e:
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid until date: {until}. Error: {str(e)}"
+                )
 
-        # Execute git log
-        try:
-            result = git_manager._run_git_command(cmd)
-        except subprocess.CalledProcessError as e:
-            # No commits yet (empty repo)
-            # Git returns exit status 128 for "fatal: your current branch does not have any commits yet"
-            error_msg = (e.stderr or "").lower() + (e.stdout or "").lower()
-            if "does not have any commits yet" in error_msg or "bad default revision" in error_msg:
-                return CommitListResponse(commits=[], total=0, has_more=False)
-            raise
+        # Validate date range
+        if since_dt and until_dt and since_dt > until_dt:
+            raise HTTPException(
+                status_code=400,
+                detail="Start date must be before end date",
+            )
 
-        # Parse commit output
-        lines = [line for line in result.strip().split("\n") if line]
+        # Get filtered commits using GitManager
+        # Special handling for "user" filter (need to get all and filter)
+        if author_filter == "user":
+            # Get all commits and filter in Python
+            all_commits = git_manager.get_commit_history(
+                limit=limit + offset + 100,  # Get extra to account for filtering
+                offset=0,
+                since=since_dt,
+                until=until_dt,
+                message_search=search,
+            )
 
-        # Check if there are more commits
-        has_more = len(lines) > limit
-        if has_more:
-            lines = lines[:limit]
+            # Filter out agent commits (use same logic as _is_agent_commit)
+            user_commits = [c for c in all_commits if not _is_agent_commit(c["email"])]
 
+            # Apply pagination to filtered results
+            commits_data = user_commits[offset : offset + limit]
+            total_filtered = len(user_commits)
+            has_more = offset + limit < total_filtered
+        else:
+            # Use GitManager's native filtering
+            commits_data = git_manager.get_commit_history(
+                limit=limit,
+                offset=offset,
+                author=author_filter if author_filter and author_filter != "user" else None,
+                since=since_dt,
+                until=until_dt,
+                message_search=search,
+            )
+
+            # Get total count with same filters
+            total_filtered = git_manager.get_commit_count(
+                author=author_filter if author_filter and author_filter != "user" else None,
+                since=since_dt,
+                until=until_dt,
+                message_search=search,
+            )
+            has_more = offset + len(commits_data) < total_filtered
+
+        # Get unfiltered total
+        total_unfiltered = git_manager.get_commit_count()
+
+        # Convert to CommitInfo models
         commits = []
-        for line in lines:
-            parts = line.split("|", 5)
-            if len(parts) != 6:
-                logger.warning("invalid_commit_line", line=line)
-                continue
-
-            full_hash, short_hash, message, author_name, author_email, timestamp = parts
-
+        for commit_data in commits_data:
             # Get commit statistics
-            stats = _parse_commit_stats(git_manager, full_hash)
+            stats = _parse_commit_stats(git_manager, commit_data["full_sha"])
 
-            # Build commit info
             commit_info = CommitInfo(
-                hash=full_hash,
-                short_hash=short_hash,
-                message=message,
+                hash=commit_data["full_sha"],
+                short_hash=commit_data["sha"],
+                message=commit_data["message"],
                 author=CommitAuthor(
-                    name=author_name,
-                    email=author_email,
-                    is_agent=_is_agent_commit(author_email),
+                    name=commit_data["author"],
+                    email=commit_data["email"],
+                    is_agent=_is_agent_commit(commit_data["email"]),
                 ),
-                timestamp=timestamp,
+                timestamp=commit_data["date"],
                 files_changed=stats["files_changed"],
                 insertions=stats["insertions"],
                 deletions=stats["deletions"],
@@ -268,25 +351,28 @@ async def get_commits(
 
             commits.append(commit_info)
 
-        # Get total count (approximate - full count would be expensive)
-        # For now, use has_more to indicate if there are more commits
-        # Frontend can use infinite scroll
-        total = offset + len(commits)
-        if has_more:
-            total += 1  # Indicate there's at least one more
-
         logger.info(
             "retrieved_commit_history",
             count=len(commits),
             offset=offset,
             limit=limit,
+            total_filtered=total_filtered,
+            total_unfiltered=total_unfiltered,
             has_more=has_more,
+            filters_applied=bool(author or since or until or search),
         )
 
         return CommitListResponse(
             commits=commits,
-            total=total,
+            total=total_filtered,
+            total_unfiltered=total_unfiltered,
             has_more=has_more,
+            filters_applied=CommitFilters(
+                author=author,
+                since=since,
+                until=until,
+                search=search,
+            ),
         )
 
     except HTTPException:

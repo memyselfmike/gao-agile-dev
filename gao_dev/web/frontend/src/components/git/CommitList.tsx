@@ -33,6 +33,7 @@ async function fetchCommits(
   if (filters?.author) params.append('author', filters.author);
   if (filters?.since) params.append('since', filters.since);
   if (filters?.until) params.append('until', filters.until);
+  if (filters?.search) params.append('search', filters.search);
 
   const response = await fetch(`/api/git/commits?${params}`);
 
@@ -123,19 +124,37 @@ export function CommitList({ filters, onCommitClick }: CommitListProps) {
   // Flatten all commits from all pages
   const commits = data?.pages.flatMap((page) => page.commits) ?? [];
 
+  // Get totals from first page
+  const total = data?.pages[0]?.total ?? 0;
+  const totalUnfiltered = data?.pages[0]?.total_unfiltered ?? 0;
+  const hasFilters = filters?.author || filters?.since || filters?.until || filters?.search;
+
   // Empty state
   if (commits.length === 0) {
-    return <EmptyState />;
+    return <EmptyState hasFilters={!!hasFilters} />;
   }
 
   return (
     <div ref={scrollContainerRef} className="space-y-3">
+      {/* Filter results count */}
+      {hasFilters && (
+        <div className="py-2 text-sm text-muted-foreground">
+          Showing {commits.length} of {total} commits
+          {total < totalUnfiltered && (
+            <span className="text-xs ml-2">
+              ({totalUnfiltered - total} filtered out)
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Commit cards */}
       {commits.map((commit) => (
         <CommitCard
           key={commit.hash}
           commit={commit}
           onClick={onCommitClick ? () => onCommitClick(commit.hash) : undefined}
+          searchTerm={filters?.search}
         />
       ))}
 
@@ -166,7 +185,7 @@ export function CommitList({ filters, onCommitClick }: CommitListProps) {
       {!hasNextPage && commits.length > 0 && (
         <div className="py-4 text-center">
           <p className="text-sm text-muted-foreground">
-            {commits.length} {commits.length === 1 ? 'commit' : 'commits'} total
+            {total} {total === 1 ? 'commit' : 'commits'} total
           </p>
         </div>
       )}

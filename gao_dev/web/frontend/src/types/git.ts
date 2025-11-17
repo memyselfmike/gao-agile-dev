@@ -26,12 +26,24 @@ export interface Commit {
 }
 
 /**
+ * Commit filters
+ */
+export interface CommitFilters {
+  author?: string | null;
+  since?: string | null;
+  until?: string | null;
+  search?: string | null;
+}
+
+/**
  * Commit list API response
  */
 export interface CommitListResponse {
   commits: Commit[];
   total: number;
+  total_unfiltered: number;
   has_more: boolean;
+  filters_applied: CommitFilters;
 }
 
 /**
@@ -41,6 +53,7 @@ export interface GitTimelineFilters {
   author?: string;
   since?: string; // ISO 8601 date
   until?: string; // ISO 8601 date
+  search?: string;
 }
 
 /**

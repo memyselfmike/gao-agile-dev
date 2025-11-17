@@ -3,24 +3,26 @@
  *
  * Features:
  * - Real-time updates via WebSocket (git.commit events)
- * - Filtering support
+ * - Comprehensive filtering (author, date range, search)
+ * - URL query parameter persistence
  * - Infinite scroll pagination
  * - Performance optimized for large repositories
  */
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Commit, GitTimelineFilters } from '@/types/git';
+import type { GitTimelineFilters } from '@/types/git';
 import { CommitList } from './CommitList';
+import { FilterBar } from './FilterBar';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
 interface GitTimelineProps {
-  filters?: GitTimelineFilters;
   onCommitClick?: (commitHash: string) => void;
 }
 
-export function GitTimeline({ filters, onCommitClick }: GitTimelineProps) {
+export function GitTimeline({ onCommitClick }: GitTimelineProps) {
   const queryClient = useQueryClient();
   const websocket = useWebSocket();
+  const [filters, setFilters] = useState<GitTimelineFilters>({});
 
   // Subscribe to real-time git commit events
   useEffect(() => {
@@ -51,6 +53,8 @@ export function GitTimeline({ filters, onCommitClick }: GitTimelineProps) {
             Track changes over time and understand project evolution
           </p>
         </div>
+
+        <FilterBar onFilterChange={setFilters} />
 
         <CommitList filters={filters} onCommitClick={onCommitClick} />
       </div>

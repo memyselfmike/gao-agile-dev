@@ -85,10 +85,12 @@ class TestGitCommitsEndpoint:
         assert response.status_code == 200
         data = response.json()
 
-        # Verify response structure
+        # Verify response structure (Story 39.27 - enhanced response)
         assert "commits" in data
         assert "total" in data
+        assert "total_unfiltered" in data
         assert "has_more" in data
+        assert "filters_applied" in data
 
         # Verify we have commits (initial + 3 test commits = 4 total)
         assert len(data["commits"]) >= 4
@@ -267,6 +269,128 @@ class TestGitCommitsEndpoint:
         assert commit["files_changed"] >= 1
         assert commit["insertions"] >= 0
         assert commit["deletions"] >= 0
+
+    def test_get_commits_search_filter(self, test_client):
+        """Test search filter for commit messages (Story 39.27)."""
+        # Search for "fix" in commit messages
+        response = test_client.get("/api/git/commits?search=fix")
+        assert response.status_code == 200
+        data = response.json()
+
+        # All returned commits should have "fix" in message
+        for commit in data["commits"]:
+            assert "fix" in commit["message"].lower()
+
+        # Verify filter was applied in response
+        assert data["filters_applied"]["search"] == "fix"
+
+    def test_get_commits_author_agents_filter(self, test_client):
+        """Test filtering by all agents (Story 39.27)."""
+        # Filter for agent commits only
+        response = test_client.get("/api/git/commits?author=agents")
+        assert response.status_code == 200
+        data = response.json()
+
+        # All returned commits should be from agents
+        for commit in data["commits"]:
+            assert commit["author"]["is_agent"] is True
+
+        # Verify filter was applied
+        assert data["filters_applied"]["author"] == "agents"
+
+    def test_get_commits_author_user_filter(self, test_client):
+        """Test filtering by user commits only (Story 39.27)."""
+        # Filter for user commits only
+        response = test_client.get("/api/git/commits?author=user&limit=50")
+        assert response.status_code == 200
+        data = response.json()
+
+        # If there are commits returned, they should all be from users (not agents)
+        # Note: If all commits are from agents, result may be empty
+        if len(data["commits"]) > 0:
+            for commit in data["commits"]:
+                assert commit["author"]["is_agent"] is False
+
+        # Verify filter was applied
+        assert data["filters_applied"]["author"] == "user"
+
+    def test_get_commits_date_range_filter(self, test_client):
+        """Test filtering by date range (Story 39.27)."""
+        from datetime import datetime, timedelta, timezone
+        from urllib.parse import quote
+
+        # Filter commits from last 7 days (use UTC timezone-aware datetime)
+        since_datetime = datetime.now(timezone.utc) - timedelta(days=7)
+        since_date = since_datetime.isoformat()
+
+        # URL encode the date to handle + and : characters
+        encoded_since = quote(since_date)
+
+        response = test_client.get(f"/api/git/commits?since={encoded_since}")
+
+        # Debug print if response is not 200
+        if response.status_code != 200:
+            print(f"Response status: {response.status_code}")
+            print(f"Response body: {response.json()}")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify all commits are within date range
+        for commit in data["commits"]:
+            commit_date = datetime.fromisoformat(commit["timestamp"].replace("Z", "+00:00"))
+            assert commit_date >= since_datetime
+
+        # Verify filter was applied (allowing for URL decoding differences)
+        assert data["filters_applied"]["since"] is not None
+
+    def test_get_commits_multiple_filters(self, test_client):
+        """Test combining multiple filters (Story 39.27)."""
+        from datetime import datetime, timedelta, timezone
+        from urllib.parse import quote
+
+        # Combine: author filter + search
+        since_date = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+        encoded_since = quote(since_date)
+
+        response = test_client.get(
+            f"/api/git/commits?author=user&since={encoded_since}&search=test"
+        )
+        assert response.status_code == 200
+        data = response.json()
+
+        # Verify all filters applied (if there are results)
+        for commit in data["commits"]:
+            assert commit["author"]["is_agent"] is False  # User filter
+            assert "test" in commit["message"].lower()  # Search filter
+
+        # Verify filters_applied object
+        assert data["filters_applied"]["author"] == "user"
+        assert data["filters_applied"]["since"] is not None
+        assert data["filters_applied"]["search"] == "test"
+
+    def test_get_commits_invalid_date_range(self, test_client):
+        """Test validation for invalid date range (Story 39.27)."""
+        # Start date after end date
+        response = test_client.get("/api/git/commits?since=2025-02-01&until=2025-01-01")
+
+        assert response.status_code == 400
+        assert "Start date must be before end date" in response.json()["detail"]
+
+    def test_get_commits_total_counts(self, test_client):
+        """Test total and total_unfiltered counts (Story 39.27)."""
+        # Get all commits
+        response_all = test_client.get("/api/git/commits")
+        data_all = response_all.json()
+        total_unfiltered = data_all["total_unfiltered"]
+
+        # Get filtered commits
+        response_filtered = test_client.get("/api/git/commits?search=fix")
+        data_filtered = response_filtered.json()
+
+        # Total should be less than or equal to total_unfiltered
+        assert data_filtered["total"] <= data_filtered["total_unfiltered"]
+        assert data_filtered["total_unfiltered"] == total_unfiltered
 
 
 class TestGitCommitDiffEndpoint:
