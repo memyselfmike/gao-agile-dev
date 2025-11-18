@@ -1,0 +1,104 @@
+/**
+ * ChannelMessage - Individual message in channel view
+ *
+ * Story 39.33: Channels Section - Ceremony Channels UI
+ *
+ * Shows multi-agent participants with avatars and names
+ */
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import { Bot, User as UserIcon } from 'lucide-react';
+import type { ChannelMessage as IChannelMessage } from '@/types';
+
+interface ChannelMessageProps {
+  message: IChannelMessage;
+}
+
+// Agent color mapping (consistent with DMItem)
+const AGENT_COLORS: Record<string, string> = {
+  brian: 'bg-blue-500',
+  mary: 'bg-purple-500',
+  john: 'bg-green-500',
+  winston: 'bg-orange-500',
+  sally: 'bg-pink-500',
+  bob: 'bg-teal-500',
+  amelia: 'bg-indigo-500',
+  murat: 'bg-red-500',
+};
+
+// Format timestamp
+function formatTime(timestamp: number): string {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+export function ChannelMessage({ message }: ChannelMessageProps) {
+  const isUser = message.role === 'user';
+  const isAgent = message.role === 'agent';
+  const isSystem = message.role === 'system';
+
+  // Get agent color
+  const agentColor = message.agentId
+    ? AGENT_COLORS[message.agentId] || 'bg-gray-500'
+    : 'bg-gray-500';
+
+  return (
+    <div
+      className={cn(
+        'group flex gap-3 px-4 py-3 transition-colors hover:bg-accent/50',
+        isSystem && 'bg-muted/30'
+      )}
+      data-testid="channel-message"
+    >
+      {/* Avatar */}
+      <Avatar className="h-8 w-8 flex-shrink-0">
+        <AvatarFallback
+          className={cn(
+            'text-white',
+            isUser && 'bg-slate-600',
+            isAgent && agentColor,
+            isSystem && 'bg-gray-400'
+          )}
+        >
+          {isUser && <UserIcon className="h-4 w-4" />}
+          {isAgent && message.agentName && (
+            <span className="text-xs font-semibold">
+              {message.agentName[0]}
+            </span>
+          )}
+          {isSystem && <Bot className="h-4 w-4" />}
+        </AvatarFallback>
+      </Avatar>
+
+      {/* Message content */}
+      <div className="flex-1 overflow-hidden">
+        {/* Header: Agent name + timestamp */}
+        <div className="mb-1 flex items-baseline gap-2">
+          <span
+            className={cn(
+              'text-sm font-semibold',
+              isUser && 'text-slate-600',
+              isAgent && 'text-foreground',
+              isSystem && 'text-muted-foreground'
+            )}
+          >
+            {isUser && 'You'}
+            {isAgent && message.agentName}
+            {isSystem && 'System'}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {formatTime(message.timestamp)}
+          </span>
+        </div>
+
+        {/* Message text */}
+        <div className="text-sm text-foreground/90">
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        </div>
+      </div>
+    </div>
+  );
+}

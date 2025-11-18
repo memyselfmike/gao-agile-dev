@@ -3,18 +3,18 @@
  *
  * Story 39.30: Dual Sidebar Navigation (Primary + Secondary)
  * Story 39.31: Enhanced DM list with real API data
+ * Story 39.33: Channels Section UI
  */
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { DMList } from '@/components/dms/DMList';
+import { ChannelList } from '@/components/channels/ChannelList';
+import { useChannelStore } from '@/stores/channelStore';
 import { cn } from '@/lib/utils';
 import type { PrimaryView } from '@/stores/navigationStore';
 import type { Agent } from '@/types';
 import {
-  Hash,
-  Archive,
   FileText,
   Bell,
   Palette,
@@ -87,81 +87,20 @@ const AGENTS: Agent[] = [
   },
 ];
 
-// Mock ceremony channels
-const ACTIVE_CHANNELS = [
-  { id: 'sprint-planning', name: 'Sprint Planning', unread: 3, lastActivity: '2 hours ago' },
-  { id: 'daily-standup', name: 'Daily Standup', unread: 0, lastActivity: '5 hours ago' },
-  { id: 'retrospective', name: 'Retrospective', unread: 1, lastActivity: '1 day ago' },
-];
-
-const ARCHIVED_CHANNELS = [
-  { id: 'epic-28-retro', name: 'Epic 28 Retrospective', lastActivity: '2 weeks ago' },
-  { id: 'q4-planning', name: 'Q4 Planning', lastActivity: '1 month ago' },
-];
-
 // DMsList now uses the enhanced DMList component from Story 39.31
 function DMsList() {
   return <DMList agents={AGENTS} />;
 }
 
+// ChannelsList now uses the enhanced ChannelList component from Story 39.33
 function ChannelsList() {
+  const { activeChannel, selectChannel } = useChannelStore();
+
   return (
-    <div className="flex flex-col gap-1 p-2">
-      <div className="mb-2 px-2">
-        <h3 className="text-sm font-semibold text-foreground">Ceremony Channels</h3>
-        <p className="text-xs text-muted-foreground">Multi-agent ceremony coordination</p>
-      </div>
-      <Separator className="mb-2" />
-
-      {/* Active Channels */}
-      <div className="mb-4">
-        <h4 className="mb-1 px-2 text-xs font-medium text-muted-foreground">Active</h4>
-        {ACTIVE_CHANNELS.map((channel) => (
-          <Button
-            key={channel.id}
-            variant="ghost"
-            className="h-auto justify-start px-3 py-2 text-left"
-            data-testid={`channel-${channel.id}`}
-          >
-            <div className="flex w-full items-start gap-2">
-              <Hash className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <div className="flex-1 overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{channel.name}</span>
-                  {channel.unread > 0 && (
-                    <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
-                      {channel.unread}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">{channel.lastActivity}</p>
-              </div>
-            </div>
-          </Button>
-        ))}
-      </div>
-
-      {/* Archived Channels */}
-      <div>
-        <h4 className="mb-1 px-2 text-xs font-medium text-muted-foreground">Archived</h4>
-        {ARCHIVED_CHANNELS.map((channel) => (
-          <Button
-            key={channel.id}
-            variant="ghost"
-            className="h-auto justify-start px-3 py-2 text-left opacity-60"
-            data-testid={`channel-${channel.id}`}
-          >
-            <div className="flex w-full items-start gap-2">
-              <Archive className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <div className="flex-1 overflow-hidden">
-                <span className="font-medium">{channel.name}</span>
-                <p className="text-xs text-muted-foreground">{channel.lastActivity}</p>
-              </div>
-            </div>
-          </Button>
-        ))}
-      </div>
-    </div>
+    <ChannelList
+      activeChannelId={activeChannel?.id || null}
+      onChannelSelect={selectChannel}
+    />
   );
 }
 

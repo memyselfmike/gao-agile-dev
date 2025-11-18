@@ -26,6 +26,7 @@ from ..core.session_lock import SessionLock
 from .api import git as git_router
 from .api import settings as settings_router
 from .api import dms as dms_router
+from .api import channels as channels_router
 
 logger = structlog.get_logger(__name__)
 
@@ -160,6 +161,7 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     app.include_router(git_router.router)
     app.include_router(settings_router.router)
     app.include_router(dms_router.router)
+    app.include_router(channels_router.router)
 
     # Health check endpoint
     @app.get("/api/health")

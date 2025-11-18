@@ -73,3 +73,33 @@ export interface WebSocketMessage {
   type: string;
   payload: unknown;
 }
+
+// Channel types (Story 39.33)
+export type CeremonyType =
+  | 'sprint-planning'
+  | 'retrospective'
+  | 'daily-standup'
+  | 'demo'
+  | 'backlog-refinement';
+
+export type ChannelStatus = 'active' | 'archived';
+
+export interface Channel {
+  id: string;
+  name: string;
+  ceremonyType: CeremonyType;
+  status: ChannelStatus;
+  participants: string[]; // Agent IDs
+  lastMessageAt: string; // ISO timestamp
+  lastMessage: string;
+  messageCount: number;
+}
+
+export interface ChannelMessage {
+  id: string;
+  role: 'user' | 'agent' | 'system';
+  agentName?: string;
+  agentId?: string;
+  content: string;
+  timestamp: number;
+}
