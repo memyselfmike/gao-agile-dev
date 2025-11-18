@@ -1,8 +1,9 @@
 /**
  * GAO-Dev Web Interface - Main Application
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createWebSocketClient, WebSocketClient } from './lib/websocket';
+import { apiRequest } from './lib/api';
 import { useChatStore } from './stores/chatStore';
 import { useActivityStore } from './stores/activityStore';
 import { useSessionStore } from './stores/sessionStore';
@@ -19,6 +20,7 @@ function App() {
   const [wsClient, setWsClient] = useState<WebSocketClient | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const wsClientRef = useRef<WebSocketClient | null>(null);
   const addActivity = useActivityStore((state) => state.addEvent);
   const addEventWithSequence = useActivityStore((state) => state.addEventWithSequence);
   const addMessage = useChatStore((state) => state.addMessage);
@@ -27,6 +29,9 @@ function App() {
   const { addWorkflow, updateWorkflow } = useWorkflowStore();
 
   useEffect(() => {
+    // Flag to prevent state updates after unmount (StrictMode fix)
+    let isActive = true;
+
     // Create WebSocket connection on mount
     const initWebSocket = async () => {
       try {
@@ -78,9 +83,8 @@ function App() {
                 break;
               }
 
-              case 'chat_message':
-                addMessage(message.payload as never);
-                break;
+              // Note: Legacy 'chat_message' event removed - using new chat.message_sent/received events
+
               case 'activity':
                 // Use addEventWithSequence for events with sequence numbers
                 const event = message.payload as never;
@@ -100,8 +104,7 @@ function App() {
                 addRecentlyChanged(payload.path);
 
                 // Reload file tree
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
-                fetch(`${apiUrl}/api/files/tree`, { credentials: 'include' })
+                apiRequest('/api/files/tree')
                   .then((res) => res.json())
                   .then((data) => setFileTree(data.tree || []))
                   .catch(() => {
@@ -130,8 +133,7 @@ function App() {
                 }
 
                 // Reload file tree
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
-                fetch(`${apiUrl}/api/files/tree`, { credentials: 'include' })
+                apiRequest('/api/files/tree')
                   .then((res) => res.json())
                   .then((data) => setFileTree(data.tree || []))
                   .catch(() => {
@@ -269,16 +271,22 @@ function App() {
           }
         );
 
+        // Check if component was unmounted during async operation (StrictMode)
+        if (!isActive) {
+          client.disconnect();
+          return;
+        }
+
         setWsClient(client);
+        wsClientRef.current = client;
 
         // Fetch session token
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
-        const response = await fetch(`${apiUrl}/api/session/token`, {
-          credentials: 'include',
-        });
-        if (response.ok) {
+        const response = await apiRequest('/api/session/token');
+        if (response.ok && isActive) {
           const data = (await response.json()) as { token: string };
           setSessionToken(data.token);
+        } else if (!response.ok) {
+          console.error('Failed to fetch session token:', response.status);
         }
       } catch (error) {
         addActivity({
@@ -289,17 +297,21 @@ function App() {
           severity: 'error',
         });
       } finally {
-        setIsInitializing(false);
+        if (isActive) {
+          setIsInitializing(false);
+        }
       }
     };
 
     initWebSocket();
 
-    // Cleanup on unmount
+    // Cleanup on unmount - use ref to access current client
     return () => {
-      wsClient?.disconnect();
+      isActive = false;
+      wsClientRef.current?.disconnect();
+      wsClientRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks-rules-of-hooks
   }, []);
 
   if (isInitializing) {

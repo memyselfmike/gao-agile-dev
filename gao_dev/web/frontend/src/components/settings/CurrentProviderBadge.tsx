@@ -12,9 +12,13 @@ interface CurrentProviderBadgeProps {
 }
 
 const providerNames: Record<string, string> = {
-  claude_code: 'Claude Code',
-  opencode: 'OpenCode',
-  ollama: 'Ollama (Local)',
+  'claude-code': 'Claude Code',
+  'opencode-sdk': 'OpenCode SDK',
+  'opencode': 'OpenCode',
+  'opencode-cli': 'OpenCode CLI',
+  'direct-api-anthropic': 'Direct API (Anthropic)',
+  'direct-api-openai': 'Direct API (OpenAI)',
+  'direct-api-google': 'Direct API (Google)',
 };
 
 export function CurrentProviderBadge({

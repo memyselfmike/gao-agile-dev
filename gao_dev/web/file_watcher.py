@@ -15,6 +15,7 @@ from watchdog.events import FileSystemEventHandler, FileSystemEvent
 import structlog
 
 from .event_bus import WebEventBus
+from .events import EventType
 
 logger = structlog.get_logger(__name__)
 
@@ -25,16 +26,18 @@ TRACKED_DIRECTORIES = {"docs", "src", "gao_dev", "tests"}
 class FileChangeHandler(FileSystemEventHandler):
     """Handler for file system events."""
 
-    def __init__(self, event_bus: WebEventBus, project_root: Path):
+    def __init__(self, event_bus: WebEventBus, project_root: Path, loop: asyncio.AbstractEventLoop):
         """Initialize handler.
 
         Args:
             event_bus: WebEventBus for publishing events
             project_root: Root directory of project
+            loop: asyncio event loop for async operations
         """
         super().__init__()
         self.event_bus = event_bus
         self.project_root = project_root
+        self.loop = loop
         self.logger = logger.bind(handler="file_change_handler")
 
     def _should_process(self, path: str) -> bool:
@@ -87,15 +90,32 @@ class FileChangeHandler(FileSystemEventHandler):
 
         rel_path = self._get_relative_path(path)
 
-        # Publish to event bus
-        self.event_bus.publish({
-            "type": f"file.{event_type}",
-            "payload": {
-                "path": rel_path,
-                "isDirectory": is_directory,
-                "timestamp": time.time()
-            }
-        })
+        # Map string event type to EventType enum
+        event_type_map = {
+            "created": EventType.FILE_CREATED,
+            "modified": EventType.FILE_MODIFIED,
+            "deleted": EventType.FILE_DELETED,
+        }
+
+        event_enum = event_type_map.get(event_type)
+        if not event_enum:
+            self.logger.error(f"unknown_event_type", event_type=event_type)
+            return
+
+        # Publish to event bus (async call from sync context)
+        data = {
+            "path": rel_path,
+            "isDirectory": is_directory,
+            "timestamp": time.time()
+        }
+
+        try:
+            asyncio.run_coroutine_threadsafe(
+                self.event_bus.publish(event_enum, data),
+                self.loop
+            )
+        except Exception as e:
+            self.logger.error("event_publish_failed", error=str(e), event_type=event_type)
 
         self.logger.debug(
             f"file_{event_type}",
@@ -151,8 +171,20 @@ class FileSystemWatcher:
             self.logger.warning("file_watcher_already_started")
             return
 
+        # Get or create event loop
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop, try to get or create one
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                # Python 3.10+ doesn't auto-create event loop
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
         self.observer = Observer()
-        handler = FileChangeHandler(self.event_bus, self.project_root)
+        handler = FileChangeHandler(self.event_bus, self.project_root, loop)
 
         # Watch each tracked directory
         watched_dirs: Set[Path] = set()

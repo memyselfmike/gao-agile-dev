@@ -122,11 +122,8 @@ export function DMConversationView({ agent }: DMConversationViewProps) {
     // Clear previous errors
     setError(null);
 
-    // Add user message immediately
-    addMessage({
-      role: 'user',
-      content: message,
-    });
+    // Note: Don't add user message here - it comes via WebSocket event
+    // from BrianWebAdapter.send_message() -> CHAT_MESSAGE_SENT
 
     setIsSending(true);
     setIsTyping(true);

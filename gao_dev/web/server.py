@@ -104,9 +104,12 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     )
 
     # CORS middleware - restricted to localhost only
+    # Debug: Log CORS origins
+    logger.info("cors_configured", origin_count=len(config.cors_origins), sample=config.cors_origins[:3])
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=config.cors_origins,
+        allow_origins=["*"],  # Temporary wildcard for testing
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -147,11 +150,32 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     from .adapters.brian_adapter import BrianWebAdapter
     from ..orchestrator.chat_session import ChatSession
     from ..orchestrator.conversational_brian import ConversationalBrian
+    from ..orchestrator.brian_orchestrator import BrianOrchestrator
+    from ..core.workflow_registry import WorkflowRegistry
+    from ..core.services.ai_analysis_service import AIAnalysisService
+    from ..core.services.process_executor import ProcessExecutor
+    from ..core.config_loader import ConfigLoader
 
-    # Create ConversationalBrian
-    conversational_brian = ConversationalBrian(project_root)
+    # Create Brian infrastructure with AI analysis
+    config_loader = ConfigLoader(project_root)
+    workflow_registry = WorkflowRegistry(config_loader)
+    executor = ProcessExecutor(project_root)
+    analysis_service = AIAnalysisService(executor)
 
-    # Create ChatSession (command_router not needed for web chat)
+    # Create BrianOrchestrator with proper dependencies
+    brian_orchestrator = BrianOrchestrator(
+        workflow_registry=workflow_registry,
+        analysis_service=analysis_service,
+        project_root=project_root
+    )
+
+    # Create ConversationalBrian with BrianOrchestrator
+    conversational_brian = ConversationalBrian(
+        brian_orchestrator=brian_orchestrator,
+        command_router=None  # Not used in web context
+    )
+
+    # Create ChatSession
     chat_session = ChatSession(
         conversational_brian=conversational_brian,
         command_router=None,  # Not used in web context

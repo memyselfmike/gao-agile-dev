@@ -16,13 +16,13 @@ const queryClient = new QueryClient({
 });
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <App />
-        </ThemeProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
-  </StrictMode>
+  // Note: StrictMode temporarily disabled to fix WebSocket duplicate connections
+  // TODO: Re-enable after proper WebSocket cleanup is implemented
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </QueryClientProvider>
+  </BrowserRouter>
 );

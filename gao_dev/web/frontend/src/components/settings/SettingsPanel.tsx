@@ -22,6 +22,7 @@ import { ModelSelect } from './ModelSelect';
 import { CurrentProviderBadge } from './CurrentProviderBadge';
 import { ValidationIndicator } from './ValidationIndicator';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { getApiUrl } from '@/lib/api';
 import type { ProviderSettings, ValidationStatus, SaveProviderResponse } from '@/types/settings';
 
 interface SettingsPanelProps {
@@ -30,7 +31,7 @@ interface SettingsPanelProps {
 }
 
 export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:3000';
+  const apiUrl = getApiUrl();
 
   // Fetch provider settings
   const { data, isLoading, error } = useQuery<ProviderSettings>({

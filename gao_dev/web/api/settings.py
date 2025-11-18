@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from gao_dev.web.events import EventType
 from gao_dev.web.provider_validator import WebProviderValidator
+from gao_dev.core.providers import ProviderFactory, ClaudeCodeProvider, OpenCodeSDKProvider
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -44,7 +45,7 @@ async def get_provider_settings() -> Dict[str, Any]:
     try:
         # Read current provider from preferences
         prefs_file = Path(".gao-dev/provider_preferences.yaml")
-        current_provider = "claude_code"
+        current_provider = "claude-code"  # Default to claude-code
         current_model = "claude-sonnet-4-5-20250929"
 
         if prefs_file.exists():
@@ -52,7 +53,8 @@ async def get_provider_settings() -> Dict[str, Any]:
                 with open(prefs_file, "r", encoding="utf-8") as f:
                     prefs = yaml.safe_load(f)
                     if prefs:
-                        current_provider = prefs.get("provider", "claude_code")
+                        # Provider names use hyphens in the system
+                        current_provider = prefs.get("provider", "claude-code")
                         current_model = prefs.get("model", "claude-sonnet-4-5-20250929")
             except (yaml.YAMLError, IOError) as e:
                 logger.warning("failed_to_read_preferences", error=str(e), file=str(prefs_file))
@@ -72,123 +74,175 @@ async def get_provider_settings() -> Dict[str, Any]:
 
 
 def _get_available_providers() -> List[Dict[str, Any]]:
-    """Get list of available providers with their models.
+    """Get list of available providers with their models from ProviderFactory.
+
+    Dynamically discovers providers from the provider abstraction system
+    and queries each for available models.
 
     Returns:
         List of provider configurations
     """
-    providers = [
-        {
-            "id": "claude_code",
+    factory = ProviderFactory()
+    providers = []
+
+    # Get Claude Code provider (primary provider)
+    try:
+        claude_provider = factory.create_provider("claude-code", use_cache=False)
+        providers.append({
+            "id": "claude-code",
             "name": "Claude Code",
-            "description": "Anthropic Claude API (requires ANTHROPIC_API_KEY)",
+            "description": "Anthropic Claude via Claude Code CLI (requires ANTHROPIC_API_KEY)",
             "icon": "sparkles",
-            "models": [
-                {
-                    "id": "claude-sonnet-4-5-20250929",
-                    "name": "Claude Sonnet 4.5",
-                    "description": "Latest and most capable model (Jan 2025)",
-                },
-                {
-                    "id": "claude-3-5-sonnet-20241022",
-                    "name": "Claude 3.5 Sonnet",
-                    "description": "Previous generation Sonnet (Oct 2024)",
-                },
-                {
-                    "id": "claude-3-5-haiku-20241022",
-                    "name": "Claude 3.5 Haiku",
-                    "description": "Faster, more cost-effective option",
-                },
-            ],
-        },
-        {
-            "id": "opencode",
-            "name": "OpenCode",
-            "description": "OpenRouter API (requires OPENROUTER_API_KEY)",
+            "models": _get_models_from_provider(claude_provider, "claude-code"),
+        })
+    except Exception as e:
+        logger.warning("failed_to_get_claude_code_provider", error=str(e))
+
+    # Get OpenCode SDK provider (recommended for multi-provider support)
+    try:
+        opencode_provider = factory.create_provider("opencode-sdk", use_cache=False)
+        providers.append({
+            "id": "opencode-sdk",
+            "name": "OpenCode SDK",
+            "description": "Multi-provider AI access (Anthropic, OpenAI, Google, local models)",
             "icon": "globe",
-            "models": _get_openrouter_models(),
-        },
-        {
-            "id": "ollama",
-            "name": "Ollama (Local)",
-            "description": "Run models locally with Ollama",
-            "icon": "server",
-            "models": _get_ollama_models(),
-        },
-    ]
+            "models": _get_models_from_opencode_sdk(opencode_provider),
+        })
+    except Exception as e:
+        logger.warning("failed_to_get_opencode_sdk_provider", error=str(e))
 
     return providers
 
 
-def _get_openrouter_models() -> List[Dict[str, str]]:
-    """Fetch available models from OpenRouter API.
+def _get_models_from_provider(provider: Any, provider_id: str) -> List[Dict[str, str]]:
+    """Extract available models from a provider's MODEL_MAPPING.
 
-    For Story 39.28, we return hardcoded list.
-    Future story can implement actual API fetch.
-
-    Returns:
-        List of model configurations
-    """
-    # Hardcoded OpenRouter models
-    # Future: Implement actual API call to OpenRouter
-    return [
-        {
-            "id": "anthropic/claude-3.5-sonnet",
-            "name": "Claude 3.5 Sonnet (OpenRouter)",
-            "description": "Via OpenRouter proxy",
-        },
-        {
-            "id": "anthropic/claude-3.5-haiku",
-            "name": "Claude 3.5 Haiku (OpenRouter)",
-            "description": "Via OpenRouter proxy",
-        },
-        {
-            "id": "openai/gpt-4-turbo",
-            "name": "GPT-4 Turbo",
-            "description": "OpenAI's most capable model",
-        },
-        {"id": "openai/gpt-4", "name": "GPT-4", "description": "OpenAI GPT-4 base model"},
-    ]
-
-
-def _get_ollama_models() -> List[Dict[str, str]]:
-    """Fetch available models from local Ollama.
-
-    Attempts to detect running Ollama instance and query available models.
-    Falls back to common models if Ollama not available.
+    Args:
+        provider: Provider instance (ClaudeCodeProvider, etc.)
+        provider_id: Provider identifier for display
 
     Returns:
         List of model configurations
     """
-    try:
-        import httpx
+    models = []
 
-        # Try to connect to Ollama API
-        response = httpx.get("http://localhost:11434/api/tags", timeout=2.0)
+    # Get MODEL_MAPPING from provider
+    model_mapping = getattr(provider, "MODEL_MAPPING", {})
 
-        if response.status_code == 200:
-            data = response.json()
-            models = data.get("models", [])
+    # Get unique model IDs (values from mapping, excluding canonical short names)
+    seen_ids = set()
+    for canonical_name, model_id in model_mapping.items():
+        # Skip canonical short names like "sonnet-4.5", keep full IDs
+        if model_id not in seen_ids and "-" in model_id and "claude-" in model_id:
+            seen_ids.add(model_id)
 
-            # Convert Ollama response to our format
-            return [
-                {
-                    "id": model["name"],
-                    "name": model["name"].replace(":", " ").title(),
-                    "description": f"Local Ollama model ({model.get('size', 'Unknown size')})",
-                }
-                for model in models
-            ]
-    except Exception as e:
-        logger.debug("ollama_detection_failed", error=str(e))
-        # Fall through to defaults
+            # Format display name
+            display_name = _format_model_name(model_id)
 
-    # Return common Ollama models as fallback
-    return [
-        {"id": "deepseek-r1", "name": "DeepSeek R1", "description": "Reasoning-focused open model"},
-        {"id": "llama2", "name": "Llama 2", "description": "Meta's open source LLM"},
-        {"id": "codellama", "name": "CodeLlama", "description": "Specialized for code generation"},
-    ]
+            models.append({
+                "id": model_id,
+                "name": display_name,
+                "description": f"Anthropic Claude model",
+            })
+
+    return sorted(models, key=lambda m: m["id"], reverse=True)  # Latest first
+
+
+def _get_models_from_opencode_sdk(provider: Any) -> List[Dict[str, str]]:
+    """Extract available models from OpenCode SDK provider.
+
+    OpenCode SDK supports multiple backends:
+    - Anthropic (Claude models)
+    - OpenAI (GPT models)
+    - Google (Gemini models)
+    - Local (Ollama models)
+
+    Args:
+        provider: OpenCodeSDKProvider instance
+
+    Returns:
+        List of model configurations grouped by backend
+    """
+    models = []
+
+    # Get MODEL_MAP from OpenCodeSDKProvider
+    model_map = getattr(provider, "MODEL_MAP", {})
+
+    # Group by provider type
+    anthropic_models = []
+    openai_models = []
+    google_models = []
+    local_models = []
+
+    for model_id, (provider_type, _) in model_map.items():
+        # Skip canonical short names, keep full IDs
+        if "-" not in model_id:
+            continue
+
+        display_name = _format_model_name(model_id)
+        model_entry = {
+            "id": model_id,
+            "name": display_name,
+            "description": f"Via OpenCode ({provider_type})",
+        }
+
+        if provider_type == "anthropic":
+            anthropic_models.append(model_entry)
+        elif provider_type == "openai":
+            openai_models.append(model_entry)
+        elif provider_type == "google":
+            google_models.append(model_entry)
+        elif provider_type == "ollama" or provider_type == "local":
+            local_models.append(model_entry)
+
+    # Combine in priority order: Anthropic, OpenAI, Google, Local
+    models.extend(sorted(anthropic_models, key=lambda m: m["id"], reverse=True))
+    models.extend(sorted(openai_models, key=lambda m: m["id"], reverse=True))
+    models.extend(sorted(google_models, key=lambda m: m["id"], reverse=True))
+    models.extend(sorted(local_models, key=lambda m: m["id"], reverse=True))
+
+    return models
+
+
+def _format_model_name(model_id: str) -> str:
+    """Format model ID into display name.
+
+    Args:
+        model_id: Model identifier (e.g., "claude-sonnet-4-5-20250929")
+
+    Returns:
+        Human-readable name (e.g., "Claude Sonnet 4.5")
+    """
+    # Special cases
+    if "sonnet-4-5" in model_id or "sonnet-4.5" in model_id:
+        return "Claude Sonnet 4.5"
+    elif "sonnet-3-5" in model_id or "3.5-sonnet" in model_id:
+        return "Claude 3.5 Sonnet"
+    elif "opus-4" in model_id:
+        return "Claude Opus 4"
+    elif "opus-3" in model_id:
+        return "Claude Opus 3"
+    elif "haiku-3" in model_id or "3-haiku" in model_id or "3.5-haiku" in model_id:
+        return "Claude 3.5 Haiku"
+    elif "gpt-4-turbo" in model_id:
+        return "GPT-4 Turbo"
+    elif "gpt-4" in model_id:
+        return "GPT-4"
+    elif "gpt-3.5" in model_id:
+        return "GPT-3.5 Turbo"
+    elif "gemini-pro" in model_id:
+        return "Gemini Pro"
+    elif "deepseek-r1:8b" in model_id:
+        return "DeepSeek R1 8B (Ollama)"
+    elif "deepseek" in model_id:
+        return "DeepSeek R1 (Ollama)"
+    elif "llama" in model_id:
+        return "Llama 2 (Ollama)"
+    elif "codellama" in model_id:
+        return "CodeLlama (Ollama)"
+
+    # Fallback: Title case with dashes removed
+    return model_id.replace("-", " ").replace("_", " ").title()
 
 
 @router.post("/provider")
@@ -336,14 +390,18 @@ def _format_provider_name(provider_id: str) -> str:
     """Format provider ID to display name.
 
     Args:
-        provider_id: Provider ID (claude_code, opencode, ollama)
+        provider_id: Provider ID (claude-code, opencode-sdk, etc.)
 
     Returns:
         Human-readable provider name
     """
     names = {
-        "claude_code": "Claude Code",
+        "claude-code": "Claude Code",
+        "opencode-sdk": "OpenCode SDK",
         "opencode": "OpenCode",
-        "ollama": "Ollama",
+        "opencode-cli": "OpenCode CLI",
+        "direct-api-anthropic": "Direct API (Anthropic)",
+        "direct-api-openai": "Direct API (OpenAI)",
+        "direct-api-google": "Direct API (Google)",
     }
-    return names.get(provider_id, provider_id)
+    return names.get(provider_id, provider_id.replace("-", " ").title())

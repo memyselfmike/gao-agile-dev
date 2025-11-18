@@ -5,6 +5,34 @@ from dataclasses import dataclass, field
 from typing import List
 
 
+def _get_cors_origins() -> List[str]:
+    """Get CORS origins with support for dynamic frontend ports.
+
+    Allows Vite dev server on ports 5173-5180 (common fallback range).
+    Backend port can also vary, so we include a range.
+
+    Returns:
+        List of allowed CORS origins
+    """
+    origins = []
+
+    # Backend ports (3000-3010)
+    for port in range(3000, 3011):
+        origins.extend([
+            f"http://localhost:{port}",
+            f"http://127.0.0.1:{port}",
+        ])
+
+    # Frontend ports (5173-5180) - Vite's fallback range
+    for port in range(5173, 5181):
+        origins.extend([
+            f"http://localhost:{port}",
+            f"http://127.0.0.1:{port}",
+        ])
+
+    return origins
+
+
 @dataclass
 class WebConfig:
     """Configuration for the GAO-Dev web server.
@@ -13,8 +41,13 @@ class WebConfig:
         host: Server host (default: 127.0.0.1 for localhost only)
         port: Server port (default: 3000)
         auto_open: Auto-open browser on startup (default: True)
-        cors_origins: Allowed CORS origins (default: localhost only)
+        cors_origins: Allowed CORS origins (default: localhost with port ranges)
         frontend_dist_path: Path to frontend build directory
+
+    Environment Variables:
+        WEB_HOST: Override server host (default: 127.0.0.1)
+        WEB_PORT: Override server port (default: 3000)
+        WEB_AUTO_OPEN_BROWSER: Auto-open browser (default: true)
     """
 
     host: str = field(default_factory=lambda: os.getenv("WEB_HOST", "127.0.0.1"))
@@ -22,14 +55,7 @@ class WebConfig:
     auto_open: bool = field(
         default_factory=lambda: os.getenv("WEB_AUTO_OPEN_BROWSER", "true").lower() == "true"
     )
-    cors_origins: List[str] = field(
-        default_factory=lambda: [
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://localhost:5173",  # Vite dev server
-            "http://127.0.0.1:5173",  # Vite dev server
-        ]
-    )
+    cors_origins: List[str] = field(default_factory=_get_cors_origins)
     frontend_dist_path: str = "gao_dev/web/frontend/dist"
 
     def get_url(self) -> str:

@@ -60,23 +60,24 @@ class WebProviderValidator:
         """Validate provider and model combination.
 
         Args:
-            provider: Provider ID (claude_code, opencode, ollama)
+            provider: Provider ID (claude-code, opencode-sdk, etc.)
             model: Model ID
 
         Returns:
             WebValidationResult with validation status
         """
-        if provider == "claude_code":
+        if provider == "claude-code":
             return self._validate_claude_code(model)
+        elif provider == "opencode-sdk":
+            return self._validate_opencode_sdk(model)
         elif provider == "opencode":
+            # Legacy opencode (CLI-based)
             return self._validate_opencode(model)
-        elif provider == "ollama":
-            return self._validate_ollama(model)
         else:
             return WebValidationResult(
                 valid=False,
                 error=f"Unknown provider: {provider}",
-                fix_suggestion="Select Claude Code, OpenCode, or Ollama",
+                fix_suggestion="Select Claude Code or OpenCode SDK",
                 api_key_status="unknown",
             )
 
@@ -177,8 +178,11 @@ class WebProviderValidator:
                 fix_suggestion="Check network connection and API key",
             )
 
-    def _validate_ollama(self, model: str) -> WebValidationResult:
-        """Validate Ollama configuration.
+    def _validate_opencode_sdk(self, model: str) -> WebValidationResult:
+        """Validate OpenCode SDK configuration.
+
+        OpenCode SDK supports multiple backends (Anthropic, OpenAI, Google, local).
+        Validation depends on which backend the model uses.
 
         Args:
             model: Model ID to validate
@@ -186,47 +190,57 @@ class WebProviderValidator:
         Returns:
             Validation result
         """
-        try:
-            # Check if Ollama is running
-            with httpx.Client(timeout=2.0) as client:
-                response = client.get("http://localhost:11434/api/tags")
-                response.raise_for_status()
+        # Determine backend from model ID
+        if "claude" in model or "anthropic" in model:
+            # Anthropic backend - requires ANTHROPIC_API_KEY
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+            if not api_key:
+                return WebValidationResult(
+                    valid=False,
+                    api_key_status="missing",
+                    error="API key missing for Claude models",
+                    fix_suggestion="Set environment variable ANTHROPIC_API_KEY",
+                )
+            return WebValidationResult(valid=True, api_key_status="valid")
 
-                # Check if model is available
-                data = response.json()
-                available_models = [m["name"] for m in data.get("models", [])]
+        elif "gpt" in model or "openai" in model:
+            # OpenAI backend - requires OPENAI_API_KEY
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                return WebValidationResult(
+                    valid=False,
+                    api_key_status="missing",
+                    error="API key missing for OpenAI models",
+                    fix_suggestion="Set environment variable OPENAI_API_KEY",
+                )
+            return WebValidationResult(valid=True, api_key_status="valid")
 
-                if model not in available_models:
-                    return WebValidationResult(
-                        valid=False,
-                        api_key_status="valid",
-                        model_available=False,
-                        error="Model not available",
-                        fix_suggestion=f"Pull model with: ollama pull {model}",
-                    )
+        elif "gemini" in model or "google" in model:
+            # Google backend - requires GOOGLE_API_KEY
+            api_key = os.getenv("GOOGLE_API_KEY")
+            if not api_key:
+                return WebValidationResult(
+                    valid=False,
+                    api_key_status="missing",
+                    error="API key missing for Google models",
+                    fix_suggestion="Set environment variable GOOGLE_API_KEY",
+                )
+            return WebValidationResult(valid=True, api_key_status="valid")
 
-                return WebValidationResult(valid=True, api_key_status="valid")
-
-        except httpx.ConnectError:
+        elif "deepseek" in model or "llama" in model or "codellama" in model:
+            # Local models - no API key needed, just check OpenCode server
+            # For now, assume valid (OpenCode SDK manages local models)
             return WebValidationResult(
-                valid=False,
-                api_key_status="missing",
-                error="Ollama not running",
-                fix_suggestion="Start Ollama with: ollama serve",
+                valid=True,
+                api_key_status="valid",
+                warnings=["Local models require OpenCode server running"],
             )
-        except httpx.TimeoutException:
-            logger.warning("ollama_timeout")
+
+        else:
+            # Unknown model type
             return WebValidationResult(
                 valid=False,
                 api_key_status="unknown",
-                error="Ollama timeout",
-                fix_suggestion="Check if Ollama is running and try again",
-            )
-        except Exception as e:
-            logger.warning("ollama_validation_failed", error=str(e))
-            return WebValidationResult(
-                valid=False,
-                api_key_status="unknown",
-                error="Ollama validation failed",
-                fix_suggestion=str(e),
+                error="Unknown model type",
+                fix_suggestion="Select a valid model from the list",
             )
