@@ -7,6 +7,7 @@ Story: 39.13 - Real-Time File Updates from Agents
 """
 
 import asyncio
+import time
 from pathlib import Path
 from typing import Optional, Set
 from watchdog.observers import Observer
@@ -92,7 +93,7 @@ class FileChangeHandler(FileSystemEventHandler):
             "payload": {
                 "path": rel_path,
                 "isDirectory": is_directory,
-                "timestamp": asyncio.get_event_loop().time()
+                "timestamp": time.time()
             }
         })
 

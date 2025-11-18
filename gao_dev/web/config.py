@@ -26,6 +26,8 @@ class WebConfig:
         default_factory=lambda: [
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            "http://localhost:5173",  # Vite dev server
+            "http://127.0.0.1:5173",  # Vite dev server
         ]
     )
     frontend_dist_path: str = "gao_dev/web/frontend/dist"

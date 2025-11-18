@@ -144,9 +144,25 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     app.state.project_root = project_root
 
     # Initialize BrianWebAdapter (Story 39.7)
-    # NOTE: This will be properly initialized with real ChatSession in future
-    # For now, we store None and will create on-demand in chat endpoint
-    app.state.brian_adapter = None
+    from .adapters.brian_adapter import BrianWebAdapter
+    from ..orchestrator.chat_session import ChatSession
+    from ..orchestrator.conversational_brian import ConversationalBrian
+
+    # Create ConversationalBrian
+    conversational_brian = ConversationalBrian(project_root)
+
+    # Create ChatSession (command_router not needed for web chat)
+    chat_session = ChatSession(
+        conversational_brian=conversational_brian,
+        command_router=None,  # Not used in web context
+        project_root=project_root
+    )
+
+    # Create Brian adapter
+    app.state.brian_adapter = BrianWebAdapter(
+        chat_session=chat_session,
+        event_bus=event_bus
+    )
 
     # Initialize FileSystemWatcher (Story 39.13)
     file_watcher = FileSystemWatcher(project_root, event_bus)
