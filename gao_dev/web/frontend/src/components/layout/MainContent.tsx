@@ -4,6 +4,7 @@
  * Epic 39.8: Updated to show DualSidebar within Communication tab
  * Story 39.32: Added DMConversationView integration
  * Story 39.33: Added ChannelView integration
+ * Story 39.38: Added ResizableLayout for panel resizing
  */
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ReadOnlyBanner } from '@/components/session/ReadOnlyBanner';
@@ -14,6 +15,7 @@ import { GitTab } from '@/components/tabs/GitTab';
 import { DMConversationView } from '@/components/dms/DMConversationView';
 import { ChannelView } from '@/components/channels/ChannelView';
 import { DualSidebar } from './DualSidebar';
+import { ResizableLayout } from './ResizableLayout';
 import { useChatStore } from '@/stores/chatStore';
 import { useChannelStore } from '@/stores/channelStore';
 import { useNavigationStore } from '@/stores/navigationStore';
@@ -28,7 +30,7 @@ export function MainContent({ activeTab }: MainContentProps) {
   const { activeChannel } = useChannelStore();
   const { primaryView } = useNavigationStore();
 
-  // Communication tab: Show DualSidebar + DM/Channel conversation views
+  // Communication tab: Show DualSidebar + DM/Channel conversation views with resizable layout
   if (activeTab === 'communication') {
     // Story 39.32: Show DM conversation view when in DMs and an agent is selected
     const showDMConversation = primaryView === 'dms' && activeAgent !== null;
@@ -37,34 +39,33 @@ export function MainContent({ activeTab }: MainContentProps) {
     const showChannelView = primaryView === 'channels' && activeChannel !== null;
 
     return (
-      <div className="grid h-full grid-cols-[auto_auto_1fr]">
-        {/* Dual Sidebar (Primary + Secondary) */}
-        <DualSidebar />
-
-        {/* Conversation/Channel View */}
-        <main className="flex flex-col overflow-hidden">
-          {/* Tab Content or DM Conversation or Channel View */}
-          {showDMConversation && activeAgent ? (
-            // Story 39.32: Direct conversation view (no ScrollArea - handled internally)
-            <div className="h-full">
-              <DMConversationView agent={activeAgent} />
-            </div>
-          ) : showChannelView && activeChannel ? (
-            // Story 39.33: Channel view (no ScrollArea - handled internally)
-            <div className="h-full">
-              <ChannelView channel={activeChannel} />
-            </div>
-          ) : (
-            // Default: Show welcome/empty state
-            <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground">
-              <div>
-                <h2 className="mb-2 text-xl font-semibold">Welcome to GAO-Dev Communication</h2>
-                <p>Select an agent from Direct Messages or a channel to start chatting.</p>
+      <ResizableLayout
+        leftSidebar={<DualSidebar />}
+        mainContent={
+          <main className="flex h-full flex-col overflow-hidden">
+            {/* Tab Content or DM Conversation or Channel View */}
+            {showDMConversation && activeAgent ? (
+              // Story 39.32: Direct conversation view (no ScrollArea - handled internally)
+              <div className="h-full">
+                <DMConversationView agent={activeAgent} />
               </div>
-            </div>
-          )}
-        </main>
-      </div>
+            ) : showChannelView && activeChannel ? (
+              // Story 39.33: Channel view (no ScrollArea - handled internally)
+              <div className="h-full">
+                <ChannelView channel={activeChannel} />
+              </div>
+            ) : (
+              // Default: Show welcome/empty state
+              <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground">
+                <div>
+                  <h2 className="mb-2 text-xl font-semibold">Welcome to GAO-Dev Communication</h2>
+                  <p>Select an agent from Direct Messages or a channel to start chatting.</p>
+                </div>
+              </div>
+            )}
+          </main>
+        }
+      />
     );
   }
 
