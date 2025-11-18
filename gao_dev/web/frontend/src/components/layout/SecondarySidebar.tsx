@@ -2,17 +2,17 @@
  * Secondary Sidebar - Detailed content based on primary selection
  *
  * Story 39.30: Dual Sidebar Navigation (Primary + Secondary)
+ * Story 39.31: Enhanced DM list with real API data
  */
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useChatStore } from '@/stores/chatStore';
+import { DMList } from '@/components/dms/DMList';
 import { cn } from '@/lib/utils';
 import type { PrimaryView } from '@/stores/navigationStore';
 import type { Agent } from '@/types';
 import {
-  User,
   Hash,
   Archive,
   FileText,
@@ -99,58 +99,9 @@ const ARCHIVED_CHANNELS = [
   { id: 'q4-planning', name: 'Q4 Planning', lastActivity: '1 month ago' },
 ];
 
+// DMsList now uses the enhanced DMList component from Story 39.31
 function DMsList() {
-  const { activeAgent, switchAgent, agentHistory } = useChatStore();
-
-  const getLastMessage = (agentId: string): string => {
-    const history = agentHistory[agentId];
-    if (!history || history.length === 0) return 'No messages yet';
-    const lastMsg = history[history.length - 1];
-    const preview = lastMsg.content.slice(0, 50);
-    return preview.length < lastMsg.content.length ? `${preview}...` : preview;
-  };
-
-  return (
-    <div className="flex flex-col gap-1 p-2">
-      <div className="mb-2 px-2">
-        <h3 className="text-sm font-semibold text-foreground">Direct Messages</h3>
-        <p className="text-xs text-muted-foreground">Chat with GAO-Dev agents</p>
-      </div>
-      <Separator className="mb-2" />
-      {AGENTS.map((agent) => {
-        const isActive = activeAgent?.id === agent.id;
-        const lastMessage = getLastMessage(agent.id);
-
-        return (
-          <Button
-            key={agent.id}
-            variant={isActive ? 'secondary' : 'ghost'}
-            className={cn(
-              'h-auto justify-start px-3 py-2 text-left',
-              isActive && 'bg-secondary'
-            )}
-            onClick={() => switchAgent(agent)}
-            data-testid={`dm-agent-${agent.id}`}
-          >
-            <div className="flex w-full items-start gap-2">
-              <User className="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <div className="flex-1 overflow-hidden">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{agent.name}</span>
-                  {agent.status === 'active' && (
-                    <Badge variant="default" className="ml-1 h-5 px-1 text-xs">
-                      Active
-                    </Badge>
-                  )}
-                </div>
-                <p className="truncate text-xs text-muted-foreground">{lastMessage}</p>
-              </div>
-            </div>
-          </Button>
-        );
-      })}
-    </div>
-  );
+  return <DMList agents={AGENTS} />;
 }
 
 function ChannelsList() {

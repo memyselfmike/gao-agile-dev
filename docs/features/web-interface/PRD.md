@@ -781,37 +781,84 @@ A browser-based web interface that:
 
 ### COULD HAVE (V1.2 - Phase 3)
 
-#### Feature 3.1: Ceremony Channels (Slack-Like Interface)
+#### Feature 3.1: Unified Chat/Channels/DM Interface (Slack-Style)
 
-**Description**: Slack-style channels for observing intra-agent collaboration during ceremonies.
+**Description**: Complete Slack-style communication interface with dual sidebar navigation, direct messages (DMs) with all 8 agents, ceremony channels for multi-agent collaboration, and threading capabilities.
 
-**User Value**: Unprecedented visibility into multi-agent discussions.
+**User Value**: Familiar UX, better agent interaction, context preservation, ceremony transparency.
 
 **Priority**: Could Have (P2)
 
-**Effort Estimate**: L (Large)
+**Effort Estimate**: XL (Extra Large) - 32 story points, 8 stories
 
 **Acceptance Criteria**:
-- [ ] Conditional tab: Visible only when ceremony active
-- [ ] Channel list: #planning, #retrospective, #sprint-review
-- [ ] Message stream: Agent avatar, name, timestamp, message
-- [ ] Markdown rendering in messages
-- [ ] Threaded replies (optional)
-- [ ] User can post messages (participate in ceremony)
-- [ ] Real-time message streaming via WebSocket
-- [ ] Channel archive after ceremony ends (read-only)
-- [ ] Search within channel
-- [ ] Export channel transcript
+
+**Dual Sidebar Navigation**:
+- [ ] Primary sidebar (narrow): Home, DMs, Channels, Settings icons
+- [ ] Secondary sidebar (wider): Detailed lists based on primary selection
+- [ ] Smooth transitions (<100ms) when switching sections
+- [ ] Keyboard navigation support
+
+**Direct Messages Section**:
+- [ ] DM list shows all 8 agents (Brian, Mary, John, Winston, Sally, Bob, Amelia, Murat)
+- [ ] Each DM item: Agent avatar, name, last message preview, timestamp
+- [ ] Click DM to open 1:1 conversation in main view
+- [ ] Separate conversation history per agent (context preserved)
+- [ ] DM list sorted by recent activity
+- [ ] Replaces agent switcher dropdown (spatial navigation)
+
+**DM Conversation View**:
+- [ ] Message stream: Agent avatar, name, message content (Markdown), timestamp
+- [ ] Streaming response support (chunks appear as agent types)
+- [ ] Message input with send button
+- [ ] Virtual scrolling for >1,000 messages
+- [ ] "Load more" pagination for older messages
+- [ ] Thread count indicator on messages with replies
+
+**Channels Section**:
+- [ ] Channel list: #sprint-planning, #retrospective, #stand-ups, etc.
+- [ ] Channels auto-create when ceremony starts
+- [ ] Active/archived status indicators (green/gray dots)
+- [ ] Multi-agent message streams in channels
+- [ ] User can send messages (participate in ceremonies)
+- [ ] Archive channels after ceremony ends (read-only)
+
+**Threading**:
+- [ ] "Reply in thread" button on every message
+- [ ] Thread panel slides in from right (40% width)
+- [ ] Thread panel shows parent message + threaded replies
+- [ ] Single-level threading (no sub-threads)
+- [ ] Thread panel animation (<200ms)
+- [ ] Real-time thread updates
+
+**Message Search**:
+- [ ] Search input in top bar (always visible)
+- [ ] Search across all DMs and channels
+- [ ] Filters: Message type (DM/Channel), Agent, Date range
+- [ ] Search results: Message preview, sender, context, timestamp
+- [ ] Click result to jump to message in context
+- [ ] Search completes in <500ms
+
+**Channel Archive & Export**:
+- [ ] Auto-archive channels when ceremony ends
+- [ ] Archived channels in collapsible "Archived" section
+- [ ] Export button on archived channels
+- [ ] Export generates Markdown transcript file
 
 **Dependencies**:
-- Epic 28: CeremonyOrchestrator
-- CeremonyAdapter for event translation
+- Epic 30: ChatREPL (ChatSession for conversation history)
+- Epic 27: GitIntegratedStateManager (database for messages/threads)
+- Epic 28: CeremonyOrchestrator (ceremony event streaming)
+- Epic 39.3: Core Observability (WebSocket infrastructure)
 
 **Technical Notes**:
-- WebSocket channel: `ceremony.<ceremony_id>`
-- Event types: `ceremony.started`, `ceremony.message`, `ceremony.ended`
+- Component: `<DualSidebar>`, `<DMList>`, `<ChannelList>`, `<ThreadPanel>`
+- State: Zustand `unifiedChatStore` with `dmConversations`, `channels`, `activeThread`
+- API: `/api/dms/{agent}/messages`, `/api/channels/{id}/messages`, `/api/threads/{id}`
+- WebSocket events: `dm.message`, `channel.message`, `thread.reply`
+- Database: Add `threads` table, modify `messages` table for threading
 
-**Deferred to V1.2**: High value for observability but not critical for MVP. Initial releases focus on core functionality.
+**Deferred to V1.2**: This expands from original "Ceremony Channels" (14 points) to unified interface (32 points). Provides complete communication platform mirroring Slack UX.
 
 ---
 

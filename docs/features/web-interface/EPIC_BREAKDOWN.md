@@ -3,8 +3,8 @@
 **Feature**: Browser-Based Web Interface for GAO-Dev
 **Epic Number**: 39
 **Scale Level**: 4 (Greenfield Significant Feature)
-**Total Story Points**: 141 (across all 3 phases)
-**Total Duration**: 28 weeks (7 months)
+**Total Story Points**: 159 (across all 3 phases)
+**Total Duration**: 30 weeks (7.5 months)
 **Status**: Ready for Implementation
 
 ---
@@ -28,8 +28,8 @@ Epic 39 delivers a COMPLETE browser-based web interface transforming GAO-Dev fro
 8. Git Timeline - Commit history with diff viewer
 9. Provider Selection UI - Configure AI providers from web
 
-**Phase 3 - V1.2 (8 weeks, 42 points)**:
-10. Ceremony Channels - Slack-like interface for agent collaboration
+**Phase 3 - V1.2 (10 weeks, 60 points)**:
+10. Unified Chat/Channels/DM Interface - Complete Slack-style communication hub
 11. Customizable Layout - Resizable panels with persistence
 12. Advanced Metrics Dashboard - Analytics and performance visualization
 
@@ -47,7 +47,7 @@ Epic 39 delivers a COMPLETE browser-based web interface transforming GAO-Dev fro
 - **Epic 39.7: Git Integration & Provider UI** (5 stories, 17 points)
 
 **Phase 3 - V1.2**:
-- **Epic 39.8: Ceremony Channels** (4 stories, 14 points)
+- **Epic 39.8: Unified Chat/Channels/DM Interface** (8 stories, 32 points)
 - **Epic 39.9: Customizable Layout & UX Polish** (3 stories, 10 points)
 - **Epic 39.10: Advanced Metrics Dashboard** (5 stories, 18 points)
 

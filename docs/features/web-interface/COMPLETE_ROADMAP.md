@@ -76,35 +76,39 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 
 ---
 
-### Phase 3: V1.2 (Stories 39.30-39.41) - 8 Weeks
+### Phase 3: V1.2 (Stories 39.30-39.44) - 10 Weeks (REVISED - Extended +2 Weeks)
 
-**Epic 39.8: Ceremony Channels** (14 points)
-- Story 39.30: Ceremony Channel UI Components (M - 4 pts)
-- Story 39.31: Channel Message Stream and Rendering (M - 4 pts)
-- Story 39.32: User Participation in Ceremonies (M - 3 pts)
-- Story 39.33: Channel Archive and Export (M - 3 pts)
+**Epic 39.8: Unified Chat/Channels/DM Interface (Slack-Style)** (32 points)
+- Story 39.30: Dual Sidebar Navigation (Primary + Secondary) (M - 4 pts)
+- Story 39.31: DMs Section - Agent List and Conversation UI (L - 5 pts)
+- Story 39.32: DM Conversation View and Message Sending (L - 5 pts)
+- Story 39.33: Channels Section - Ceremony Channels UI (M - 4 pts)
+- Story 39.34: Message Threading Infrastructure (M - 4 pts)
+- Story 39.35: Thread Panel UI (Slide-In from Right) (L - 5 pts)
+- Story 39.36: Message Search Across DMs and Channels (M - 3 pts)
+- Story 39.37: Channel Archive and Export (S - 2 pts)
 
 **Epic 39.9: Customizable Layout and UX Polish** (10 points)
-- Story 39.34: Resizable Panels Infrastructure (M - 3 pts)
-- Story 39.35: Layout Persistence and Presets (M - 3 pts)
-- Story 39.36: Performance Optimization and Memory Management (M - 4 pts)
+- Story 39.38: Resizable Panels Infrastructure (M - 3 pts)
+- Story 39.39: Layout Persistence and Presets (M - 3 pts)
+- Story 39.40: Performance Optimization and Memory Management (M - 4 pts)
 
 **Epic 39.10: Advanced Metrics Dashboard** (18 points)
-- Story 39.37: Metrics Data Aggregation Service (M - 4 pts)
-- Story 39.38: Story Velocity and Agent Activity Charts (L - 5 pts)
-- Story 39.39: Workflow Success Rate Visualization (M - 3 pts)
-- Story 39.40: Test Coverage and Code Quality Metrics (M - 3 pts)
-- Story 39.41: Metrics Export and Reporting (M - 3 pts)
+- Story 39.41: Metrics Data Aggregation Service (M - 4 pts)
+- Story 39.42: Story Velocity and Agent Activity Charts (L - 5 pts)
+- Story 39.43: Workflow Success Rate Visualization (M - 3 pts)
+- Story 39.44: Test Coverage and Code Quality Metrics (M - 3 pts)
+- Story 39.45: Metrics Export and Reporting (M - 3 pts)
 
-**Phase 3 Total**: 12 stories, 42 points
+**Phase 3 Total**: 16 stories, 60 points
 
 ---
 
 ## Grand Total
 
-**Total Stories**: 41 stories across 10 epics
-**Total Story Points**: 141 points
-**Total Duration**: 28 weeks (7 months)
+**Total Stories**: 45 stories across 10 epics
+**Total Story Points**: 159 points
+**Total Duration**: 30 weeks (7.5 months)
 **Team Velocity**: ~5 points per week
 
 ---
@@ -115,10 +119,10 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 
 | Phase | Stories | Points | Weeks | Percentage |
 |-------|---------|--------|-------|------------|
-| **Phase 1 (MVP)** | 14 | 45 | 10 | 32% |
-| **Phase 2 (V1.1)** | 15 | 54 | 10 | 38% |
-| **Phase 3 (V1.2)** | 12 | 42 | 8 | 30% |
-| **TOTAL** | **41** | **141** | **28** | **100%** |
+| **Phase 1 (MVP)** | 14 | 45 | 10 | 28% |
+| **Phase 2 (V1.1)** | 15 | 54 | 10 | 34% |
+| **Phase 3 (V1.2)** | 16 | 60 | 10 | 38% |
+| **TOTAL** | **45** | **159** | **30** | **100%** |
 
 ### By Epic
 
@@ -131,10 +135,10 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 | 39.5 | Kanban Board | 5 | 18 | 13% |
 | 39.6 | Workflow Visualization | 5 | 19 | 13% |
 | 39.7 | Git Integration & Provider UI | 5 | 17 | 12% |
-| 39.8 | Ceremony Channels | 4 | 14 | 10% |
-| 39.9 | Customizable Layout & Polish | 3 | 10 | 7% |
-| 39.10 | Advanced Metrics | 5 | 18 | 13% |
-| **TOTAL** | | **41** | **141** | **100%** |
+| 39.8 | Unified Chat/Channels/DM Interface | 8 | 32 | 20% |
+| 39.9 | Customizable Layout & Polish | 3 | 10 | 6% |
+| 39.10 | Advanced Metrics | 5 | 18 | 11% |
+| **TOTAL** | | **45** | **159** | **100%** |
 
 ### By Size
 
@@ -226,39 +230,50 @@ Epic 39 delivers a complete browser-based web interface transforming GAO-Dev fro
 
 ---
 
-### Phase 3: V1.2 (8 Weeks)
+### Phase 3: V1.2 (10 Weeks) - REVISED
 
-**Sprint 13 (Week 21-22): Ceremony Channels**
-- Story 39.30: Channel UI (4 pts)
-- Story 39.31: Message Stream (4 pts)
-- Story 39.32: User Participation (3 pts)
-- **Velocity**: 11 points
+**Sprint 13 (Week 21-22): Sidebar and DMs Foundation**
+- Story 39.30: Dual Sidebar Navigation (4 pts)
+- Story 39.31: DMs Section - Agent List (5 pts)
+- **Velocity**: 9 points (2-week sprint)
 
-**Sprint 14 (Week 23): Ceremony Archive**
-- Story 39.33: Archive & Export (3 pts)
-- **Velocity**: 3 points (buffer for testing)
+**Sprint 14 (Week 23-24): DM Conversations and Channels**
+- Story 39.32: DM Conversation View (5 pts)
+- Story 39.33: Channels Section (4 pts)
+- **Velocity**: 9 points (2-week sprint)
 
-**Sprint 15 (Week 24): Customizable Layout**
-- Story 39.34: Resizable Panels (3 pts)
-- Story 39.35: Layout Persistence (3 pts)
-- **Velocity**: 6 points
+**Sprint 15 (Week 25): Threading Infrastructure**
+- Story 39.34: Message Threading Infrastructure (4 pts)
+- **Velocity**: 4 points (1-week sprint)
 
-**Sprint 16 (Week 25): Performance Optimization**
-- Story 39.36: Performance & Memory (4 pts)
-- **Velocity**: 4 points
+**Sprint 16 (Week 26): Thread Panel UI**
+- Story 39.35: Thread Panel UI (5 pts)
+- **Velocity**: 5 points (1-week sprint)
 
-**Sprint 17 (Week 26-27): Advanced Metrics**
-- Story 39.37: Metrics Aggregation (4 pts)
-- Story 39.38: Velocity/Activity Charts (5 pts)
-- Story 39.39: Workflow Success (3 pts)
-- **Velocity**: 12 points (stretch)
+**Sprint 17 (Week 27): Search and Archive**
+- Story 39.36: Message Search (3 pts)
+- Story 39.37: Channel Archive and Export (2 pts)
+- **Velocity**: 5 points (1-week sprint)
 
-**Sprint 18 (Week 28): Metrics Completion**
-- Story 39.40: Test/Code Quality Metrics (3 pts)
-- Story 39.41: Metrics Export (3 pts)
-- **Velocity**: 6 points (buffer for polish/testing)
+**Sprint 18 (Week 28): Testing and Polish (Epic 39.8 Complete)**
+- E2E testing, bug fixes, UX polish for unified chat
+- **Velocity**: 0 points (buffer)
 
-**Milestone**: V1.2 GA - Epic 39 COMPLETE
+**Sprint 19 (Week 29): Customizable Layout & Performance**
+- Story 39.38: Resizable Panels (3 pts)
+- Story 39.39: Layout Persistence (3 pts)
+- Story 39.40: Performance Optimization (4 pts)
+- **Velocity**: 10 points
+
+**Sprint 20 (Week 30): Advanced Metrics**
+- Story 39.41: Metrics Aggregation (4 pts)
+- Story 39.42: Velocity/Activity Charts (5 pts)
+- Story 39.43: Workflow Success (3 pts)
+- Story 39.44: Test/Code Quality Metrics (3 pts)
+- Story 39.45: Metrics Export (3 pts)
+- **Velocity**: 18 points (stretch - 1 week sprint, high velocity)
+
+**Milestone**: V1.2 GA - Epic 39 COMPLETE (Week 30)
 
 ---
 
