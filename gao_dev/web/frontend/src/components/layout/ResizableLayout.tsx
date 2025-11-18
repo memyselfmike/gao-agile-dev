@@ -32,8 +32,8 @@ interface ResizableLayoutProps {
   mainContent: ReactNode;
   /** Right sidebar content (optional) */
   rightSidebar?: ReactNode;
-  /** Default width percentages (left, main, right) */
-  defaultLayout?: [number, number, number];
+  /** Default width percentages (left, main) for 2-panel or (left, main, right) for 3-panel */
+  defaultLayout?: [number, number] | [number, number, number];
   /** Class name for custom styling */
   className?: string;
 }
@@ -47,12 +47,12 @@ export interface ResizableLayoutHandle {
 }
 
 /**
- * Default layout percentages
- * - Left: 20% (Primary 4% + Secondary 16%)
- * - Main: 60%
- * - Right: 20%
+ * Default layout percentages (2-panel layout)
+ * - Left: 25% (DualSidebar: Primary 64px + Secondary 256px ≈ 320px total)
+ * - Main: 75%
+ * Note: Future may add right sidebar for 3-panel layout
  */
-const DEFAULT_LAYOUT: [number, number, number] = [20, 60, 20];
+const DEFAULT_LAYOUT: [number, number] = [25, 75];
 
 /**
  * Min/max constraints (in percentage of viewport width)
