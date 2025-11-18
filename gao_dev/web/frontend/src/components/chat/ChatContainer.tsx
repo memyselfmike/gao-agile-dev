@@ -117,7 +117,7 @@ export function ChatContainer() {
 
       {/* Error banner */}
       {error && (
-        <Alert variant="destructive" className="m-4">
+        <Alert variant="destructive" className="m-4" role="alert" aria-live="assertive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>{error}</span>
@@ -128,8 +128,8 @@ export function ChatContainer() {
         </Alert>
       )}
 
-      {/* Message window */}
-      <div className="flex-1 overflow-hidden">
+      {/* Message window - ARIA live region for new messages */}
+      <div className="flex-1 overflow-hidden" role="log" aria-live="polite" aria-atomic="false">
         <ChatWindow messages={messages} showReasoning={showReasoning} isTyping={isTyping} />
       </div>
 

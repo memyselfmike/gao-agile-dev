@@ -9,6 +9,9 @@ import type { ChatMessage as ChatMessageType } from '../../types';
 import { ChatMessage } from './ChatMessage';
 import { Button } from '../ui/button';
 import { ArrowDown } from 'lucide-react';
+import { EmptyChat } from '@/components/empty-states';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { cn } from '@/lib/utils';
 
 interface ChatWindowProps {
   messages: ChatMessageType[];
@@ -20,6 +23,7 @@ export function ChatWindow({ messages, showReasoning, isTyping = false }: ChatWi
   const parentRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const prefersReducedMotion = useReducedMotion();
 
   // Virtual scrolling for performance with 1,000+ messages
   const virtualizer = useVirtualizer({
@@ -57,23 +61,14 @@ export function ChatWindow({ messages, showReasoning, isTyping = false }: ChatWi
     if (messages.length > 0) {
       virtualizer.scrollToIndex(messages.length - 1, {
         align: 'end',
-        behavior: 'smooth',
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
       });
       setAutoScroll(true);
     }
   };
 
   if (messages.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center p-8 text-center">
-        <div>
-          <p className="text-lg font-medium text-muted-foreground">No messages yet</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Start a conversation with Brian by typing a message below.
-          </p>
-        </div>
-      </div>
-    );
+    return <EmptyChat />;
   }
 
   return (
@@ -126,13 +121,19 @@ export function ChatWindow({ messages, showReasoning, isTyping = false }: ChatWi
         )}
       </div>
 
-      {/* Scroll to bottom button */}
+      {/* Scroll to bottom button with micro-interaction */}
       {showScrollButton && (
-        <div className="absolute bottom-4 right-4">
+        <div className={cn(
+          'absolute bottom-4 right-4',
+          !prefersReducedMotion && 'animate-fade-in'
+        )}>
           <Button
             size="icon"
             onClick={scrollToBottom}
-            className="shadow-lg"
+            className={cn(
+              'shadow-lg',
+              !prefersReducedMotion && 'btn-hover-lift'
+            )}
             aria-label="Scroll to bottom"
           >
             <ArrowDown className="h-4 w-4" />

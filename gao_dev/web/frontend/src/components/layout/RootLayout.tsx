@@ -41,6 +41,11 @@ export function RootLayout({ isConnected, projectName }: RootLayoutProps) {
 
   return (
     <>
+      {/* Skip to content link for keyboard users (Story 39.40) */}
+      <a href="#main-content" className="skip-to-content">
+        Skip to content
+      </a>
+
       <div className="grid h-screen grid-cols-[auto_1fr] grid-rows-[auto_1fr]">
         {/* Top Bar - spans both columns */}
         <div className="col-span-2">
@@ -53,7 +58,7 @@ export function RootLayout({ isConnected, projectName }: RootLayoutProps) {
         {/* Main Content - right column */}
         <MainContent activeTab={activeTab} layoutRef={layoutRef} />
       </div>
-      <Toaster richColors closeButton position="top-right" />
+      <Toaster richColors closeButton position="top-right" duration={5000} />
     </>
   );
 }

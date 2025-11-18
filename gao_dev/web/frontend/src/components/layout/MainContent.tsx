@@ -45,7 +45,7 @@ export function MainContent({ activeTab, layoutRef }: MainContentProps) {
         ref={layoutRef}
         leftSidebar={<DualSidebar />}
         mainContent={
-          <main className="flex h-full flex-col overflow-hidden">
+          <main id="main-content" className="flex h-full flex-col overflow-hidden">
             {/* Tab Content or DM Conversation or Channel View */}
             {showDMConversation && activeAgent ? (
               // Story 39.32: Direct conversation view (no ScrollArea - handled internally)
@@ -89,7 +89,7 @@ export function MainContent({ activeTab, layoutRef }: MainContentProps) {
   };
 
   return (
-    <main className="flex flex-col overflow-hidden">
+    <main id="main-content" className="flex flex-col overflow-hidden">
       {/* Read-Only Banner */}
       <div className="shrink-0 p-4 pb-0">
         <ReadOnlyBanner />

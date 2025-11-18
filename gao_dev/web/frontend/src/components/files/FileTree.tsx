@@ -10,6 +10,7 @@ import { FileTreeNode } from './FileTreeNode';
 import { Search } from 'lucide-react';
 import type { FileNode } from '@/types';
 import { useFilesStore } from '@/stores/filesStore';
+import { EmptyFileTree } from '@/components/empty-states';
 import Fuse from 'fuse.js';
 
 interface FileTreeProps {
@@ -102,6 +103,11 @@ export function FileTree({ onFileSelect }: FileTreeProps) {
     });
     return Array.from(types).sort();
   }, [flatNodes]);
+
+  // Show empty state if no files exist
+  if (fileTree.length === 0) {
+    return <EmptyFileTree />;
+  }
 
   return (
     <div className="flex h-full flex-col">

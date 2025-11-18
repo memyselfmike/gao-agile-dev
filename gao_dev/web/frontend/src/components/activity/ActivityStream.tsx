@@ -15,6 +15,7 @@ import { useActivityStore } from '@/stores/activityStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Pause, Play, AlertTriangle } from 'lucide-react';
+import { EmptyActivity } from '@/components/empty-states';
 import queryString from 'query-string';
 import type { ActivityEvent, ActivityEventType } from '@/types';
 
@@ -197,32 +198,17 @@ export function ActivityStream({ className }: ActivityStreamProps) {
         </div>
       </div>
 
-      {/* Event Stream - Virtualized */}
-      <div ref={parentRef} className="flex-1 overflow-auto p-4">
+      {/* Event Stream - Virtualized with ARIA live region */}
+      <div ref={parentRef} className="flex-1 overflow-auto p-4" role="log" aria-live="polite" aria-atomic="false">
         {filteredEvents.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-center">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {allEvents.length === 0
-                  ? 'No activity yet. Events will appear here as agents work.'
-                  : 'No events match your filters.'}
-              </p>
-              {activeFilterCount > 0 && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedTypes([]);
-                    setSelectedAgents([]);
-                    setSearchQuery('');
-                  }}
-                  className="mt-2"
-                >
-                  Clear all filters
-                </Button>
-              )}
-            </div>
-          </div>
+          <EmptyActivity
+            hasFilters={activeFilterCount > 0}
+            onClearFilters={() => {
+              setSelectedTypes([]);
+              setSelectedAgents([]);
+              setSearchQuery('');
+            }}
+          />
         ) : (
           <div
             style={{
