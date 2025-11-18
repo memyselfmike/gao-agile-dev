@@ -5,7 +5,9 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { ChannelItem } from './ChannelItem';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Channel } from '@/types';
 
 interface ChannelListProps {
@@ -20,6 +22,7 @@ export function ChannelList({
   const [channels, setChannels] = useState<Channel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isArchivedExpanded, setIsArchivedExpanded] = useState(false);
 
   // Fetch channels from API
   const fetchChannels = useCallback(async () => {
@@ -129,20 +132,35 @@ export function ChannelList({
         </div>
       )}
 
-      {/* Archived Channels */}
+      {/* Archived Channels (Collapsible) */}
       {sortedArchivedChannels.length > 0 && (
         <div>
-          <h4 className="mb-1 px-2 text-xs font-medium text-muted-foreground">
-            Archived
-          </h4>
-          {sortedArchivedChannels.map((channel) => (
-            <ChannelItem
-              key={channel.id}
-              channel={channel}
-              isActive={activeChannelId === channel.id}
-              onClick={() => onChannelSelect(channel)}
-            />
-          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-1 w-full justify-start px-2 text-xs font-medium text-muted-foreground hover:bg-transparent"
+            onClick={() => setIsArchivedExpanded(!isArchivedExpanded)}
+          >
+            {isArchivedExpanded ? (
+              <ChevronDown className="mr-1 h-3 w-3" />
+            ) : (
+              <ChevronRight className="mr-1 h-3 w-3" />
+            )}
+            Archived ({sortedArchivedChannels.length})
+          </Button>
+          {isArchivedExpanded && (
+            <div className="space-y-0.5">
+              {sortedArchivedChannels.map((channel) => (
+                <div key={channel.id} data-testid="archived-channel">
+                  <ChannelItem
+                    channel={channel}
+                    isActive={activeChannelId === channel.id}
+                    onClick={() => onChannelSelect(channel)}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

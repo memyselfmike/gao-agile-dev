@@ -20,6 +20,8 @@ interface MessageListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
+  conversationId?: string;
+  conversationType?: 'dm' | 'channel';
 }
 
 export function MessageList({
@@ -30,6 +32,8 @@ export function MessageList({
   onLoadMore,
   hasMore = false,
   isLoadingMore = false,
+  conversationId,
+  conversationType = 'dm',
 }: MessageListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -152,6 +156,8 @@ export function MessageList({
                   message={message}
                   agentName={agentName}
                   showReasoning={showReasoning}
+                  conversationId={conversationId}
+                  conversationType={conversationType}
                 />
               </div>
             );

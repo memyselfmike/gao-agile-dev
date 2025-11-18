@@ -2,8 +2,10 @@
  * Message - Individual DM message with markdown rendering
  *
  * Story 39.32: DM Conversation View and Message Sending
+ * Story 39.35: Thread Panel UI (Slide-In from Right)
  *
  * Reuses ChatMessage patterns with DM-specific styling
+ * Includes thread reply button and thread count
  */
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,20 +13,43 @@ import { formatDistanceToNow } from 'date-fns';
 import { User, Bot } from 'lucide-react';
 import type { ChatMessage as ChatMessageType } from '../../types';
 import { cn } from '../../lib/utils';
+import { ReplyButton } from '../threads/ReplyButton';
+import { ThreadCount } from '../threads/ThreadCount';
+import { useThreadStore } from '../../stores';
 
 interface MessageProps {
   message: ChatMessageType;
   agentName: string;
   showReasoning?: boolean;
+  conversationId?: string;
+  conversationType?: 'dm' | 'channel';
 }
 
-export function Message({ message, agentName, showReasoning = false }: MessageProps) {
+export function Message({
+  message,
+  agentName,
+  showReasoning = false,
+  conversationId,
+  conversationType = 'dm'
+}: MessageProps) {
   const isUser = message.role === 'user';
   const isAgent = message.role === 'agent';
   const isSystem = message.role === 'system';
 
+  const { threadCounts, openThread } = useThreadStore();
+
   // Format timestamp as relative time
   const timeAgo = formatDistanceToNow(message.timestamp, { addSuffix: true });
+
+  // Get thread count for this message
+  const threadCount = threadCounts[message.id] || 0;
+
+  // Handle reply in thread click
+  const handleReplyInThread = () => {
+    if (conversationId) {
+      openThread(message.id, conversationId, conversationType);
+    }
+  };
 
   // Extract thinking tags if present
   const thinkingRegex = /<thinking>([\s\S]*?)<\/thinking>/g;
@@ -134,8 +159,16 @@ export function Message({ message, agentName, showReasoning = false }: MessagePr
           </div>
         )}
 
-        {/* Thread count placeholder for Story 39.35 */}
-        {/* TODO: Add thread count indicator when threaded replies are implemented */}
+        {/* Thread actions (Story 39.35) */}
+        {conversationId && !isSystem && (
+          <div className="mt-2 flex items-center gap-2">
+            {/* Thread count (if has replies) */}
+            <ThreadCount count={threadCount} onClick={handleReplyInThread} />
+
+            {/* Reply button (shows on hover) */}
+            <ReplyButton onClick={handleReplyInThread} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { useWorkflowStore } from './stores/workflowStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RootLayout } from './components/layout/RootLayout';
 import { LoadingSpinner } from './components/LoadingSpinner';
+import { SearchResults } from './components/search';
 import { toast } from 'sonner';
 import type { WebSocketMessage } from './types';
 
@@ -312,6 +313,7 @@ function App() {
   return (
     <ErrorBoundary>
       <RootLayout isConnected={isConnected} projectName="GAO-Dev" />
+      <SearchResults />
     </ErrorBoundary>
   );
 }

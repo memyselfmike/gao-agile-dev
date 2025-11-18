@@ -2,6 +2,7 @@
  * Top Bar - Project name, session status, agent switcher, theme toggle
  *
  * Story 39.8: Enhanced agent switcher with per-agent chat history and Cmd+K shortcut
+ * Story 39.36: Search bar integration
  */
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +17,7 @@ import {
 import { SessionStatus } from '@/components/session/SessionStatus';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { SettingsIcon, SettingsPanel } from '@/components/settings';
+import { SearchBar } from '@/components/search';
 import { User, ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useChatStore } from '@/stores/chatStore';
@@ -80,7 +82,7 @@ export function TopBar({ isConnected, projectName = 'GAO-Dev' }: TopBarProps) {
   return (
     <>
       <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4">
-      {/* Project Name + Agent Indicator */}
+      {/* Left Section: Project Name + Agent Indicator */}
       <div className="flex items-center gap-3">
         <h1 className="text-lg font-semibold text-foreground">{projectName}</h1>
         {displayAgent && (
@@ -90,6 +92,11 @@ export function TopBar({ isConnected, projectName = 'GAO-Dev' }: TopBarProps) {
             <span className="font-medium">{displayAgent.name}</span>
           </Badge>
         )}
+      </div>
+
+      {/* Center Section: Search Bar */}
+      <div className="flex-1 mx-8 max-w-xl">
+        <SearchBar />
       </div>
 
       {/* Right Section: Agent Switcher, Session Status, Settings */}

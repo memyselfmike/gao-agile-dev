@@ -68,10 +68,13 @@ export function ChannelItem({ channel, isActive, onClick }: ChannelItemProps) {
             {channel.name}
           </span>
 
-          {/* Active indicator dot */}
-          {!isArchived && (
-            <div className="h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
-          )}
+          {/* Status indicator dot */}
+          <div
+            className={cn(
+              'h-2 w-2 flex-shrink-0 rounded-full',
+              isArchived ? 'bg-gray-400 dark:bg-gray-600' : 'bg-green-500'
+            )}
+          />
         </div>
 
         {/* Last message preview */}

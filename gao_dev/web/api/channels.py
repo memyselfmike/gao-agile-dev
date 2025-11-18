@@ -325,6 +325,183 @@ async def get_channel_messages(
         raise HTTPException(status_code=500, detail=f"Failed to get messages: {str(e)}")
 
 
+@router.post("/{channel_id}/archive")
+async def archive_channel(
+    channel_id: str,
+    request: Request,
+) -> JSONResponse:
+    """Archive a ceremony channel (admin only).
+
+    Marks channel as read-only. No new messages can be sent after archiving.
+
+    Args:
+        channel_id: Channel identifier
+        request: FastAPI request object
+
+    Returns:
+        JSON response with success status
+
+    Raises:
+        HTTPException: If channel not found, already archived, or archive fails
+
+    Example response:
+        {
+            "success": true,
+            "channelId": "sprint-planning-epic-5",
+            "status": "archived",
+            "timestamp": "2025-01-16T15:00:00Z"
+        }
+    """
+    # Validate channel exists
+    channel = next((c for c in MOCK_CHANNELS if c["id"] == channel_id), None)
+    if not channel:
+        raise HTTPException(status_code=404, detail=f"Channel {channel_id} not found")
+
+    # Check if already archived
+    if channel["status"] == "archived":
+        raise HTTPException(
+            status_code=400, detail="Channel is already archived"
+        )
+
+    try:
+        # TODO (Epic 28 Integration): Archive via CeremonyOrchestrator
+        # For now, update mock data
+        logger.info("archive_channel_called", channel_id=channel_id)
+
+        # Update channel status in mock data
+        channel["status"] = "archived"
+        timestamp = datetime.now().isoformat()
+
+        # TODO: Publish WebSocket event for real-time updates
+        # event_bus.publish({
+        #     "type": "channel.archived",
+        #     "payload": {
+        #         "channelId": channel_id,
+        #         "status": "archived",
+        #         "timestamp": timestamp
+        #     }
+        # })
+
+        return JSONResponse(
+            {
+                "success": True,
+                "channelId": channel_id,
+                "status": "archived",
+                "timestamp": timestamp,
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("archive_channel_failed", channel_id=channel_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to archive channel: {str(e)}")
+
+
+@router.get("/{channel_id}/export")
+async def export_channel_transcript(
+    channel_id: str,
+    request: Request,
+) -> str:
+    """Export channel transcript to Markdown file.
+
+    Generates downloadable Markdown file with channel messages formatted as:
+    # {ceremony-type} - Epic {epic_num}
+    **Date**: {date}
+    **Participants**: {agents}
+
+    ---
+
+    **AgentName** (HH:MM AM/PM):
+    Message content
+
+    Args:
+        channel_id: Channel identifier
+        request: FastAPI request object
+
+    Returns:
+        Markdown content with Content-Disposition header for download
+
+    Raises:
+        HTTPException: If channel not found or export fails
+
+    Example filename: sprint-planning-epic-5-2025-01-16.md
+    """
+    from fastapi.responses import PlainTextResponse
+
+    # Validate channel exists
+    channel = next((c for c in MOCK_CHANNELS if c["id"] == channel_id), None)
+    if not channel:
+        raise HTTPException(status_code=404, detail=f"Channel {channel_id} not found")
+
+    try:
+        # TODO (Epic 28 Integration): Query CeremonyOrchestrator for real messages
+        # For now, use mock data
+        logger.info("export_channel_transcript_called", channel_id=channel_id)
+
+        messages = MOCK_MESSAGES.get(channel_id, [])
+
+        # Extract ceremony info
+        ceremony_type = channel["ceremonyType"].replace("-", " ").title()
+        channel_name = channel["name"].replace("#", "")
+
+        # Extract epic number from channel name (e.g., "sprint-planning-epic-5")
+        epic_num = "N/A"
+        if "epic-" in channel_name:
+            epic_num = channel_name.split("epic-")[1].split("-")[0]
+
+        # Get date from last message
+        last_message_date = datetime.fromisoformat(
+            channel["lastMessageAt"].replace("Z", "+00:00")
+        )
+        date_str = last_message_date.strftime("%Y-%m-%d")
+
+        # Get participants
+        participants = ", ".join([p.title() for p in channel["participants"]])
+
+        # Build Markdown content
+        markdown_lines = [
+            f"# {ceremony_type} - Epic {epic_num}",
+            f"**Date**: {date_str}",
+            f"**Participants**: {participants}",
+            "",
+            "---",
+            "",
+        ]
+
+        # Add messages
+        for message in messages:
+            msg_timestamp = datetime.fromtimestamp(message["timestamp"] / 1000)
+            # Use %I:%M %p format (works on all platforms, including Windows)
+            time_str = msg_timestamp.strftime("%I:%M %p")
+
+            agent_name = message.get("agentName", "System")
+
+            markdown_lines.append(f"**{agent_name}** ({time_str}):")
+            markdown_lines.append(message["content"])
+            markdown_lines.append("")
+
+        markdown_content = "\n".join(markdown_lines)
+
+        # Generate filename
+        filename = f"{channel['ceremonyType']}-epic-{epic_num}-{date_str}.md"
+
+        # Return as downloadable file
+        return PlainTextResponse(
+            content=markdown_content,
+            media_type="text/markdown",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("export_channel_transcript_failed", channel_id=channel_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to export transcript: {str(e)}")
+
+
 @router.post("/{channel_id}/messages")
 async def send_channel_message(
     channel_id: str,

@@ -2,15 +2,18 @@
  * DMConversationView - Main DM conversation container
  *
  * Story 39.32: DM Conversation View and Message Sending
+ * Story 39.35: Thread Panel UI (Slide-In from Right)
  *
- * Orchestrates MessageList, MessageInput, and WebSocket streaming
+ * Orchestrates MessageList, MessageInput, WebSocket streaming, and ThreadPanel
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useChatStore } from '../../stores/chatStore';
 import { useSessionStore } from '../../stores/sessionStore';
+import { useThreadStore } from '../../stores/threadStore';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { ReasoningToggle } from '../chat/ReasoningToggle';
+import { ThreadPanel } from '../threads/ThreadPanel';
 import type { Agent } from '../../types';
 import { cn } from '../../lib/utils';
 
@@ -29,6 +32,7 @@ export function DMConversationView({ agent }: DMConversationViewProps) {
   } = useChatStore();
 
   const { sessionToken } = useSessionStore();
+  const { activeThread } = useThreadStore();
   const [showReasoning, setShowReasoning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -182,9 +186,16 @@ export function DMConversationView({ agent }: DMConversationViewProps) {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b bg-background px-4 py-3">
+    <div className="flex h-full">
+      {/* Main conversation area */}
+      <div
+        className={cn(
+          'flex h-full flex-col transition-all duration-200',
+          activeThread ? 'w-[60%]' : 'w-full'
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b bg-background px-4 py-3">
         <div className="flex items-center gap-3">
           {/* Agent avatar with status */}
           <div className="relative">
@@ -229,28 +240,34 @@ export function DMConversationView({ agent }: DMConversationViewProps) {
         />
       </div>
 
-      {/* Message list */}
-      <div className="flex-1 overflow-hidden">
-        <MessageList
-          messages={messages}
+        {/* Message list */}
+        <div className="flex-1 overflow-hidden">
+          <MessageList
+            messages={messages}
+            agentName={agent.name}
+            showReasoning={showReasoning}
+            isTyping={isTyping}
+            onLoadMore={handleLoadMore}
+            hasMore={hasMore}
+            isLoadingMore={isLoadingMore}
+            conversationId={agent.id}
+            conversationType="dm"
+          />
+        </div>
+
+        {/* Input */}
+        <MessageInput
+          onSend={handleSendMessage}
+          disabled={isSending || isTyping}
+          placeholder={`Message ${agent.name}...`}
           agentName={agent.name}
-          showReasoning={showReasoning}
-          isTyping={isTyping}
-          onLoadMore={handleLoadMore}
-          hasMore={hasMore}
-          isLoadingMore={isLoadingMore}
+          error={error}
+          onRetry={handleRetry}
         />
       </div>
 
-      {/* Input */}
-      <MessageInput
-        onSend={handleSendMessage}
-        disabled={isSending || isTyping}
-        placeholder={`Message ${agent.name}...`}
-        agentName={agent.name}
-        error={error}
-        onRetry={handleRetry}
-      />
+      {/* Thread Panel (slides in from right) */}
+      <ThreadPanel agentName={agent.name} showReasoning={showReasoning} />
     </div>
   );
 }
