@@ -2,6 +2,7 @@
  * Resizable Layout - Resizable panel system with keyboard and touch support
  *
  * Story 39.38: Resizable Panel Layout
+ * Story 39.39: Layout Persistence & Presets
  * Epic 39.9: Customizable Layout & UX Polish
  *
  * Features:
@@ -14,11 +15,15 @@
  * - Snap to default when close
  * - Preserves scroll position
  * - Responsive (mobile: single column)
+ * - Layout persistence via localStorage (auto-save)
+ * - Preset support with smooth transitions
  */
 import type { ReactNode } from 'react';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
+import { Panel, PanelGroup, PanelResizeHandle, type ImperativePanelGroupHandle } from 'react-resizable-panels';
 import { cn } from '@/lib/utils';
 import { GripVertical } from 'lucide-react';
+import { useLayoutStore } from '@/stores/layoutStore';
 
 interface ResizableLayoutProps {
   /** Left sidebar content (Primary + Secondary sidebars) */
@@ -31,6 +36,14 @@ interface ResizableLayoutProps {
   defaultLayout?: [number, number, number];
   /** Class name for custom styling */
   className?: string;
+}
+
+/**
+ * Imperative handle for controlling layout externally
+ */
+export interface ResizableLayoutHandle {
+  /** Apply preset sizes with smooth transition */
+  applyPreset: (sizes: number[]) => void;
 }
 
 /**
@@ -60,74 +73,108 @@ const MAX_RIGHT_SIZE = 26; // ~400px at 1536px viewport
  * [Left Sidebar] | [Main Content] | [Right Sidebar]
  *
  * On mobile (<768px), shows single column layout.
+ *
+ * Supports imperative handle for preset application.
  */
-export function ResizableLayout({
-  leftSidebar,
-  mainContent,
-  rightSidebar,
-  defaultLayout = DEFAULT_LAYOUT,
-  className,
-}: ResizableLayoutProps) {
-  // Responsive: disable resize on mobile
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+export const ResizableLayout = forwardRef<ResizableLayoutHandle, ResizableLayoutProps>(
+  function ResizableLayout(
+    {
+      leftSidebar,
+      mainContent,
+      rightSidebar,
+      defaultLayout = DEFAULT_LAYOUT,
+      className,
+    },
+    ref
+  ) {
+    const panelGroupRef = useRef<ImperativePanelGroupHandle>(null);
+    const { updatePresetFromSizes } = useLayoutStore();
 
-  if (isMobile) {
-    // Mobile: single column layout (no resize)
+    // Responsive: disable resize on mobile
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+    // Expose imperative handle for preset application
+    useImperativeHandle(ref, () => ({
+      applyPreset: (sizes: number[]) => {
+        if (panelGroupRef.current) {
+          // Apply sizes to panels with smooth transition
+          panelGroupRef.current.setLayout(sizes);
+        }
+      },
+    }));
+
+    // Track layout changes and update preset detection
+    const handleLayoutChange = useCallback(
+      (sizes: number[]) => {
+        // Update store to detect if layout matches a preset
+        updatePresetFromSizes(sizes);
+      },
+      [updatePresetFromSizes]
+    );
+
+    if (isMobile) {
+      // Mobile: single column layout (no resize)
+      return (
+        <div className={cn('flex h-full flex-col', className)}>
+          <div className="flex-1 overflow-auto">{mainContent}</div>
+        </div>
+      );
+    }
+
     return (
-      <div className={cn('flex h-full flex-col', className)}>
-        <div className="flex-1 overflow-auto">{mainContent}</div>
-      </div>
+      <PanelGroup
+        ref={panelGroupRef}
+        direction="horizontal"
+        className={cn('h-full transition-all duration-300 ease-in-out', className)}
+        autoSaveId="gao-dev-layout" // Auto-save layout to localStorage
+        onLayout={handleLayoutChange}
+      >
+        {/* Left Sidebar Panel */}
+        <Panel
+          defaultSize={defaultLayout[0]}
+          minSize={MIN_LEFT_SIZE}
+          maxSize={MAX_LEFT_SIZE}
+          order={1}
+          className="transition-all duration-300 ease-in-out"
+        >
+          {leftSidebar}
+        </Panel>
+
+        {/* Left Divider */}
+        <ResizeHandle testId="divider-left" />
+
+        {/* Main Content Panel */}
+        <Panel
+          defaultSize={defaultLayout[1]}
+          minSize={MIN_MAIN_SIZE}
+          order={2}
+          className="transition-all duration-300 ease-in-out"
+        >
+          {mainContent}
+        </Panel>
+
+        {/* Right Sidebar (optional) */}
+        {rightSidebar && (
+          <>
+            {/* Right Divider */}
+            <ResizeHandle testId="divider-right" />
+
+            {/* Right Sidebar Panel */}
+            <Panel
+              defaultSize={defaultLayout[2]}
+              minSize={MIN_RIGHT_SIZE}
+              maxSize={MAX_RIGHT_SIZE}
+              order={3}
+              className="transition-all duration-300 ease-in-out"
+            >
+              {rightSidebar}
+            </Panel>
+          </>
+        )}
+      </PanelGroup>
     );
   }
-
-  return (
-    <PanelGroup
-      direction="horizontal"
-      className={cn('h-full', className)}
-      autoSaveId="gao-dev-layout" // Auto-save layout to localStorage
-    >
-      {/* Left Sidebar Panel */}
-      <Panel
-        defaultSize={defaultLayout[0]}
-        minSize={MIN_LEFT_SIZE}
-        maxSize={MAX_LEFT_SIZE}
-        order={1}
-      >
-        {leftSidebar}
-      </Panel>
-
-      {/* Left Divider */}
-      <ResizeHandle testId="divider-left" />
-
-      {/* Main Content Panel */}
-      <Panel
-        defaultSize={defaultLayout[1]}
-        minSize={MIN_MAIN_SIZE}
-        order={2}
-      >
-        {mainContent}
-      </Panel>
-
-      {/* Right Sidebar (optional) */}
-      {rightSidebar && (
-        <>
-          {/* Right Divider */}
-          <ResizeHandle testId="divider-right" />
-
-          {/* Right Sidebar Panel */}
-          <Panel
-            defaultSize={defaultLayout[2]}
-            minSize={MIN_RIGHT_SIZE}
-            maxSize={MAX_RIGHT_SIZE}
-            order={3}
-          >
-            {rightSidebar}
-          </Panel>
-        </>
-      )}
-    </PanelGroup>
-  );
-}
+);
 
 /**
  * Custom resize handle with visual feedback and accessibility

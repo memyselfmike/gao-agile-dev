@@ -5,6 +5,7 @@
  * Story 39.32: Added DMConversationView integration
  * Story 39.33: Added ChannelView integration
  * Story 39.38: Added ResizableLayout for panel resizing
+ * Story 39.39: Added layout ref for preset application
  */
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ReadOnlyBanner } from '@/components/session/ReadOnlyBanner';
@@ -15,7 +16,7 @@ import { GitTab } from '@/components/tabs/GitTab';
 import { DMConversationView } from '@/components/dms/DMConversationView';
 import { ChannelView } from '@/components/channels/ChannelView';
 import { DualSidebar } from './DualSidebar';
-import { ResizableLayout } from './ResizableLayout';
+import { ResizableLayout, type ResizableLayoutHandle } from './ResizableLayout';
 import { useChatStore } from '@/stores/chatStore';
 import { useChannelStore } from '@/stores/channelStore';
 import { useNavigationStore } from '@/stores/navigationStore';
@@ -23,9 +24,10 @@ import type { TabId } from './Sidebar';
 
 interface MainContentProps {
   activeTab: TabId;
+  layoutRef?: React.RefObject<ResizableLayoutHandle | null>;
 }
 
-export function MainContent({ activeTab }: MainContentProps) {
+export function MainContent({ activeTab, layoutRef }: MainContentProps) {
   const { activeAgent } = useChatStore();
   const { activeChannel } = useChannelStore();
   const { primaryView } = useNavigationStore();
@@ -40,6 +42,7 @@ export function MainContent({ activeTab }: MainContentProps) {
 
     return (
       <ResizableLayout
+        ref={layoutRef}
         leftSidebar={<DualSidebar />}
         mainContent={
           <main className="flex h-full flex-col overflow-hidden">

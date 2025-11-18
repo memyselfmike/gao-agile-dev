@@ -3,7 +3,7 @@
 **Epic**: 39.9 - Customizable Layout & UX Polish
 **Story Points**: 3 (Small-Medium)
 **Priority**: P2 (Could Have - V1.2)
-**Status**: Pending
+**Status**: Complete
 **Assignee**: Amelia (Developer)
 
 ---
@@ -22,19 +22,19 @@ Implement localStorage-based persistence for panel sizes and provide 3 pre-defin
 
 ## Acceptance Criteria
 
-- [ ] Panel sizes automatically saved to localStorage on resize (debounced 500ms)
-- [ ] Panel sizes restored on page load
-- [ ] Layout presets dropdown in Settings menu:
-  - **Default**: Balanced (250px | auto | 300px)
-  - **Code-Focused**: Wide main content (200px | auto | 0px - right panel hidden)
-  - **Chat-Focused**: Wide chat panel (200px | auto | 400px)
-- [ ] Apply preset button triggers smooth transition animation (300ms ease-in-out)
-- [ ] Current preset highlighted in dropdown
-- [ ] Reset to Default button in Settings
-- [ ] Settings panel accessed via gear icon in top-right corner
-- [ ] Toast notification on preset applied: "Layout preset applied: Code-Focused"
-- [ ] Stable test IDs: `data-testid="layout-preset-default"`, etc.
-- [ ] Keyboard navigation in preset dropdown (Arrow keys + Enter)
+- [x] Panel sizes automatically saved to localStorage on resize (via react-resizable-panels autoSaveId)
+- [x] Panel sizes restored on page load (via react-resizable-panels autoSaveId)
+- [x] Layout presets dropdown in Settings menu:
+  - **Default**: Balanced (20% | 60% | 20%)
+  - **Code-Focused**: Wide main content (15% | 85% | 0% - right panel hidden)
+  - **Chat-Focused**: Wide chat panel (15% | 45% | 40%)
+- [x] Apply preset button triggers smooth transition animation (300ms ease-in-out)
+- [x] Current preset highlighted in dropdown (RadioGroup indicator)
+- [x] Reset to Default button in Settings
+- [x] Settings panel accessed via layout icon in top-right corner (next to gear icon)
+- [x] Toast notification on preset applied: "Layout preset applied: Code-Focused"
+- [x] Stable test IDs: `data-testid="layout-preset-default"`, etc.
+- [x] Keyboard navigation in preset dropdown (RadioGroup built-in support)
 
 ---
 

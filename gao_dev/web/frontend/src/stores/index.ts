@@ -7,4 +7,5 @@ export { useFilesStore } from './filesStore';
 export { useSessionStore } from './sessionStore';
 export { useNavigationStore } from './navigationStore';
 export { useThreadStore } from './threadStore';
+export { useLayoutStore } from './layoutStore';
 export type { Thread } from './threadStore';
