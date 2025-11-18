@@ -1,5 +1,7 @@
 /**
  * Sidebar - Tab navigation icons
+ *
+ * Updated: Epic 39.8 - Unified Chat+Ceremonies into single "Communication" tab
  */
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -9,12 +11,11 @@ import {
   FolderTree,
   LayoutDashboard,
   GitBranch,
-  Users,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type TabId = 'chat' | 'activity' | 'files' | 'kanban' | 'git' | 'ceremonies';
+export type TabId = 'communication' | 'activity' | 'files' | 'kanban' | 'git';
 
 interface Tab {
   id: TabId;
@@ -24,12 +25,11 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: 'chat', label: 'Chat', icon: MessageSquare, shortcut: '1' },
+  { id: 'communication', label: 'Communication', icon: MessageSquare, shortcut: '1' },
   { id: 'activity', label: 'Activity', icon: Activity, shortcut: '2' },
   { id: 'files', label: 'Files', icon: FolderTree, shortcut: '3' },
   { id: 'kanban', label: 'Kanban', icon: LayoutDashboard, shortcut: '4' },
   { id: 'git', label: 'Git', icon: GitBranch, shortcut: '5' },
-  { id: 'ceremonies', label: 'Ceremonies', icon: Users, shortcut: '6' },
 ];
 
 interface SidebarProps {

@@ -2302,3 +2302,8 @@ def start_server(
     finally:
         manager.stop()
         logger.info("web_server_stopped")
+
+
+# Module-level app instance for uvicorn
+# This allows running: python -m uvicorn gao_dev.web.server:app
+app = create_app()
