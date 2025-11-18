@@ -11,7 +11,7 @@ export function DualSidebar() {
   const { primaryView, isSecondarySidebarOpen, setPrimaryView } = useNavigationStore();
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full w-full">
       <PrimarySidebar activeView={primaryView} onViewChange={setPrimaryView} />
       <SecondarySidebar primaryView={primaryView} isOpen={isSecondarySidebarOpen} />
     </div>

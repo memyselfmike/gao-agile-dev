@@ -168,7 +168,7 @@ export function SecondarySidebar({ primaryView, isOpen }: SecondarySidebarProps)
   return (
     <aside
       className={cn(
-        'hidden w-64 border-r border-border bg-card transition-all duration-75 lg:block',
+        'hidden min-w-0 flex-1 border-r border-border bg-card transition-all duration-75 lg:block',
         !isOpen && 'w-0 opacity-0'
       )}
       data-testid="secondary-sidebar"
