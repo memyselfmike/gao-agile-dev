@@ -1,10 +1,10 @@
-# GAO-Dev Web Interface Beta Testing Guide
+# GAO-Dev Beta Testing Guide
 
-**Beta Version:** 0.2.1-beta.1
+**Beta Version:** 0.3.0-beta.1
 **Release Date:** 2025-11-19
-**Latest Update:** 2025-11-19 - Fixed `gao-dev init` TypeError on Python 3.14
+**Latest Update:** 2025-11-19 - Streamlined Onboarding with `gao-dev start`
 **Testing Duration:** 30-45 minutes
-**For:** Beta testers evaluating the GAO-Dev Web Interface
+**For:** Beta testers evaluating GAO-Dev
 
 ---
 
@@ -12,7 +12,7 @@
 
 GAO-Dev is an autonomous AI development orchestration system that helps you build complete applications from simple prompts. It uses 8 specialized Claude agents (Brian, John, Winston, Sally, Bob, Amelia, Murat, Mary) to handle the entire software development lifecycle.
 
-**This beta release** introduces the **Web Interface** - a full-featured IDE-like experience for interacting with GAO-Dev agents through your browser.
+**This beta release** introduces **Streamlined Onboarding** - a unified `gao-dev start` command with automatic environment detection, guided wizards, and the full web interface.
 
 ---
 
@@ -61,58 +61,89 @@ Visit: https://github.com/memyselfmike/gao-agile-dev/releases
 
 ---
 
-## Quick Start (10 minutes)
+## Quick Start (5 minutes)
 
 ### Step 1: Create a Clean Project Directory
 
-Create and enter a new project directory:
-- mkdir my-gao-project
-- cd my-gao-project
-- git init
-- git config user.name "Your Name"
-- git config user.email "your@email.com"
+```bash
+mkdir my-gao-project
+cd my-gao-project
+```
 
 ### Step 2: Install GAO-Dev
 
+```bash
 pip install git+https://github.com/memyselfmike/gao-agile-dev.git@main
+```
 
-Verify: gao-dev --version
+Verify: `gao-dev --version`
 
-### Step 3: Initialize Your Project
+### Step 3: Start GAO-Dev
 
-gao-dev init --greenfield
+```bash
+gao-dev start
+```
 
-### Step 4: Start the Web Interface
+That's it! The new unified command will:
+- Auto-detect your environment (Desktop, Docker, SSH, WSL)
+- Launch the appropriate onboarding wizard
+- Guide you through setup (Git, provider, credentials)
+- Start the web interface automatically
 
-gao-dev web
+### Step 4: Follow the Onboarding Wizard
 
-Or: python -m uvicorn gao_dev.web.server:app --host 127.0.0.1 --port 3000
+The wizard will guide you through:
+1. **Project setup** - Name and type
+2. **Git configuration** - Author name/email
+3. **Provider selection** - Claude Code, OpenAI, or Ollama
+4. **Credentials** - API key entry (secure storage)
 
 ### Step 5: Open in Browser
 
-Navigate to: http://localhost:3000
+After onboarding completes, navigate to: http://localhost:8080
+
+**Note:** For headless/CI environments, use `gao-dev start --headless`
 
 ---
 
 ## Features to Test
 
-1. **Chat with Brian** - Main chat panel
-2. **Layout Presets** - Default, Code-Focused, Chat-Focused
-3. **DM Conversations** - Direct message agents
-4. **File Browser** - Browse and edit files
-5. **Activity Feed** - Real-time events
-6. **Git Timeline** - Commit history and diffs
-7. **Kanban Board** - Stories/tasks
-8. **Settings Panel** - Provider configuration
-9. **Theme Toggle** - Light/dark themes
-10. **WebSocket Connection** - Real-time status
+### New in This Release - Streamlined Onboarding
+1. **Unified Start Command** - `gao-dev start` replaces init + web
+2. **Environment Detection** - Auto-detects Desktop, Docker, SSH, WSL
+3. **TUI Wizard** - Terminal-based onboarding for Docker/SSH
+4. **Web Wizard** - Browser-based onboarding for Desktop
+5. **Credential Manager** - Secure API key storage
+6. **State Persistence** - Resume interrupted onboarding
+7. **API Key Validation** - Real-time key verification
+
+### Web Interface Features
+8. **Chat with Brian** - Main chat panel
+9. **Layout Presets** - Default, Code-Focused, Chat-Focused
+10. **DM Conversations** - Direct message agents
+11. **File Browser** - Browse and edit files
+12. **Activity Feed** - Real-time events
+13. **Git Timeline** - Commit history and diffs
+14. **Kanban Board** - Stories/tasks
+15. **Settings Panel** - Provider configuration
+16. **Theme Toggle** - Light/dark themes
 
 ---
 
 ## Success Checklist
 
-- [ ] Installation completed
-- [ ] Web server starts
+### Onboarding (New)
+- [ ] `gao-dev start` launches without errors
+- [ ] Environment correctly detected
+- [ ] Onboarding wizard appears (TUI or Web)
+- [ ] Project configuration works
+- [ ] Git setup works
+- [ ] Provider selection works
+- [ ] Credential entry works
+- [ ] API key validates (if online)
+
+### Web Interface
+- [ ] Web server starts after onboarding
 - [ ] Browser loads interface
 - [ ] Chat with Brian works
 - [ ] Layout presets work
@@ -135,14 +166,35 @@ Navigate to: http://localhost:3000
 3. File editing may be read-only
 4. Some workflows not fully implemented
 5. First load may be slower
+6. Keychain not available in Docker/SSH (use environment variables)
+
+---
+
+## Deprecated Commands
+
+The following commands are deprecated and will be removed in v3.0 (Q2 2026):
+
+- `gao-dev init` - Use `gao-dev start` instead
+- `gao-dev web start` - Use `gao-dev start` instead
+
+These commands still work but will show a deprecation warning.
+See: [Migration Guide](docs/migration/deprecated-commands.md)
 
 ---
 
 ## Troubleshooting
 
-- Port in use: netstat -ano | findstr :3000
-- Blank page: Check browser console (F12)
-- WebSocket failed: Check server is running
+### Common Issues
+
+- **Port in use**: `netstat -ano | findstr :8080` (Windows) or `lsof -i :8080` (macOS/Linux)
+- **Blank page**: Check browser console (F12)
+- **WebSocket failed**: Check server is running
+- **API key invalid**: Check for extra spaces, get new key from provider
+
+### Error Codes
+
+If you see an error code (E001-E701), check:
+[Common Errors Guide](docs/troubleshooting/common-errors.md)
 
 ---
 
@@ -150,4 +202,10 @@ Navigate to: http://localhost:3000
 
 GitHub Issues: https://github.com/memyselfmike/gao-agile-dev/issues
 
-**Happy Testing\!**
+Include:
+- Error message or code
+- Operating system
+- Python version (`python --version`)
+- GAO-Dev version (`gao-dev --version`)
+
+**Happy Testing!**
