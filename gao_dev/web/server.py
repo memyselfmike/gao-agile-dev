@@ -2,8 +2,8 @@
 
 import asyncio
 import signal
-import sys
 import webbrowser
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -29,6 +29,7 @@ from .api import dms as dms_router
 from .api import channels as channels_router
 from .api import threads as threads_router
 from .api import search as search_router
+from .api import onboarding as onboarding_router
 
 logger = structlog.get_logger(__name__)
 
@@ -205,6 +206,7 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     app.include_router(channels_router.router)
     app.include_router(threads_router.router)
     app.include_router(search_router.router)
+    app.include_router(onboarding_router.router)
 
     # Health check endpoint
     @app.get("/api/health")
@@ -965,7 +967,7 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
             from gao_dev.core.state.exceptions import StateTrackerError
             import sqlite3
             from datetime import datetime
-            from typing import Dict, Set, Tuple
+            from typing import Dict, Tuple
 
             # Get project root from app state
             project_root_path = request.app.state.project_root
@@ -1206,7 +1208,7 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
             from gao_dev.core.state.exceptions import StateTrackerError
             import sqlite3
             from datetime import datetime
-            from typing import Dict, List
+            from typing import Dict
             from collections import defaultdict
 
             # Get project root
@@ -2169,7 +2171,7 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
             while True:
                 # Receive messages from client (for future bidirectional communication)
                 try:
-                    data = await websocket.receive_json()
+                    await websocket.receive_json()
                     # Future: Handle client commands (subscribe, unsubscribe, etc.)
                     logger.debug("websocket_message_received", client_id=assigned_client_id)
                 except Exception:
@@ -2336,7 +2338,7 @@ def start_server(
         asyncio.run(manager.start_async())
     except KeyboardInterrupt:
         logger.info("shutting_down_web_server", reason="keyboard_interrupt")
-    except OSError as e:
+    except OSError:
         # Re-raise with helpful message
         raise
     finally:
