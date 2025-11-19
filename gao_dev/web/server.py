@@ -127,9 +127,8 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
     websocket_manager = WebSocketManager(event_bus)
 
     # Initialize session lock (read mode by default for web observability)
-    # frontend_dist_path = "gao_dev/web/frontend/dist" (relative path)
-    # Need to resolve to absolute path first, then go up to project root
-    # dist → frontend → web → gao_dev → project_root (4 levels up)
+    # frontend_dist_path is an absolute path to gao_dev/web/frontend/dist
+    # Navigate up to project root: dist → frontend → web → gao_dev → project_root (4 levels up)
     project_root = Path(config.frontend_dist_path).resolve().parent.parent.parent.parent
     session_lock = SessionLock(project_root)
 
@@ -2204,15 +2203,16 @@ def create_app(config: Optional[WebConfig] = None) -> FastAPI:
             return FileResponse(str(index_path))
 
     else:
-        # Frontend not built yet - serve placeholder
+        # Frontend not built - provide helpful error message
         @app.get("/")
         async def serve_placeholder() -> JSONResponse:
             """Serve placeholder when frontend is not built."""
             return JSONResponse(
                 {
                     "message": "GAO-Dev Web Interface",
-                    "status": "Frontend not built",
-                    "instructions": "Frontend will be built in Story 39.4",
+                    "status": "Frontend not found",
+                    "instructions": "Try upgrading: pip install --upgrade gao-dev",
+                    "details": "The frontend build is missing. This usually means you need to upgrade to the latest version.",
                 },
                 status_code=200,
             )

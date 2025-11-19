@@ -96,6 +96,8 @@ gao_dev = [
     "sandbox/reporting/templates/**/*",
     "sandbox/reporting/assets/*",
     "../.gaodev-source",  # Source repository marker for safety check
+    # Web interface frontend build (Epic 39)
+    "web/frontend/dist/**/*",
 ]
 
 [tool.setuptools.exclude-package-data]

@@ -2,7 +2,21 @@
 
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List
+
+
+def _get_default_frontend_dist_path() -> str:
+    """Get the default frontend dist path relative to package installation.
+
+    Returns:
+        Absolute path to the frontend dist directory
+    """
+    # Get the directory containing this config.py file
+    # config.py is in gao_dev/web/, so frontend/dist is at gao_dev/web/frontend/dist
+    web_dir = Path(__file__).parent
+    frontend_dist = web_dir / "frontend" / "dist"
+    return str(frontend_dist)
 
 
 def _get_cors_origins() -> List[str]:
@@ -56,7 +70,7 @@ class WebConfig:
         default_factory=lambda: os.getenv("WEB_AUTO_OPEN_BROWSER", "true").lower() == "true"
     )
     cors_origins: List[str] = field(default_factory=_get_cors_origins)
-    frontend_dist_path: str = "gao_dev/web/frontend/dist"
+    frontend_dist_path: str = field(default_factory=_get_default_frontend_dist_path)
 
     def get_url(self) -> str:
         """Get the full server URL."""
