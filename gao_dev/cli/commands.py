@@ -87,7 +87,7 @@ qa_enabled: true
         click.echo(f"  [+] Created gao-dev.yaml")
 
     # Initialize git if not already
-    git_manager = GitManager(ConfigLoader(project_root))
+    git_manager = GitManager(config_loader=ConfigLoader(project_root))
     if not git_manager.is_git_repo():
         if git_manager.git_init():
             click.echo(f"  [+] Initialized git repository")
