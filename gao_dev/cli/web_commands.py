@@ -30,12 +30,20 @@ def show_web_deprecation_warning(
         no_wait: If True, skip the delay
         delay_seconds: Number of seconds to wait before redirect
     """
+    # Track deprecation usage for telemetry
+    from ..core.deprecation_tracker import track_deprecated_command
+    track_deprecated_command(
+        "gao-dev web start",
+        "gao-dev start",
+        "v3.0",
+    )
+
     # Log at WARNING level regardless of quiet setting
     logger.warning(
         "deprecated_command_used",
         old_command="gao-dev web start",
         new_command="gao-dev start",
-        removal_version="v2.0",
+        removal_version="v3.0",
     )
 
     if quiet:
@@ -45,7 +53,7 @@ def show_web_deprecation_warning(
     message = """[bold yellow]DEPRECATION WARNING[/bold yellow]
 
 The 'gao-dev web start' command is deprecated and
-will be removed in v2.0.
+will be removed in v3.0 (Q2 2026).
 
 Use 'gao-dev start' instead - it will
 automatically handle initialization with a
@@ -54,7 +62,9 @@ guided setup wizard.
 This command will redirect to 'gao-dev start'
 in 5 seconds...
 
-Use --no-wait to skip delay, --quiet to suppress"""
+Use --no-wait to skip delay, --quiet to suppress
+
+See: docs/migration/deprecated-commands.md"""
 
     console.print(Panel(
         message,
@@ -92,7 +102,7 @@ def web() -> None:
 def start_web(port: int, host: str, no_browser: bool, no_wait: bool, quiet: bool) -> None:
     """[DEPRECATED] Start GAO-Dev web interface.
 
-    This command is deprecated and will be removed in v2.0.
+    This command is deprecated and will be removed in v3.0 (Q2 2026).
     Use 'gao-dev start' instead for the new unified onboarding experience.
 
     Examples:

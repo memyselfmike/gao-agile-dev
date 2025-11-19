@@ -29,7 +29,7 @@ def show_deprecation_warning(
     console: Console,
     old_command: str,
     new_command: str,
-    removal_version: str = "v2.0",
+    removal_version: str = "v3.0",
     quiet: bool = False,
     no_wait: bool = False,
     delay_seconds: int = 5,
@@ -45,6 +45,14 @@ def show_deprecation_warning(
         no_wait: If True, skip the delay
         delay_seconds: Number of seconds to wait before redirect
     """
+    # Track deprecation usage for telemetry
+    from ..core.deprecation_tracker import track_deprecated_command
+    track_deprecated_command(
+        old_command,
+        new_command,
+        removal_version,
+    )
+
     # Log at WARNING level regardless of quiet setting
     logger.warning(
         "deprecated_command_used",
@@ -57,10 +65,13 @@ def show_deprecation_warning(
         return
 
     # Build warning message
+    timeline = "Q2 2026" if removal_version == "v3.0" else ""
+    timeline_str = f" ({timeline})" if timeline else ""
+
     message = f"""[bold yellow]DEPRECATION WARNING[/bold yellow]
 
 The '{old_command}' command is deprecated and
-will be removed in {removal_version}.
+will be removed in {removal_version}{timeline_str}.
 
 Use '{new_command}' instead - it will
 automatically handle initialization with a
@@ -69,7 +80,9 @@ guided setup wizard.
 This command will redirect to '{new_command}'
 in {delay_seconds} seconds...
 
-Use --no-wait to skip delay, --quiet to suppress"""
+Use --no-wait to skip delay, --quiet to suppress
+
+See: docs/migration/deprecated-commands.md"""
 
     console.print(Panel(
         message,
@@ -127,7 +140,7 @@ def cli():
 def init(name: str, no_wait: bool, quiet: bool):
     """[DEPRECATED] Initialize a new GAO-Dev project.
 
-    This command is deprecated and will be removed in v2.0.
+    This command is deprecated and will be removed in v3.0 (Q2 2026).
     Use 'gao-dev start' instead for the new unified onboarding experience.
     """
     console = Console()

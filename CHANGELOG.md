@@ -35,9 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved documentation organization with dedicated directories for getting-started, guides, troubleshooting, migration, and reference
 
 ### Deprecated
+- `gao-dev init` command - use `gao-dev start` instead. Will be removed in v3.0.
+- `gao-dev web start` command - use `gao-dev start` instead. Will be removed in v3.0.
 - `gao-dev run` command (use `gao-dev start` instead)
 - `gao-dev execute-workflow` command (use `gao-dev run-workflow` instead)
 - Global `.gao-dev/` directory (use project-scoped `.gao-dev/` instead)
+
+See [Migration Guide](docs/migration/deprecated-commands.md) for details on migrating from deprecated commands.
 
 ---
 
