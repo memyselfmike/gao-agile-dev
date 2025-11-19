@@ -54,6 +54,10 @@ dependencies = [
     "psutil>=5.9.0",
     # watchdog for file system monitoring (Story 39.13)
     "watchdog>=3.0.0",
+    # keyring for system keychain access (Story 41.4 - CredentialManager)
+    "keyring>=24.0.0",
+    # cryptography for AES-256-GCM encrypted credential storage (Story 41.4)
+    "cryptography>=41.0.0",
 ]
 
 [project.optional-dependencies]
@@ -125,6 +129,20 @@ target-version = ["py311"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+[tool.ruff.lint.per-file-ignores]
+# Interface files use forward references for abstract contracts
+"gao_dev/core/interfaces/*.py" = ["F821"]
+# These files have intentional forward references to avoid circular imports
+"gao_dev/core/checklists/checklist_loader.py" = ["F821"]
+"gao_dev/core/providers/base.py" = ["F821"]
+"gao_dev/core/providers/opencode_sdk.py" = ["F821"]
+"gao_dev/core/services/process_executor.py" = ["F821"]
+"gao_dev/core/services/workflow_coordinator.py" = ["F821"]
+"gao_dev/orchestrator/agent_coordinator.py" = ["F821"]
+"gao_dev/orchestrator/mary_orchestrator.py" = ["F821"]
+"gao_dev/sandbox/manager.py" = ["F821"]
+"gao_dev/sandbox/services/*.py" = ["F821"]
+
 
 [tool.mypy]
 python_version = "3.11"

@@ -6,6 +6,11 @@ from typing import Optional
 import sys
 import asyncio
 import os
+import time
+
+import structlog
+from rich.console import Console
+from rich.panel import Panel
 
 # Fix Windows console encoding issues
 if sys.platform == "win32":
@@ -17,11 +22,87 @@ if sys.platform == "win32":
     if hasattr(sys.stderr, 'buffer'):
         sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
+logger = structlog.get_logger(__name__)
+
+
+def show_deprecation_warning(
+    console: Console,
+    old_command: str,
+    new_command: str,
+    removal_version: str = "v3.0",
+    quiet: bool = False,
+    no_wait: bool = False,
+    delay_seconds: int = 5,
+) -> None:
+    """Show deprecation warning panel for a deprecated command.
+
+    Args:
+        console: Rich console for output
+        old_command: The deprecated command name
+        new_command: The replacement command name
+        removal_version: Version when the command will be removed
+        quiet: If True, suppress the warning display
+        no_wait: If True, skip the delay
+        delay_seconds: Number of seconds to wait before redirect
+    """
+    # Track deprecation usage for telemetry
+    from ..core.deprecation_tracker import track_deprecated_command
+    track_deprecated_command(
+        old_command,
+        new_command,
+        removal_version,
+    )
+
+    # Log at WARNING level regardless of quiet setting
+    logger.warning(
+        "deprecated_command_used",
+        old_command=old_command,
+        new_command=new_command,
+        removal_version=removal_version,
+    )
+
+    if quiet:
+        return
+
+    # Build warning message
+    timeline = "Q2 2026" if removal_version == "v3.0" else ""
+    timeline_str = f" ({timeline})" if timeline else ""
+
+    message = f"""[bold yellow]DEPRECATION WARNING[/bold yellow]
+
+The '{old_command}' command is deprecated and
+will be removed in {removal_version}{timeline_str}.
+
+Use '{new_command}' instead - it will
+automatically handle initialization with a
+guided setup wizard.
+
+This command will redirect to '{new_command}'
+in {delay_seconds} seconds...
+
+Use --no-wait to skip delay, --quiet to suppress
+
+See: docs/migration/deprecated-commands.md"""
+
+    console.print(Panel(
+        message,
+        border_style="yellow",
+        title="Deprecation Notice",
+    ))
+
+    # Wait before redirect unless --no-wait specified
+    if not no_wait:
+        console.print()
+        for i in range(delay_seconds, 0, -1):
+            console.print(f"  Redirecting in {i}...", end="\r")
+            time.sleep(1)
+        console.print("  Redirecting now...   ")
+        console.print()
+
 from ..core import (
     ConfigLoader,
     WorkflowRegistry,
     WorkflowExecutor,
-    StateManager,
     GitManager,
     HealthCheck,
 )
@@ -54,58 +135,70 @@ def cli():
 
 @cli.command()
 @click.option("--name", default="My Project", help="Project name")
-def init(name: str):
-    """Initialize a new GAO-Dev project."""
-    click.echo(f">> Initializing GAO-Dev project: {name}")
+@click.option("--no-wait", is_flag=True, help="Skip deprecation warning delay")
+@click.option("--quiet", is_flag=True, help="Suppress deprecation warning (for scripts)")
+def init(name: str, no_wait: bool, quiet: bool):
+    """[DEPRECATED] Initialize a new GAO-Dev project.
 
-    project_root = Path.cwd()
+    This command is deprecated and will be removed in v3.0 (Q2 2026).
+    Use 'gao-dev start' instead for the new unified onboarding experience.
+    """
+    console = Console()
 
-    # Create project structure
-    folders = [
-        "docs",
-        "docs/stories",
-        "docs/architecture",
-    ]
+    # Show deprecation warning
+    show_deprecation_warning(
+        console=console,
+        old_command="gao-dev init",
+        new_command="gao-dev start",
+        quiet=quiet,
+        no_wait=no_wait,
+    )
 
-    for folder in folders:
-        folder_path = project_root / folder
-        folder_path.mkdir(parents=True, exist_ok=True)
-        click.echo(f"  [+] Created {folder}/")
+    # Redirect to start command
+    from .startup_orchestrator import StartupOrchestrator
+    from .startup_result import StartupError
 
-    # Create gao-dev.yaml
-    config_path = project_root / "gao-dev.yaml"
-    if not config_path.exists():
-        config_content = f"""# GAO-Dev Configuration
-project_name: "{name}"
-project_level: 2
-output_folder: "docs"
-dev_story_location: "docs/stories"
-git_auto_commit: true
-qa_enabled: true
-"""
-        config_path.write_text(config_content)
-        click.echo(f"  [+] Created gao-dev.yaml")
+    project_path = Path.cwd()
 
-    # Initialize git if not already
-    git_manager = GitManager(config_loader=ConfigLoader(project_root))
-    if not git_manager.is_git_repo():
-        if git_manager.git_init():
-            click.echo(f"  [+] Initialized git repository")
+    # Create orchestrator
+    orchestrator = StartupOrchestrator(
+        project_path=project_path,
+        headless=False,
+        no_browser=True,  # Don't auto-open browser for init redirect
+        port=3000,
+    )
 
-    # Run health check
-    click.echo("\n>> Running health check...")
-    config = ConfigLoader(project_root)
-    health_check = HealthCheck(config)
-    result = health_check.run_all_checks()
+    # Run startup
+    try:
+        result = asyncio.run(orchestrator.start())
 
-    click.echo(f"  Status: {result.status.value.upper()}")
-    click.echo(f"  {result.summary}\n")
+        if result.success:
+            console.print()
+            console.print(f"[green][OK] Startup complete in {result.total_duration_ms:.0f}ms[/green]")
+            sys.exit(0)
+        else:
+            console.print(f"[red][ERROR] Startup failed: {result.error}[/red]")
+            sys.exit(1)
 
-    click.echo("[OK] Project initialized successfully!")
-    click.echo("\nNext steps:")
-    click.echo("  1. Run 'gao-dev health' to check system status")
-    click.echo("  2. Run 'gao-dev list-workflows' to see available workflows")
-    click.echo("  3. Run 'gao-dev execute prd' to create a PRD")
+    except StartupError as e:
+        console.print()
+        console.print(f"[red][ERROR] {e}[/red]")
+        if e.suggestions:
+            console.print()
+            console.print("[yellow]Suggestions:[/yellow]")
+            for suggestion in e.suggestions:
+                console.print(f"  - {suggestion}")
+        sys.exit(1)
+
+    except KeyboardInterrupt:
+        console.print()
+        console.print("[yellow]Startup interrupted by user[/yellow]")
+        sys.exit(130)
+
+    except Exception as e:
+        console.print()
+        console.print(f"[red][ERROR] Unexpected error: {e}[/red]")
+        sys.exit(1)
 
 
 @cli.command()
@@ -587,6 +680,184 @@ cli.add_command(state)
 cli.add_command(context)
 
 @cli.command("start")
+@click.option("--project", type=Path, help="Project path (default: current directory)")
+@click.option("--headless", is_flag=True, help="Force headless mode (no wizards, env vars only)")
+@click.option("--no-browser", is_flag=True, help="Start web server without opening browser")
+@click.option("--port", type=int, default=3000, help="Web server port (default: 3000)")
+@click.option("--tui", is_flag=True, help="Force TUI wizard even in Desktop environment")
+def start(
+    project: Optional[Path],
+    headless: bool,
+    no_browser: bool,
+    port: int,
+    tui: bool,
+):
+    """Start GAO-Dev with intelligent environment detection.
+
+    Automatically detects your environment and project state to provide
+    the appropriate onboarding experience:
+
+    - Empty directory: Full onboarding wizard
+    - Existing code: Brownfield integration setup
+    - GAO-Dev project: Direct launch
+
+    Examples:
+
+      gao-dev start                    # Auto-detect and start
+      gao-dev start --headless         # CI/CD mode, env vars only
+      gao-dev start --no-browser       # Web server without browser
+      gao-dev start --port 8080        # Custom port
+      gao-dev start --tui              # Force TUI wizard
+      gao-dev start --project /path    # Specific project path
+    """
+    from rich.console import Console
+    from rich.panel import Panel
+    from .startup_orchestrator import StartupOrchestrator
+    from .startup_result import StartupError
+    from ..__version__ import __version__
+
+    console = Console()
+
+    # Resolve project path
+    project_path = project or Path.cwd()
+
+    # Validate project path exists
+    if not project_path.exists():
+        console.print(f"[red][ERROR] Project path does not exist: {project_path}[/red]")
+        sys.exit(2)
+
+    if not project_path.is_dir():
+        console.print(f"[red][ERROR] Project path is not a directory: {project_path}[/red]")
+        sys.exit(2)
+
+    # Create orchestrator
+    orchestrator = StartupOrchestrator(
+        project_path=project_path,
+        headless=headless,
+        no_browser=no_browser,
+        port=port,
+    )
+
+    # Show startup message
+    _show_startup_message(console, __version__, orchestrator, tui)
+
+    # Run startup
+    try:
+        result = asyncio.run(orchestrator.start())
+
+        if result.success:
+            # Show success summary
+            console.print()
+            console.print(f"[green][OK] Startup complete in {result.total_duration_ms:.0f}ms[/green]")
+
+            # Show interface info
+            if result.interface_launched == "web":
+                console.print(f"[cyan]Web interface available at http://localhost:{port}[/cyan]")
+            else:
+                console.print("[cyan]CLI interface ready[/cyan]")
+
+            sys.exit(0)
+        else:
+            console.print(f"[red][ERROR] Startup failed: {result.error}[/red]")
+            sys.exit(1)
+
+    except StartupError as e:
+        console.print()
+        console.print(f"[red][ERROR] {e}[/red]")
+
+        # Show suggestions
+        if e.suggestions:
+            console.print()
+            console.print("[yellow]Suggestions:[/yellow]")
+            for suggestion in e.suggestions:
+                console.print(f"  - {suggestion}")
+
+        sys.exit(1)
+
+    except KeyboardInterrupt:
+        console.print()
+        console.print("[yellow]Startup interrupted by user[/yellow]")
+        sys.exit(130)
+
+    except Exception as e:
+        console.print()
+        console.print(f"[red][ERROR] Unexpected error: {e}[/red]")
+        sys.exit(1)
+
+
+def _show_startup_message(
+    console,
+    version: str,
+    orchestrator,
+    force_tui: bool,
+) -> None:
+    """Show startup message with detected context.
+
+    Args:
+        console: Rich console for output
+        version: GAO-Dev version string
+        orchestrator: StartupOrchestrator with detection data
+        force_tui: Whether --tui flag was passed
+    """
+    from rich.panel import Panel
+    from .startup_result import WizardType
+    from gao_dev.core.environment_detector import detect_environment, EnvironmentType
+    from gao_dev.core.state_detector import detect_states, GlobalState, ProjectState
+
+    # Detect environment for display (before orchestrator runs)
+    if orchestrator.headless:
+        env_type = EnvironmentType.HEADLESS
+    else:
+        env_type = detect_environment()
+
+    global_state, project_state = detect_states(orchestrator.project_path)
+
+    # Format environment name
+    env_name = env_type.value.replace("_", " ").title()
+    if sys.platform == "win32":
+        env_name += " (Windows)"
+    elif sys.platform == "darwin":
+        env_name += " (macOS)"
+    else:
+        env_name += " (Linux)"
+
+    # Format user state
+    user_state = "First-time setup" if global_state == GlobalState.FIRST_TIME else "Returning user"
+
+    # Format project state
+    if project_state == ProjectState.EMPTY:
+        project_desc = "Empty directory"
+    elif project_state == ProjectState.BROWNFIELD:
+        project_desc = "Existing code (brownfield)"
+    else:
+        project_desc = "GAO-Dev project"
+
+    # Determine what will launch
+    if force_tui:
+        launch_desc = "Starting TUI onboarding wizard..."
+    elif orchestrator.headless:
+        launch_desc = "Starting in headless mode..."
+    elif project_state == ProjectState.GAO_DEV_PROJECT:
+        launch_desc = "Launching existing project..."
+    elif env_type == EnvironmentType.DESKTOP and not orchestrator.no_browser:
+        launch_desc = "Starting web-based onboarding wizard..."
+    else:
+        launch_desc = "Starting CLI onboarding..."
+
+    # Build message
+    message = f"""[bold cyan]GAO-Dev v{version}[/bold cyan]
+
+[bold]Detected:[/bold]
+  Environment: {env_name}
+  User: {user_state}
+  Project: {project_desc}
+
+{launch_desc}"""
+
+    console.print(Panel(message, title="Startup", border_style="cyan"))
+
+
+@cli.command("chat")
 @click.option("--project", type=Path, help="Project root (default: auto-detect)")
 @click.option("--test-mode", is_flag=True, help="Enable test mode with fixture responses")
 @click.option("--capture-mode", is_flag=True, help="Enable conversation capture logging")
@@ -597,7 +868,10 @@ def start_chat(
     capture_mode: bool,
     fixture: Optional[Path]
 ):
-    """Start interactive chat with Brian."""
+    """Start interactive chat with Brian (legacy command).
+
+    Note: Consider using 'gao-dev start' for the new unified startup experience.
+    """
     from .chat_repl import ChatREPL
 
     # Validate fixture exists if test mode enabled
