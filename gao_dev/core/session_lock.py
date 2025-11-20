@@ -49,8 +49,9 @@ class SessionLock:
         self.current_mode: str = "none"
         self._lock = threading.Lock()
 
-        # Ensure .gao-dev directory exists
-        self.lock_file.parent.mkdir(parents=True, exist_ok=True)
+        # NOTE: Do NOT create .gao-dev directory here!
+        # Creating it prematurely interferes with project state detection.
+        # The directory will be created when first lock is acquired.
 
         logger.info("session_lock_initialized", lock_file=str(self.lock_file))
 
@@ -133,6 +134,9 @@ class SessionLock:
             "pid": os.getpid(),
             "timestamp": datetime.now().isoformat(),
         }
+
+        # Ensure .gao-dev directory exists before writing lock file
+        self.lock_file.parent.mkdir(parents=True, exist_ok=True)
 
         # Atomic write using temporary file + rename
         temp_file = self.lock_file.with_suffix(".tmp")
