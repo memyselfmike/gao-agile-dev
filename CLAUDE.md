@@ -416,15 +416,64 @@ gao-dev migrate --rollback                              # Rollback migration
 
 ---
 
+## Development Environment Setup
+
+### Installation Modes
+
+GAO-Dev has **two distinct installation modes** - **CRITICAL: Never mix them**:
+
+**1. Beta Testing Mode** - For using GAO-Dev
+```bash
+pip install git+https://github.com/memyselfmike/gao-agile-dev.git@main
+```
+
+**2. Development Mode** - For contributing to GAO-Dev (YOU ARE HERE)
+```bash
+git clone https://github.com/memyselfmike/gao-agile-dev.git
+cd gao-agile-dev
+pip install -e ".[dev]"
+python verify_install.py  # MUST SHOW ALL [PASS]
+```
+
+**⚠️ Mixing Modes = Stale Installation Issue**
+
+If you previously installed for beta testing, you MUST clean up first:
+```bash
+# Windows
+reinstall_dev.bat
+
+# macOS/Linux
+./reinstall_dev.sh
+```
+
+**Symptoms of Stale Installation:**
+- Code changes don't take effect
+- Web server uses wrong project_root
+- Logs show `C:\Python314\Lib\site-packages` instead of project directory
+
+**Fix:**
+```bash
+python verify_install.py  # Check current state
+reinstall_dev.bat  # Clean and reinstall (Windows)
+./reinstall_dev.sh  # Clean and reinstall (macOS/Linux)
+```
+
+**See Also:**
+- [INSTALLATION.md](INSTALLATION.md) - Complete installation guide
+- [DEV_TROUBLESHOOTING.md](DEV_TROUBLESHOOTING.md) - Detailed troubleshooting
+
+---
+
 ## Development Patterns & Best Practices
 
 ### 1. Starting a Session
 
 **ALWAYS START HERE**:
-1. Read `docs/bmm-workflow-status.md` - Current epic, story, what's next
-2. Read relevant PRD/Architecture (`docs/features/<feature-name>/`)
-3. Check latest commits: `git log --oneline -10`
-4. Read current story file for acceptance criteria
+1. **Verify installation**: `python verify_install.py` (should show all [PASS])
+2. Read `docs/bmm-workflow-status.md` - Current epic, story, what's next
+3. Read relevant PRD/Architecture (`docs/features/<feature-name>/`)
+4. Check latest commits: `git log --oneline -10`
+5. Read current story file for acceptance criteria
 
 ### 2. Working on Stories
 
@@ -545,8 +594,11 @@ All prompts and agent configs are YAML-based:
 
 | Issue | Solution |
 |-------|----------|
-| **Import errors** | `pip install -e .` |
+| **Changes not taking effect** | `python verify_install.py` → `reinstall_dev.bat` if [FAIL] |
+| **Wrong project_root in logs** | Run `reinstall_dev.bat` to clean stale site-packages |
+| **Import errors** | `pip install -e .` and verify with `python verify_install.py` |
 | **CLI not found** | Reinstall: `pip install -e .` |
+| **Stale gao_dev in site-packages** | Run `reinstall_dev.bat` to clean and reinstall |
 | **Variable not resolved** | Check workflow.yaml or config/defaults.yaml |
 | **File at wrong location** | Check variable definitions, verify resolution |
 | **Artifact not detected** | Ensure file in tracked directory (docs/, src/, gao_dev/) |

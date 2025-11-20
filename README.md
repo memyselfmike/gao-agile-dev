@@ -29,6 +29,14 @@ GAO-Dev is an autonomous AI development orchestration system that manages the co
 
 ## Installation
 
+**📖 For complete installation guide including troubleshooting:** See [INSTALLATION.md](INSTALLATION.md)
+
+**⚠️ Important:** GAO-Dev has two installation modes:
+- **Beta Testing** (using GAO-Dev): `pip install git+https://...`
+- **Development** (contributing to GAO-Dev): `pip install -e .`
+
+**Never mix both modes!** See [INSTALLATION.md](INSTALLATION.md) for details.
+
 ### Prerequisites
 
 1. **Python 3.11 or higher**

@@ -2,9 +2,26 @@
 
 **Beta Version:** 0.3.0-beta.1
 **Release Date:** 2025-11-19
-**Latest Update:** 2025-11-19 - Streamlined Onboarding with `gao-dev start`
+**Latest Update:** 2025-11-20 - Installation Modes & Development Workflow
 **Testing Duration:** 30-45 minutes
 **For:** Beta testers evaluating GAO-Dev
+
+---
+
+## ⚠️ Important: Installation Modes
+
+GAO-Dev has **two installation modes**:
+
+- **Beta Testing Mode** (this guide): `pip install git+https://github.com/...`
+- **Development Mode**: `pip install -e .` (for contributing to GAO-Dev)
+
+**DO NOT MIX BOTH MODES!** Mixing modes causes conflicts where code changes don't take effect.
+
+**If you're beta testing AND developing:**
+- Use separate virtual environments (see [INSTALLATION.md](INSTALLATION.md#switching-between-modes))
+- Use `reinstall_dev.bat` to clean up conflicts
+
+**For complete installation guide:** See [INSTALLATION.md](INSTALLATION.md)
 
 ---
 

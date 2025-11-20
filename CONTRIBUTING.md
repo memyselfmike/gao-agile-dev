@@ -19,22 +19,96 @@ Thank you for your interest in contributing to GAO-Dev! This document provides g
 - Git
 - Virtual environment (recommended)
 
-### Setup Development Environment
+### ⚠️ Critical: Installation Modes
+
+GAO-Dev has **two installation modes** - **NEVER MIX THEM**:
+
+1. **Beta Testing Mode**: `pip install git+https://...` (for using GAO-Dev)
+2. **Development Mode**: `pip install -e .` (for contributing to GAO-Dev)
+
+**Mixing modes causes stale installation issues where your code changes don't take effect.**
+
+**If you previously installed for beta testing and now want to develop:**
+
 ```bash
-# Clone the repository
+# Step 1: Clean up completely
+pip uninstall -y gao-dev
+# Remove any stale directories (see INSTALLATION.md for details)
+
+# Step 2: Clone and install in editable mode
 git clone https://github.com/memyselfmike/gao-agile-dev.git
 cd gao-agile-dev
-
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install in development mode
 pip install -e ".[dev]"
 
-# Verify installation
-gao-dev --help
+# Step 3: Verify (critical!)
+python verify_install.py
 ```
+
+**For detailed troubleshooting:** See [INSTALLATION.md](INSTALLATION.md) and [DEV_TROUBLESHOOTING.md](DEV_TROUBLESHOOTING.md)
+
+### Setup Development Environment
+
+**Step 1: Clone Repository**
+```bash
+git clone https://github.com/memyselfmike/gao-agile-dev.git
+cd gao-agile-dev
+```
+
+**Step 2: Create Virtual Environment**
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# Windows CMD:
+venv\Scripts\activate
+
+# Windows PowerShell:
+venv\Scripts\Activate.ps1
+
+# macOS/Linux/Git Bash:
+source venv/bin/activate
+```
+
+**Step 3: Install in Editable Mode**
+```bash
+# Install with development dependencies
+pip install -e ".[dev]"
+```
+
+**Step 4: Verify Installation** (**CRITICAL STEP**)
+```bash
+# Run verification script
+python verify_install.py
+
+# Should show all [PASS]
+# If any [FAIL], run: reinstall_dev.bat (Windows) or ./reinstall_dev.sh (macOS/Linux)
+```
+
+**Step 5: Test Development Workflow**
+```bash
+# Make a test change
+echo "# Test comment" >> gao_dev/cli/chat_repl.py
+
+# Test immediately (no reinstall needed!)
+gao-dev --help
+
+# Changes take effect immediately in editable mode
+```
+
+### Common Setup Issues
+
+**Problem: Changes don't take effect**
+- **Cause**: Stale installation from mixing modes
+- **Solution**: Run `reinstall_dev.bat` (Windows) or `./reinstall_dev.sh` (macOS/Linux)
+
+**Problem: Import errors**
+- **Cause**: Not in editable mode
+- **Solution**: `pip install -e ".[dev]"` and verify with `python verify_install.py`
+
+**Problem: Permission errors**
+- **Cause**: Files locked by running processes
+- **Solution**: Close all terminals running gao-dev, then run cleanup script
 
 ---
 
