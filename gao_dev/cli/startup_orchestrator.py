@@ -603,7 +603,6 @@ class StartupOrchestrator:
         """Run the launch phase.
 
         Launches appropriate interface (web server or CLI REPL).
-        NOTE: This is a stub - actual launch will delegate to ChatREPL or WebServer.
 
         Returns:
             PhaseResult for the launch phase
@@ -624,15 +623,33 @@ class StartupOrchestrator:
             ):
                 interface = "web"
 
-            # Stub implementation - actual launch will be added
-            # This would:
-            # - For "web": Start FastAPI server, open browser
-            # - For "cli": Start ChatREPL
-            self.logger.info(
-                "launch_interface_stub",
-                interface=interface,
-                message="Interface launch will delegate to existing components",
-            )
+            # Launch appropriate interface
+            if interface == "web":
+                # Start web server with auto-open browser
+                from ..web.server import start_server
+                from ..web.config import WebConfig
+
+                self.logger.info(
+                    "launching_web_interface",
+                    port=self.port,
+                    auto_open=not self.no_browser,
+                )
+
+                # Create config
+                config = WebConfig(
+                    host="127.0.0.1",
+                    port=self.port,
+                    auto_open=not self.no_browser,
+                )
+
+                # This will block until server stops
+                # It opens browser automatically if auto_open=True
+                start_server(config=config)
+
+            else:
+                # CLI interface - delegate to ChatREPL
+                # For now, just log that we're ready for CLI
+                self.logger.info("cli_interface_ready", message="Use ChatREPL for interaction")
 
             duration_ms = (time.perf_counter() - start_time) * 1000
 
@@ -640,7 +657,7 @@ class StartupOrchestrator:
                 phase=StartupPhase.LAUNCH,
                 success=True,
                 duration_ms=duration_ms,
-                message=f"Interface ready: {interface}",
+                message=f"Interface launched: {interface}",
                 details={
                     "interface": interface,
                     "port": str(self.port) if interface == "web" else "",

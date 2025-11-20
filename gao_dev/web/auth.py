@@ -48,21 +48,46 @@ class SessionTokenManager:
                     error=str(e),
                 )
 
-        # Generate new token
+        # Generate new token (in memory only)
         self.token = secrets.token_urlsafe(32)
         logger.info("session_token_generated", token_length=len(self.token))
 
-        # Store token for CLI access
-        try:
-            self.token_file.parent.mkdir(parents=True, exist_ok=True)
-            self.token_file.write_text(self.token)
-            logger.info("session_token_stored", token_file=str(self.token_file))
-        except Exception as e:
-            logger.warning(
-                "failed_to_store_session_token",
+        # Only store token if .gao-dev directory already exists
+        # This prevents creating .gao-dev prematurely during module imports
+        if self.token_file.parent.exists():
+            try:
+                self.token_file.write_text(self.token)
+                logger.info("session_token_stored", token_file=str(self.token_file))
+            except Exception as e:
+                logger.warning(
+                    "failed_to_store_session_token",
+                    token_file=str(self.token_file),
+                    error=str(e),
+                )
+        else:
+            logger.debug(
+                "session_token_not_stored",
+                reason="gao_dev_directory_not_exists",
                 token_file=str(self.token_file),
-                error=str(e),
             )
+
+    def ensure_persisted(self) -> None:
+        """Ensure token is persisted to disk.
+
+        Call this when the server is actually starting to make sure
+        the token file is created (e.g., during initialization phase).
+        """
+        if not self.token_file.exists() and self.token:
+            try:
+                self.token_file.parent.mkdir(parents=True, exist_ok=True)
+                self.token_file.write_text(self.token)
+                logger.info("session_token_persisted", token_file=str(self.token_file))
+            except Exception as e:
+                logger.warning(
+                    "failed_to_persist_session_token",
+                    token_file=str(self.token_file),
+                    error=str(e),
+                )
 
     def validate(self, token: Optional[str]) -> bool:
         """Validate a session token.
