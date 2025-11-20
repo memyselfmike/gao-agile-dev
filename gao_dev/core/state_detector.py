@@ -156,8 +156,30 @@ def _find_gao_dev_root(start_path: Path) -> Optional[Path]:
     while True:
         gao_dev_dir = current / ".gao-dev"
         if gao_dev_dir.is_dir():
-            logger.debug("found_gao_dev_root", path=str(current))
-            return current
+            # Check if this is a real GAO-Dev project or just web server artifacts
+            # If .gao-dev only contains session.token and/or session.lock, it's not a real project
+            try:
+                contents = set(entry.name for entry in os.scandir(gao_dev_dir))
+                # Ignore web server artifacts
+                web_artifacts = {"session.token", "session.lock"}
+                non_artifact_files = contents - web_artifacts
+
+                if non_artifact_files:
+                    # Found real GAO-Dev files beyond web server artifacts
+                    logger.debug("found_gao_dev_root", path=str(current), non_artifact_count=len(non_artifact_files))
+                    return current
+                else:
+                    # Only web server artifacts, not a real GAO-Dev project
+                    # Continue searching up the tree
+                    logger.debug(
+                        "skipping_web_artifact_only_gao_dev",
+                        path=str(current),
+                        artifacts=list(contents),
+                    )
+            except (OSError, PermissionError) as e:
+                logger.warning("failed_to_check_gao_dev_contents", path=str(gao_dev_dir), error=str(e))
+                # On error, assume it's a real project (safer default)
+                return current
 
         parent = current.parent
         if parent == current:
