@@ -784,3 +784,117 @@ class TestEnums:
         assert StartupPhase.INITIALIZATION.value == "initialization"
         assert StartupPhase.LAUNCH.value == "launch"
         assert StartupPhase.COMPLETE.value == "complete"
+
+
+class TestStartupOrchestratorRegressions:
+    """Regression tests for fixed bugs."""
+
+    @pytest.fixture
+    def tmp_project(self, tmp_path: Path) -> Path:
+        """Create a temporary project directory."""
+        return tmp_path
+
+    @pytest.mark.asyncio
+    async def test_fresh_directory_not_detected_as_existing_project(
+        self, tmp_project: Path
+    ) -> None:
+        """Regression test: Fresh directory should not be detected as existing project.
+
+        Bug: SessionTokenManager created .gao-dev during module import,
+        before state detection ran. This caused fresh directories to be
+        incorrectly detected as existing GAO-Dev projects.
+
+        Fix: SessionTokenManager now only creates .gao-dev if it already exists,
+        or when ensure_persisted() is explicitly called.
+        """
+        # Ensure directory is truly empty
+        assert not (tmp_project / ".gao-dev").exists()
+        assert len(list(tmp_project.iterdir())) == 0
+
+        # Mock environment detection to return desktop + first-time + empty
+        with patch(
+            "gao_dev.cli.startup_orchestrator.detect_environment"
+        ) as mock_env, patch(
+            "gao_dev.cli.startup_orchestrator.detect_states"
+        ) as mock_states:
+            mock_env.return_value = EnvironmentType.DESKTOP
+            mock_states.return_value = (GlobalState.FIRST_TIME, ProjectState.EMPTY)
+
+            orchestrator = StartupOrchestrator(project_path=tmp_project)
+
+            # Run detection phase
+            detection_result = await orchestrator._run_detection_phase()
+
+            # Verify detection succeeded
+            assert detection_result.success is True
+
+            # CRITICAL: Directory should still be empty after detection
+            # Bug would have created .gao-dev here
+            assert not (tmp_project / ".gao-dev").exists()
+
+            # Verify state was detected correctly
+            assert orchestrator.environment == EnvironmentType.DESKTOP
+            assert orchestrator.global_state == GlobalState.FIRST_TIME
+            assert orchestrator.project_state == ProjectState.EMPTY
+
+            # Run decision phase
+            decision_result = await orchestrator._run_decision_phase()
+
+            # Should select WEB wizard with FULL onboarding
+            # Bug would have selected NONE wizard with SKIP mode
+            assert orchestrator.wizard_type == WizardType.WEB
+            assert orchestrator.onboarding_mode == OnboardingMode.FULL
+
+    @pytest.mark.asyncio
+    async def test_web_launch_actually_launches(self, tmp_project: Path) -> None:
+        """Regression test: Web launch phase should actually start server.
+
+        Bug: _run_launch_phase was a stub that logged but didn't actually
+        launch the web server or open browser.
+
+        Fix: _run_launch_phase now calls start_server() with proper config.
+        """
+        orchestrator = StartupOrchestrator(
+            project_path=tmp_project,
+            no_browser=False,  # Should open browser
+            port=3000,
+        )
+        orchestrator.environment = EnvironmentType.DESKTOP
+        orchestrator.wizard_type = WizardType.WEB
+
+        # Mock start_server to avoid actually starting server in tests
+        with patch("gao_dev.web.server.start_server") as mock_server:
+            phase_result = await orchestrator._run_launch_phase()
+
+            # Verify start_server was called
+            assert mock_server.called
+
+            # Verify config was passed correctly
+            call_args = mock_server.call_args
+            config = call_args.kwargs["config"]
+            assert config.port == 3000
+            assert config.auto_open is True  # Should open browser
+
+            # Verify phase result
+            assert phase_result.success is True
+            assert phase_result.details["interface"] == "web"
+
+    @pytest.mark.asyncio
+    async def test_cli_launch_does_not_start_server(self, tmp_project: Path) -> None:
+        """Test CLI launch does not start web server."""
+        orchestrator = StartupOrchestrator(
+            project_path=tmp_project,
+            no_browser=True,  # Forces CLI
+        )
+        orchestrator.environment = EnvironmentType.DESKTOP
+        orchestrator.wizard_type = WizardType.NONE
+
+        # Mock start_server to ensure it's not called
+        with patch("gao_dev.web.server.start_server") as mock_server:
+            phase_result = await orchestrator._run_launch_phase()
+
+            # Verify start_server was NOT called
+            assert not mock_server.called
+
+            # Verify CLI interface selected
+            assert phase_result.details["interface"] == "cli"
