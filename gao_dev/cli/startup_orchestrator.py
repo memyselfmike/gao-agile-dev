@@ -612,15 +612,13 @@ class StartupOrchestrator:
 
         try:
             # Determine interface type
-            # Web interface for Desktop with browser
-            # CLI for everything else (including Desktop with --no-browser)
+            # Web interface for Desktop (unless --no-browser)
+            # CLI for headless/SSH/Docker environments
             interface = "cli"
 
-            if (
-                self.environment == EnvironmentType.DESKTOP
-                and not self.no_browser
-                and self.wizard_type == WizardType.WEB
-            ):
+            if self.environment == EnvironmentType.DESKTOP and not self.no_browser:
+                # Always launch web interface for Desktop
+                # Frontend will handle onboarding vs main interface
                 interface = "web"
 
             # Launch appropriate interface
