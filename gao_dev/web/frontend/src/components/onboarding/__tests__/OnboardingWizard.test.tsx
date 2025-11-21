@@ -32,7 +32,8 @@ export const mockOnboardingStatus: OnboardingStatus = {
     name: 'Test User',
     email: 'test@example.com',
   },
-  available_providers: [
+  project_root: "/test/path",
+      available_providers: [
     {
       id: 'claude-code',
       name: 'Claude Code',
@@ -74,7 +75,9 @@ export const mockOnboardingStatus: OnboardingStatus = {
 
 export const mockProjectData: ProjectStepData = {
   name: 'test-project',
-  type: 'web-app',
+  path: '/test/path',
+  language: 'python',
+  scale_level: 2,
   description: 'Test description',
 };
 

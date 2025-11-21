@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 
 def _get_default_frontend_dist_path() -> str:
@@ -57,6 +57,7 @@ class WebConfig:
         auto_open: Auto-open browser on startup (default: True)
         cors_origins: Allowed CORS origins (default: localhost with port ranges)
         frontend_dist_path: Path to frontend build directory
+        project_root: Project root directory (where gao-dev was run from)
 
     Environment Variables:
         WEB_HOST: Override server host (default: 127.0.0.1)
@@ -71,6 +72,7 @@ class WebConfig:
     )
     cors_origins: List[str] = field(default_factory=_get_cors_origins)
     frontend_dist_path: str = field(default_factory=_get_default_frontend_dist_path)
+    project_root: Optional[Path] = None  # Must be set explicitly by caller
 
     def get_url(self) -> str:
         """Get the full server URL."""

@@ -57,9 +57,9 @@ export function CompletionStep({
               <div className="flex-1">
                 <p className="text-sm font-medium">Project</p>
                 <p className="text-sm text-muted-foreground">{projectData.name}</p>
-                {projectData.type && (
+                {projectData.language && (
                   <p className="text-xs text-muted-foreground">
-                    Type: {projectData.type}
+                    Type: {projectData.language}
                   </p>
                 )}
                 {projectData.description && (

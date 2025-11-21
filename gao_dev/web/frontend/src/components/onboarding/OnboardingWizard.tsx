@@ -47,7 +47,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   const [state, setState] = useState<WizardState>({
     currentStep: 'project',
-    projectData: { name: '', type: '', description: '' },
+    projectData: { name: '', path: '', language: 'python', scale_level: 2, description: '' },
     gitData: { name: '', email: '' },
     providerData: { provider_id: '' },
     credentialsData: { api_key: '', use_env_var: false },
@@ -72,7 +72,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           ...prev,
           projectData: {
             name: data.project_defaults?.name || '',
-            type: data.project_defaults?.type || '',
+            path: data.project_root || '',
+            language: 'python',
+            scale_level: 2,
             description: data.project_defaults?.description || '',
           },
           gitData: {

@@ -293,6 +293,7 @@ async def get_onboarding_status(request: Request) -> OnboardingResponse:
             "completed_steps": completed_steps,
             "project_name": state.get("project", {}).get("name"),
             "project_path": state.get("project", {}).get("path"),
+            "project_root": str(project_root),
             "git_initialized": "git" in completed_steps,
             "provider_configured": "provider" in completed_steps,
             "credentials_validated": "credentials" in completed_steps,

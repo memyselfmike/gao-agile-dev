@@ -71,20 +71,7 @@ export function ProjectStep({ data, errors, onChange }: ProjectStepProps) {
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="project-type">Project Type</Label>
-          <Input
-            id="project-type"
-            type="text"
-            value={data.type}
-            onChange={(e) => handleChange('type', e.target.value)}
-            placeholder="web-app"
-            aria-describedby="project-type-hint"
-          />
-          <p id="project-type-hint" className="text-xs text-muted-foreground">
-            e.g., web-app, cli-tool, api-service
-          </p>
-        </div>
+
 
         <div className="space-y-2">
           <Label htmlFor="project-description">Description</Label>

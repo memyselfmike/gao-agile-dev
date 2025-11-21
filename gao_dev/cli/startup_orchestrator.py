@@ -638,6 +638,7 @@ class StartupOrchestrator:
                     host="127.0.0.1",
                     port=self.port,
                     auto_open=not self.no_browser,
+                    project_root=self.project_path,
                 )
 
                 # Print URL for user

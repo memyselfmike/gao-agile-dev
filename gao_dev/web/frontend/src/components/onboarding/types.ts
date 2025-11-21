@@ -11,6 +11,7 @@ export interface OnboardingStatus {
   project_defaults: ProjectDefaults;
   git_defaults: GitDefaults;
   available_providers: ProviderInfo[];
+  project_root: string;
 }
 
 export interface ProjectDefaults {
@@ -36,7 +37,9 @@ export interface ProviderInfo {
 
 export interface ProjectStepData {
   name: string;
-  type: string;
+  path: string;
+  language: string;
+  scale_level: number;
   description: string;
 }
 

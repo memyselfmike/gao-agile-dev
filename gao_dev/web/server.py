@@ -2346,6 +2346,47 @@ def start_server(
         logger.info("web_server_stopped")
 
 
-# Module-level app instance for uvicorn
-# This allows running: python -m uvicorn gao_dev.web.server:app
-app = create_app()
+# Lazy-loaded app instance for uvicorn
+# This allows running: python -m uvicorn gao_dev.web.server:app --factory
+# Using a factory function prevents side effects during import (like creating .gao-dev/)
+_app_instance = None
+
+
+def get_app():
+    """Get or create the FastAPI app instance.
+
+    This is a factory function for uvicorn to avoid side effects during import.
+    The SessionTokenManager creates .gao-dev/session.token which would interfere
+    with project state detection if created prematurely.
+
+    Usage with uvicorn:
+        uvicorn gao_dev.web.server:get_app --factory
+
+    Returns:
+        FastAPI application instance
+    """
+    global _app_instance
+    if _app_instance is None:
+        _app_instance = create_app()
+    return _app_instance
+
+
+# For backwards compatibility, also provide 'app' but as a lazy property
+# This is accessed when running: python -m uvicorn gao_dev.web.server:app
+class _LazyApp:
+    """Lazy-loaded app wrapper to avoid import-time side effects."""
+
+    _instance = None
+
+    def __getattr__(self, name):
+        if _LazyApp._instance is None:
+            _LazyApp._instance = create_app()
+        return getattr(_LazyApp._instance, name)
+
+    def __call__(self, *args, **kwargs):
+        if _LazyApp._instance is None:
+            _LazyApp._instance = create_app()
+        return _LazyApp._instance(*args, **kwargs)
+
+
+app = _LazyApp()
