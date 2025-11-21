@@ -626,7 +626,7 @@ class StartupOrchestrator:
             # Launch appropriate interface
             if interface == "web":
                 # Start web server with auto-open browser
-                from ..web.server import start_server
+                from ..web.server import ServerManager
                 from ..web.config import WebConfig
 
                 self.logger.info(
@@ -642,9 +642,21 @@ class StartupOrchestrator:
                     auto_open=not self.no_browser,
                 )
 
+                # Print URL for user
+                url = config.get_url()
+                print(f"Web interface available at {url}")
+
+                # Create manager and await the async start method
                 # This will block until server stops
                 # It opens browser automatically if auto_open=True
-                start_server(config=config)
+                manager = ServerManager(config)
+                try:
+                    await manager.start_async()
+                except KeyboardInterrupt:
+                    self.logger.info("shutting_down_web_server", reason="keyboard_interrupt")
+                finally:
+                    manager.stop()
+                    self.logger.info("web_server_stopped")
 
             else:
                 # CLI interface - delegate to ChatREPL
