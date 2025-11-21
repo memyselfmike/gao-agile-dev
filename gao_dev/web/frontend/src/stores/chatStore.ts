@@ -28,19 +28,35 @@ interface ChatState {
   switchAgent: (agent: Agent) => void;
 }
 
+// Validate that an agent object has all required properties
+const isValidAgent = (agent: any): agent is Agent => {
+  return (
+    agent &&
+    typeof agent === 'object' &&
+    typeof agent.id === 'string' &&
+    typeof agent.name === 'string' &&
+    typeof agent.role === 'string' &&
+    typeof agent.status === 'string'
+  );
+};
+
 // Load from localStorage on init
 const loadFromStorage = () => {
   try {
     const stored = localStorage.getItem('gao-dev-chat-storage');
     if (stored) {
       const parsed = JSON.parse(stored);
+      // Validate activeAgent structure before using it
+      const activeAgent = isValidAgent(parsed.activeAgent) ? parsed.activeAgent : null;
       return {
-        activeAgent: parsed.activeAgent || null,
+        activeAgent,
         agentHistory: parsed.agentHistory || {},
       };
     }
   } catch (e) {
     console.error('Failed to load chat storage:', e);
+    // Clear corrupted storage
+    localStorage.removeItem('gao-dev-chat-storage');
   }
   return { activeAgent: null, agentHistory: {} };
 };
