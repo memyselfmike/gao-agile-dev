@@ -359,7 +359,8 @@ function App() {
     // eslint-disable-next-line react-hooks-rules-of-hooks
   }, []);
 
-  if (isInitializing) {
+  // Show loading spinner while initializing OR while checking onboarding status
+  if (isInitializing || needsOnboarding === null) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <LoadingSpinner size="lg" message="Connecting to GAO-Dev..." />
@@ -368,7 +369,7 @@ function App() {
   }
 
   // Show onboarding wizard if needed
-  if (needsOnboarding) {
+  if (needsOnboarding === true) {
     return (
       <ErrorBoundary>
         <OnboardingWizard
@@ -381,7 +382,7 @@ function App() {
     );
   }
 
-  // Show main application
+  // Show main application (needsOnboarding is false)
   return (
     <ErrorBoundary>
       <RootLayout isConnected={isConnected} projectName="GAO-Dev" />
