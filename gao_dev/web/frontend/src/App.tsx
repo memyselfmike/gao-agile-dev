@@ -13,13 +13,14 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { RootLayout } from './components/layout/RootLayout';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { SearchResults } from './components/search';
+import { OnboardingWizard } from './components/onboarding';
 import { toast } from 'sonner';
 import type { WebSocketMessage } from './types';
 
 function App() {
-  const [wsClient, setWsClient] = useState<WebSocketClient | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
   const wsClientRef = useRef<WebSocketClient | null>(null);
   const addActivity = useActivityStore((state) => state.addEvent);
   const addEventWithSequence = useActivityStore((state) => state.addEventWithSequence);
@@ -32,7 +33,33 @@ function App() {
     // Flag to prevent state updates after unmount (StrictMode fix)
     let isActive = true;
 
-    // Create WebSocket connection on mount
+    // Check onboarding status first
+    const checkOnboardingStatus = async () => {
+      try {
+        const response = await apiRequest('/api/onboarding/status');
+        if (response.ok) {
+          const data = await response.json();
+          // Check if onboarding is complete
+          const isComplete = data.data?.is_complete ?? false;
+          if (isActive) {
+            setNeedsOnboarding(!isComplete);
+          }
+        } else {
+          // If onboarding API fails, assume we need onboarding
+          if (isActive) {
+            setNeedsOnboarding(true);
+          }
+        }
+      } catch (error) {
+        // If error, assume we need onboarding (fail-safe)
+        console.error('Failed to check onboarding status:', error);
+        if (isActive) {
+          setNeedsOnboarding(true);
+        }
+      }
+    };
+
+    // Create WebSocket connection after onboarding check
     const initWebSocket = async () => {
       try {
         const client = await createWebSocketClient(
@@ -277,7 +304,6 @@ function App() {
           return;
         }
 
-        setWsClient(client);
         wsClientRef.current = client;
 
         // Fetch session token
@@ -303,7 +329,26 @@ function App() {
       }
     };
 
-    initWebSocket();
+    // Initialize app
+    const init = async () => {
+      await checkOnboardingStatus();
+      // Only init WebSocket if onboarding is complete
+      const statusResponse = await apiRequest('/api/onboarding/status');
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        const isComplete = statusData.data?.is_complete ?? false;
+        if (isComplete) {
+          await initWebSocket();
+        } else {
+          // Onboarding needed - just stop loading spinner
+          if (isActive) {
+            setIsInitializing(false);
+          }
+        }
+      }
+    };
+
+    init();
 
     // Cleanup on unmount - use ref to access current client
     return () => {
@@ -322,6 +367,21 @@ function App() {
     );
   }
 
+  // Show onboarding wizard if needed
+  if (needsOnboarding) {
+    return (
+      <ErrorBoundary>
+        <OnboardingWizard
+          onComplete={() => {
+            // Onboarding complete, reload to initialize main app
+            window.location.reload();
+          }}
+        />
+      </ErrorBoundary>
+    );
+  }
+
+  // Show main application
   return (
     <ErrorBoundary>
       <RootLayout isConnected={isConnected} projectName="GAO-Dev" />
