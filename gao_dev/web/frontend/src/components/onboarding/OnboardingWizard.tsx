@@ -67,23 +67,23 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
         const data = (await response.json()) as OnboardingStatus;
 
-        // Update state with defaults
+        // Update state with defaults (use optional chaining and fallbacks)
         setState((prev) => ({
           ...prev,
           projectData: {
-            name: data.project_defaults.name,
-            type: data.project_defaults.type,
-            description: data.project_defaults.description,
+            name: data.project_defaults?.name || '',
+            type: data.project_defaults?.type || '',
+            description: data.project_defaults?.description || '',
           },
           gitData: {
-            name: data.git_defaults.name,
-            email: data.git_defaults.email,
+            name: data.git_defaults?.name || '',
+            email: data.git_defaults?.email || '',
           },
           currentStep: (data.current_step as WizardStep) || 'project',
         }));
 
-        setProviders(data.available_providers);
-        setCompletedSteps(data.completed_steps as WizardStep[]);
+        setProviders(data.available_providers || []);
+        setCompletedSteps((data.completed_steps as WizardStep[]) || []);
       } catch (error) {
         setInitError(
           error instanceof Error ? error.message : 'Failed to initialize wizard'

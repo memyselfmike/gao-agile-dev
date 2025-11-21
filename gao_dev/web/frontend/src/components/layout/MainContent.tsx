@@ -35,10 +35,11 @@ export function MainContent({ activeTab, layoutRef }: MainContentProps) {
   // Communication tab: Show DualSidebar + DM/Channel conversation views with resizable layout
   if (activeTab === 'communication') {
     // Story 39.32: Show DM conversation view when in DMs and an agent is selected
-    const showDMConversation = primaryView === 'dms' && activeAgent !== null;
+    // Use != null to check for both null AND undefined
+    const showDMConversation = primaryView === 'dms' && activeAgent != null;
 
     // Story 39.33: Show channel view when in Channels and a channel is selected
-    const showChannelView = primaryView === 'channels' && activeChannel !== null;
+    const showChannelView = primaryView === 'channels' && activeChannel != null;
 
     return (
       <ResizableLayout
