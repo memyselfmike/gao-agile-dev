@@ -2383,10 +2383,10 @@ class _LazyApp:
             _LazyApp._instance = create_app()
         return getattr(_LazyApp._instance, name)
 
-    def __call__(self, *args, **kwargs):
+    async def __call__(self, scope, receive, send):
         if _LazyApp._instance is None:
             _LazyApp._instance = create_app()
-        return _LazyApp._instance(*args, **kwargs)
+        await _LazyApp._instance(scope, receive, send)
 
 
 app = _LazyApp()
