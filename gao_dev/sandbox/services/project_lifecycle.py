@@ -1,5 +1,7 @@
 """Service for managing project lifecycle operations."""
 
+from __future__ import annotations
+
 import re
 import shutil
 from datetime import datetime
@@ -117,7 +119,7 @@ class ProjectLifecycleService:
             # Initialize document lifecycle (NEW)
             document_lifecycle_initialized = False
             try:
-                doc_manager = ProjectDocumentLifecycle.initialize(project_dir)
+                ProjectDocumentLifecycle.initialize(project_dir)
                 document_lifecycle_initialized = True
                 logger.info(
                     "document_lifecycle_initialized",

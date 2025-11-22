@@ -8,7 +8,6 @@ of agent definitions following the BMAD agent schema pattern.
 
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
-from pathlib import Path
 
 
 @dataclass

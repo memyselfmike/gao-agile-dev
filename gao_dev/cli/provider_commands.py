@@ -2,7 +2,6 @@
 
 import asyncio
 import sys
-from pathlib import Path
 from typing import Optional
 
 import click
@@ -10,11 +9,9 @@ import structlog
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich import print as rprint
 
 from gao_dev.core.providers import (
     ProviderFactory,
-    ProviderSelector,
     ProviderHealthChecker,
 )
 
@@ -283,7 +280,7 @@ def show_provider_info(provider_name: str):
         for model in models:
             info_text += f"  - {model}\n"
 
-        info_text += f"\n[cyan]Configuration Schema:[/cyan]\n"
+        info_text += "\n[cyan]Configuration Schema:[/cyan]\n"
         schema = provider.get_configuration_schema()
         if schema:
             for key, value in schema.items():

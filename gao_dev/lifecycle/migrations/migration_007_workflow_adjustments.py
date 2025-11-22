@@ -438,7 +438,7 @@ def run_migration(
                 # Verify after applying
                 verification = Migration007.verify(conn)
                 if verification["issues"]:
-                    print(f"WARNING: Post-migration verification found issues:")
+                    print("WARNING: Post-migration verification found issues:")
                     for issue in verification["issues"]:
                         print(f"  - {issue}")
                 else:

@@ -375,7 +375,6 @@ class InteractivePrompter:
         try:
             # LAZY IMPORT: Import inside method, not at module level
             from prompt_toolkit import PromptSession
-            from typing import TYPE_CHECKING
 
             # Use prompt_toolkit for interactive input
             session: PromptSession[str] = PromptSession()

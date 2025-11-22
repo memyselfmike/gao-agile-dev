@@ -6,13 +6,13 @@ security features including permissions, validation, timeouts, and resource limi
 
 import asyncio
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 import structlog
 
 from .models import PluginMetadata, PluginPermission, ValidationResult
 from .permission_manager import PermissionManager
 from .resource_monitor import ResourceMonitor
-from .exceptions import PluginTimeoutError, PluginValidationError
+from .exceptions import PluginTimeoutError
 
 logger = structlog.get_logger(__name__)
 

@@ -208,9 +208,30 @@ git commit -m "feat(cli): improve chat interface"
 
 ## Switching Between Modes
 
-If you need **both** beta testing and development modes, use separate virtual environments:
+If you need **both** beta testing and development modes, use separate virtual environments.
 
-### Setup
+### Quick Setup
+
+For a **comprehensive dual-environment setup** with helper scripts and testing workflows:
+
+**See**: [docs/LOCAL_BETA_TESTING_GUIDE.md](docs/LOCAL_BETA_TESTING_GUIDE.md)
+
+This comprehensive guide includes:
+- Automated setup scripts
+- Complete testing workflow
+- Pre-release validation checklists
+- Environment switching helpers
+- Best practices for real project testing
+
+**Quick Start** (Windows):
+```cmd
+cd C:\Testing\scripts
+setup-beta-environment.bat
+```
+
+### Manual Setup (Basic)
+
+If you prefer a manual setup:
 
 ```bash
 # Beta testing environment
@@ -241,6 +262,8 @@ cd gao-agile-dev
 source venv-dev/bin/activate  # or venv-dev\Scripts\activate on Windows
 gao-dev start
 ```
+
+**Tip**: Use the helper scripts from [LOCAL_BETA_TESTING_GUIDE.md](docs/LOCAL_BETA_TESTING_GUIDE.md) for easier environment management.
 
 ---
 

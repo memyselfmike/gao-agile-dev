@@ -7,9 +7,8 @@ Provides typed dataclass models for all state entities:
 - WorkflowExecution: Audit trail of workflow runs
 """
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Optional, Dict, Any
+from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass

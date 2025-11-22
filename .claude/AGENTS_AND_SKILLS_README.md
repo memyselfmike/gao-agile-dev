@@ -163,6 +163,41 @@ Design a comprehensive test strategy for a todo application including unit, inte
 
 ---
 
+### 7. Bug Tester (QA Engineer) - `bug-tester.md`
+
+**Description**: QA Engineer specializing in bug reproduction, systematic testing, and verification using both local development and beta test environments.
+
+**Use When**:
+- Fixing any bug (UI, backend, API, WebSocket, etc.)
+- Verifying bug fixes before committing
+- Testing changes in both development (CWD) and beta (C:/Testing) environments
+- Creating regression tests
+- Performing visual regression testing with Playwright
+- Monitoring server logs for issues
+
+**Core Capabilities**:
+- Systematic bug reproduction with documentation
+- Dual-environment testing (dev + beta)
+- Playwright-based UI testing
+- Server log monitoring and analysis
+- Regression test creation
+- Comprehensive verification reporting
+
+**Example Usage**:
+```
+Verify the fix for bug #123 (Onboarding wizard crashes on step 2). Test in both development and beta environments, use Playwright to verify the UI, check server logs, create regression test, and generate a verification report.
+```
+
+**Quick Commands**:
+- `/verify-bug-fix` - Complete bug verification workflow
+- `/test-ui` - Systematic Playwright UI testing
+
+**Related Skills**:
+- `ui-testing` - Playwright-based UI testing patterns
+- `bug-verification` - Complete verification workflow
+
+---
+
 ## Available Skills
 
 Skills are stored in `.claude/skills/` and are automatically invoked by Claude when appropriate.
@@ -223,6 +258,44 @@ Skills are stored in `.claude/skills/` and are automatically invoked by Claude w
 
 ---
 
+### 5. UI Testing - `ui-testing/SKILL.md`
+
+**Description**: Systematic UI testing using Playwright for GAO-Dev web interface.
+
+**Auto-Invoked When**: Testing web interface changes or verifying UI bug fixes.
+
+**Key Features**:
+- Playwright testing patterns (navigation, interaction, layout)
+- Screenshot capture and organization
+- Console error detection
+- Network request verification
+- Multi-step workflow testing
+- Visual regression testing
+- GAO-Dev-specific test scenarios (onboarding, layout presets, chat, file browser)
+
+**Tools Available**: Read, Grep, Glob, Bash, mcp__playwright__*
+
+---
+
+### 6. Bug Verification - `bug-verification/SKILL.md`
+
+**Description**: Complete workflow for verifying bug fixes across development and beta test environments.
+
+**Auto-Invoked When**: Verifying bug fixes are complete and ready for release.
+
+**Key Features**:
+- Complete verification workflow (dev + beta)
+- Systematic testing procedures
+- Verification checklists
+- Reporting templates
+- Dual-environment testing
+- Regression test creation
+- Issue tracker integration
+
+**Tools Available**: Read, Write, Edit, Grep, Glob, Bash, mcp__playwright__*, mcp__ide__getDiagnostics
+
+---
+
 ## How to Use
 
 ### Using Sub-Agents
@@ -269,6 +342,7 @@ Use this guide to choose the right agent:
 | Plan sprint work | Scrum Master | "Create user stories from epic Z" |
 | Implement features | Developer | "Implement story 1.3 with full tests" |
 | Design testing approach | Test Architect | "Create test strategy for the application" |
+| Fix and verify bugs | Bug Tester | "Verify fix for bug #123 in dev and beta environments" |
 
 ---
 
@@ -282,6 +356,7 @@ Agents can work together in sequence:
 4. **Scrum Master** → Break down architecture into user stories
 5. **Test Architect** → Design test strategy
 6. **Developer** → Implement stories with tests
+7. **Bug Tester** → Verify bug fixes across all environments
 
 ---
 
@@ -387,6 +462,13 @@ Before working on GAO-Dev, agents should review these key directives:
 ---
 
 ## Version History
+
+- **v1.1** (2025-11-22): Added bug testing and verification
+  - 7 specialized agents (added Bug Tester for QA and verification)
+  - 6 core skills (added UI Testing and Bug Verification)
+  - Playwright integration for systematic UI testing
+  - Dual-environment testing (dev + beta)
+  - Slash commands: /verify-bug-fix, /test-ui
 
 - **v1.0** (2025-11-11): Initial extraction from BMAD methodology
   - 6 specialized agents (Scrum Master, Developer, Architect, Business Analyst, Product Manager, Test Architect)

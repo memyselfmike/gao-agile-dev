@@ -11,7 +11,6 @@ import json
 import sqlite3
 import threading
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -93,7 +92,6 @@ class DocumentRegistry:
         Applies migrations in order: 001, 002, 003.
         """
         import importlib.util
-        import sys
         from pathlib import Path as ImportPath
 
         migrations = [

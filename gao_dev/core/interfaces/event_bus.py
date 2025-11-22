@@ -5,6 +5,8 @@ This module defines the Observer pattern interfaces for event-driven
 coordination between components.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Type, List, Callable, Any, Optional
 

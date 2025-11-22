@@ -5,8 +5,10 @@ This module defines the contract for workflows and workflow management.
 Workflows represent sequences of steps to accomplish development tasks.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 
 
 class IWorkflow(ABC):

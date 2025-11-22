@@ -12,7 +12,7 @@ import structlog
 import os
 
 from ..interfaces.agent import IAgent, IAgentFactory
-from ..models.agent import AgentConfig, AgentCapability, CommonCapabilities
+from ..models.agent import AgentConfig, CommonCapabilities
 from ..agent_config_loader import AgentConfigLoader
 from ..models.agent_config import AgentConfig as YAMLAgentConfig
 from ...agents.claude_agent import ClaudeAgent

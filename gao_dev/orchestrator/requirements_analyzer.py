@@ -20,7 +20,6 @@ from ..core.models.requirements_analysis import (
     MoSCoWCategory,
     KanoCategory,
     Risk,
-    Constraint,
     RequirementsAnalysis,
 )
 

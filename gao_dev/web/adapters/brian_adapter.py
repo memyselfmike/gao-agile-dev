@@ -8,11 +8,9 @@ Story: 39.7 - Brian Chat Component
 """
 
 from typing import AsyncIterator, Optional, Any, Dict
-from pathlib import Path
 import structlog
 
-from gao_dev.orchestrator.chat_session import ChatSession, Turn
-from gao_dev.orchestrator.conversational_brian import ConversationalBrian
+from gao_dev.orchestrator.chat_session import ChatSession
 from gao_dev.web.events import EventType
 from gao_dev.web.event_bus import WebEventBus
 

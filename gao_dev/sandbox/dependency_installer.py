@@ -3,7 +3,7 @@
 import subprocess
 import time
 from pathlib import Path
-from typing import Optional, List
+from typing import List
 from enum import Enum
 
 import structlog

@@ -8,7 +8,7 @@ the information needed for auto-generated run IDs and scientific tracking.
 import hashlib
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import yaml
 

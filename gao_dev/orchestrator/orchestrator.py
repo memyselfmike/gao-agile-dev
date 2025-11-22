@@ -15,16 +15,13 @@ This maintains the Single Responsibility Principle and ensures each component ha
 a clear, focused purpose. All business logic has been extracted to focused services.
 """
 
-from claude_agent_sdk import ClaudeSDKClient, ClaudeAgentOptions
 from pathlib import Path
-from typing import AsyncGenerator, Optional, Dict, List, Any
+from typing import AsyncGenerator, Optional, List
 from datetime import datetime
 import structlog
 import os
 
-from ..tools import gao_dev_server
-from .agent_definitions import AGENT_DEFINITIONS
-from .workflow_results import StoryResult, EpicResult, StoryStatus, WorkflowResult
+from .workflow_results import WorkflowResult
 from .brian_orchestrator import (
     BrianOrchestrator,
     WorkflowSequence,
@@ -34,21 +31,15 @@ from .workflow_execution_engine import WorkflowExecutionEngine
 from .artifact_manager import ArtifactManager
 from .agent_coordinator import AgentCoordinator
 from .ceremony_orchestrator import CeremonyOrchestrator
-from .metadata_extractor import MetadataExtractor
 from ..core.config_loader import ConfigLoader
 from ..core.workflow_registry import WorkflowRegistry
-from ..core.workflow_executor import WorkflowExecutor
-from ..core.events.event_bus import EventBus
 from ..core.services.workflow_coordinator import WorkflowCoordinator
 from ..core.services.story_lifecycle import StoryLifecycleManager
 from ..core.services.process_executor import ProcessExecutor
 from ..core.services.quality_gate import QualityGateManager
-from ..core.services.ai_analysis_service import AIAnalysisService
-from ..core.prompt_loader import PromptLoader
 from ..core.context.context_persistence import ContextPersistence
 from ..core.context.workflow_context import WorkflowContext
 from ..core.context.context_api import set_workflow_context, clear_workflow_context
-from ..lifecycle.project_lifecycle import ProjectDocumentLifecycle
 from ..lifecycle.document_manager import DocumentLifecycleManager
 from ..core.services.git_integrated_state_manager import GitIntegratedStateManager
 

@@ -1,7 +1,7 @@
 """Configuration loader with defaults and user overrides."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 import yaml
 import structlog
 

@@ -24,7 +24,6 @@ from ..core.services.git_integrated_state_manager import GitIntegratedStateManag
 from ..core.services.document_structure_manager import DocumentStructureManager
 from ..core.services.feature_state_service import FeatureScope
 from ..core.git_manager import GitManager
-from ..core.state_coordinator import StateCoordinator
 from ..lifecycle.project_lifecycle import ProjectDocumentLifecycle
 
 logger = structlog.get_logger(__name__)
@@ -195,7 +194,7 @@ def create_feature(
             click.echo(f"  1. Review PRD: docs/features/{name}/PRD.md")
             click.echo(f"  2. Review Architecture: docs/features/{name}/ARCHITECTURE.md")
             click.echo(f"  3. Create epics: gao-dev create-epic {name} <epic-title>")
-            click.echo(f"  4. View features: gao-dev list-features")
+            click.echo("  4. View features: gao-dev list-features")
 
     except ValueError as e:
         if RICH_AVAILABLE:

@@ -5,6 +5,8 @@ Loads, validates, and resolves checklist inheritance from YAML files,
 providing the core infrastructure for the checklist system.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -324,7 +326,7 @@ class ChecklistLoader:
         # Return as list (preserving order: parent items first, then new child items)
         result = []
         parent_ids = {item.id for item in parent_items}
-        child_ids = {item.id for item in child_items}
+        {item.id for item in child_items}
 
         # Add parent items (potentially overridden by child)
         for parent_item in parent_items:

@@ -7,9 +7,7 @@ Epic: 11 - Agent Provider Abstraction
 Story: 11.10 - Implement Direct API Provider
 """
 
-import asyncio
 import os
-from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional, Any
 import structlog
 

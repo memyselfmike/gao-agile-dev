@@ -160,7 +160,7 @@ class StoryStateService:
                         f"Story {epic_num}.{story_num} already exists"
                     ) from e
                 elif "CHECK constraint failed" in str(e):
-                    raise ValueError(f"Invalid parameter value") from e
+                    raise ValueError("Invalid parameter value") from e
                 elif "FOREIGN KEY constraint failed" in str(e):
                     raise ValueError(f"Epic {epic_num} does not exist") from e
                 raise

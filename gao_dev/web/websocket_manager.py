@@ -157,7 +157,7 @@ class WebSocketManager:
             return
 
         # Remove connection
-        websocket = self.connections.pop(client_id, None)
+        self.connections.pop(client_id, None)
 
         # Unsubscribe from event bus
         if client_id in self.client_queues:

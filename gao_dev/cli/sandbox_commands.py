@@ -94,7 +94,7 @@ def init(
             sys.exit(1)
 
         # Create project
-        click.echo(f"  Creating project directory structure...")
+        click.echo("  Creating project directory structure...")
         metadata = manager.create_project(
             name=project_name,
             boilerplate_url=boilerplate,
@@ -103,18 +103,18 @@ def init(
         )
 
         project_path = manager.get_project_path(project_name)
-        click.echo(f"  [OK] Project directory created")
+        click.echo("  [OK] Project directory created")
 
         # Create README
         _create_project_readme(project_path, metadata, boilerplate)
-        click.echo(f"  [OK] README.md created")
+        click.echo("  [OK] README.md created")
 
         # Initialize git (unless --no-git)
         if not no_git:
             if _init_git_repo(project_path):
-                click.echo(f"  [OK] Git repository initialized")
+                click.echo("  [OK] Git repository initialized")
             else:
-                click.echo(f"  [WARN] Git initialization failed (continuing anyway)")
+                click.echo("  [WARN] Git initialization failed (continuing anyway)")
 
         # Load config if provided
         if config:
@@ -122,7 +122,7 @@ def init(
             # Config loading will be implemented in Epic 2
 
         # Success summary
-        click.echo(f"\n[OK] Project initialized successfully!")
+        click.echo("\n[OK] Project initialized successfully!")
         click.echo(f"\n  Project: {project_name}")
         click.echo(f"  Location: {project_path}")
         click.echo(f"  Status: {metadata.status.value}")
@@ -131,18 +131,18 @@ def init(
         if boilerplate:
             click.echo(f"  Boilerplate: {boilerplate}")
 
-        click.echo(f"\nNext steps:")
+        click.echo("\nNext steps:")
         click.echo(f"  1. cd {project_path}")
-        click.echo(f"  2. Add your project files")
-        click.echo(f"  3. Run: gao-dev sandbox run <benchmark-config>")
+        click.echo("  2. Add your project files")
+        click.echo("  3. Run: gao-dev sandbox run <benchmark-config>")
 
     except InvalidProjectNameError as e:
         click.echo(f"\n[ERROR] Invalid project name: {e}", err=True)
-        click.echo(f"\nProject names must:")
-        click.echo(f"  - Be 3-50 characters long")
-        click.echo(f"  - Start and end with alphanumeric character")
-        click.echo(f"  - Contain only lowercase letters, numbers, and hyphens")
-        click.echo(f"  - Not contain consecutive hyphens")
+        click.echo("\nProject names must:")
+        click.echo("  - Be 3-50 characters long")
+        click.echo("  - Start and end with alphanumeric character")
+        click.echo("  - Contain only lowercase letters, numbers, and hyphens")
+        click.echo("  - Not contain consecutive hyphens")
         sys.exit(1)
 
     except ProjectExistsError as e:
@@ -321,7 +321,6 @@ def list(status: str, format: str, verbose: bool):
         gao-dev sandbox list --verbose
     """
     try:
-        import json as json_module
         from ..sandbox import SandboxManager, ProjectStatus
 
         # Get manager
@@ -443,11 +442,11 @@ def run(
             last_run = manager.get_last_run_number(config.name)
             next_run = last_run + 1
 
-            click.echo(f"\n>> Auto-generating run ID...")
+            click.echo("\n>> Auto-generating run ID...")
             if last_run > 0:
                 click.echo(f"  Last run: {config.name}-run-{last_run:03d}")
             else:
-                click.echo(f"  No previous runs found")
+                click.echo("  No previous runs found")
 
             click.echo(f"  Creating: {config.name}-run-{next_run:03d}")
 
@@ -465,7 +464,7 @@ def run(
                 click.echo("  Note: No boilerplate specified, starting from empty project")
 
         # Display prompt hash for verification
-        click.echo(f"\n>> Benchmark Details:")
+        click.echo("\n>> Benchmark Details:")
         click.echo(f"  Prompt hash: {config.prompt_hash[:16]}...")
         click.echo(f"  Description: {config.description}")
 
@@ -474,41 +473,41 @@ def run(
         if len(config.initial_prompt) > 300:
             prompt_preview += "..."
 
-        click.echo(f"\n>> Initial Prompt:")
+        click.echo("\n>> Initial Prompt:")
         click.echo("  " + "-" * 70)
         for line in prompt_preview.split("\n"):
             click.echo(f"  {line}")
         click.echo("  " + "-" * 70)
 
         if dry_run:
-            click.echo(f"\n[DRY RUN] Stopping before execution")
+            click.echo("\n[DRY RUN] Stopping before execution")
             click.echo(f"  Project: sandbox/projects/{run_id}")
-            click.echo(f"  Remove --dry-run flag to execute benchmark")
+            click.echo("  Remove --dry-run flag to execute benchmark")
             return
 
         # Check for API key - optional now, interactive mode is preferred
         if not api_key:
-            click.echo(f"\n[INFO] No API key detected - Interactive mode recommended")
-            click.echo(f"")
-            click.echo(f"For autonomous execution, you have three options:")
-            click.echo(f"")
-            click.echo(f"  Option 1: .env File (Recommended for development)")
-            click.echo(f"    1. Copy .env.example to .env")
-            click.echo(f"    2. Add your API key: ANTHROPIC_API_KEY=sk-ant-...")
+            click.echo("\n[INFO] No API key detected - Interactive mode recommended")
+            click.echo("")
+            click.echo("For autonomous execution, you have three options:")
+            click.echo("")
+            click.echo("  Option 1: .env File (Recommended for development)")
+            click.echo("    1. Copy .env.example to .env")
+            click.echo("    2. Add your API key: ANTHROPIC_API_KEY=sk-ant-...")
             click.echo(f"    3. Run: gao-dev sandbox run {benchmark_config}")
-            click.echo(f"")
-            click.echo(f"  Option 2: Environment Variable")
-            click.echo(f"    export ANTHROPIC_API_KEY=your-key  # Linux/Mac")
-            click.echo(f"    set ANTHROPIC_API_KEY=your-key     # Windows CMD")
+            click.echo("")
+            click.echo("  Option 2: Environment Variable")
+            click.echo("    export ANTHROPIC_API_KEY=your-key  # Linux/Mac")
+            click.echo("    set ANTHROPIC_API_KEY=your-key     # Windows CMD")
             click.echo(f"    gao-dev sandbox run {benchmark_config}")
-            click.echo(f"")
-            click.echo(f"  Option 3: Interactive Mode (No API Key Required)")
-            click.echo(f"    Run this benchmark through Claude Code using Task tool:")
-            click.echo(f"    Ask Claude: 'Please run this benchmark interactively:")
+            click.echo("")
+            click.echo("  Option 3: Interactive Mode (No API Key Required)")
+            click.echo("    Run this benchmark through Claude Code using Task tool:")
+            click.echo("    Ask Claude: 'Please run this benchmark interactively:")
             click.echo(f"                  {benchmark_config}'")
-            click.echo(f"")
+            click.echo("")
             click.echo(f"Project setup completed. Run ID: {run_id}")
-            click.echo(f"")
+            click.echo("")
             return
 
         # Execute benchmark autonomously
@@ -520,11 +519,11 @@ def run(
         elif api_key and not sys.argv.__contains__(api_key):
             api_key_source = "environment variable"
 
-        click.echo(f"\n>> Executing Benchmark Autonomously")
-        click.echo(f"  Mode: Full autonomous execution with GAO-Dev agents")
-        click.echo(f"  Real-time monitoring: ENABLED")
-        click.echo(f"  Metrics collection: ENABLED")
-        click.echo(f"  API: Anthropic Claude")
+        click.echo("\n>> Executing Benchmark Autonomously")
+        click.echo("  Mode: Full autonomous execution with GAO-Dev agents")
+        click.echo("  Real-time monitoring: ENABLED")
+        click.echo("  Metrics collection: ENABLED")
+        click.echo("  API: Anthropic Claude")
         click.echo(f"  API Key: {api_key[:10]}... (from {api_key_source})")
         click.echo("")
 
@@ -558,16 +557,16 @@ def run(
         click.echo(result.summary())
 
         if result.errors:
-            click.echo(f"\n[ERRORS]")
+            click.echo("\n[ERRORS]")
             for error in result.errors:
                 click.echo(f"  - {error}")
 
         if result.warnings:
-            click.echo(f"\n[WARNINGS]")
+            click.echo("\n[WARNINGS]")
             for warning in result.warnings:
                 click.echo(f"  - {warning}")
 
-        click.echo(f"\n>> Results saved to metrics database")
+        click.echo("\n>> Results saved to metrics database")
         click.echo(f"  Run ID: {result.run_id}")
         click.echo(f"  Generate report: gao-dev sandbox report run {result.run_id}")
 
@@ -629,7 +628,7 @@ def list_runs(benchmark_name: str, verbose: bool, format: str):
         def get_run_num(p):
             try:
                 return int(p.name.split("-run-")[-1])
-            except:
+            except (ValueError, IndexError):
                 return 0
 
         projects.sort(key=get_run_num)
@@ -737,11 +736,11 @@ def report(run_id: str, output: Optional[str], format: str):
     if output:
         click.echo(f"  Output: {output}")
     else:
-        click.echo(f"  Output: stdout")
+        click.echo("  Output: stdout")
 
     # Implementation will be added in Epic 5
-    click.echo(f"\n  [PENDING] Report generation")
-    click.echo(f"  [PENDING] This feature will be implemented in Epic 5")
+    click.echo("\n  [PENDING] Report generation")
+    click.echo("  [PENDING] This feature will be implemented in Epic 5")
 
     click.echo("\n[INFO] Sandbox report command structure ready")
 
@@ -778,11 +777,11 @@ def compare(run1: str, run2: str, output: Optional[str], format: str):
     if output:
         click.echo(f"  Output: {output}")
     else:
-        click.echo(f"  Output: stdout")
+        click.echo("  Output: stdout")
 
     # Implementation will be added in Epic 5
-    click.echo(f"\n  [PENDING] Run comparison")
-    click.echo(f"  [PENDING] This feature will be implemented in Epic 5")
+    click.echo("\n  [PENDING] Run comparison")
+    click.echo("  [PENDING] This feature will be implemented in Epic 5")
 
     click.echo("\n[INFO] Sandbox compare command structure ready")
 
@@ -813,8 +812,8 @@ def delete(project_name: str, force: bool):
             return
 
     # Implementation will be added in Story 1.6 or Epic 2
-    click.echo(f"\n  [PENDING] Project deletion")
-    click.echo(f"  [PENDING] This feature will be implemented later")
+    click.echo("\n  [PENDING] Project deletion")
+    click.echo("  [PENDING] This feature will be implemented later")
 
     click.echo("\n[INFO] Sandbox delete command structure ready")
 
@@ -1057,5 +1056,5 @@ def _print_simple(projects: list) -> None:
 # ============================================================================
 
 # Import and register report commands
-from .report_commands import report_group
+from .report_commands import report_group  # noqa: E402
 sandbox.add_command(report_group)

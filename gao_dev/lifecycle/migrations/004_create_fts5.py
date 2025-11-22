@@ -12,7 +12,6 @@ Created: 2025-11-05
 
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 
 class Migration004:

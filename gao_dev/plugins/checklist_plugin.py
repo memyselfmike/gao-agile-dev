@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from gao_dev.plugins.base_plugin import BasePlugin
 

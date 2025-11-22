@@ -17,7 +17,7 @@ import structlog
 from gao_dev.core.context.models import PhaseTransition
 from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
 from gao_dev.lifecycle.registry import DocumentRegistry
-from gao_dev.lifecycle.models import DocumentType, DocumentState
+from gao_dev.lifecycle.models import DocumentType
 
 logger = structlog.get_logger(__name__)
 
@@ -136,7 +136,7 @@ class WorkflowContext:
             datetime.fromisoformat(self.created_at)
             datetime.fromisoformat(self.updated_at)
         except (ValueError, AttributeError) as e:
-            raise ValueError(f"Timestamps must be valid ISO 8601 format") from e
+            raise ValueError("Timestamps must be valid ISO 8601 format") from e
 
     @property
     def prd(self) -> Optional[str]:

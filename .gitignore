@@ -67,10 +67,34 @@ tests/e2e/test_simple_*.py
 /gao_devschemas/
 /opencode.json
 /NUL
+/nul
 /-p/
 /%USERPROFILE%/
 /analyze_*.py
 /run_*_tests.bat
+
+# Playwright MCP artifacts
+.playwright-mcp/
+*.png
+
+# Frontend build cache
+.vite/
+**/node_modules/.vite/
+
+# Corrupt/malformed directories (Windows path handling issues)
+C:Projectsgao-agile-devtestsunitcore/
+C:Testingscripts/
+C:Usersmikejgao-final-test/
+Projectsgao-agile-devgao_devwebfrontend/
+Testingvenv-beta/
+/C:*/
+/=*/
+
+# Pip artifacts
+/=*.*.*
+
+# Server logs
+server_output.log
 
 # BMAD Method reference (don't commit the full repo)
 BMAD-METHOD/

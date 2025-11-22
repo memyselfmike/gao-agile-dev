@@ -6,7 +6,7 @@ including tables, indexes, triggers, and foreign key constraints.
 
 import sqlite3
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, Set
 
 import structlog
 

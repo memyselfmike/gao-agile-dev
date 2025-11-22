@@ -8,7 +8,7 @@ Epic: 31 - Full Mary (Business Analyst) Integration
 Story: 31.2 - Brainstorming & Mind Mapping
 """
 
-from typing import List, Dict, Any, Optional, AsyncIterator
+from typing import List, Dict, Any, Optional
 from enum import Enum
 import csv
 import json

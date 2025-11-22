@@ -3,8 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from io import BytesIO
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple
 import base64
 
 import matplotlib
@@ -15,11 +14,6 @@ from matplotlib.figure import Figure
 import numpy as np
 import structlog
 
-from gao_dev.sandbox.metrics.models import (
-    PerformanceMetrics,
-    QualityMetrics,
-    WorkflowMetrics,
-)
 
 
 logger = structlog.get_logger(__name__)
@@ -377,7 +371,7 @@ class ChartGenerator:
             x = np.arange(len(metric_names))
             width = 0.35
 
-            bars1 = ax.bar(
+            ax.bar(
                 x - width/2,
                 run1_values,
                 width,
@@ -385,7 +379,7 @@ class ChartGenerator:
                 color=COLORS["primary"],
                 alpha=0.8,
             )
-            bars2 = ax.bar(
+            ax.bar(
                 x + width/2,
                 run2_values,
                 width,

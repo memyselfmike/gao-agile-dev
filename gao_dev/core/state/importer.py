@@ -6,17 +6,15 @@ state tracking with validation, rollback, and idempotent operations.
 
 import re
 import shutil
-import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 
 import yaml
 
 from .state_tracker import StateTracker
 from .markdown_syncer import MarkdownSyncer
-from .exceptions import StateTrackerError
 
 
 @dataclass
@@ -130,7 +128,7 @@ class StateImporter:
                 return report
 
             # Extract sprint information
-            sprint_name = data.get("sprint_name", "Unknown Sprint")
+            data.get("sprint_name", "Unknown Sprint")
             start_date = data.get("start_date", datetime.now().date().isoformat())
 
             # Create sprint if not in dry-run mode

@@ -15,7 +15,6 @@ Commands:
 
 import sys
 from pathlib import Path
-from datetime import datetime
 
 import click
 import structlog
@@ -28,7 +27,6 @@ from gao_dev.core.services.git_migration_manager import (
 from gao_dev.core.services.git_consistency_checker import (
     GitAwareConsistencyChecker,
     ConsistencyReport,
-    ConsistencyIssue,
     GitAwareConsistencyCheckerError
 )
 from gao_dev.core.state.migrations.add_features_table import AddFeaturesTableMigration
@@ -119,7 +117,7 @@ def migrate_project(
             db_path = project_path / ".gao-dev" / "documents.db"
 
         click.echo(f"\n{'='*70}")
-        click.echo(f"GAO-Dev Migration to Hybrid Architecture")
+        click.echo("GAO-Dev Migration to Hybrid Architecture")
         click.echo(f"{'='*70}\n")
 
         click.echo(f"Project Path: {project_path}")
@@ -224,7 +222,7 @@ def check_consistency(
             db_path = project_path / ".gao-dev" / "documents.db"
 
         click.echo(f"\n{'='*70}")
-        click.echo(f"GAO-Dev Consistency Check")
+        click.echo("GAO-Dev Consistency Check")
         click.echo(f"{'='*70}\n")
 
         click.echo(f"Project Path: {project_path}")
@@ -234,7 +232,7 @@ def check_consistency(
         # Check database exists
         if not db_path.exists():
             click.echo("[WARNING] Database does not exist. Project may not be migrated.")
-            click.echo(f"  Run 'gao-dev migrate' to migrate project to hybrid architecture.")
+            click.echo("  Run 'gao-dev migrate' to migrate project to hybrid architecture.")
             sys.exit(0)
 
         # Initialize checker
@@ -329,7 +327,7 @@ def repair_consistency(
             db_path = project_path / ".gao-dev" / "documents.db"
 
         click.echo(f"\n{'='*70}")
-        click.echo(f"GAO-Dev Consistency Repair")
+        click.echo("GAO-Dev Consistency Repair")
         click.echo(f"{'='*70}\n")
 
         click.echo(f"Project Path: {project_path}")
@@ -340,7 +338,7 @@ def repair_consistency(
         # Check database exists
         if not db_path.exists():
             click.echo("[ERROR] Database does not exist. Nothing to repair.")
-            click.echo(f"  Run 'gao-dev migrate' to migrate project to hybrid architecture.")
+            click.echo("  Run 'gao-dev migrate' to migrate project to hybrid architecture.")
             sys.exit(1)
 
         # Initialize checker
@@ -605,7 +603,7 @@ def migrate_features(
             db_path = project_path / ".gao-dev" / "documents.db"
 
         click.echo(f"\n{'='*70}")
-        click.echo(f"GAO-Dev Features Table Migration")
+        click.echo("GAO-Dev Features Table Migration")
         click.echo(f"{'='*70}\n")
 
         click.echo(f"Project Path: {project_path}")
@@ -616,7 +614,7 @@ def migrate_features(
         # Check database exists
         if not db_path.exists():
             click.echo("[ERROR] Database does not exist.")
-            click.echo(f"  Run 'gao-dev migrate' to create database first.")
+            click.echo("  Run 'gao-dev migrate' to create database first.")
             sys.exit(1)
 
         # Initialize migration

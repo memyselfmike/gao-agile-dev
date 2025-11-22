@@ -532,7 +532,71 @@ TodoWrite([
 - MyPy passes strict mode
 - Current: 400+ tests passing
 
-### 5. Tool Usage
+### 5. Bug Fixing and Testing
+
+**CRITICAL: When working on bug fixes, ALWAYS use the bug-tester agent**
+
+**Bug Fix Workflow**:
+1. **Invoke bug-tester agent** - Use Task tool with `subagent_type='bug-tester'`
+2. **Systematic verification** - Test in BOTH dev (CWD) and beta (C:/Testing) environments
+3. **Playwright UI testing** - Use Playwright to systematically verify UI changes
+4. **Log monitoring** - Check server logs before and after fixes
+5. **Regression tests** - Create tests that prevent bug recurrence
+6. **Documentation** - Create comprehensive verification reports
+
+**Quick Commands**:
+```bash
+/verify-bug-fix   # Complete verification workflow (dev + beta)
+/test-ui          # Systematic Playwright UI testing
+```
+
+**When to Use Bug-Tester Agent**:
+- Fixing any bug (UI, backend, API, WebSocket, etc.)
+- Verifying bug fixes before committing
+- Testing changes in both environments
+- Creating regression tests
+- Performing visual regression testing
+- Monitoring server logs for issues
+
+**Required for ALL Bug Fixes**:
+- ✅ Test in development environment (C:\Projects\gao-agile-dev)
+- ✅ Test in beta environment (C:\Testing)
+- ✅ Playwright verification with screenshots
+- ✅ Server log analysis
+- ✅ Console error checking
+- ✅ Regression test creation
+- ✅ Verification report
+- ✅ No regressions in related features
+
+**Example**:
+```python
+# When user reports a bug or you're fixing one
+# ALWAYS invoke the bug-tester agent
+Task(
+    subagent_type="bug-tester",
+    description="Verify bug fix #123",
+    prompt="""
+    Bug: Onboarding wizard crashes on step 2
+    Fix: Updated gao_dev/web/api/onboarding.py
+
+    Please:
+    1. Verify fix in dev environment
+    2. Test with Playwright
+    3. Install in beta environment (C:/Testing)
+    4. Verify in beta environment
+    5. Create regression test
+    6. Generate verification report
+    """
+)
+```
+
+**See Also**:
+- `.claude/agents/bug-tester.md` - Complete bug testing workflow
+- `.claude/skills/ui-testing/SKILL.md` - Playwright patterns
+- `.claude/skills/bug-verification/SKILL.md` - Verification workflow
+- `docs/LOCAL_BETA_TESTING_GUIDE.md` - Beta environment setup
+
+### 6. Tool Usage
 
 **Read before Write/Edit**:
 - ALWAYS use Read tool before Edit or Write
@@ -549,7 +613,7 @@ TodoWrite([
 - Show progress for long operations
 - Allow user to interrupt or redirect
 
-### 6. Common Pitfalls to Avoid
+### 7. Common Pitfalls to Avoid
 
 ❌ **DON'T**:
 - Batch multiple story commits

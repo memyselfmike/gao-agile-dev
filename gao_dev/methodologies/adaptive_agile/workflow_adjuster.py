@@ -30,7 +30,6 @@ from gao_dev.core.services.learning_application_service import ScoredLearning
 from gao_dev.methodologies.adaptive_agile.scale_levels import ScaleLevel
 from gao_dev.lifecycle.exceptions import (
     WorkflowDependencyCycleError,
-    MaxAdjustmentsExceededError,
 )
 
 logger = structlog.get_logger()
@@ -550,7 +549,7 @@ class WorkflowAdjuster:
                 cycle_descriptions.append(cycle_path)
 
             raise WorkflowDependencyCycleError(
-                f"Dependency cycles detected:\n"
+                "Dependency cycles detected:\n"
                 + "\n".join(f"  - {desc}" for desc in cycle_descriptions),
                 cycles=cycle_descriptions,
             )

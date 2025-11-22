@@ -7,10 +7,8 @@ Epic: 34 - Integration & Variables
 Story: 34.1 - Schema Migration
 """
 
-import json
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 import structlog
 

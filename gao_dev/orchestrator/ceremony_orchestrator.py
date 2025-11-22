@@ -38,7 +38,6 @@ Example:
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
-import json
 import structlog
 
 from ..core.config_loader import ConfigLoader
@@ -938,7 +937,7 @@ Planning agenda:
             Tuple of (transcript_lines, action_items)
         """
         transcript = [
-            f"=== Daily Stand-Up Ceremony ===",
+            "=== Daily Stand-Up Ceremony ===",
             f"Date: {context['timestamp']}",
             f"Participants: {', '.join(participants)}",
             "",
@@ -979,7 +978,7 @@ Planning agenda:
             Tuple of (transcript_lines, action_items, learnings)
         """
         transcript = [
-            f"=== Retrospective Ceremony ===",
+            "=== Retrospective Ceremony ===",
             f"Date: {context['timestamp']}",
             f"Participants: {', '.join(participants)}",
             "",
@@ -1042,7 +1041,7 @@ Planning agenda:
         stories = epic_context.get("stories", [])
 
         transcript = [
-            f"=== Planning Ceremony ===",
+            "=== Planning Ceremony ===",
             f"Date: {context['timestamp']}",
             f"Participants: {', '.join(participants)}",
             "",

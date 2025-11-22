@@ -35,7 +35,6 @@ Example:
     ```
 """
 
-import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any

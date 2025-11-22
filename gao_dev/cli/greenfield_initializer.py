@@ -1,8 +1,7 @@
 """Greenfield project initialization for GAO-Dev."""
 
-from typing import AsyncIterator, Dict, Any
+from typing import AsyncIterator, Dict
 from pathlib import Path
-from datetime import datetime
 import subprocess
 import structlog
 
@@ -209,7 +208,7 @@ class GreenfieldInitializer:
 
         # Now initialize properly with StateTracker
         try:
-            state_tracker = StateTracker(db_path)
+            StateTracker(db_path)
         except Exception as e:
             # If StateTracker fails, database is at least created
             self.logger.warning("state_tracker_init_warning", error=str(e))

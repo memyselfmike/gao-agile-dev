@@ -12,7 +12,7 @@ content into prompts. It supports:
 import re
 import yaml
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 import structlog
 
 from gao_dev.core.meta_prompts.reference_resolver import ReferenceResolver

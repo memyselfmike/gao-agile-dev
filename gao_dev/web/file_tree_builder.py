@@ -7,7 +7,6 @@ Epic: 39.4 - File Management
 Story: 39.11 - File Tree Navigation Component
 """
 
-import os
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import structlog

@@ -5,8 +5,10 @@ This module defines the repository pattern interfaces for GAO-Dev,
 enabling separation of business logic from data persistence concerns.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Optional, List, Any
+from typing import Generic, TypeVar, Optional, List
 
 # Generic type for repository entities
 T = TypeVar('T')

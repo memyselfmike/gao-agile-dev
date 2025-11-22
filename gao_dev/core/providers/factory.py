@@ -1,7 +1,6 @@
 """Provider factory for creating agent execution providers."""
 
 from typing import Dict, Type, Optional, List
-from pathlib import Path
 import structlog
 
 from .base import IAgentProvider
@@ -342,7 +341,7 @@ class ProviderFactory:
         """Register all built-in providers."""
         from .direct_api import DirectAPIProvider
 
-        builtin_providers = {
+        {
             "claude-code": ClaudeCodeProvider,
             "opencode": OpenCodeProvider,  # CLI-based (legacy, default for backward compatibility)
             "opencode-cli": OpenCodeProvider,  # CLI-based (explicit)

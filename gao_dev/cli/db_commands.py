@@ -3,7 +3,6 @@
 import click
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
 
 from rich.console import Console
 from rich.table import Table

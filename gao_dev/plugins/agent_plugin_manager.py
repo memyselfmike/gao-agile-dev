@@ -3,14 +3,13 @@
 This module manages the discovery, loading, and registration of agent plugins.
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict
 import structlog
 
 from .discovery import PluginDiscovery
 from .loader import PluginLoader
 from .models import PluginMetadata, PluginType
 from .agent_plugin import BaseAgentPlugin
-from .exceptions import PluginError
 from ..core.factories.agent_factory import AgentFactory
 from ..core.models.agent_config import AgentConfig
 from ..core.models.prompt_template import PromptTemplate

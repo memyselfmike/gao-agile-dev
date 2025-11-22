@@ -1,7 +1,6 @@
 """CLI commands for action item management."""
 
 import click
-from pathlib import Path
 from typing import Optional
 
 try:
@@ -263,7 +262,7 @@ def defer(item_id: int, days: int):
 
     try:
         # Get action item
-        action_item = service.action_service.get(item_id)
+        service.action_service.get(item_id)
 
         # Update metadata with defer date
         from datetime import datetime, timedelta

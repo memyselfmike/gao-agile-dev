@@ -10,7 +10,6 @@ from .discovery import PluginDiscovery
 from .loader import PluginLoader
 from .models import PluginMetadata, PluginType
 from .workflow_plugin import BaseWorkflowPlugin
-from .exceptions import PluginError
 from ..core.workflow_registry import WorkflowRegistry
 
 logger = structlog.get_logger(__name__)
@@ -154,7 +153,7 @@ class WorkflowPluginManager:
                 plugin.validate_workflow_class()
 
                 # Get workflow details
-                workflow_class = plugin.get_workflow_class()
+                plugin.get_workflow_class()
                 identifier = plugin.get_workflow_identifier()
                 workflow_metadata = plugin.get_workflow_metadata()
 

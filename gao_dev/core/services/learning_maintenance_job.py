@@ -17,7 +17,7 @@ import threading
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import NamedTuple, Optional, List, Dict, Any
+from typing import NamedTuple
 
 import structlog
 

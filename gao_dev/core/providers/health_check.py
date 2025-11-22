@@ -1,7 +1,7 @@
 """Provider health checking."""
 
 from typing import Dict
-from datetime import datetime, timedelta
+from datetime import datetime
 import structlog
 
 from gao_dev.core.providers.base import IAgentProvider

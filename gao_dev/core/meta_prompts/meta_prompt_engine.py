@@ -17,7 +17,6 @@ from .resolver_registry import ReferenceResolverRegistry
 from .exceptions import (
     CircularReferenceError,
     MaxDepthExceededError,
-    ReferenceResolutionError,
 )
 
 logger = structlog.get_logger(__name__)

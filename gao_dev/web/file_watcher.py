@@ -99,7 +99,7 @@ class FileChangeHandler(FileSystemEventHandler):
 
         event_enum = event_type_map.get(event_type)
         if not event_enum:
-            self.logger.error(f"unknown_event_type", event_type=event_type)
+            self.logger.error("unknown_event_type", event_type=event_type)
             return
 
         # Publish to event bus (async call from sync context)

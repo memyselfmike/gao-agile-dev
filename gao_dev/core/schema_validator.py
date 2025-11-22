@@ -13,7 +13,6 @@ from dataclasses import dataclass
 import structlog
 
 try:
-    import jsonschema
     from jsonschema import ValidationError, Draft7Validator
 except ImportError:
     raise ImportError(

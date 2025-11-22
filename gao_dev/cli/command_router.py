@@ -12,12 +12,10 @@ from pathlib import Path
 import asyncio
 import time
 import structlog
-from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn, TextColumn
 from rich.console import Console
-from rich.panel import Panel
 
 from gao_dev.orchestrator.models import WorkflowSequence
-from gao_dev.cli.response_formatter import ResponseFormatter, ResponseType
+from gao_dev.cli.response_formatter import ResponseFormatter
 from gao_dev.core.state.operation_tracker import OperationTracker
 from gao_dev.core.services.ai_analysis_service import AIAnalysisService
 

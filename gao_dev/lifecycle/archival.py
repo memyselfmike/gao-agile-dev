@@ -19,15 +19,15 @@ Key Features:
 """
 
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 import yaml
 import csv
 from io import StringIO
 
 from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
-from gao_dev.lifecycle.models import Document, DocumentState, DocumentType
+from gao_dev.lifecycle.models import Document, DocumentState
 
 
 @dataclass
@@ -201,7 +201,7 @@ class ArchivalManager:
             obsolete_docs = self.doc_mgr.registry.query_documents(
                 state=DocumentState.OBSOLETE
             )
-        except Exception as e:
+        except Exception:
             # If query fails, return empty list
             return actions
 
@@ -486,7 +486,7 @@ class ArchivalManager:
 
             policy = self.policies.get(doc_type)
             if policy:
-                report += f"**Policy Configuration:**\n"
+                report += "**Policy Configuration:**\n"
                 report += f"- Obsolete to Archive: {policy.obsolete_to_archive} days "
                 report += f"({'never' if policy.obsolete_to_archive == -1 else ''})\n"
                 report += f"- Archive Retention: {policy.archive_retention} days "
@@ -532,7 +532,7 @@ class ArchivalManager:
             or (doc.state == DocumentState.ARCHIVED and self._evaluate_deletion(doc).action != "none")
         )
 
-        report += f"## Summary\n\n"
+        report += "## Summary\n\n"
         report += f"- Total Documents: {len(all_docs)}\n"
         report += f"- Pending Actions: {total_actions}\n"
         report += f"- Document Types: {len(by_type)}\n"

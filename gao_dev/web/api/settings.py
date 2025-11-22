@@ -4,7 +4,7 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import structlog
 import yaml
@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from gao_dev.web.events import EventType
 from gao_dev.web.provider_validator import WebProviderValidator
-from gao_dev.core.providers import ProviderFactory, ClaudeCodeProvider, OpenCodeSDKProvider
+from gao_dev.core.providers import ProviderFactory
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/api/settings", tags=["settings"])
@@ -142,7 +142,7 @@ def _get_models_from_provider(provider: Any, provider_id: str) -> List[Dict[str,
             models.append({
                 "id": model_id,
                 "name": display_name,
-                "description": f"Anthropic Claude model",
+                "description": "Anthropic Claude model",
             })
 
     return sorted(models, key=lambda m: m["id"], reverse=True)  # Latest first

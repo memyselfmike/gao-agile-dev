@@ -12,7 +12,6 @@ from typing import List, Tuple, Optional
 
 from gao_dev.lifecycle.registry import DocumentRegistry
 from gao_dev.lifecycle.models import Document, DocumentState
-from gao_dev.lifecycle.exceptions import DocumentNotFoundError
 
 
 class DocumentSearch:

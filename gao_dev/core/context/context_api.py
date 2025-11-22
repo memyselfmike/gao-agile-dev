@@ -37,7 +37,7 @@ from gao_dev.core.context.context_cache import ContextCache
 from gao_dev.core.context.context_usage_tracker import ContextUsageTracker
 from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
 from gao_dev.lifecycle.registry import DocumentRegistry
-from gao_dev.lifecycle.models import DocumentType, DocumentState
+from gao_dev.lifecycle.models import DocumentType
 
 logger = structlog.get_logger(__name__)
 

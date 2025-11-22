@@ -211,6 +211,93 @@ def event_loop_policy():
 
 
 # =============================================================================
+# Workspace Cleanup Fixtures
+# =============================================================================
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_workspace():
+    """
+    Comprehensive workspace cleanup after all tests complete.
+
+    Removes test artifacts, corrupt directories, and temporary files
+    created during test execution. Runs automatically at the end of
+    the entire test session.
+
+    Cleans up:
+        - Corrupt/malformed directories (Windows path issues)
+        - Test database files in root
+        - Playwright screenshots
+        - Coverage reports
+        - Server logs
+        - Pip artifacts
+        - Frontend build cache
+        - Test transcripts
+    """
+    import os
+    import glob
+
+    # Run tests first
+    yield
+
+    # Get project root
+    project_root = Path(__file__).parent.parent
+
+    # List of patterns to clean up
+    cleanup_patterns = [
+        # Corrupt directories (Windows path issues)
+        "C:Projectsgao-agile-devtestsunitcore",
+        "C:Testingscripts",
+        "C:Usersmikejgao-final-test",
+        "Projectsgao-agile-devgao_devwebfrontend",
+        "Testingvenv-beta",
+        "-p",
+        # Test artifacts
+        "gao_dev.db",
+        "server_output.log",
+        "nul",
+        "test_output.log",
+        "test_output.txt",
+        # Pip artifacts
+        "=*.*.*",
+        # Playwright artifacts
+        ".playwright-mcp",
+        # Frontend build cache
+        "gao_dev/web/frontend/.vite",
+        # Coverage artifacts
+        ".coverage",
+        "htmlcov",
+        # Test transcripts
+        ".gao-dev/test_transcripts",
+        "tests/e2e/debug_reports",
+    ]
+
+    for pattern in cleanup_patterns:
+        full_pattern = project_root / pattern
+
+        # Handle glob patterns
+        if "*" in pattern:
+            for path in glob.glob(str(full_pattern)):
+                path_obj = Path(path)
+                try:
+                    if path_obj.is_dir():
+                        shutil.rmtree(path_obj, ignore_errors=True)
+                    elif path_obj.is_file():
+                        path_obj.unlink()
+                except Exception:
+                    pass  # Ignore cleanup failures
+        else:
+            path_obj = project_root / pattern
+            if path_obj.exists():
+                try:
+                    if path_obj.is_dir():
+                        shutil.rmtree(path_obj, ignore_errors=True)
+                    elif path_obj.is_file():
+                        path_obj.unlink()
+                except Exception:
+                    pass  # Ignore cleanup failures
+
+
+# =============================================================================
 # OpenCode SDK Provider Fixtures
 # =============================================================================
 

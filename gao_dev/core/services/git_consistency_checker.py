@@ -49,7 +49,7 @@ Example:
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 
 import structlog
 
@@ -217,7 +217,7 @@ class GitAwareConsistencyChecker:
             )
             # Don't fail initialization but warn user
             print(f"\n[WARNING] Database schema check failed: {e}")
-            print(f"[WARNING] Self-healing disabled. Run 'gao-dev migrate' manually if needed.\n")
+            print("[WARNING] Self-healing disabled. Run 'gao-dev migrate' manually if needed.\n")
 
     def _apply_missing_migrations(self) -> None:
         """
@@ -226,7 +226,6 @@ class GitAwareConsistencyChecker:
         Runs Migration 005 (state tables) if not already applied.
         """
         import sqlite3
-        import sys
         import importlib
 
         # Import Migration 005 using importlib.util (filename starts with number)
@@ -302,8 +301,8 @@ class GitAwareConsistencyChecker:
             )
             # Don't raise - warn and continue
             print(f"\n[ERROR] Failed to auto-apply migrations: {e}")
-            print(f"[ERROR] Run 'gao-dev migrate' manually to fix schema.")
-            print(f"[ERROR] Continuing with consistency check (may fail)...\n")
+            print("[ERROR] Run 'gao-dev migrate' manually to fix schema.")
+            print("[ERROR] Continuing with consistency check (may fail)...\n")
 
     # ============================================================================
     # CONSISTENCY CHECKING

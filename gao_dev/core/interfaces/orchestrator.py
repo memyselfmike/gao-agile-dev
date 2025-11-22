@@ -5,8 +5,10 @@ This module defines the contract for the main orchestrator that
 coordinates workflows, agents, and methodologies.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Optional, AsyncGenerator, List, Dict, Any
+from typing import Optional, AsyncGenerator, Dict, Any
 
 
 class IOrchestrator(ABC):

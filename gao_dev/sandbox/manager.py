@@ -1,5 +1,7 @@
 """Sandbox manager for project lifecycle operations - thin facade pattern."""
 
+from __future__ import annotations
+
 import shutil
 from pathlib import Path
 from typing import List, Optional
@@ -491,7 +493,6 @@ class SandboxManager:
             return stats
 
         # Define directories to clean
-        clean_dirs = []
 
         if full:
             # Full clean: remove everything except metadata

@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from enum import Enum
 import json
 
@@ -240,7 +240,6 @@ class FeatureStateService:
                     ),
                 )
 
-                feature_id = cursor.lastrowid
 
                 self.logger.info(
                     "feature_created",
@@ -269,7 +268,7 @@ class FeatureStateService:
                 if "UNIQUE constraint failed" in str(e):
                     raise ValueError(f"Feature '{name}' already exists") from e
                 elif "CHECK constraint failed" in str(e):
-                    raise ValueError(f"Invalid parameter value") from e
+                    raise ValueError("Invalid parameter value") from e
                 raise
 
     def get_feature(self, name: str) -> Optional[Dict[str, Any]]:

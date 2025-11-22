@@ -7,7 +7,6 @@ Epic 35: Interactive Provider Selection at Startup
 Story 35.5: ProviderSelector Implementation
 """
 
-import asyncio
 import os
 from datetime import datetime
 from typing import Dict, Any, Optional

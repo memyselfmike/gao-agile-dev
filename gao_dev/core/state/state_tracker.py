@@ -9,7 +9,6 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Dict, Any
-from dataclasses import asdict
 
 from .models import Story, Epic, Sprint, WorkflowExecution
 from .exceptions import (
@@ -157,7 +156,7 @@ class StateTracker:
 
         now = datetime.now().isoformat()
         with self._get_connection() as conn:
-            cursor = conn.execute(
+            conn.execute(
                 """
                 INSERT INTO stories (
                     epic_num, story_num, title, status, owner,
@@ -728,7 +727,7 @@ class StateTracker:
         self.get_sprint(sprint_num)
 
         # Verify story exists
-        story = self.get_story(epic_num, story_num)
+        self.get_story(epic_num, story_num)
 
         with self._get_connection() as conn:
             # Delete existing assignment if any
@@ -767,7 +766,7 @@ class StateTracker:
             RecordNotFoundError: If story not found
         """
         # Verify story exists
-        story = self.get_story(epic_num, story_num)
+        self.get_story(epic_num, story_num)
 
         with self._get_connection() as conn:
             conn.execute(
@@ -886,7 +885,7 @@ class StateTracker:
         Raises:
             RecordNotFoundError: If sprint not found
         """
-        sprint = self.get_sprint(sprint_num)
+        self.get_sprint(sprint_num)
 
         with self._get_connection() as conn:
             cursor = conn.execute(

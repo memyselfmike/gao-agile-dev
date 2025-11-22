@@ -513,7 +513,7 @@ Session Stats:
 
             # Create checker with auto_migrate=True (default)
             # This triggers migration check and application on __init__
-            checker = GitAwareConsistencyChecker(
+            GitAwareConsistencyChecker(
                 db_path=db_path,
                 project_path=self.project_root,
                 auto_migrate=True  # Enable self-healing

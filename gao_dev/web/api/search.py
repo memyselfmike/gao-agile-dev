@@ -138,7 +138,7 @@ async def search_messages(
         # Build FTS5 search query
         # SQLite FTS5 uses double quotes for exact phrases, OR for alternatives
         # Sanitize query to prevent FTS5 syntax errors
-        fts_query = q.strip().replace('"', '""')  # Escape quotes
+        q.strip().replace('"', '""')  # Escape quotes
 
         # Build SQL query with filters
         sql_parts = [

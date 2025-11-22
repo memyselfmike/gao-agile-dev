@@ -5,11 +5,9 @@ performance, pagination support, and typed result formatting.
 """
 
 from typing import List, Dict, Any, Optional
-from pathlib import Path
 
 from .state_tracker import StateTracker
 from .models import Story, Epic, Sprint
-from .exceptions import RecordNotFoundError
 
 
 class QueryBuilder:

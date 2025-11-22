@@ -5,8 +5,6 @@ Story 39.32: DM Conversation View and Message Sending
 """
 
 from datetime import datetime
-from pathlib import Path
-from typing import Optional
 
 import structlog
 from fastapi import APIRouter, HTTPException, Request

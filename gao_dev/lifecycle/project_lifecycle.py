@@ -7,7 +7,6 @@ isolation and context management.
 """
 
 from pathlib import Path
-from typing import Optional
 import structlog
 
 from gao_dev.lifecycle.registry import DocumentRegistry

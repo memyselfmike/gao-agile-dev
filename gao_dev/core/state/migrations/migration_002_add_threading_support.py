@@ -7,7 +7,6 @@ Creates threads and messages tables for single-level message threading.
 
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 import structlog
 

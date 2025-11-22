@@ -115,7 +115,7 @@ class BrownfieldInitializer:
                 yield "OK Git initialized"
             except Exception as e:
                 self.logger.warning("git_init_failed", error=str(e))
-                yield f"WARN Git init failed (you can do this manually later)"
+                yield "WARN Git init failed (you can do this manually later)"
         else:
             yield "\nOK Git repository already exists"
 
@@ -152,7 +152,7 @@ class BrownfieldInitializer:
                 yield f"WARN Commit failed: {str(e)}"
 
         # Success
-        yield f"\nDone! GAO-Dev tracking added to your project."
+        yield "\nDone! GAO-Dev tracking added to your project."
         yield "\nWhat would you like to work on first?"
 
     def _analyze_existing_codebase(self) -> Dict[str, Any]:
@@ -281,7 +281,7 @@ class BrownfieldInitializer:
 
         # Now initialize properly with StateTracker
         try:
-            state_tracker = StateTracker(db_path)
+            StateTracker(db_path)
         except Exception as e:
             # If StateTracker fails, database is at least created
             self.logger.warning("state_tracker_init_warning", error=str(e))

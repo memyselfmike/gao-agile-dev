@@ -4,7 +4,6 @@ Epic: 11 - Agent Provider Abstraction
 Story: 11.10 - Implement Direct API Provider
 """
 
-import asyncio
 from typing import AsyncGenerator, Optional
 import structlog
 
@@ -130,7 +129,7 @@ class AnthropicClient:
             logger.debug("anthropic_validating_api_key")
 
             # Make minimal request to validate key
-            response = await self.client.messages.create(
+            await self.client.messages.create(
                 model="claude-haiku-3-20250219",
                 max_tokens=10,
                 messages=[{"role": "user", "content": "test"}],

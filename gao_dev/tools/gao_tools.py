@@ -3,7 +3,6 @@
 from claude_agent_sdk import tool, create_sdk_mcp_server
 from typing import Any
 from pathlib import Path
-import json
 
 # Import core services
 from ..core import (
@@ -323,7 +322,7 @@ async def get_sprint_status(args: dict[str, Any]) -> dict[str, Any]:
 
     status = state_manager.get_sprint_status()
 
-    result_text = f"Sprint Status:\n"
+    result_text = "Sprint Status:\n"
     result_text += f"Total stories: {status['total']}\n\n"
 
     if status['stories']:
@@ -456,7 +455,7 @@ async def health_check(args: dict[str, Any]) -> dict[str, Any]:
 
     result = health_checker.run_all_checks()
 
-    result_text = f"Health Check Results\n"
+    result_text = "Health Check Results\n"
     result_text += f"Status: {result.status.value.upper()}\n"
     result_text += f"Summary: {result.summary}\n\n"
 

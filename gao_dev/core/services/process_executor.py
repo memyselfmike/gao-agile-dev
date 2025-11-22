@@ -13,6 +13,8 @@ Responsibilities:
 Design Pattern: Strategy Pattern (provider abstraction)
 """
 
+from __future__ import annotations
+
 import structlog
 from typing import AsyncGenerator, Optional, List, Dict
 from pathlib import Path
@@ -125,7 +127,7 @@ class ProcessExecutor:
         self.api_key = api_key
 
         # Import here to avoid circular dependencies
-        from ..providers import ProviderFactory, AgentContext
+        from ..providers import ProviderFactory
         import os
 
         # Check environment variable for provider name

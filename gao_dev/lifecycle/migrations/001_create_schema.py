@@ -13,7 +13,6 @@ Created: 2024-11-05
 
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 
 class Migration001:

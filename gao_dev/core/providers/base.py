@@ -10,9 +10,10 @@ Design Pattern: Strategy Pattern
 - Concrete Strategies: ClaudeCodeProvider, OpenCodeProvider, DirectAPIProvider
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator, List, Dict, Optional
-from pathlib import Path
 
 
 class IAgentProvider(ABC):

@@ -16,6 +16,8 @@ NOT responsible for:
 - High-level orchestration (stays in orchestrator)
 """
 
+from __future__ import annotations
+
 import structlog
 from typing import Callable, Optional, List, Dict, Any
 from pathlib import Path
@@ -192,7 +194,6 @@ class WorkflowCoordinator:
             WorkflowResult,
             WorkflowStatus
         )
-        from ...orchestrator.models import PromptAnalysis
 
         # Initialize result
         result = WorkflowResult(

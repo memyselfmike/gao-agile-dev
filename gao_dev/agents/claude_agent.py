@@ -7,7 +7,6 @@ tasks using Claude Code CLI.
 
 from pathlib import Path
 from typing import AsyncGenerator, List, Optional
-import subprocess
 import asyncio
 import structlog
 
@@ -98,7 +97,7 @@ class ClaudeAgent(BaseAgent):
 
         try:
             # Build the full prompt with persona and task
-            full_prompt = self._build_prompt(task, context)
+            self._build_prompt(task, context)
 
             # For now, yield a simple message indicating task delegation
             # In a real implementation, this would invoke Claude Code CLI

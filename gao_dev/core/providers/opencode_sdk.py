@@ -19,6 +19,8 @@ Extracted for: Epic 19 - OpenCode SDK Integration
 Story: 19.3 - Server Lifecycle Management
 """
 
+from __future__ import annotations
+
 from typing import AsyncGenerator, List, Dict, Optional, Any
 import structlog
 import os

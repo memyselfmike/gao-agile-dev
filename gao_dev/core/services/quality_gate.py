@@ -18,7 +18,7 @@ NOT responsible for:
 
 import structlog
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 

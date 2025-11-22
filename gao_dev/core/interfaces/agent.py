@@ -5,6 +5,8 @@ This module defines the contract for all agents (built-in and plugin-based).
 Agents are specialized AI entities with specific capabilities and responsibilities.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import AsyncGenerator, List, Optional
 

@@ -5,7 +5,6 @@ Creates all tables, indexes, triggers, and constraints for the state tracking sy
 
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 import structlog
 

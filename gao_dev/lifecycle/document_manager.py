@@ -17,7 +17,6 @@ from typing import Optional, List, Dict, Any, Tuple
 from gao_dev.lifecycle.registry import DocumentRegistry
 from gao_dev.lifecycle.state_machine import DocumentStateMachine
 from gao_dev.lifecycle.models import Document, DocumentState, DocumentType, RelationshipType
-from gao_dev.lifecycle.exceptions import ValidationError
 
 
 class DocumentLifecycleManager:

@@ -8,7 +8,7 @@ Implements 5S Standardize principle by providing consistent document templates.
 """
 
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from datetime import datetime, timedelta
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 import yaml

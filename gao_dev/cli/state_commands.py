@@ -10,7 +10,6 @@ from typing import Optional
 try:
     from rich.console import Console
     from rich.table import Table
-    from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -88,7 +87,7 @@ def init(force: bool, migrate: bool):
             click.echo("[INFO] Migrating data from legacy databases...")
             Migration003.upgrade(db_path, backup=True)
             click.echo("[OK] Data migration completed")
-            click.echo(f"[INFO] Legacy database backups created in .gao/backups/")
+            click.echo("[INFO] Legacy database backups created in .gao/backups/")
         else:
             # Just create the schema without migrating data
             Migration003.upgrade(db_path, backup=False)
@@ -333,7 +332,7 @@ def sync(stories_dir):
                 for error in report.errors:
                     click.echo(f"    - {error}")
 
-        click.echo(f"\n[OK] Sync complete:")
+        click.echo("\n[OK] Sync complete:")
         click.echo(f"  Created: {total_created}")
         click.echo(f"  Updated: {total_updated}")
         click.echo(f"  Skipped: {total_skipped}")

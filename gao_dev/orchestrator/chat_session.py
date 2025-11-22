@@ -17,7 +17,6 @@ from pathlib import Path
 from datetime import datetime
 import asyncio
 import json
-import sys
 import structlog
 
 logger = structlog.get_logger()

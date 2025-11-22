@@ -8,10 +8,9 @@ The DocumentHealthMetrics class collects comprehensive metrics about document
 quality, compliance, and lifecycle state, and generates actionable health reports.
 """
 
-import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import Counter
 
 from gao_dev.lifecycle.registry import DocumentRegistry

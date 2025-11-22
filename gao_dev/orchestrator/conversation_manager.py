@@ -38,7 +38,6 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from dataclasses import dataclass, asdict
-import json
 import structlog
 
 from ..core.services.fast_context_loader import FastContextLoader
@@ -453,7 +452,7 @@ class ConversationManager:
             ```
         """
         lines = [
-            f"=== Conversation Transcript ===",
+            "=== Conversation Transcript ===",
             f"ID: {self.conversation_id}",
             f"Topic: {self.topic}",
             f"Participants: {', '.join(self.participants)}",

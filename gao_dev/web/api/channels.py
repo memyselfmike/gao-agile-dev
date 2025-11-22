@@ -7,8 +7,6 @@ and sending messages to ceremony channels.
 """
 
 from datetime import datetime
-from pathlib import Path
-from typing import Optional
 
 import structlog
 from fastapi import APIRouter, HTTPException, Request

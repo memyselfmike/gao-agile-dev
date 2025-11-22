@@ -2,14 +2,12 @@
 
 import json
 import click
-from pathlib import Path
-from typing import Optional, Any, Dict, List
+from typing import Optional
 from datetime import datetime
 
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich.tree import Tree
 from rich.syntax import Syntax
 from rich import box
 
@@ -178,7 +176,7 @@ def list_contexts(epic: Optional[int], feature: Optional[str], status: Optional[
             try:
                 updated_dt = datetime.fromisoformat(ctx.updated_at)
                 updated_str = updated_dt.strftime("%Y-%m-%d %H:%M")
-            except:
+            except (ValueError, TypeError):
                 updated_str = ctx.updated_at[:16]
 
             table.add_row(
@@ -255,7 +253,7 @@ def show_history(epic: int, story: int, json_output: bool):
             try:
                 created_dt = datetime.fromisoformat(ctx.created_at)
                 created_str = created_dt.strftime("%Y-%m-%d %H:%M")
-            except:
+            except (ValueError, TypeError):
                 created_str = ctx.created_at[:16]
 
             table.add_row(

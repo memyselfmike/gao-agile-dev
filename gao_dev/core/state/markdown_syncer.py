@@ -8,7 +8,7 @@ import hashlib
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Literal
+from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 
 from .state_tracker import StateTracker

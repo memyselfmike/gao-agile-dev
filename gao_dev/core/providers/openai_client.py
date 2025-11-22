@@ -4,7 +4,6 @@ Epic: 11 - Agent Provider Abstraction
 Story: 11.10 - Implement Direct API Provider
 """
 
-import asyncio
 from typing import AsyncGenerator, Optional
 import structlog
 
@@ -132,7 +131,7 @@ class OpenAIClient:
             logger.debug("openai_validating_api_key")
 
             # Make minimal request to validate key
-            response = await self.client.chat.completions.create(
+            await self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 max_tokens=10,
                 messages=[{"role": "user", "content": "test"}],

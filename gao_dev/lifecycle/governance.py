@@ -19,7 +19,7 @@ import yaml
 
 from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
 from gao_dev.lifecycle.models import Document
-from gao_dev.lifecycle.exceptions import ValidationError, DocumentNotFoundError
+from gao_dev.lifecycle.exceptions import ValidationError
 
 
 @dataclass

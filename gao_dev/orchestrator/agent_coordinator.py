@@ -13,8 +13,10 @@ Responsibilities:
 Design Pattern: Service pattern with agent factory integration
 """
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import AsyncGenerator, Optional, Dict, Any, Callable, Awaitable
+from typing import AsyncGenerator, Optional, Dict, Any
 import structlog
 
 logger = structlog.get_logger()

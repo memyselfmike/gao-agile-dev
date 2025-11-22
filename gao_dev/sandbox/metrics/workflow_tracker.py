@@ -6,8 +6,7 @@ rework tracking.
 """
 
 import time
-from datetime import datetime
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 from dataclasses import dataclass, field
 
 from .collector import MetricsCollector

@@ -11,9 +11,8 @@ from typing import Optional
 import sys
 import structlog
 
-from gao_dev.cli.project_detection import detect_project_root, is_project_root
+from gao_dev.cli.project_detection import detect_project_root
 from gao_dev.lifecycle.project_lifecycle import ProjectDocumentLifecycle
-from gao_dev.lifecycle.registry import DocumentRegistry
 from gao_dev.lifecycle.document_manager import DocumentLifecycleManager
 from gao_dev.lifecycle.archival import ArchivalManager
 from gao_dev.lifecycle.governance import DocumentGovernance
@@ -504,11 +503,11 @@ def show_policy(doc_type: str, project: Optional[str]):
         click.echo(f"Delete After Archive:  {'Yes' if policy.delete_after_archive else 'No'}")
 
         if policy.compliance_tags:
-            click.echo(f"\nCompliance Tags (prevent deletion):")
+            click.echo("\nCompliance Tags (prevent deletion):")
             for tag in policy.compliance_tags:
                 click.echo(f"  - {tag}")
         else:
-            click.echo(f"\nCompliance Tags:       None")
+            click.echo("\nCompliance Tags:       None")
 
         click.echo()
 
@@ -682,7 +681,7 @@ def mark_reviewed(doc_id: int, project: Optional[str], notes: str):
 
         review = governance_manager.mark_reviewed(doc_id, reviewer, notes)
 
-        click.echo(f"\n  [OK] Document marked as reviewed.")
+        click.echo("\n  [OK] Document marked as reviewed.")
         click.echo(f"    Document ID: {review.document_id}")
         click.echo(f"    Reviewer: {review.reviewer}")
         click.echo(f"    Reviewed At: {review.reviewed_at}")
@@ -690,7 +689,7 @@ def mark_reviewed(doc_id: int, project: Optional[str], notes: str):
         if review.next_review_due:
             click.echo(f"    Next Review Due: {review.next_review_due}")
         else:
-            click.echo(f"    Next Review Due: Never (immutable document)")
+            click.echo("    Next Review Due: Never (immutable document)")
 
         if review.notes:
             click.echo(f"    Notes: {review.notes}")
@@ -850,7 +849,7 @@ def create(
         )
 
         # Display success message
-        click.echo(f"\n[OK] Document created successfully!")
+        click.echo("\n[OK] Document created successfully!")
         click.echo(f"  File: {file_path}")
         click.echo(f"  Path: {file_path.absolute()}")
 
@@ -1203,7 +1202,7 @@ def health(project: Optional[str], output_json: bool, export: str, action_items_
             click.echo(f"  Found {len(action_items)} action item(s):\n")
 
             for item in action_items:
-                severity_color = {
+                {
                     "high": "red",
                     "medium": "yellow",
                     "low": "blue",
@@ -1214,7 +1213,7 @@ def health(project: Optional[str], output_json: bool, export: str, action_items_
                     f"  [{item['severity'].upper()}] {item['description']} "
                     f"({item['count']} items)"
                 )
-                click.echo(f"    Resolution Steps:")
+                click.echo("    Resolution Steps:")
 
                 for i, step in enumerate(item["resolution_steps"], 1):
                     click.echo(f"      {i}. {step}")

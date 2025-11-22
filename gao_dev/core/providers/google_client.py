@@ -4,8 +4,7 @@ Epic: 11 - Agent Provider Abstraction
 Story: 11.10 - Implement Direct API Provider
 """
 
-import asyncio
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 import structlog
 
 try:
@@ -109,7 +108,7 @@ class GoogleClient:
 
             # Make minimal request to validate key
             model = genai.GenerativeModel("gemini-pro")
-            response = await model.generate_content_async("test")
+            await model.generate_content_async("test")
 
             logger.debug("google_validation_success")
             return True

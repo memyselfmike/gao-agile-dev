@@ -1,6 +1,5 @@
 """Git commit management for benchmark artifact creation."""
 
-from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 import structlog

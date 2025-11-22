@@ -21,7 +21,7 @@ import sqlite3
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 import structlog
 
@@ -562,7 +562,7 @@ def run_migration(
                 # Verify after applying
                 verification = Migration006.verify(conn)
                 if verification["issues"]:
-                    print(f"WARNING: Post-migration verification found issues:")
+                    print("WARNING: Post-migration verification found issues:")
                     for issue in verification["issues"]:
                         print(f"  - {issue}")
                 else:

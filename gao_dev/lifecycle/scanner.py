@@ -270,7 +270,7 @@ class DocumentScanner:
                 if part.startswith('.') and part not in ['.', '..']:
                     return True
 
-        path_str = str(path)
+        str(path)
 
         for pattern in self.exclude_patterns:
             # Handle glob patterns (e.g., *.pyc)

@@ -9,6 +9,8 @@ Epic: 31 - Full Mary (Business Analyst) Integration
 Story: 31.1 - Vision Elicitation Workflows & Prompts
 """
 
+from __future__ import annotations
+
 from typing import Optional, Dict, Any
 from pathlib import Path
 from datetime import datetime
@@ -17,7 +19,6 @@ from enum import Enum
 
 from ..core.workflow_registry import WorkflowRegistry
 from ..core.prompt_loader import PromptLoader
-from ..core.config_loader import ConfigLoader
 from ..core.services.ai_analysis_service import AIAnalysisService
 from ..core.models.vision_summary import (
     VisionSummary,
@@ -34,7 +35,7 @@ from ..core.models.requirements_analysis import RequirementsAnalysis
 from .conversation_manager import ConversationManager
 from .brainstorming_engine import BrainstormingEngine, BrainstormingGoal
 from .requirements_analyzer import RequirementsAnalyzer
-from .domain_question_library import DomainQuestionLibrary, DomainType
+from .domain_question_library import DomainQuestionLibrary
 
 
 logger = structlog.get_logger()
@@ -344,7 +345,7 @@ class MaryOrchestrator:
         )
 
         try:
-            result = await self.analysis_service.analyze(
+            await self.analysis_service.analyze(
                 prompt=rendered_prompt,
                 system_prompt=system_prompt,
                 response_format="text",
@@ -352,11 +353,9 @@ class MaryOrchestrator:
                 temperature=template.response.get("temperature", 0.7),
             )
 
-            response_text = result.response
         except Exception as e:
             self.logger.error("ai_analysis_failed", error=str(e))
             # Fallback to minimal mock data
-            response_text = f"Vision elicitation for: {user_request}"
 
         # Parse response into appropriate data structure
         if technique == "vision_canvas":
@@ -493,7 +492,7 @@ class MaryOrchestrator:
             techniques=techniques,
         )
 
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         start_time = datetime.now()
         all_ideas: List[Idea] = []
@@ -552,7 +551,7 @@ class MaryOrchestrator:
                 self.logger.info("generic_technique_completed", technique=technique.name)
 
         # Perform affinity mapping
-        theme_groups = await self.brainstorming_engine.perform_affinity_mapping(
+        await self.brainstorming_engine.perform_affinity_mapping(
             ideas=all_ideas, num_themes=5
         )
 

@@ -4,7 +4,6 @@ Main service for selecting providers based on configured strategy.
 """
 
 from typing import Optional, List, Dict, Any
-from pathlib import Path
 import structlog
 
 from gao_dev.core.providers.base import IAgentProvider

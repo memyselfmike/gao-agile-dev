@@ -12,7 +12,7 @@ from pathlib import Path
 
 from ..core.interfaces.agent import IAgent
 from ..core.models.agent import AgentCapability, AgentContext
-from .exceptions import AgentExecutionError, AgentInitializationError
+from .exceptions import AgentInitializationError
 
 
 class BaseAgent(IAgent):

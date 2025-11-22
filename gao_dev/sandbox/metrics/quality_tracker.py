@@ -8,7 +8,7 @@ mypy, and bandit.
 import subprocess
 import json
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 
 from .collector import MetricsCollector
 
