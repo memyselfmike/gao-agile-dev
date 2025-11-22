@@ -198,6 +198,42 @@ Verify the fix for bug #123 (Onboarding wizard crashes on step 2). Test in both 
 
 ---
 
+### 8. E2E Tester (Integration QA) - `e2e-tester.md`
+
+**Description**: End-to-End Testing specialist focusing on environment management, complete user workflows, and validation of fixes across all environments.
+
+**Use When**:
+- Testing complete user workflows end-to-end
+- Managing test environments (dev, beta, staging)
+- Validating bug fixes in production-like scenarios
+- Testing multi-step processes (onboarding, project creation)
+- Managing server lifecycle and health checks
+- Verifying integration between frontend, backend, and APIs
+
+**Core Capabilities**:
+- Multi-environment testing and switching (dev, beta, test)
+- Server lifecycle management (start, stop, health checks)
+- Complete workflow validation (onboarding, project flows)
+- Playwright UI automation
+- API testing and validation
+- Performance testing and monitoring
+- Collaboration with bug-tester agent
+
+**Example Usage**:
+```
+Test the complete onboarding workflow end-to-end in a clean test environment. Create a new test directory, start the server, use Playwright to walk through all onboarding steps, validate each step works correctly, capture screenshots, and report any issues found.
+```
+
+**Collaboration Pattern**:
+- **E2E-Tester** finds issues → **Bug-Tester** fixes bugs → **E2E-Tester** validates fixes
+- Iterative loop: Test → Find → Fix → Validate → Repeat
+
+**Related Skills**:
+- `ui-testing` - Playwright-based UI testing patterns
+- `bug-verification` - Complete verification workflow
+
+---
+
 ## Available Skills
 
 Skills are stored in `.claude/skills/` and are automatically invoked by Claude when appropriate.
@@ -343,6 +379,7 @@ Use this guide to choose the right agent:
 | Implement features | Developer | "Implement story 1.3 with full tests" |
 | Design testing approach | Test Architect | "Create test strategy for the application" |
 | Fix and verify bugs | Bug Tester | "Verify fix for bug #123 in dev and beta environments" |
+| Test workflows end-to-end | E2E Tester | "Test the complete onboarding flow in a clean environment" |
 
 ---
 
@@ -357,6 +394,7 @@ Agents can work together in sequence:
 5. **Test Architect** → Design test strategy
 6. **Developer** → Implement stories with tests
 7. **Bug Tester** → Verify bug fixes across all environments
+8. **E2E Tester** → Validate complete workflows in multiple environments
 
 ---
 
@@ -462,6 +500,13 @@ Before working on GAO-Dev, agents should review these key directives:
 ---
 
 ## Version History
+
+- **v1.2** (2025-11-22): Added E2E testing and environment management
+  - 8 specialized agents (added E2E Tester for end-to-end validation)
+  - 6 core skills (UI Testing, Bug Verification, Story Writing, PRD Creation, Architecture Design, Code Review)
+  - Multi-environment testing capability (dev, beta, test)
+  - Server lifecycle management integration
+  - Agent collaboration patterns (E2E Tester ↔ Bug Tester)
 
 - **v1.1** (2025-11-22): Added bug testing and verification
   - 7 specialized agents (added Bug Tester for QA and verification)
