@@ -26,7 +26,9 @@ export function ProviderStep({ data, providers, errors, onChange }: ProviderStep
   }, []);
 
   const handleSelect = (provider: ProviderInfo) => {
-    onChange({ provider_id: provider.id }, provider);
+    // Get default model (first available model for this provider)
+    const defaultModel = provider.models?.[0]?.id || '';
+    onChange({ provider_id: provider.id, model_id: defaultModel }, provider);
   };
 
   return (

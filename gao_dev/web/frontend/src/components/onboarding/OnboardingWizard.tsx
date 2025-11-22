@@ -171,13 +171,32 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             body = state.projectData;
             break;
           case 'git':
-            body = state.gitData;
+            // Map frontend field names to backend schema
+            body = {
+              initialize_git: true,
+              author_name: state.gitData.name,
+              author_email: state.gitData.email,
+              create_initial_commit: true,
+            };
             break;
           case 'provider':
-            body = state.providerData;
+            // Map frontend field names to backend schema
+            body = {
+              provider: state.providerData.provider_id,
+              model: state.providerData.model_id || '',
+            };
             break;
           case 'credentials':
-            body = state.credentialsData;
+            // Map frontend field names to backend schema
+            // Determine key_type from selected provider
+            let keyType = 'anthropic';
+            if (state.selectedProvider?.id === 'opencode-sdk') {
+              keyType = 'anthropic'; // Default to anthropic for multi-provider
+            }
+            body = {
+              api_key: state.credentialsData.api_key,
+              key_type: keyType,
+            };
             break;
           default:
             body = {};

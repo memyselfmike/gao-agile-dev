@@ -25,11 +25,18 @@ export interface GitDefaults {
   email: string;
 }
 
+export interface ProviderModel {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface ProviderInfo {
   id: string;
   name: string;
   description: string;
   icon: string;
+  models?: ProviderModel[];
   requires_api_key: boolean;
   api_key_env_var: string;
   has_api_key: boolean;
@@ -50,6 +57,7 @@ export interface GitStepData {
 
 export interface ProviderStepData {
   provider_id: string;
+  model_id?: string;
 }
 
 export interface CredentialsStepData {
