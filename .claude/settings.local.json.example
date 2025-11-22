@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "// Add your personal permission overrides here",
+      "// Example: Allow specific test directories",
+      "// \"Bash(if exist \\\"C:\\\\Your\\\\Test\\\\Path\\\\\\\" rmdir /s /q \\\"C:\\\\Your\\\\Test\\\\Path\\\\\\\")\"",
+      "// Example: Allow specific commands",
+      "// \"Bash(your-custom-command:*)\"",
+      "// Example: Allow specific web domains",
+      "// \"WebFetch(domain:example.com)\""
+    ],
+    "deny": [
+      "// Add commands you want to explicitly deny"
+    ],
+    "ask": [
+      "// Add commands that should prompt for permission"
+    ]
+  }
+}

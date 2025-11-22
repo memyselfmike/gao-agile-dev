@@ -111,6 +111,9 @@ sandbox/benchmarks/*.yaml.bak
 .env
 .env.local
 
+# Claude Code local settings (personal overrides)
+.claude/settings.local.json
+
 # Logs
 *.log
 logs/
