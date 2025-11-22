@@ -835,21 +835,68 @@ GAO-Dev supports extensibility through plugins:
 
 See [docs/plugin-development-guide.md](docs/plugin-development-guide.md) for complete guide.
 
-## Documentation
+## Documentation Hub 📚
 
-- **[docs/INDEX.md](docs/INDEX.md)**: Master documentation hub (START HERE)
-- **[CLAUDE.md](CLAUDE.md)**: Comprehensive guide for Claude Code sessions
-- **[QUICKSTART.md](QUICKSTART.md)**: Detailed getting started guide
-- **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)**: Quick reference for commands and agents
-- **[docs/SETUP.md](docs/SETUP.md)**: API key configuration and setup
-- **[docs/BENCHMARK_STANDARDS.md](docs/BENCHMARK_STANDARDS.md)**: Benchmark standards and best practices
-- **[docs/plugin-development-guide.md](docs/plugin-development-guide.md)**: Plugin development guide
-- **[docs/bmm-workflow-status.md](docs/bmm-workflow-status.md)**: Current development status
-- **[docs/features/](docs/features/)**: Feature-specific documentation
-  - **sandbox-system**: Sandbox & benchmarking system (Epics 1-5, 7-7.2)
-  - **prompt-abstraction**: YAML-based prompt templates (Epic 10)
-  - **document-lifecycle-system**: Document lifecycle & context management (Epics 12-17)
-  - **agent-provider-abstraction**: Multi-provider support (Epic 11 - planned)
+### Getting Started
+
+| Document | Description | Audience |
+|----------|-------------|----------|
+| **[QUICK_START.md](docs/QUICK_START.md)** ⭐ | Copy-paste integration examples | All users |
+| **[QUICKSTART.md](QUICKSTART.md)** | Detailed getting started guide | New users |
+| **[SETUP.md](docs/SETUP.md)** | API key configuration and setup | New users |
+| **[INSTALLATION.md](INSTALLATION.md)** | Complete installation guide | New users |
+
+### Core Documentation
+
+| Document | Description | Audience |
+|----------|-------------|----------|
+| **[API_REFERENCE.md](docs/API_REFERENCE.md)** ⭐ | Complete API catalog (50+ endpoints, 25+ events) | Developers |
+| **[VISUAL_ARCHITECTURE.md](docs/VISUAL_ARCHITECTURE.md)** 🎨 | Architecture diagrams with Mermaid | Developers |
+| **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** 🔧 | Solutions to common issues | All users |
+| **[CLAUDE.md](CLAUDE.md)** | Guide for Claude Code sessions | AI assistants |
+
+### Developer Guides
+
+| Document | Description | Topics |
+|----------|-------------|--------|
+| **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** | Development workflow overview | Installation, workflow, standards |
+| **[DEVELOPMENT_PATTERNS.md](docs/developers/DEVELOPMENT_PATTERNS.md)** | Complete development patterns | Session start, commits, TodoWrite, quality |
+| **[ADDING_WORKFLOWS.md](docs/developers/ADDING_WORKFLOWS.md)** | Add new workflows | YAML config, templates, testing |
+| **[ADDING_WEB_FEATURES.md](docs/developers/ADDING_WEB_FEATURES.md)** | Extend web interface | API routes, React components, state |
+| **[ADDING_AGENTS.md](docs/developers/ADDING_AGENTS.md)** | Add specialized agents | Agent config, prompts, registration |
+| **[TESTING_GUIDE.md](docs/developers/TESTING_GUIDE.md)** | Testing patterns | Unit, integration, frontend tests |
+
+### Code Examples
+
+| Document | Description | Level |
+|----------|-------------|-------|
+| **[Complete Feature Implementation](docs/examples/complete-feature-implementation.md)** | Feature Flags system (backend + frontend + tests) | Advanced |
+| **[Testing Strategies](docs/examples/testing-strategies.md)** | 7 real testing patterns from GAO-Dev | Intermediate |
+| **[Error Handling Patterns](docs/examples/error-handling-patterns.md)** | 5 comprehensive error handling patterns | Intermediate |
+| **[Performance Patterns](docs/examples/performance-patterns.md)** | 8 optimization techniques with metrics | Advanced |
+
+### Reference Documentation
+
+| Document | Description | Use Case |
+|----------|-------------|----------|
+| **[INDEX.md](docs/INDEX.md)** | Master documentation hub | Navigation |
+| **[QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** | Quick reference for commands and agents | Lookup |
+| **[BENCHMARK_STANDARDS.md](docs/BENCHMARK_STANDARDS.md)** | Benchmark standards and best practices | Testing |
+| **[plugin-development-guide.md](docs/plugin-development-guide.md)** | Plugin development guide | Extensions |
+| **[bmm-workflow-status.md](docs/bmm-workflow-status.md)** | Current development status | Contributors |
+
+### Feature-Specific Documentation
+
+Located in **[docs/features/](docs/features/)**:
+
+- **web-interface**: Browser-based mission control (Epic 39)
+- **streamlined-onboarding**: Multi-environment support (Epics 40-42)
+- **interactive-brian-chat**: Conversational interface (Epic 30)
+- **git-integrated-hybrid-wisdom**: Atomic state management (Epic 27)
+- **sandbox-system**: Sandbox & benchmarking (Epics 1-5, 7-7.2)
+- **prompt-abstraction**: YAML-based prompts (Epic 10)
+- **document-lifecycle-system**: Document lifecycle & context (Epics 12-17)
+- **ai-analysis-service**: Local model support (Ollama, DeepSeek-R1)
 
 ## About GAO
 
