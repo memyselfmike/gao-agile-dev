@@ -15,6 +15,7 @@ All endpoints return consistent response format with success, message, next_step
 
 import os
 import shutil
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -23,6 +24,8 @@ import structlog
 import yaml
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
+
+from gao_dev.web.api.provider_utils import get_available_providers
 
 logger = structlog.get_logger(__name__)
 
@@ -242,70 +245,152 @@ def _determine_next_step(completed_steps: List[str]) -> Optional[str]:
     return None
 
 
+def _get_git_defaults() -> Dict[str, str]:
+    """Get git user configuration from global git config.
+
+    Returns:
+        Dictionary with 'name' and 'email' from git config, or empty strings if not set
+    """
+    defaults = {"name": "", "email": ""}
+
+    try:
+        # Try to get global git config
+        result = subprocess.run(
+            ["git", "config", "--global", "user.name"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if result.returncode == 0:
+            defaults["name"] = result.stdout.strip()
+
+        result = subprocess.run(
+            ["git", "config", "--global", "user.email"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if result.returncode == 0:
+            defaults["email"] = result.stdout.strip()
+
+        logger.debug("git_defaults_loaded", name=defaults["name"], email=defaults["email"])
+
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
+        # Git not installed or not configured - return empty defaults
+        logger.debug("git_config_not_available", error=str(e))
+
+    return defaults
+
+
+def _get_project_defaults(project_root: Optional[Path]) -> Dict[str, str]:
+    """Get project defaults for onboarding wizard.
+
+    Args:
+        project_root: Current project root path (may be None in bootstrap mode)
+
+    Returns:
+        Dictionary with project defaults (name, type, description)
+    """
+    # Use current working directory if project_root not set
+    if project_root is None:
+        project_root = Path.cwd()
+
+    # Default project name from directory name
+    project_name = project_root.name if project_root.name != "." else "my-project"
+
+    return {
+        "name": project_name,
+        "type": "greenfield",  # Default to new project
+        "description": "",
+    }
+
+
 # ============================================================================
 # API ENDPOINTS
 # ============================================================================
 
 
-@router.get("/status", response_model=OnboardingResponse)
-async def get_onboarding_status(request: Request) -> OnboardingResponse:
-    """Get current onboarding state.
+@router.get("/status")
+async def get_onboarding_status(request: Request) -> Dict[str, Any]:
+    """Get current onboarding state with all required data for frontend.
 
     Returns the current state of the onboarding wizard including:
     - Whether onboarding is complete
     - Current step in progress
     - List of completed steps
+    - Available providers with complete metadata
+    - Project and git defaults for pre-filling forms
     - Configuration summary (without sensitive data)
 
     Args:
         request: FastAPI request object
 
     Returns:
-        OnboardingResponse with status data
+        Dictionary matching frontend OnboardingStatus interface:
+        - needs_onboarding: boolean
+        - completed_steps: string[]
+        - current_step: string
+        - project_defaults: {name, type, description}
+        - git_defaults: {name, email}
+        - available_providers: ProviderInfo[]
+        - project_root: string
     """
     try:
         # Get project root from app state (or bootstrap mode)
         project_root = getattr(request.app.state, "project_root", None)
 
-        if project_root is None:
-            # Bootstrap mode - no project context yet
-            return OnboardingResponse(
-                success=True,
-                message="Onboarding not started",
-                next_step="project",
-                data={
-                    "is_complete": False,
-                    "current_step": "project",
-                    "completed_steps": [],
-                    "bootstrap_mode": True
-                }
-            )
+        # Get git and project defaults
+        git_defaults = _get_git_defaults()
+        project_defaults = _get_project_defaults(project_root)
 
-        # Load saved state
+        # Get available providers with complete metadata
+        available_providers = get_available_providers()
+
+        # Use current working directory if project_root not set
+        if project_root is None:
+            project_root = Path.cwd()
+
+        # Ensure project_root is Path object
+        if not isinstance(project_root, Path):
+            project_root = Path(project_root)
+
+        # Load saved state (if exists)
         state = _load_onboarding_state(project_root)
         completed_steps = state.get("completed_steps", [])
         next_step = _determine_next_step(completed_steps)
         is_complete = next_step is None or "complete" in completed_steps
 
-        status_data = {
-            "is_complete": is_complete,
-            "current_step": next_step or "complete",
+        # Override defaults with saved data if available
+        if state.get("project"):
+            project_defaults["name"] = state["project"].get("name", project_defaults["name"])
+            project_defaults["description"] = state["project"].get("description", "")
+
+        if state.get("git"):
+            git_defaults["name"] = state["git"].get("author_name", git_defaults["name"])
+            git_defaults["email"] = state["git"].get("author_email", git_defaults["email"])
+
+        # Determine if onboarding is needed
+        needs_onboarding = not is_complete
+
+        # Build response matching frontend OnboardingStatus interface
+        response_data = {
+            "needs_onboarding": needs_onboarding,
             "completed_steps": completed_steps,
-            "project_name": state.get("project", {}).get("name"),
-            "project_path": state.get("project", {}).get("path"),
+            "current_step": next_step or "complete",
+            "project_defaults": project_defaults,
+            "git_defaults": git_defaults,
+            "available_providers": available_providers,
             "project_root": str(project_root),
-            "git_initialized": "git" in completed_steps,
-            "provider_configured": "provider" in completed_steps,
-            "credentials_validated": "credentials" in completed_steps,
-            "bootstrap_mode": False
         }
 
-        return OnboardingResponse(
-            success=True,
-            message="Onboarding status retrieved",
-            next_step=next_step,
-            data=status_data
+        logger.info(
+            "onboarding_status_retrieved",
+            needs_onboarding=needs_onboarding,
+            current_step=response_data["current_step"],
+            provider_count=len(available_providers),
         )
+
+        return response_data
 
     except Exception as e:
         logger.exception("get_onboarding_status_failed", error=str(e))
